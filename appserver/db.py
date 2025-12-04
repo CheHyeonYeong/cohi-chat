@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine
 )
+
 def create_engine(dsn: str):
     
     return create_async_engine(
@@ -25,5 +26,8 @@ def create_session(async_engine: AsyncEngine | None = None):
 async def use_session():    # fastAPI에서 사용하려고 만든 비공기 생성기
     async with async_session() as session:
         yield session
-engine = create_engine()
-async_session_factory = create_session()
+
+DSN = "sqllite+aiosqlite:///./local.db"
+
+engine = create_engine(DSN)
+async_session_factory = create_session(engine)
