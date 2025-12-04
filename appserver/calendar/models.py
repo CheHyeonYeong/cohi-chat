@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.dialects.postgresql import JSONB
 from pydantic import AwareDatetime
 from sqlalchemy_utc import UtcDateTime
-from sqlmodel import SQLModel, Field, Relationship, Text, JSON, func
+from sqlmodel import SQLModel, Field, Relationship, Text, JSON, func, String, Column
 
 if TYPE_CHECKING:
     from apps.account.models import User
@@ -28,6 +28,7 @@ class Calendar(SQLModel, table=True):
         sa_relationship_kwargs={"single_parent": True},
     )
 
+    # TimeSlot 모델과 역관계를 맺다
     time_slots: list["TimeSlot"] = Relationship(back_populates="calendar")
 
     created_at: AwareDatetime = Field(

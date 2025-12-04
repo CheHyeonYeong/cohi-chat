@@ -6,7 +6,7 @@ from pydantic import AwareDatetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from appserver.calendar.models import Calendar
+    from appserver.calendar.models import Calendar, Booking
 
 class OAuthAccount(SQLModel, table=True):
     __tablename__ = "oauth_accounts"
@@ -59,3 +59,4 @@ class User(SQLModel, table=True):
         back_populates="host",
         sa_relationship_kwarges={"single_parent": True, "uselist": False}, # 부모가 하나, Cascade 설정이 적용
         )
+    bookings: List[Booking] = Relationship(back_populates="guest")
