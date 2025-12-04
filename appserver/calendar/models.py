@@ -21,6 +21,7 @@ class Calendar(SQLModel, table=True):
     description: str = Field(sa_type=Text, description="게스트에게 보여줄 설명")
     google_calendar_id: str = Field(max_length=1024, description="Google Calendar ID")
 
+    # User 모델과 1:1 관계를 맺다
     host_id: int = Field(foreign_key="users.id", unique=True)
     host: "User" = Relationship(
         back_populates="calendar",

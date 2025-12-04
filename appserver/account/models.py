@@ -3,6 +3,10 @@ from sqlmodel import SQLModel, Field, Relationship
 from pydantic import EmailStr
 from sqlalchemy import UniqueConstraint
 from pydantic import AwareDatetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from appserver.calendar.models import Calendar
 
 class OAuthAccount(SQLModel, table=True):
     __tablename__ = "oauth_accounts"
@@ -13,10 +17,12 @@ class OAuthAccount(SQLModel, table=True):
             name="uq_provider_provider_account_id"
             ),
     )
+    id: int = Field(default=None, primary_key=True)
+
     provider: str = Field(max_length=10, description="OAuth Provider")
     provider_account_id: str = Field(max_length=128, description="OAuth Provider Account ID")
     user_id : int = Field(foreign_key="users.id")
-    user : User = Relationship()
+    user : User = Relationship(back_populates="oauth_accounts")
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -47,3 +53,9 @@ class User(SQLModel, table=True):
             "onupdate": lambda: datetime.now(timezone.utc),
         },
     )
+
+    oauth_accounts: List[OAuthAccount] = Relationship(back_populates="user")
+    calendar: Calendar = Relationship(
+        back_populates="host",
+        sa_relationship_kwarges={"single_parent": True, "uselist": False}, # 부모가 하나, Cascade 설정이 적용
+        )
