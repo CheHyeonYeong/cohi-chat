@@ -9,8 +9,10 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import Text
 from sqlalchemy.dialects import postgresql
 import sqlmodel.sql.sqltypes
+import sqlalchemy_utc.sqltypes
 
 # revision identifiers, used by Alembic.
 revision: str = '4e4d8b34294f'
