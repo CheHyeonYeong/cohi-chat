@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr:*)",
+      "Bash(python -m pip list:*)",
+      "Bash(pip install:*)",
+      "Bash(dir:*)",
+      "Bash(python -m alembic revision:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(poetry --version:*)",
+      "Bash(.venvScriptspython.exe -m pip install sqlmodel sqlalchemy-utc alembic aiosqlite email-validator)"
+    ]
+  }
+}

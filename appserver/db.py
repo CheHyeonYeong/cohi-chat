@@ -27,7 +27,11 @@ async def use_session():    # fastAPI에서 사용하려고 만든 비공기 생
     async with async_session() as session:
         yield session
 
-DSN = "sqllite+aiosqlite:///./local.db"
+DSN = "sqlite+aiosqlite:///./local.db"
+
+# Note: engine and async_session_factory are commented out to avoid import-time initialization
+# Uncomment when running the actual application
 
 engine = create_engine(DSN)
+
 async_session_factory = create_session(engine)

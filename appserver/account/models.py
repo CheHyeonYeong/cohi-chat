@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import EmailStr
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, func
+from sqlalchemy_utc import UtcDateTime
 from pydantic import AwareDatetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from appserver.calendar.models import Calendar, Booking
@@ -57,6 +58,6 @@ class User(SQLModel, table=True):
     oauth_accounts: List[OAuthAccount] = Relationship(back_populates="user")
     calendar: Calendar = Relationship(
         back_populates="host",
-        sa_relationship_kwarges={"single_parent": True, "uselist": False}, # 부모가 하나, Cascade 설정이 적용
+        sa_relationship_kwargs={"single_parent": True, "uselist": False}, # 부모가 하나, Cascade 설정이 적용
         )
     bookings: List[Booking] = Relationship(back_populates="guest")
