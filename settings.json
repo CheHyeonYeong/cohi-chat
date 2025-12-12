@@ -1,0 +1,28 @@
+{
+  "python.defaultInterpreterPath": "./.venv/Scripts/python.exe",
+  "python.testing.cwd": "./",
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "pythonTestExplorer.testFramework": "pytest",
+  "python.testing.pytestPath": "./.venv/Scripts/pytest.exe",
+  "python.testing.pytestArgs": [
+    "${workspaceFolder}/tests",
+    "${workspaceFolder}/appserver"
+  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.indexing": true,
+  "python.analysis.completeFunctionParens": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.include": [
+    "./appserver"
+  ],
+  "python.analysis.extraPaths": [
+    "./appserver"
+  ],
+  "python.autoComplete.extraPaths": [
+    "./appserver"
+  ],
+  "python.terminal.activateEnvironment": true
+}
