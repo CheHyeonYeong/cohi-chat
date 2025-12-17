@@ -4,12 +4,16 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine
 )
+from typing import Annotated
+from fastapi import Depends
+
+DbSessionDep = Annotated[AsyncSession, Depends(use_session)]
 
 def create_engine(dsn: str):
     
     return create_async_engine(
         dsn,
-        echo=True
+        echo=False
     )
 
 def create_session(async_engine: AsyncEngine | None = None):
