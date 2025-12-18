@@ -16,7 +16,10 @@
       "Bash(cat:*)",
       "Bash(ls:*)",
       "Bash(pnpm --version:*)",
-      "Bash(npm --version:*)"
+      "Bash(npm --version:*)",
+      "Bash(poetry install:*)",
+      "Bash(python -m poetry:*)",
+      "Bash(git config:*)"
     ]
   }
 }
