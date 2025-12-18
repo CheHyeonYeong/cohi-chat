@@ -5,6 +5,7 @@ from sqlmodel import select, func
 from appserver.db import DbSessionDep
 from sqlalchemy.exc import IntegrityError
 from .exceptions import DuplicatedUsernameError, DuplicatedEmailError
+from .schemas import SignupPayload, UserOut
 
 router = APIRouter(prefix="/account")
 
@@ -20,8 +21,9 @@ async def user_detail(username:str, session: DbSessionDep) -> User:
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-async def signup(payload: dict, session: DbSessionDep) -> User:
-    stmt = select(func.count()).select_from(User).where(User.username == payload["username"])
+@router.post("/signup", status_code=status.HTTP_201_CREATED, response_model=UserOut)
+async def signup(payload: SignupPayload, session: DbSessionDep) -> User:
+    stmt = select(func.count()).select_from(User).where(User.username == payload.username)
     result = await session.execute(stmt)
     count = result.scalar_one()
     if count > 0:
