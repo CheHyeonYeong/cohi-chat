@@ -11,7 +11,12 @@
       "Bash(.venvScriptspython.exe -m pip install sqlmodel sqlalchemy-utc alembic aiosqlite email-validator)",
       "Bash(git add:*)",
       "Bash(git rm:*)",
-      "Bash(python -m pip:*)"
+      "Bash(python -m pip:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(npm --version:*)"
     ]
   }
 }
