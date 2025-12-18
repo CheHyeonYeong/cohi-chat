@@ -32,3 +32,6 @@ TBO
 # 데이터 설계
 
 ![alt text](image.png)
+
+
+.\.venv\Scripts\Activate.ps1
