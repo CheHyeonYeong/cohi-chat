@@ -437,3 +437,20 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,python,virtualenv,visualstudiocode,linux,dotenv,git,node
+
+### Project Specific ###
+# SQLite database
+local.db
+local.db-journal
+local.db-shm
+local.db-wal
+*.db
+*.db-journal
+
+# Upload files
+uploads/
+!uploads/.gitkeep
+
+# Static files (if generated)
+# static/
+# !static/.gitkeep

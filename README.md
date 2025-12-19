@@ -1,3 +1,246 @@
+# coheChat - 약속잡기 서비스
+
+호스트와 게스트 간의 미팅 예약을 관리하는 웹 서비스입니다. 호스트는 자신의 가용 시간대를 설정하고, 게스트는 해당 시간대에 예약을 생성할 수 있습니다.
+
+## 기술 스택
+
+### 백엔드
+- **FastAPI** - Python 웹 프레임워크
+- **SQLModel** - SQLAlchemy 기반 ORM
+- **SQLite** - 데이터베이스 (개발용)
+- **Alembic** - 데이터베이스 마이그레이션
+- **Poetry** - Python 패키지 관리
+- **JWT** - 인증/인가
+- **Google Calendar API** - 캘린더 통합
+
+### 프론트엔드
+- **React 18** - UI 라이브러리
+- **Vite** - 빌드 도구
+- **TanStack Router** - 라우팅
+- **TanStack Query** - 서버 상태 관리
+- **Tailwind CSS** - 스타일링
+- **pnpm** - 패키지 관리
+
+## 사전 요구사항
+
+- **Python 3.11 이상** (3.14는 일부 패키지 호환성 문제 있음, 3.11-3.13 권장)
+- **Node.js 18 이상**
+- **pnpm** (npm install -g pnpm)
+- **Poetry** (pip install poetry) - 선택사항, pip도 가능
+
+## 설치 방법
+
+### 1. 저장소 클론
+
+```bash
+git clone <repository-url>
+cd cohi-chat
+```
+
+### 2. 백엔드 설정
+
+```bash
+# Poetry 사용 시
+poetry install
+
+# 또는 pip 직접 사용
+pip install "fastapi[all]" sqlmodel sqlalchemy-utc aiosqlite alembic greenlet "python-jose[cryptography]" "pwdlib[argon2,bcrypt]" uvicorn "fastapi-storages" sqladmin google-api-python-client
+```
+
+### 3. 데이터베이스 초기화
+
+```bash
+# 필수 디렉토리 생성
+mkdir -p static uploads
+
+# 데이터베이스 마이그레이션 실행
+python -m alembic upgrade head
+```
+
+### 4. 프론트엔드 설정
+
+```bash
+cd frontend
+pnpm install
+cd ..
+```
+
+## 실행 방법
+
+### 개발 모드
+
+**터미널 1 - 백엔드 서버:**
+```bash
+# 프로젝트 루트에서
+python -m uvicorn appserver.app:app --reload --port 8000
+```
+
+**터미널 2 - 프론트엔드 서버:**
+```bash
+cd frontend
+pnpm dev
+```
+
+### 접속
+
+- **프론트엔드**: http://localhost:3000
+- **백엔드 API**: http://localhost:8000
+- **API 문서 (Swagger)**: http://localhost:8000/docs
+- **Admin 페이지**: http://localhost:8000/@/-_-/@/nimda/
+
+## 주요 기능
+
+### 사용자 관리
+- 회원가입 / 로그인
+- 사용자 프로필 관리
+- 호스트 / 게스트 역할 구분
+
+### 캘린더 관리 (호스트)
+- 캘린더 생성 및 설정
+- 가용 시간대(TimeSlot) 설정
+- Google Calendar 연동
+- 예약 현황 조회
+
+### 예약 관리
+- 예약 생성 (게스트)
+- 예약 수정 / 취소
+- 파일 업로드 (예약 관련 자료)
+- 참석 상태 관리
+
+## 환경 변수
+
+프로젝트 루트에 `.env` 파일을 생성하세요:
+
+```env
+# 백엔드 설정
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=sqlite+aiosqlite:///./local.db
+
+# Google Calendar API (선택사항)
+GOOGLE_CALENDAR_ID=your-calendar-id@group.calendar.google.com
+
+# Sentry (선택사항)
+SENTRY_DSN=your-sentry-dsn
+
+# CORS (프로덕션)
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+## 프로젝트 구조
+
+```
+coheChat/
+├── appserver/              # 백엔드 소스
+│   ├── apps/
+│   │   ├── account/       # 사용자 계정 관리
+│   │   └── calendar/      # 캘린더/예약 관리
+│   ├── libs/              # 공통 라이브러리
+│   ├── app.py             # FastAPI 앱
+│   └── db.py              # DB 설정
+├── frontend/              # 프론트엔드 소스
+│   └── src/
+│       ├── components/    # 재사용 컴포넌트
+│       ├── pages/         # 페이지 컴포넌트
+│       ├── hooks/         # React hooks
+│       ├── routes/        # 라우트 설정
+│       └── libs/          # 유틸리티
+├── alembic/               # DB 마이그레이션
+├── tests/                 # 테스트 코드
+├── static/                # 정적 파일
+├── uploads/               # 업로드 파일
+└── local.db               # SQLite DB (생성됨)
+```
+
+## API 엔드포인트
+
+### 인증
+- `POST /account/signup` - 회원가입
+- `POST /account/login` - 로그인
+- `DELETE /account/unregister` - 회원탈퇴
+
+### 사용자
+- `GET /account/@me` - 내 정보 조회
+- `GET /account/users/{username}` - 사용자 정보 조회
+- `PATCH /account/@me` - 내 정보 수정
+
+### 캘린더
+- `GET /calendar/{host_username}` - 호스트 캘린더 조회
+- `POST /calendar` - 캘린더 생성 (호스트)
+- `PATCH /calendar` - 캘린더 수정 (호스트)
+- `GET /calendar/{host_username}/bookings` - 예약 목록 조회
+
+### 타임슬롯
+- `POST /time-slots` - 시간대 생성 (호스트)
+- `GET /time-slots/{host_username}` - 시간대 목록 조회
+
+### 예약
+- `POST /bookings/{host_username}` - 예약 생성 (게스트)
+- `GET /bookings/{booking_id}` - 예약 상세 조회
+- `PATCH /bookings/{booking_id}` - 예약 수정 (호스트)
+- `PATCH /guest-bookings/{booking_id}` - 예약 수정 (게스트)
+- `DELETE /guest-bookings/{booking_id}` - 예약 취소 (게스트)
+- `POST /bookings/{booking_id}/upload` - 파일 업로드
+
+자세한 API 문서는 http://localhost:8000/docs 에서 확인하세요.
+
+## 테스트
+
+```bash
+# 백엔드 테스트
+pytest
+
+# 프론트엔드 테스트
+cd frontend
+pnpm test
+```
+
+## 알려진 이슈
+
+### 1. 토큰 검증 버그 (중요)
+`appserver/apps/account/deps.py:26` 의 토큰 만료 검증 로직이 반대로 되어 있습니다.
+
+**현재 코드 (잘못됨):**
+```python
+if now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES) < expires_at:
+    raise ExpiredTokenError()
+```
+
+**수정 필요:**
+```python
+if now > expires_at:
+    raise ExpiredTokenError()
+```
+
+### 2. Python 3.14 호환성
+Python 3.14는 일부 의존성 패키지와 호환성 문제가 있습니다. Python 3.11-3.13 사용을 권장합니다.
+
+### 3. OpenAPI 스키마 생성 오류
+`fastapi-storages`의 `StorageFile` 타입이 Pydantic v2와 호환 문제가 있어 `/openapi.json` 엔드포인트에서 500 에러가 발생합니다. 현재 임시 수정으로 `BookingFileOut`에서 `file` 필드를 제거했습니다.
+
+## 보안 주의사항
+
+**프로덕션 배포 전 반드시 수정:**
+
+1. `SECRET_KEY`를 환경 변수로 관리
+2. Sentry DSN을 환경 변수로 관리
+3. CORS 설정을 특정 도메인으로 제한
+4. `.env` 파일을 `.gitignore`에 추가 확인
+5. 위의 토큰 검증 버그 수정
+6. `local.db`를 `.gitignore`에 추가
+
+## 라이선스
+
+(라이선스 정보 추가)
+
+## 기여
+
+(기여 가이드라인 추가)
+
+## 문의
+
+
+
+
 ## 📖 프로젝트 소개
 
 ### 개요

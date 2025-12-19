@@ -1,4 +1,4 @@
-import { createRouter, createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRouter, createRootRoute, Outlet, redirect } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { z } from 'zod'
 
@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import Calendar from '../pages/calendar/Calendar'
 import Login from '../pages/account/Login'
+import Signup from '../pages/account/Signup'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
@@ -23,6 +24,14 @@ const RootRoute = createRootRoute({
                 <TanStackRouterDevtools />
             </>
         )
+    },
+})
+
+const indexRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/',
+    beforeLoad: () => {
+        throw redirect({ to: '/app' })
     },
 })
 
@@ -60,6 +69,12 @@ const loginRoute = createRoute({
     component: Login,
 })
 
+const signupRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/app/signup',
+    component: Signup,
+})
+
 
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
@@ -75,9 +90,11 @@ const calendarRoute = createRoute({
 })
 
 export const routeTree = RootRoute.addChildren([
+    indexRoute,
     homeRoute,
     calendarRoute,
     loginRoute,
+    signupRoute,
     myBookingsRoute,
     bookingRoute,
 ])

@@ -132,7 +132,6 @@ async def unregister(user: CurrentUserDep, session: DbSessionDep) -> None:
     response_model=list[UserOut],
 )
 async def get_hosts(
-    user: CurrentUserDep,
     session: DbSessionDep,
 ) -> list[User]:
     stmt = select(User).where(User.is_active.is_(true())).where(User.is_host.is_(true()))
