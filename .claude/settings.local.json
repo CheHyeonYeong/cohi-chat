@@ -19,7 +19,16 @@
       "Bash(npm --version:*)",
       "Bash(poetry install:*)",
       "Bash(python -m poetry:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(python -m alembic:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl:*)",
+      "Bash(Get-Content C:UsersHYEONY~1AppDataLocalTempclaudeC--Users-hyeonyeong-Desktop-prj-coheChattasksbe06b12.output -Tail 50)",
+      "Bash(Get-Content C:UsersHYEONY~1AppDataLocalTempclaudeC--Users-hyeonyeong-Desktop-prj-coheChattasksbf93ee6.output -Tail 30)"
     ]
   }
 }

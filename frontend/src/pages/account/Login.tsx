@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { useLogin } from '~/hooks/useLogin';
 
@@ -44,6 +45,13 @@ export default function Login() {
             {loginMutation.isError && (
                 <div className="error-message">로그인에 실패했습니다. 다시 시도해주세요.</div>
             )}
+
+            <div className="text-center text-sm">
+                계정이 없으신가요?{' '}
+                <Link to="/app/signup" className="text-blue-600 hover:underline">
+                    회원가입
+                </Link>
+            </div>
         </div>
     );
 }

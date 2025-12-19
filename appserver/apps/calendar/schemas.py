@@ -91,11 +91,6 @@ class BookingCreateIn(SQLModel):
 
 class BookingFileOut(SQLModel):
     id: int
-    file: StorageFile
-
-    model_config = SQLModelConfig(
-        arbitrary_types_allowed=True,
-    )
 
 
 class BookingOut(SQLModel):
