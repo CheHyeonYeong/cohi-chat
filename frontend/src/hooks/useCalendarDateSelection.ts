@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '~/libs/httpClient';
 import { ITimeSlot } from '~/types/timeslot';
@@ -7,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export function useCalendarDateSelection() {
     const queryClient = useQueryClient();
 
-    const handleSelectDay = async (slug: string, date: Date) => {
+    const handleSelectDay = useCallback(async (slug: string, date: Date) => {
         await queryClient.prefetchQuery({
             queryKey: ['timeslots', slug, date.toISOString()],
             queryFn: async () => {
@@ -20,10 +21,10 @@ export function useCalendarDateSelection() {
                 const data: ITimeSlot[] = await httpClient(url);
 
                 return data;
-                 
+
             },
         });
-    };
+    }, [queryClient]);
 
     return { handleSelectDay };
 } 
