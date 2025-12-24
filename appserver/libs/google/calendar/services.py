@@ -22,7 +22,7 @@ class GoogleCalendarService:
     ):
         self.credentials_path = credentials_path
         self.default_google_calendar_id = default_google_calendar_id
-        self.service = self._get_authenticated_service(credentials_path)
+        self.service = self._get_authenticated_service(credentials_path) if credentials_path and credentials_path.exists() else None
 
     def _get_authenticated_service(self, credentials_path: Path) -> Any:
         credentials = service_account.Credentials.from_service_account_file(
@@ -86,6 +86,9 @@ class GoogleCalendarService:
         timezone: Optional[str] = "Asia/Seoul",
         send_update: Literal["all", "externalOnly", "none"] = "all",
     ) -> CalendarEvent | None:
+        if not self.service:
+            return None
+
         event = self.make_event_body(
             start_datetime,
             end_datetime,
@@ -123,6 +126,9 @@ class GoogleCalendarService:
         time_max: datetime,
         google_calendar_id: Optional[str] = None,
     ) -> list[CalendarEvent]:
+        if not self.service:
+            return []
+
         google_calendar_id = google_calendar_id or self.default_google_calendar_id
 
         events_result = (
@@ -143,6 +149,9 @@ class GoogleCalendarService:
         event_id: str,
         google_calendar_id: Optional[str] = None,
     ) -> bool:
+        if not self.service:
+            return False
+
         google_calendar_id = google_calendar_id or self.default_google_calendar_id
         try:
             self.service.events().delete(
@@ -168,6 +177,9 @@ class GoogleCalendarService:
         timezone: Optional[str] = "Asia/Seoul",
         send_update: Literal["all", "externalOnly", "none"] = "all",
     ) -> bool:
+        if not self.service:
+            return False
+
         event = self.make_event_body(
             start_datetime,
             end_datetime,
@@ -179,7 +191,7 @@ class GoogleCalendarService:
             timezone=timezone,
             send_update=send_update,
         )
-       
+
         google_calendar_id = google_calendar_id or self.default_google_calendar_id
         try:
             self.service.events().update(
@@ -197,6 +209,9 @@ class GoogleCalendarService:
         event_id: str,
         google_calendar_id: Optional[str] = None,
     ) -> CalendarEvent | None:
+        if not self.service:
+            return None
+
         google_calendar_id = google_calendar_id or self.default_google_calendar_id
         try:
             return self.service.events().get(

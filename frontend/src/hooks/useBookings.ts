@@ -55,37 +55,55 @@ export function useBookingsStreamQuery({
     const [items, setItems] = useState<Array<IBooking | ICalendarEvent>>([]);
 
     useEffect(() => {
-        const fetchStream = async () => {
-            const response = await fetch(endpoint);
-            const reader = response.body!.getReader();
-            const decoder = new TextDecoder();
+        let isCancelled = false;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    await reader.cancel();
-                    break;
+        const fetchStream = async () => {
+            try {
+                const response = await fetch(endpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n').filter(Boolean);
-                lines.forEach(line => {
-                    const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
-                    setItems((prevData) => {
-                        const index = prevData.findIndex((item) => item.id === data.id);
-                        if (index === -1) {
-                            return [...prevData, data];
-                        }
-                        return prevData;
+                const reader = response.body!.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    if (isCancelled) break;
+
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        await reader.cancel();
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(Boolean);
+                    lines.forEach(line => {
+                        const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
+                        setItems((prevData) => {
+                            const index = prevData.findIndex((item) => item.id === data.id);
+                            if (index === -1) {
+                                return [...prevData, data];
+                            }
+                            return prevData;
+                        });
+                        onMessage?.(data);
                     });
-                    onMessage?.(data);
-                });
+                }
+            } catch (error) {
+                if (!isCancelled) {
+                    console.error('Error fetching stream:', error);
+                }
             }
         };
 
         fetchStream();
 
-    }, [endpoint, onMessage]);
+        return () => {
+            isCancelled = true;
+        };
+
+    }, [endpoint]);
 
     return items;
 }
