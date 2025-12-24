@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from appserver.apps.account.models import User
 from appserver.apps.account.deps import CurrentUserDep, CurrentUserOptionalDep
-from appserver.db import DbSessionDep
+from appserver.db import DbSessionDep, async_session_factory
 from appserver.libs.google.calendar.deps import GoogleCalendarServiceDep
 
 from .enums import AttendanceStatus
@@ -85,7 +85,7 @@ async def host_calendar_detail(
 async def host_calendar_bookings(
     host_username: str,
     session: DbSessionDep,
-    year: Annotated[int, Query(ge=2024, le=2025)],
+    year: Annotated[int, Query(ge=2024, le=2100)],
     month: Annotated[int, Query(ge=1, le=12)],
     service: GoogleCalendarServiceDep,
 ) -> list[SimpleBookingOut | GoogleCalendarEventOut]:
@@ -125,7 +125,7 @@ async def host_calendar_bookings(
 async def host_calendar_bookings_stream(
     host_username: str,
     session: DbSessionDep,
-    year: Annotated[int, Query(ge=2024, le=2025)],
+    year: Annotated[int, Query(ge=2024, le=2100)],
     month: Annotated[int, Query(ge=1, le=12)],
     service: GoogleCalendarServiceDep,
 ) -> StreamingResponse:
@@ -382,6 +382,10 @@ async def create_booking(
     end_datetime = datetime.combine(booking.when, time_slot.end_time)
 
     async def _apply_event_id():
+        if not service.service:
+            print("Google Calendar service is not available. Skipping event creation.")
+            return
+
         event = await service.create_event(
             start_datetime=start_datetime.astimezone(timezone.utc),
             end_datetime=end_datetime.astimezone(timezone.utc),
@@ -389,11 +393,21 @@ async def create_booking(
             description=booking.description,
             google_calendar_id=host.calendar.google_calendar_id,
         )
-        booking.google_event_id = event["id"]
-        await session.commit()
+
+        if event is None:
+            print("Failed to create Google Calendar event")
+            return
+
+        async with async_session_factory() as new_session:
+            stmt = select(Booking).where(Booking.id == booking.id)
+            result = await new_session.execute(stmt)
+            booking_to_update = result.scalar_one_or_none()
+            if booking_to_update:
+                booking_to_update.google_event_id = event["id"]
+                await new_session.commit()
 
     background_tasks.add_task(_apply_event_id)
-    
+
     return booking
 
 
