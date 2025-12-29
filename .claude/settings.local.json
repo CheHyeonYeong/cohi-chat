@@ -38,6 +38,7 @@
       "Bash(./gradlew bootRun)",
       "Bash(timeout 15 bash:*)",
       "Bash(Get-Content \"C:\\\\Users\\\\HYEONY~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-hyeonyeong-Desktop-prj-coheChat\\\\tasks\\\\b04bf80.output\" -Tail 30)"
+
     ]
   }
 }
