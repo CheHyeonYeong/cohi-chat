@@ -454,3 +454,7 @@ uploads/
 # Static files (if generated)
 # static/
 # !static/.gitkeep
+
+# Google Cloud credentials and sensitive files
+*credentials*.json
+*service-account*.json
