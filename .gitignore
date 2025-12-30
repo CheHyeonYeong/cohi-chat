@@ -379,6 +379,26 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+### Java & Gradle ###
+# Gradle
+.gradle/
+gradle/
+!gradle/wrapper/gradle-wrapper.jar
+gradlew
+gradlew.bat
+
+# Build output
+build/
+out/
+target/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
 ### VirtualEnv ###
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/

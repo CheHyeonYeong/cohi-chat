@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cohi-chat-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # Add your environment variables here
+      # - DB_URL=jdbc:postgresql://db:5432/cohichat
+      # - DB_USERNAME=cohichat
+      # - DB_PASSWORD=your_password
+    networks:
+      - cohi-chat-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Uncomment if you need a database
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: cohi-chat-db
+  #   environment:
+  #     - POSTGRES_DB=cohichat
+  #     - POSTGRES_USER=cohichat
+  #     - POSTGRES_PASSWORD=your_password
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - cohi-chat-network
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U cohichat"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+networks:
+  cohi-chat-network:
+    driver: bridge
+
+# Uncomment if you need persistent volumes
+# volumes:
+#   postgres-data:
