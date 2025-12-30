@@ -380,12 +380,8 @@ poetry.toml
 pyrightconfig.json
 
 ### Java & Gradle ###
-# Gradle
+# Gradle - Keep wrapper files, only ignore cache
 .gradle/
-gradle/
-!gradle/wrapper/gradle-wrapper.jar
-gradlew
-gradlew.bat
 
 # Build output
 build/
