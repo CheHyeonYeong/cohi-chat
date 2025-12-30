@@ -379,6 +379,22 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+### Java & Gradle ###
+# Gradle - Keep wrapper files, only ignore cache
+.gradle/
+
+# Build output
+build/
+out/
+target/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
 ### VirtualEnv ###
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/

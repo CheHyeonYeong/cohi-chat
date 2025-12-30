@@ -1,0 +1,63 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ QA ]  # QA 브랜치에서만 자동 배포
+    # main은 나중에 추가
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Docker 빌드가 완료된 후 실행하려면 needs 추가
+    # needs: docker
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: EC2에 배포
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 프로젝트 디렉토리로 이동 (없으면 생성)
+            mkdir -p ~/cohi-chat
+            cd ~/cohi-chat
+
+            # docker-compose.yml 파일이 없으면 다운로드
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml 다운로드 중..."
+              curl -o docker-compose.yml https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+            fi
+
+            # Docker Hub에서 최신 이미지 Pull
+            echo "Docker 이미지 업데이트 중..."
+            docker pull ${{ secrets.DOCKER_USERNAME }}/cohi-chat-backend:latest
+
+            # 기존 컨테이너 중지 및 제거
+            echo "기존 컨테이너 중지 중..."
+            docker-compose down
+
+            # 새 컨테이너 시작
+            echo "새 컨테이너 시작 중..."
+            docker-compose up -d
+
+            # 로그 확인
+            echo "배포 완료! 로그 확인:"
+            docker-compose logs --tail=20
+
+            # 헬스체크
+            echo "헬스체크 대기 중..."
+            sleep 10
+            curl -f http://localhost:8080 || echo "⚠️ 헬스체크 실패"
+
+      - name: 배포 성공 알림
+        if: success()
+        run: echo "✅ EC2 배포 성공!"
+
+      - name: 배포 실패 알림
+        if: failure()
+        run: echo "❌ EC2 배포 실패!"
