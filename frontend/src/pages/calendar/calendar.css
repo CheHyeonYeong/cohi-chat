@@ -10,12 +10,8 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    // --primary: 240 5.9% 10%;
-    // --primary-foreground: 0 0% 98%;
     --primary: #1A8DF7;
     --primary-foreground: #1A8DF7;
-    // --secondary: 240 4.8% 95.9%;
-    // --secondary-foreground: 240 5.9% 10%;
     --secondary: #65BEFF;
     --secondary-foreground: #65BEFF;
     --error: #F04E4E;
@@ -177,7 +173,6 @@
   }
 
   .noto-sans-kr {
-    // font-family: "Noto Sans KR", sans-serif;
     font-family: "Pretendard", sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;

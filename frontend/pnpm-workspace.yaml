@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@swc/core'
+  - deasync
+  - esbuild
+  - less
+  - msw
