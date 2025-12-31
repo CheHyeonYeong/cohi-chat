@@ -458,3 +458,5 @@ uploads/
 # Google Cloud credentials and sensitive files
 *credentials*.json
 *service-account*.json
+.add
+.idea
