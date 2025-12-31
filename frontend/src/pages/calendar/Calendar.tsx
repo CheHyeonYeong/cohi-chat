@@ -12,7 +12,7 @@ import { useTimeslots } from '~/hooks/useTimeslots';
 import { ITimeSlot } from '~/types/timeslot';
 import { useBookings } from '~/hooks/useBookings';
 
-import './calendar.less';
+import './calendar.css';
 import { useAuth } from '~/hooks/useAuth';
 import { useBookingsStreamQuery } from '~/hooks/useBookings';
 
