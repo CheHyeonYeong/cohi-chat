@@ -71,7 +71,7 @@ public class Member {
 	 * </p>
 	 */
 	@Column(name = "is_host", nullable = false)
-	private boolean host = false;
+	private boolean isHost = false;
 
 	/** 계정 생성 시각. */
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -107,12 +107,12 @@ public class Member {
 
 	/** 호스트 권한 부여. */
 	public void grantHost() {
-		this.host = true;
+		this.isHost = true;
 	}
 
 	/** 호스트 권한 회수. */
 	public void revokeHost() {
-		this.host = false;
+		this.isHost = false;
 	}
 
 	@PrePersist

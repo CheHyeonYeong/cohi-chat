@@ -33,6 +33,11 @@
             <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
         </module>
 
+        <!-- Parameter (추가) -->
+        <module name="ParameterName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+
         <!-- Field -->
         <module name="MemberName">
             <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
@@ -43,18 +48,36 @@
             <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
         </module>
 
-        <!-- Constant (static final) -->
-        <module name="ConstantName">
-            <property name="format" value="^[A-Z][A-Z0-9_]*$"/>
+        <!-- Static non-final variable (추가) -->
+        <module name="StaticVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
         </module>
 
-        <!-- K&R style braces -->
+        <!-- Constant (static final) -->
+        <module name="ConstantName">
+            <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
+
+        <!-- ========================================================= -->
+        <!-- Braces (K&R style) -->
+        <!-- ========================================================= -->
+
+        <!-- 여는 중괄호는 같은 줄 -->
         <module name="LeftCurly">
             <property name="option" value="eol"/>
         </module>
 
+        <!-- 닫는 중괄호 - K&R 스타일 (수정) -->
         <module name="RightCurly">
+            <property name="option" value="same"/>
+            <property name="tokens" value="LITERAL_ELSE, LITERAL_CATCH, LITERAL_FINALLY"/>
+        </module>
+
+        <!-- 단독 닫는 중괄호 -->
+        <module name="RightCurly">
+            <property name="id" value="RightCurlyAlone"/>
             <property name="option" value="alone"/>
+            <property name="tokens" value="CLASS_DEF, METHOD_DEF, CTOR_DEF, LITERAL_FOR, LITERAL_WHILE, STATIC_INIT, INSTANCE_INIT"/>
         </module>
 
         <!-- ========================================================= -->
@@ -68,15 +91,26 @@
         <module name="AvoidStarImport"/>
 
         <!-- ========================================================= -->
-        <!-- Javadoc (minimal enforcement, "존재 여부만") -->
+        <!-- Javadoc (존재 여부 검사 추가) -->
         <!-- ========================================================= -->
 
-        <!-- public class / interface / enum -->
-        <!-- ========================================================= -->
-        <!-- Javadoc (존재 여부만 검사, 내용은 강제하지 않음) -->
-        <!-- ========================================================= -->
+        <!-- public 메서드 Javadoc 존재 검사 -->
+        <module name="JavadocMethod">
+            <property name="accessModifiers" value="public"/>
+            <property name="validateThrows" value="false"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowMissingReturnTag" value="true"/>
+        </module>
 
-        <module name="JavadocStyle"/>
+        <!-- public 타입 Javadoc 존재 검사 -->
+        <module name="JavadocType">
+            <property name="scope" value="public"/>
+        </module>
+
+        <!-- Javadoc 스타일 검사 -->
+        <module name="JavadocStyle">
+            <property name="checkFirstSentence" value="false"/>
+        </module>
 
     </module>
 </module>
