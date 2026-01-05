@@ -12,7 +12,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Builder;
 import lombok.Getter;
 
 @Entity
@@ -24,7 +23,6 @@ import lombok.Getter;
 	}
 )
 @Getter
-@Builder
 public class Member {
 
 	/** 사용자 식별자 (내부 식별용, 외부 노출 금지). */
