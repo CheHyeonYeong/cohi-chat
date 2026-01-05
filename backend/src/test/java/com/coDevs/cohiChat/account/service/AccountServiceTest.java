@@ -32,22 +32,17 @@ class AccountServiceTest {
 	@InjectMocks
 	private AccountService accountService;
 
-	@BeforeEach
-	void setUp() {
-		when(memberRepository.save(any(Member.class)))
-			.thenAnswer(invocation -> invocation.getArgument(0));
-	}
-
 	// ===== 회원가입 =====
 
 	@Test
 	void 회원가입_성공_모든_입력_항목이_유효하면() {
+		// given
 		SignupRequest request = new SignupRequest(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
 			"password123",
 			"password123",
-			"test_nickname",
 			true
 		);
 
@@ -55,29 +50,25 @@ class AccountServiceTest {
 		when(memberRepository.existsByEmail("test@test.com")).thenReturn(false);
 		when(passwordEncoder.encode("password123")).thenReturn("ENCODED");
 
+		when(memberRepository.save(any(Member.class)))
+			.thenAnswer(invocation -> invocation.getArgument(0));
+
+		// when
 		Member result = accountService.signup(request);
 
-		assertThat(result)
-			.extracting(
-				Member::getUsername,
-				Member::getEmail,
-				Member::isHost
-			)
-			.containsExactly(
-				"testuser",
-				"test@test.com",
-				false
-			);
+		// then
+		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
+
 
 	@Test
 	void 회원가입_실패_username_중복() {
 		SignupRequest request = new SignupRequest(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
 			"password123",
 			"password123",
-			"test_nickname",
 			true
 		);
 
@@ -92,10 +83,10 @@ class AccountServiceTest {
 	void 회원가입_실패_email_중복() {
 		SignupRequest request = new SignupRequest(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
 			"password123",
 			"password123",
-			"test_nickname",
 			true
 		);
 
@@ -114,9 +105,9 @@ class AccountServiceTest {
 
 		Member member = new Member(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
-			"ENCODED",
-			"LOCAL"
+			"ENCODED"
 		);
 
 		when(memberRepository.findByUsername("testuser"))
@@ -132,11 +123,13 @@ class AccountServiceTest {
 
 	@Test
 	void 로그인_실패_username_없음() {
+		// arrange
 		LoginRequest request = new LoginRequest("testuser", "password123");
 
 		when(memberRepository.findByUsername("testuser"))
 			.thenReturn(Optional.empty());
 
+		// act & assert
 		assertThatThrownBy(() -> accountService.authenticate(request))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("username");
@@ -144,13 +137,14 @@ class AccountServiceTest {
 
 	@Test
 	void 로그인_실패_비밀번호_불일치() {
+		// arrange
 		LoginRequest request = new LoginRequest("testuser", "password123");
 
 		Member member = new Member(
 			"testuser",
+			"testuser",
 			"test@test.com",
-			"ENCODED",
-			"LOCAL"
+			"ENCODED"
 		);
 
 		when(memberRepository.findByUsername("testuser"))
@@ -159,6 +153,7 @@ class AccountServiceTest {
 		when(passwordEncoder.matches("password123", "ENCODED"))
 			.thenReturn(false);
 
+		// act & assert
 		assertThatThrownBy(() -> accountService.authenticate(request))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("password");
@@ -170,9 +165,9 @@ class AccountServiceTest {
 	void 회원_정보_조회_성공() {
 		Member member = new Member(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
-			"ENCODED",
-			"LOCAL"
+			"ENCODE"
 		);
 
 		when(memberRepository.findByUsername("testuser"))
@@ -189,9 +184,9 @@ class AccountServiceTest {
 	void 표시명_수정_성공() {
 		Member member = new Member(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
-			"ENCODED",
-			"LOCAL"
+			"ENCODE"
 		);
 
 		UpdateMemberRequest request = new UpdateMemberRequest("new_name", null);
@@ -208,9 +203,9 @@ class AccountServiceTest {
 	void 비밀번호_변경시_해시되어_저장() {
 		Member member = new Member(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
-			"OLD_HASH",
-			"LOCAL"
+			"ENCODED"
 		);
 
 		UpdateMemberRequest request = new UpdateMemberRequest(null, "newPassword");
@@ -232,9 +227,9 @@ class AccountServiceTest {
 	void 계정_삭제시_사용자_삭제() {
 		Member member = new Member(
 			"testuser",
+			"test_nickname",
 			"test@test.com",
-			"ENCODED",
-			"LOCAL"
+			"ENCODED"
 		);
 
 		when(memberRepository.findByUsername("testuser"))

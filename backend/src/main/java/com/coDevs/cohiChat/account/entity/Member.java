@@ -96,12 +96,12 @@ public class Member {
 	}
 
 	/** 표시 이름 변경. */
-	public void changeDisplayName(String displayName) {
+	public void updateDisplayName(String displayName) {
 		this.displayName = displayName;
 	}
 
 	/** 비밀번호 변경 (암호화된 값만 허용). */
-	public void changePassword(String hashedPassword) {
+	public void updatePassword(String hashedPassword) {
 		this.hashedPassword = hashedPassword;
 	}
 

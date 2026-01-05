@@ -4,7 +4,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.coDevs.cohiChat.account.dto.LoginRequest;
-import com.coDevs.cohiChat.account.dto.LoginResponse;
 import com.coDevs.cohiChat.account.dto.SignupRequest;
 import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
 import com.coDevs.cohiChat.account.entity.Member;
@@ -16,36 +15,91 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountService {
 
-	private final MemberRepository userRepository;
+	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 
 	// 1. 회원가입
 	public Member signup(SignupRequest request) {
-		throw new UnsupportedOperationException("구현 예정");
+
+		if (memberRepository.existsByUsername(request.username())) {
+			throw new IllegalStateException("username");
+		}
+
+		if (memberRepository.existsByEmail(request.email())) {
+			throw new IllegalStateException("email");
+		}
+
+		String encodedPassword =
+			passwordEncoder.encode(request.password());
+
+		Member member = new Member(
+			request.username(),
+			request.displayName(),
+			request.email(),
+			encodedPassword
+		);
+
+		return memberRepository.save(member);
 	}
 
 	// 2. 로그인 인증
 	public Member authenticate(LoginRequest request) {
-		throw new UnsupportedOperationException("구현 예정");
+
+		// 1. username으로 사용자 조회
+		Member member = memberRepository.findByUsername(request.username())
+			.orElseThrow(() -> new IllegalStateException("username"));
+
+		// 2. 비밀번호 검증
+		boolean matches = passwordEncoder.matches(
+			request.password(),
+			member.getHashedPassword()
+		);
+
+		if (!matches) {
+			throw new IllegalStateException("password");
+		}
+
+		// 3. 인증 성공 → Member 반환
+		return member;
 	}
 
 	// 3. 사용자명으로 조회
 	public Member getMemberByUsername(String username) {
-		throw new UnsupportedOperationException("구현 예정");
+		return memberRepository.findByUsername(username)
+			.orElseThrow(() -> new IllegalStateException("username"));
 	}
 
 	// 4. 사용자 정보 수정
 	public Member updateMember(String username, UpdateMemberRequest request) {
-		throw new UnsupportedOperationException("구현 예정");
+
+		Member member = memberRepository.findByUsername(username)
+			.orElseThrow(() -> new IllegalStateException("username"));
+
+		// 표시명 변경
+		if (request.displayName() != null) {
+			member.updateDisplayName(request.displayName());
+		}
+
+		// 비밀번호 변경
+		if (request.password() != null) {
+			String encoded = passwordEncoder.encode(request.password());
+			member.updatePassword(encoded);
+		}
+
+		return member;
 	}
 
 	// 5. 회원 탈퇴
 	public void deleteMember(String username) {
-		throw new UnsupportedOperationException("구현 예정");
+
+		Member member = memberRepository.findByUsername(username)
+			.orElseThrow(() -> new IllegalStateException("username"));
+
+		memberRepository.delete(member);
 	}
 
 	// 6. Username 중복 체크
-	public boolean existsByUsername(String username) {
+/*	public boolean existsByUsername(String username) {
 		throw new UnsupportedOperationException("구현 예정");
 	}
 
@@ -57,6 +111,6 @@ public class AccountService {
 	// 8. 비밀번호 검증
 	public boolean verifyPassword(String rawPassword, String hashedPassword) {
 		throw new UnsupportedOperationException("구현 예정");
-	}
+	}*/
 
 }
