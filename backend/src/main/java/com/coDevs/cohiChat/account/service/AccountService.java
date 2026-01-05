@@ -9,7 +9,6 @@ import com.coDevs.cohiChat.account.dto.SignupRequest;
 import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
 import com.coDevs.cohiChat.account.entity.Member;
 import com.coDevs.cohiChat.account.repository.MemberRepository;
-import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +18,6 @@ public class AccountService {
 
 	private final MemberRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final JwtTokenProvider jwtTokenProvider;
 
 	// 1. 회원가입
 	public Member signup(SignupRequest request) {

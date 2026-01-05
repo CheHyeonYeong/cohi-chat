@@ -1,10 +1,6 @@
 package com.coDevs.cohiChat.account.dto;
 
-import lombok.Builder;
-import lombok.Getter;
 
-@Getter
-@Builder
 public record SignupRequest (
 	String username,
 	String displayName,
