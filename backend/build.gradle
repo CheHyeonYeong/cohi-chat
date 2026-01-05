@@ -18,13 +18,29 @@ repositories {
 	mavenCentral()
 }
 
+//뭐 추가했는지 문서화 필요
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	//Spring Security 추가
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	//Lombok 추가
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	//JPA 추가
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	//AssertJ 추가 (가독성 위해 추가)
+	testImplementation 'org.assertj:assertj-core:3.25.3'
+
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
+

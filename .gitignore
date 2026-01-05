@@ -474,3 +474,8 @@ uploads/
 # Google Cloud credentials and sensitive files
 *credentials*.json
 *service-account*.json
+
+# frontend - local only
+frontend/package-lock.json
+frontend/pnpm-workspace.yaml
+frontend/src/pages/calendar/calendar.css
