@@ -25,7 +25,7 @@ public class AccountService {
 	}
 
 	// 2. 로그인 인증
-	public LoginResponse authenticate(LoginRequest request) {
+	public Member authenticate(LoginRequest request) {
 		throw new UnsupportedOperationException("구현 예정");
 	}
 
