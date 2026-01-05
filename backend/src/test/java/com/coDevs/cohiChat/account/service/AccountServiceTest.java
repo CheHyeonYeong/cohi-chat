@@ -3,10 +3,8 @@ package com.coDevs.cohiChat.account.service;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +18,12 @@ import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
 import com.coDevs.cohiChat.account.entity.Member;
 import com.coDevs.cohiChat.account.repository.MemberRepository;
 
+/**
+ * AccountService의 회원가입 및 회원 삭제 기능을 검증하는 단위 테스트 클래스.
+ *
+ * <p>회원가입 시 입력값 검증, 중복 체크, 비밀번호 암호화 여부를 확인하며,
+ * 회원 삭제 시 저장소에서 정상적으로 삭제 요청이 발생하는지를 검증한다.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
 
@@ -33,9 +37,15 @@ class AccountServiceTest {
 	private AccountService accountService;
 
 	// ===== 회원가입 =====
+	/**
+	 * 모든 입력값이 유효한 경우 회원가입이 성공적으로 수행된다.
+	 *
+	 * <p>username/email 중복이 없고,
+	 * 비밀번호가 정상적으로 암호화되어 저장되는지를 검증한다.</p>
+	 */
 
 	@Test
-	void 회원가입_성공_모든_입력_항목이_유효하면() {
+	void signupSuccessWhenAllInputsAreValid() {
 		// given
 		SignupRequest request = new SignupRequest(
 			"testuser",
@@ -60,9 +70,11 @@ class AccountServiceTest {
 		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
 
-
+	/**
+	 * 이미 존재하는 username으로 회원가입을 시도할 경우 예외가 발생한다.
+	 */
 	@Test
-	void 회원가입_실패_username_중복() {
+	void signupFailWhenUsernameIsDuplicated() {
 		SignupRequest request = new SignupRequest(
 			"testuser",
 			"test_nickname",
@@ -78,9 +90,12 @@ class AccountServiceTest {
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("username");
 	}
+	/**
+	 * 이미 존재하는 email로 회원가입을 시도할 경우 예외가 발생한다.
+	 */
 
 	@Test
-	void 회원가입_실패_email_중복() {
+	void signupFailWhenEmailIsDuplicated() {
 		SignupRequest request = new SignupRequest(
 			"testuser",
 			"test_nickname",
@@ -95,6 +110,27 @@ class AccountServiceTest {
 		assertThatThrownBy(() -> accountService.signup(request))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("email");
+	}
+
+	// ===== 회원 삭제 =====
+	/**
+	 * 회원 삭제 요청 시 해당 사용자가 DB에서 삭제된다.
+	 */
+	@Test
+	void deleteMemberRemovesUser() {
+		Member member = new Member(
+			"testuser",
+			"test_nickname",
+			"test@test.com",
+			"ENCODED"
+		);
+
+		when(memberRepository.findByUsername("testuser"))
+			.thenReturn(Optional.of(member));
+
+		accountService.deleteMember("testuser");
+
+		verify(memberRepository).delete(member);
 	}
 
 	// ===== 로그인 =====
@@ -221,22 +257,4 @@ class AccountServiceTest {
 		assertThat(result.getHashedPassword()).isEqualTo("NEW_HASH");
 	}
 
-	// ===== 회원 삭제 =====
-
-	@Test
-	void 계정_삭제시_사용자_삭제() {
-		Member member = new Member(
-			"testuser",
-			"test_nickname",
-			"test@test.com",
-			"ENCODED"
-		);
-
-		when(memberRepository.findByUsername("testuser"))
-			.thenReturn(Optional.of(member));
-
-		accountService.deleteMember("testuser");
-
-		verify(memberRepository).delete(member);
-	}
 }
