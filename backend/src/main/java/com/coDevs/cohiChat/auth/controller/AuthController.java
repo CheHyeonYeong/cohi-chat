@@ -1,3 +1,4 @@
+/*
 package com.coDevs.cohiChat.auth.controller;
 
 import org.springframework.http.ResponseEntity;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.auth.dto.LoginRequest;
 import com.coDevs.cohiChat.auth.dto.LoginResponse;
-import com.coDevs.cohiChat.auth.service.AuthService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,3 +34,4 @@ public class AuthController {
 		throw new UnsupportedOperationException("구현 예정");
 	}
 }
+*/

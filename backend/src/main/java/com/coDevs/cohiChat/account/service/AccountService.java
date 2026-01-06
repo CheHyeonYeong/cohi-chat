@@ -1,10 +1,11 @@
+/*
 package com.coDevs.cohiChat.account.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.coDevs.cohiChat.auth.dto.LoginRequest;
-import com.coDevs.cohiChat.member.dto.SignupRequestDTO;
+import com.coDevs.cohiChat.member.dto.CreateMemberRequestDTO;
 import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.repository.MemberRepository;
@@ -21,20 +22,20 @@ public class AccountService {
 	private final PasswordEncoder passwordEncoder;
 
 	// 1. 회원가입
-	public Member signup(SignupRequestDTO request) {
+	public Member signup(CreateMemberRequestDTO request) {
 
 		if (memberRepository.existsByUsername(request.username())) {
-			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
+			throw new CustomException(ErrorCode.DUPLICATED_USERNAME_ERROR);
 		}
 
 		if (memberRepository.existsByEmail(request.email())) {
-			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
+			throw new CustomException(ErrorCode.DUPLICATED_EMAIL_ERROR);
 		}
 
 		String encodedPassword =
 			passwordEncoder.encode(request.password());
 
-		Member member = new Member(
+		Member member = Member.create(
 			request.username(),
 			request.displayName(),
 			request.email(),
@@ -101,6 +102,7 @@ public class AccountService {
 	}
 
 	// 6. Username 중복 체크
+*/
 /*	public boolean existsByUsername(String username) {
 		throw new UnsupportedOperationException("구현 예정");
 	}
@@ -113,6 +115,8 @@ public class AccountService {
 	// 8. 비밀번호 검증
 	public boolean verifyPassword(String rawPassword, String hashedPassword) {
 		throw new UnsupportedOperationException("구현 예정");
-	}*/
+	}*//*
+
 
 }
+*/

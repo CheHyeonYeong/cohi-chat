@@ -1,3 +1,4 @@
+/*
 package com.coDevs.cohiChat.auth.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,3 +37,4 @@ public class AuthService {
 		return member;
 	}
 }
+*/

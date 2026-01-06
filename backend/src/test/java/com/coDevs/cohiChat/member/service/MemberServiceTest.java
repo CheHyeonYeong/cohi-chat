@@ -1,24 +1,30 @@
 package com.coDevs.cohiChat.member.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Optional;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.dto.SignupRequestDTO;
+import com.coDevs.cohiChat.member.dto.CreateMemberRequestDTO;
+import com.coDevs.cohiChat.member.dto.CreateMemberResponseDTO;
+import com.coDevs.cohiChat.member.dto.MemberResponseDTO;
 import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.mapper.MemberMapper;
 import com.coDevs.cohiChat.member.repository.MemberRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,171 +35,318 @@ class MemberServiceTest {
 	@Mock
 	private PasswordEncoder passwordEncoder;
 
+	@Mock
+	private MemberMapper memberMapper;
+
 	@InjectMocks
 	private MemberService memberService;
 
-	// ===== 회원가입 =====
-	/**
-	 * 모든 입력값이 유효한 경우 회원가입이 성공적으로 수행된다.
-	 *
-	 * <p>username/email 중복이 없고,
-	 * 비밀번호가 정상적으로 암호화되어 저장되는지를 검증한다.</p>
-	 */
-
 	@Test
-	void signupSuccessWhenAllInputsAreValid() {
-		// given
-		SignupRequestDTO request = new SignupRequestDTO(
+	@DisplayName("성공: 유효한 정보로 회원가입 시 응답 DTO를 반환한다")
+	void signupSuccess() {
+
+		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
 			"testuser",
 			"test_nickname",
 			"test@test.com",
-			"password123",
-			"password123",
-			true
+			"pw123",
+			"pw123",
+			false
 		);
 
-		when(memberRepository.existsByUsername("testuser")).thenReturn(false);
-		when(memberRepository.existsByEmail("test@test.com")).thenReturn(false);
-		when(passwordEncoder.encode("password123")).thenReturn("ENCODED");
+		given(memberRepository
+			.existsByUsername(anyString()))
+			.willReturn(false);
+		given(memberRepository
+			.existsByEmail(anyString())
+		).willReturn(false);
+		given(passwordEncoder
+			.encode(anyString()))
+			.willReturn("ENCODED_PW");
 
-		when(memberRepository.save(any(Member.class)))
-			.thenAnswer(invocation -> invocation.getArgument(0));
+		Member savedMember = Member.create(
+			"testuser",
+			"test_nickname",
+			"test@test.com",
+			"ENCODED_PW",
+			false);
 
-		// when
-		Member result = memberService.signup(request);
+		given(memberRepository
+			.save(any(Member.class)))
+			.willReturn(savedMember);
 
-		// then
-		assertThat(result.getUsername()).isEqualTo("testuser");
+		CreateMemberResponseDTO expected = new CreateMemberResponseDTO(
+			1L, "testuser", "test_nickname", "test@test.com", false, LocalDateTime.now(), LocalDateTime.now()
+		);
+		given(memberMapper.toSignupResponse(any(Member.class)))
+			.willReturn(expected);
+
+
+		CreateMemberResponseDTO result = memberService.signUp(request);
+
+
+		assertThat(result)
+			.isNotNull()
+			.extracting(CreateMemberResponseDTO::username, CreateMemberResponseDTO::email, CreateMemberResponseDTO::displayName)
+			.containsExactly("testuser", "test@test.com", "test_nickname");
+
+		assertThat(result.isHost()).isFalse();
+
+
+		then(memberRepository)
+			.should(times(1)).save(any(Member.class));
 	}
 
-	/**
-	 * 이미 존재하는 username으로 회원가입을 시도할 경우 예외가 발생한다.
-	 */
 	@Test
-	void signupFailWhenUsernameIsDuplicated() {
-		SignupRequestDTO request = new SignupRequestDTO(
+	@DisplayName("실패: 아이디 중복 시 DUPLICATED_USERNAME_ERROR 예외가 발생한다")
+	void signupFailDuplicateUsername() {
+
+		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
 			"testuser",
-			"test_nickname",
+			"nick",
 			"test@test.com",
-			"password123",
-			"password123",
-			true
+			"pw123",
+			"pw123",
+			false
 		);
+		given(memberRepository
+			.existsByUsername("testuser")).willReturn(true);
 
-		when(memberRepository.existsByUsername("testuser"))
-			.thenReturn(true);
 
-		assertThatThrownBy(() ->  memberService.signup(request))
+		assertThatThrownBy(() -> memberService.signUp(request))
 			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
+			.extracting("errorCode") // CustomException 내의 errorCode 필드 추출
 			.isEqualTo(ErrorCode.DUPLICATED_USERNAME_ERROR);
 
+
+		then(memberRepository)
+			.should(never()).existsByEmail(anyString());
+		then(memberRepository)
+			.should(never()).save(any());
 	}
 
-	/**
-	 * 이미 존재하는 email로 회원가입을 시도할 경우 예외가 발생한다.
-	 */
+	@Test
+	@DisplayName("실패: 이메일 중복 시 DUPLICATED_EMAIL_ERROR 예외가 발생한다")
+	void signupFailDuplicateEmail() {
+
+		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
+			"testuser",
+			"nick",
+			"test@test.com",
+			"pw123",
+			"pw123",
+			false
+		);
+		given(memberRepository
+			.existsByUsername("testuser")).willReturn(false);
+		given(memberRepository
+			.existsByEmail("test@test.com")).willReturn(true);
+
+		assertThatThrownBy(() -> memberService.signUp(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATED_EMAIL_ERROR);
+
+		then(memberRepository).should(never()).save(any());
+	}
 
 	@Test
-	void signupFailWhenEmailIsDuplicated() {
-		SignupRequestDTO request = new SignupRequestDTO(
+	@DisplayName("성공: 표시명을 입력하지 않으면 자동으로 생성된다")
+	void signupSuccess_generateDisplayNameWhenNull() {
+
+		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
 			"testuser",
-			"test_nickname",
+			null,
 			"test@test.com",
-			"password123",
-			"password123",
-			true
+			"pw123",
+			"pw123",
+			false
 		);
 
-		when(memberRepository.existsByEmail("test@test.com"))
-			.thenReturn(true);
+		given(memberRepository.existsByUsername(anyString())).willReturn(false);
+		given(memberRepository.existsByEmail(anyString())).willReturn(false);
+		given(passwordEncoder.encode(anyString())).willReturn("ENCODED_PW");
 
-		assertThatThrownBy(() ->  memberService.signup(request))
+		given(memberRepository.save(any(Member.class)))
+			.willAnswer(inv -> inv.getArgument(0));
+
+		given(memberMapper.toSignupResponse(any(Member.class)))
+			.willAnswer(inv -> {
+				Member member = inv.getArgument(0);
+
+				return new CreateMemberResponseDTO(
+					1L,
+					member.getUsername(),
+					member.getDisplayName(),
+					member.getEmail(),
+					member.isHost(),
+					LocalDateTime.now(),
+					LocalDateTime.now()
+				);
+			});
+
+		CreateMemberResponseDTO result = memberService.signUp(request);
+
+		assertThat(result.displayName())
+			.isNotNull()
+			.hasSize(8);
+	}
+
+	@Test
+	@DisplayName("성공: username으로 사용자를 조회하면 MemberResponseDTO를 반환한다")
+	void getByUsername_success() {
+
+		Member member = Member.builder()
+			.id(1L)
+			.username("testuser")
+			.email("test@test.com")
+			.displayName("oldName")
+			.hashedPassword("OLD_PW")
+			.isHost(false)
+			.createdAt(LocalDateTime.now().minusDays(1))
+			.updatedAt(LocalDateTime.now().minusDays(1))
+			.build();
+
+		MemberResponseDTO response = new MemberResponseDTO(
+			1L, "testuser", "nickname", "test@test.com", false,
+			LocalDateTime.now(), LocalDateTime.now()
+		);
+
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.of(member));
+		given(memberMapper.toResponse(member))
+			.willReturn(response);
+
+		MemberResponseDTO result = memberService.getByUsername("testuser");
+
+		assertThat(result)
+			.extracting(
+				MemberResponseDTO::username,
+				MemberResponseDTO::email,
+				MemberResponseDTO::displayName,
+				MemberResponseDTO::isHost
+			)
+			.containsExactly(
+				"testuser",
+				"test@test.com",
+				"nickname",
+				false
+			);
+
+		then(memberRepository).should().findByUsername("testuser");
+		then(memberMapper).should().toResponse(member);
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 username으로 조회하면 USER_NOT_FOUND_ERROR가 발생한다")
+	void getByUsername_fail_userNotFound() {
+
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.getByUsername("testuser"))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_EMAIL_ERROR);
+			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
+
+		then(memberMapper).shouldHaveNoInteractions();
 	}
 
-	// ===== 회원 삭제 =====
-	/**
-	 * 회원 삭제 요청 시 해당 사용자가 DB에서 삭제된다.
-	 */
-	@Test
-	void deleteMemberRemovesUser() {
-		Member member = new Member(
-			"testuser",
-			"test_nickname",
-			"test@test.com",
-			"ENCODED"
-		);
-
-		when(memberRepository.findByUsername("testuser"))
-			.thenReturn(Optional.of(member));
-
-		memberService.deleteUser("testuser");
-
-		verify(memberRepository).delete(member);
-	}
-
-	// ===== 회원 조회 =====
+	// ================= 3. 사용자 정보 수정 =================
 
 	@Test
-	void 회원_정보_조회_성공() {
-		Member member = new Member(
-			"testuser",
-			"test_nickname",
-			"test@test.com",
-			"ENCODE"
+	@DisplayName("성공: displayName과 password를 수정하면 변경된 정보가 반환된다")
+	void updateMember_success() {
+
+		Member member = Member.builder()
+			.id(1L)
+			.username("testuser")
+			.email("test@test.com")
+			.displayName("oldName")
+			.hashedPassword("OLD_PW")
+			.isHost(false)
+			.createdAt(LocalDateTime.now().minusDays(1))
+			.updatedAt(LocalDateTime.now().minusDays(1))
+			.build();
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(
+			"newName",
+			"newPassword"
 		);
 
-		when(memberRepository.findByUsername("testuser"))
-			.thenReturn(Optional.of(member));
-
-		Member result =  memberService.getByUsername("testuser");
-
-		assertThat(result.getUsername()).isEqualTo("testuser");
-	}
-
-	// ===== 회원 수정 =====
-
-	@Test
-	void shouldUpdateDisplayNameSuccessfully() {
-		Member member = new Member(
-			"testuser",
-			"test_nickname",
-			"test@test.com",
-			"ENCODE"
+		MemberResponseDTO response = new MemberResponseDTO(
+			1L, "testuser", "newName", "test@test.com", false,
+			LocalDateTime.now(), LocalDateTime.now()
 		);
 
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("new_name", null);
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPassword"))
+			.willReturn("ENCODED_PW");
+		given(memberMapper.toResponse(member))
+			.willReturn(response);
 
-		when(memberRepository.findByUsername("testuser"))
-			.thenReturn(Optional.of(member));
+		MemberResponseDTO result = memberService.updateMember("testuser", request);
 
-		Member result =  memberService.updateUser("testuser", request);
+		assertThat(result.displayName()).isEqualTo("newName");
 
-		assertThat(result.getDisplayName()).isEqualTo("new_name");
+		then(passwordEncoder).should().encode("newPassword");
+		then(memberRepository).should(never()).save(any());
+		then(memberMapper).should().toResponse(member);
 	}
 
 	@Test
-	void shouldEncodePassword_whenPasswordIsUpdated() {
-		Member member = new Member(
-			"testuser",
-			"test_nickname",
-			"test@test.com",
-			"ENCODED"
+	@DisplayName("실패: 수정 시 username이 존재하지 않으면 USER_NOT_FOUND_ERROR가 발생한다")
+	void updateMember_fail_userNotFound() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(
+			"newName",
+			"newPassword"
 		);
 
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(null, "newPassword");
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.empty());
 
-		when(memberRepository.findByUsername("testuser"))
-			.thenReturn(Optional.of(member));
+		assertThatThrownBy(() -> memberService.updateMember("testuser", request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
 
-		when(passwordEncoder.encode("newPassword"))
-			.thenReturn("NEW_HASH");
-
-		Member result =  memberService.updateUser("testuser", request);
-
-		assertThat(result.getHashedPassword()).isEqualTo("NEW_HASH");
+		then(passwordEncoder).shouldHaveNoInteractions();
+		then(memberMapper).shouldHaveNoInteractions();
 	}
+
+	// ================= 4. 회원 탈퇴 =================
+
+	@Test
+	@DisplayName("성공: 회원 탈퇴 시 해당 회원이 삭제된다")
+	void deleteMember_success() {
+
+		Member member = Member.builder()
+			.id(1L)
+			.username("testuser")
+			.build();
+
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.of(member));
+
+		memberService.deleteMember("testuser");
+
+		then(memberRepository).should().delete(member);
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 회원을 탈퇴하면 USER_NOT_FOUND_ERROR가 발생한다")
+	void deleteMember_fail_userNotFound() {
+
+		given(memberRepository.findByUsername("testuser"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.deleteMember("testuser"))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
+
+		then(memberRepository).should(never()).delete(any());
+	}
+
 }

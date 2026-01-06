@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.member.dto.MemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.SignupRequestDTO;
-import com.coDevs.cohiChat.member.dto.SignupResponseDTO;
+import com.coDevs.cohiChat.member.dto.CreateMemberRequestDTO;
+import com.coDevs.cohiChat.member.dto.CreateMemberResponseDTO;
 import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.service.MemberService;
 
@@ -27,8 +27,8 @@ public class MemberController {
 	private final MemberService memberService;
 
 	@PostMapping("/signup")
-	public ResponseEntity<SignupResponseDTO> signup(
-		@RequestBody SignupRequestDTO request
+	public ResponseEntity<CreateMemberResponseDTO> signup(
+		@RequestBody CreateMemberRequestDTO request
 	) {
 		throw new UnsupportedOperationException("구현 예정");
 	}
