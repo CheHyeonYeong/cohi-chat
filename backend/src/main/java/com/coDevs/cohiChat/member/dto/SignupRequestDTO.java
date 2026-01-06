@@ -1,7 +1,7 @@
-package com.coDevs.cohiChat.account.dto;
+package com.coDevs.cohiChat.member.dto;
 
 
-public record SignupRequest (
+public record SignupRequestDTO(
 	String username,
 	String displayName,
 	String email,

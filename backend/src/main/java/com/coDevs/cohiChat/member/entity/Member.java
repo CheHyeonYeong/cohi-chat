@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.account.entity;
+package com.coDevs.cohiChat.member.entity;
 
 import java.time.LocalDateTime;
 

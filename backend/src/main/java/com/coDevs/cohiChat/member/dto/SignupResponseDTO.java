@@ -1,13 +1,14 @@
-package com.coDevs.cohiChat.account.dto;
+package com.coDevs.cohiChat.member.dto;
 
 import java.time.LocalDateTime;
 
-public record MemberDetailResponse(
-	Integer id,
+public record SignupResponseDTO(
+	Long id,
 	String username,
 	String displayName,
 	String email,
 	Boolean isHost,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
-) {}
+) {
+}

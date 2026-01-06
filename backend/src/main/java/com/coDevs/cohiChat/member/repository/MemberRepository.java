@@ -1,10 +1,10 @@
-package com.coDevs.cohiChat.account.repository;
+package com.coDevs.cohiChat.member.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.coDevs.cohiChat.account.entity.Member;
+import com.coDevs.cohiChat.member.entity.Member;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 	// 1. Username으로 조회
