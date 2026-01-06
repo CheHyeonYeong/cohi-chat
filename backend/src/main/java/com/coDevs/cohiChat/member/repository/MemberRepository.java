@@ -6,14 +6,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.coDevs.cohiChat.member.entity.Member;
 
+/**
+ * 회원 엔티티에 대한 데이터 액세스를 담당하는 리포지토리.
+ * * - 중복 가입 방지를 위한 식별값(아이디, 이메일) 존재 여부를 확인한다.
+ * - 인증 및 정보 조회를 위한 계정 조회 기능을 제공한다.
+ */
 public interface MemberRepository extends JpaRepository<Member, Long> {
-	// 1. Username으로 조회
+
 	Optional<Member> findByUsername(String username);
 
-	// 2. Username 존재 여부
 	boolean existsByUsername(String username);
 
-	// 3. Email 존재 여부
 	boolean existsByEmail(String email);
 
 }

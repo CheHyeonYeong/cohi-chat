@@ -18,6 +18,12 @@ import com.coDevs.cohiChat.member.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 회원 관리 비즈니스 로직을 처리하는 서비스.
+ *
+ * - 회원가입, 정보 수정, 계정 삭제 등 사용자 신원 관리 전반을 담당한다.
+ * - 패스워드 암호화 및 식별값 중복 검증을 수행한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -26,7 +32,13 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final MemberMapper memberMapper;
 
-	// 1. 회원가입
+	/**
+	 * 신규 회원을 등록한다.
+	 *
+	 * @param request 가입에 필요한 사용자 입력 정보
+	 * @return 가입 완료된 회원 정보
+	 * @throws CustomException 비밀번호 불일치, 아이디 중복, 또는 이메일 중복 시 발생
+	 */
 	@Transactional
 	public CreateMemberResponseDTO signUp(CreateMemberRequestDTO request) {
 
@@ -68,7 +80,13 @@ public class MemberService {
 			.substring(0, 8);
 	}
 
-	// 2. 사용자 조회
+	/**
+	 * 사용자 아이디로 회원 상세 정보를 조회한다.
+	 *
+	 * @param username 조회할 사용자 아이디
+	 * @return 회원 응답 정보
+	 * @throws CustomException 사용자를 찾을 수 없을 경우 발생
+	 */
 	public MemberResponseDTO getByUsername(String username) {
 
 		Member member = memberRepository.findByUsername(username)
@@ -79,7 +97,14 @@ public class MemberService {
 		return memberMapper.toResponse(member);
 	}
 
-	// 3. 사용자 정보 수정
+	/**
+	 * 회원 프로필 정보를 수정한다.
+	 *
+	 * @param username 대상 사용자 아이디
+	 * @param request 변경할 필드 정보 (Nullable)
+	 * @return 수정된 회원 정보
+	 */
+	@Transactional
 	public MemberResponseDTO updateMember(String username, UpdateMemberRequestDTO request) {
 
 		Member member = memberRepository.findByUsername(username)
@@ -100,7 +125,12 @@ public class MemberService {
 		return memberMapper.toResponse(member);
 	}
 
-	// 4. 회원 탈퇴
+	/**
+	 * 회원 계정을 삭제(탈퇴) 처리한다.
+	 *
+	 * @param username 탈퇴할 사용자 아이디
+	 */
+	@Transactional
 	public void deleteMe(String username) {
 		Member member = getMemberEntityByUsername(username);
 		memberRepository.delete(member);

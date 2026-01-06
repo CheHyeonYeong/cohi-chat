@@ -13,19 +13,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 서비스의 회원 정보를 관리하는 도메인 엔티티.
+ *
+ * - 회원의 기본 계정 정보와 권한 상태를 관리한다.
+ * - 중복된 이메일과 아이디는 허용하지 않는다.
+ */
 @Entity
-@Table(
-	name = "member",
-	uniqueConstraints = {
-		@UniqueConstraint(columnNames = "username"),
-		@UniqueConstraint(columnNames = "email")
-	}
-)
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 public class Member {
@@ -59,10 +56,9 @@ public class Member {
 		// JPA 전용
 	}
 
-	/* =====================
-	   생성 로직 (팩토리)
-	   ===================== */
-
+	/**
+	 * 신규 회원 엔티티를 생성한다.
+	 */
 	public static Member create(
 		String username,
 		String displayName,
@@ -79,26 +75,23 @@ public class Member {
 		return member;
 	}
 
-	/* =====================
-	   상태 전이 (행위)
-	   ===================== */
-
+	/**
+	 * 표시명을 변경한다.
+	 */
 	public void updateDisplayName(String displayName) {
 		this.displayName = displayName;
 	}
 
+	/**
+	 * 비밀번호를 변경한다.
+	 */
 	public void updatePassword(String hashedPassword) {
 		this.hashedPassword = hashedPassword;
 	}
 
-	public void promoteToHost() {
-		this.isHost = true;
-	}
-
-	public void demoteFromHost() {
-		this.isHost = false;
-	}
-
+	/**
+	 * 테스트 코드용 생성자로, 실제 Service 계층에선 사용하지 않는다.
+	 */
 	@Builder
 	private Member(
 		Long id,
@@ -119,10 +112,6 @@ public class Member {
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 	}
-
-	/* =====================
-	   생명주기 콜백
-	   ===================== */
 
 	@PrePersist
 	protected void onCreate() {
