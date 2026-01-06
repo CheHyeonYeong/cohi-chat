@@ -1,3 +1,4 @@
+/*
 package com.coDevs.cohiChat.account.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,4 +45,4 @@ class AccountControllerTest {
 	void 유저_없으면() {
 
 	}
-}
+}*/

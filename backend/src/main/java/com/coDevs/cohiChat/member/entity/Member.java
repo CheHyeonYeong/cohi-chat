@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.member.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
