@@ -8,6 +8,8 @@ import com.coDevs.cohiChat.account.dto.SignupRequest;
 import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
 import com.coDevs.cohiChat.account.entity.Member;
 import com.coDevs.cohiChat.account.repository.MemberRepository;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,11 +24,11 @@ public class AccountService {
 	public Member signup(SignupRequest request) {
 
 		if (memberRepository.existsByUsername(request.username())) {
-			throw new IllegalStateException("username");
+			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
 		}
 
 		if (memberRepository.existsByEmail(request.email())) {
-			throw new IllegalStateException("email");
+			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
 		}
 
 		String encodedPassword =

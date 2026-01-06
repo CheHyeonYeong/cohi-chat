@@ -17,6 +17,8 @@ import com.coDevs.cohiChat.account.dto.SignupRequest;
 import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
 import com.coDevs.cohiChat.account.entity.Member;
 import com.coDevs.cohiChat.account.repository.MemberRepository;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 
 /**
  * AccountService의 회원가입 및 회원 삭제 기능을 검증하는 단위 테스트 클래스.
@@ -84,12 +86,16 @@ class AccountServiceTest {
 			true
 		);
 
-		when(memberRepository.existsByUsername("testuser")).thenReturn(true);
+		when(memberRepository.existsByUsername("testuser"))
+			.thenReturn(true);
 
 		assertThatThrownBy(() -> accountService.signup(request))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("username");
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
+
 	}
+
 	/**
 	 * 이미 존재하는 email로 회원가입을 시도할 경우 예외가 발생한다.
 	 */
@@ -105,11 +111,13 @@ class AccountServiceTest {
 			true
 		);
 
-		when(memberRepository.existsByEmail("test@test.com")).thenReturn(true);
+		when(memberRepository.existsByEmail("test@test.com"))
+			.thenReturn(true);
 
 		assertThatThrownBy(() -> accountService.signup(request))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("email");
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
 	}
 
 	// ===== 회원 삭제 =====
