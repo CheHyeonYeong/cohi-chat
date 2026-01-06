@@ -38,6 +38,11 @@ dependencies {
 	//AssertJ 추가 (가독성 위해 추가)
 	testImplementation 'org.assertj:assertj-core:3.25.3'
 
+	//MapStruct 추가 -> lombok보다 아래 있어야 적용됨
+	implementation 'org.mapstruct:mapstruct:1.6.3'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+	testAnnotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"
+
 }
 
 tasks.named('test') {

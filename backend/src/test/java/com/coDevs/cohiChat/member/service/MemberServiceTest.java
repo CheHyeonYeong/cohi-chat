@@ -86,7 +86,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() ->  memberService.signup(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
+			.isEqualTo(ErrorCode.DUPLICATED_USERNAME_ERROR);
 
 	}
 
@@ -111,7 +111,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() ->  memberService.signup(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
+			.isEqualTo(ErrorCode.DUPLICATED_EMAIL_ERROR);
 	}
 
 	// ===== 회원 삭제 =====

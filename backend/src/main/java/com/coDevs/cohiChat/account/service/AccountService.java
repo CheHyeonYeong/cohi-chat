@@ -3,11 +3,11 @@ package com.coDevs.cohiChat.account.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.coDevs.cohiChat.account.dto.LoginRequest;
-import com.coDevs.cohiChat.account.dto.SignupRequest;
-import com.coDevs.cohiChat.account.dto.UpdateMemberRequest;
-import com.coDevs.cohiChat.account.entity.Member;
-import com.coDevs.cohiChat.account.repository.MemberRepository;
+import com.coDevs.cohiChat.auth.dto.LoginRequest;
+import com.coDevs.cohiChat.member.dto.SignupRequestDTO;
+import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.repository.MemberRepository;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 
@@ -21,7 +21,7 @@ public class AccountService {
 	private final PasswordEncoder passwordEncoder;
 
 	// 1. 회원가입
-	public Member signup(SignupRequest request) {
+	public Member signup(SignupRequestDTO request) {
 
 		if (memberRepository.existsByUsername(request.username())) {
 			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
@@ -72,7 +72,7 @@ public class AccountService {
 	}
 
 	// 4. 사용자 정보 수정
-	public Member updateMember(String username, UpdateMemberRequest request) {
+	public Member updateMember(String username, UpdateMemberRequestDTO request) {
 
 		Member member = memberRepository.findByUsername(username)
 			.orElseThrow(() -> new IllegalStateException("username"));
