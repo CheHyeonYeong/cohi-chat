@@ -329,7 +329,7 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername("testuser"))
 			.willReturn(Optional.of(member));
 
-		memberService.deleteMember("testuser");
+		memberService.deleteMe("testuser");
 
 		then(memberRepository).should().delete(member);
 	}
@@ -341,7 +341,7 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername("testuser"))
 			.willReturn(Optional.empty());
 
-		assertThatThrownBy(() -> memberService.deleteMember("testuser"))
+		assertThatThrownBy(() -> memberService.deleteMe("testuser"))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);

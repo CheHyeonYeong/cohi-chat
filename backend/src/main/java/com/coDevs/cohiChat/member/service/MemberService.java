@@ -101,7 +101,7 @@ public class MemberService {
 	}
 
 	// 4. 회원 탈퇴
-	public void deleteMember(String username) {
+	public void deleteMe(String username) {
 		Member member = getMemberEntityByUsername(username);
 		memberRepository.delete(member);
 	}
