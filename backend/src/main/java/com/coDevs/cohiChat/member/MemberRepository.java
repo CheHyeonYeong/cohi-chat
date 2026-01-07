@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.member.repository;
+package com.coDevs.cohiChat.member;
 
 import java.util.Optional;
 

@@ -3,8 +3,8 @@ package com.coDevs.cohiChat.member.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import com.coDevs.cohiChat.member.dto.MemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.CreateMemberResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.member.response.CreateMemberResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 
 @Mapper(componentModel = "spring")

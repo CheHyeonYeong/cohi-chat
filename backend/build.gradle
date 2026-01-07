@@ -52,6 +52,9 @@ dependencies {
 	//Swagger 추가
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
+	//@WithMockUser 테스트 관련 추가
+	testImplementation 'org.springframework.security:spring-security-test'
+
 }
 
 tasks.named('test') {

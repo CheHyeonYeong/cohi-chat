@@ -1,13 +1,12 @@
 package com.coDevs.cohiChat.member.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.LocalDateTime;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,13 +18,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.dto.CreateMemberRequestDTO;
-import com.coDevs.cohiChat.member.dto.CreateMemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.MemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.MemberService;
+import com.coDevs.cohiChat.member.request.CreateMemberRequestDTO;
+import com.coDevs.cohiChat.member.response.CreateMemberResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.mapper.MemberMapper;
-import com.coDevs.cohiChat.member.repository.MemberRepository;
+import com.coDevs.cohiChat.member.MemberRepository;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
@@ -76,7 +76,7 @@ class MemberServiceTest {
 			.willReturn(savedMember);
 
 		CreateMemberResponseDTO expected = new CreateMemberResponseDTO(
-			1L, "testuser", "test_nickname", "test@test.com", false, LocalDateTime.now(), LocalDateTime.now()
+			UUID.randomUUID(), "testuser", "test_nickname", "test@test.com", false, LocalDateTime.now(), LocalDateTime.now()
 		);
 		given(memberMapper.toSignupResponse(any(Member.class)))
 			.willReturn(expected);
@@ -116,7 +116,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.signUp(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode") // CustomException 내의 errorCode 필드 추출
-			.isEqualTo(ErrorCode.DUPLICATED_USERNAME_ERROR);
+			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
 
 
 		then(memberRepository)
@@ -144,14 +144,14 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.signUp(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATED_EMAIL_ERROR);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATED_EMAIL);
 
 		then(memberRepository).should(never()).save(any());
 	}
 
 	@Test
 	@DisplayName("성공: 표시명을 입력하지 않으면 자동으로 생성된다")
-	void signupSuccess_generateDisplayNameWhenNull() {
+	void signupSuccessGenerateDisplayNameWhenNull() {
 
 		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
 			"testuser",
@@ -174,7 +174,7 @@ class MemberServiceTest {
 				Member member = inv.getArgument(0);
 
 				return new CreateMemberResponseDTO(
-					1L,
+					UUID.randomUUID(),
 					member.getUsername(),
 					member.getDisplayName(),
 					member.getEmail(),
@@ -193,10 +193,10 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("성공: username으로 사용자를 조회하면 MemberResponseDTO를 반환한다")
-	void getByUsername_success() {
+	void getByUsernameSuccess() {
 
 		Member member = Member.builder()
-			.id(1L)
+			.id(UUID.randomUUID())
 			.username("testuser")
 			.email("test@test.com")
 			.displayName("oldName")
@@ -207,7 +207,7 @@ class MemberServiceTest {
 			.build();
 
 		MemberResponseDTO response = new MemberResponseDTO(
-			1L, "testuser", "nickname", "test@test.com", false,
+			UUID.randomUUID(), "testuser", "nickname", "test@test.com", false,
 			LocalDateTime.now(), LocalDateTime.now()
 		);
 
@@ -238,7 +238,7 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("실패: 존재하지 않는 username으로 조회하면 USER_NOT_FOUND_ERROR가 발생한다")
-	void getByUsername_fail_userNotFound() {
+	void getByUsernameFailUserNotFound() {
 
 		given(memberRepository.findByUsername("testuser"))
 			.willReturn(Optional.empty());
@@ -246,7 +246,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.getByUsername("testuser"))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
 
 		then(memberMapper).shouldHaveNoInteractions();
 	}
@@ -255,10 +255,10 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("성공: displayName과 password를 수정하면 변경된 정보가 반환된다")
-	void updateMember_success() {
+	void updateMemberSuccess() {
 
 		Member member = Member.builder()
-			.id(1L)
+			.id(UUID.randomUUID())
 			.username("testuser")
 			.email("test@test.com")
 			.displayName("oldName")
@@ -274,7 +274,7 @@ class MemberServiceTest {
 		);
 
 		MemberResponseDTO response = new MemberResponseDTO(
-			1L, "testuser", "newName", "test@test.com", false,
+			UUID.randomUUID(), "testuser", "newName", "test@test.com", false,
 			LocalDateTime.now(), LocalDateTime.now()
 		);
 
@@ -296,7 +296,7 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("실패: 수정 시 username이 존재하지 않으면 USER_NOT_FOUND_ERROR가 발생한다")
-	void updateMember_fail_userNotFound() {
+	void updateMemberFailUserNotFound() {
 
 		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(
 			"newName",
@@ -309,7 +309,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.updateMember("testuser", request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
 
 		then(passwordEncoder).shouldHaveNoInteractions();
 		then(memberMapper).shouldHaveNoInteractions();
@@ -319,10 +319,10 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("성공: 회원 탈퇴 시 해당 회원이 삭제된다")
-	void deleteMember_success() {
+	void deleteMemberSuccess() {
 
 		Member member = Member.builder()
-			.id(1L)
+			.id(UUID.randomUUID())
 			.username("testuser")
 			.build();
 
@@ -336,7 +336,7 @@ class MemberServiceTest {
 
 	@Test
 	@DisplayName("실패: 존재하지 않는 회원을 탈퇴하면 USER_NOT_FOUND_ERROR가 발생한다")
-	void deleteMember_fail_userNotFound() {
+	void deleteMemberFailUserNotFound() {
 
 		given(memberRepository.findByUsername("testuser"))
 			.willReturn(Optional.empty());
@@ -344,7 +344,7 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.deleteMe("testuser"))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND_ERROR);
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
 
 		then(memberRepository).should(never()).delete(any());
 	}
