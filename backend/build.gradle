@@ -18,41 +18,31 @@ repositories {
 	mavenCentral()
 }
 
-//뭐 추가했는지 문서화 필요
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-	//Spring Security 추가
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
-	//Lombok 추가
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
-	//JPA 추가
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	//SQLite JDBC
 	runtimeOnly 'org.xerial:sqlite-jdbc:3.45.2.0'
 
-	// Hibernate SQLite dialect
 	implementation 'org.hibernate.orm:hibernate-community-dialects'
 
-	//AssertJ 추가 (가독성 위해 추가)
 	testImplementation 'org.assertj:assertj-core:3.25.3'
 
-	//MapStruct 추가 -> lombok보다 아래 있어야 적용됨
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 	testAnnotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"
 
-	//Swagger 추가
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
-	//@WithMockUser 테스트 관련 추가
 	testImplementation 'org.springframework.security:spring-security-test'
 
 }
@@ -60,4 +50,3 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
-

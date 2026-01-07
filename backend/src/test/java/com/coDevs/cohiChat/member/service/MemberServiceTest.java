@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member.service;
 
+import static com.coDevs.cohiChat.member.fixture.MemberFixture.*;
 import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
@@ -50,7 +51,6 @@ class MemberServiceTest {
 			"test_nickname",
 			"test@test.com",
 			"pw123",
-			"pw123",
 			false
 		);
 
@@ -64,12 +64,12 @@ class MemberServiceTest {
 			.encode(anyString()))
 			.willReturn("ENCODED_PW");
 
-		Member savedMember = Member.create(
+		Member savedMember = create(
 			"testuser",
 			"test_nickname",
 			"test@test.com",
-			"ENCODED_PW",
-			false);
+			false
+		);
 
 		given(memberRepository
 			.save(any(Member.class)))
@@ -79,11 +79,12 @@ class MemberServiceTest {
 			UUID.randomUUID(), "testuser", "test_nickname", "test@test.com", false, LocalDateTime.now(), LocalDateTime.now()
 		);
 		given(memberMapper.toSignupResponse(any(Member.class)))
-			.willReturn(expected);
-
+			.willReturn(new CreateMemberResponseDTO(
+				UUID.randomUUID(), "testuser", "test_nickname", "test@test.com", false,
+				LocalDateTime.now(), LocalDateTime.now()
+			));
 
 		CreateMemberResponseDTO result = memberService.signUp(request);
-
 
 		assertThat(result)
 			.isNotNull()
@@ -105,7 +106,6 @@ class MemberServiceTest {
 			"testuser",
 			"nick",
 			"test@test.com",
-			"pw123",
 			"pw123",
 			false
 		);
@@ -134,7 +134,6 @@ class MemberServiceTest {
 			"nick",
 			"test@test.com",
 			"pw123",
-			"pw123",
 			false
 		);
 		given(memberRepository
@@ -157,7 +156,6 @@ class MemberServiceTest {
 			"testuser",
 			null,
 			"test@test.com",
-			"pw123",
 			"pw123",
 			false
 		);
@@ -195,16 +193,7 @@ class MemberServiceTest {
 	@DisplayName("성공: username으로 사용자를 조회하면 MemberResponseDTO를 반환한다")
 	void getByUsernameSuccess() {
 
-		Member member = Member.builder()
-			.id(UUID.randomUUID())
-			.username("testuser")
-			.email("test@test.com")
-			.displayName("oldName")
-			.hashedPassword("OLD_PW")
-			.isHost(false)
-			.createdAt(LocalDateTime.now().minusDays(1))
-			.updatedAt(LocalDateTime.now().minusDays(1))
-			.build();
+		Member member = withId(UUID.randomUUID());
 
 		MemberResponseDTO response = new MemberResponseDTO(
 			UUID.randomUUID(), "testuser", "nickname", "test@test.com", false,
@@ -251,22 +240,11 @@ class MemberServiceTest {
 		then(memberMapper).shouldHaveNoInteractions();
 	}
 
-	// ================= 3. 사용자 정보 수정 =================
-
 	@Test
 	@DisplayName("성공: displayName과 password를 수정하면 변경된 정보가 반환된다")
 	void updateMemberSuccess() {
 
-		Member member = Member.builder()
-			.id(UUID.randomUUID())
-			.username("testuser")
-			.email("test@test.com")
-			.displayName("oldName")
-			.hashedPassword("OLD_PW")
-			.isHost(false)
-			.createdAt(LocalDateTime.now().minusDays(1))
-			.updatedAt(LocalDateTime.now().minusDays(1))
-			.build();
+		Member member = withId(UUID.randomUUID());
 
 		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(
 			"newName",
@@ -315,16 +293,11 @@ class MemberServiceTest {
 		then(memberMapper).shouldHaveNoInteractions();
 	}
 
-	// ================= 4. 회원 탈퇴 =================
-
 	@Test
 	@DisplayName("성공: 회원 탈퇴 시 해당 회원이 삭제된다")
 	void deleteMemberSuccess() {
 
-		Member member = Member.builder()
-			.id(UUID.randomUUID())
-			.username("testuser")
-			.build();
+		Member member = withId(UUID.randomUUID());
 
 		given(memberRepository.findByUsername("testuser"))
 			.willReturn(Optional.of(member));
