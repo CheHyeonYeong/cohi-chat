@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.NicknameGenerator;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.mapper.MemberMapper;
 import com.coDevs.cohiChat.member.request.CreateMemberRequestDTO;
@@ -22,6 +23,7 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final MemberMapper memberMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final NicknameGenerator nicknameGenerator;
 
 	@Transactional
 	public CreateMemberResponseDTO signUp(CreateMemberRequestDTO request) {
@@ -38,7 +40,7 @@ public class MemberService {
 
 		String displayName = request.displayName();
 		if (displayName == null || displayName.isBlank()) {
-			displayName = generateRandomDisplayName();
+			displayName = nicknameGenerator.generate();
 		}
 		Member member = Member.create(
 			request.username(),
@@ -51,11 +53,6 @@ public class MemberService {
 		Member savedMember = memberRepository.save(member);
 
 		return memberMapper.toSignupResponse(savedMember);
-	}
-
-	private String generateRandomDisplayName() {
-
-		return "임시닉네임123";
 	}
 
 	public MemberResponseDTO getByUsername(String username) {

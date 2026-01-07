@@ -2,10 +2,9 @@ package com.coDevs.cohiChat.global.util;
 
 import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
+import java.util.stream.Collectors; // 추가 필요
+import java.util.stream.Stream;    // 추가 필요
 
-/**
- * 랜덤 닉네임을 생성하는 유틸리티 클래스
- */
 @Component
 public class NicknameGenerator {
 
@@ -16,12 +15,11 @@ public class NicknameGenerator {
 	private static final SecureRandom RANDOM = new SecureRandom();
 
 	/**
-	 * 3단계 단어 조합을 통해 랜덤 닉네임을 생성합니다.
-	 * @return 생성된 랜덤 닉네임 (예: 달콤한 라떼 개발자)
+	 * Stream API를 사용하여 랜덤 닉네임을 생성합니다.
 	 */
 	public String generate() {
-		return FIRST[RANDOM.nextInt(FIRST.length)] + " " +
-			SECOND[RANDOM.nextInt(SECOND.length)] + " " +
-			THIRD[RANDOM.nextInt(THIRD.length)];
+		return Stream.of(FIRST, SECOND, THIRD)
+			.map(arr -> arr[RANDOM.nextInt(arr.length)])
+			.collect(Collectors.joining(" "));
 	}
 }
