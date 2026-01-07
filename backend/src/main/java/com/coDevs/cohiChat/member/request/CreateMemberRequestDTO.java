@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.member.dto;
+package com.coDevs.cohiChat.member.request;
 
 /**
  * 신규 회원 가입 요청 데이터를 담는 DTO.

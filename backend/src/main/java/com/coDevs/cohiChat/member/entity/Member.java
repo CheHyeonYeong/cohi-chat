@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.member.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -28,16 +29,17 @@ import lombok.Getter;
 public class Member {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	@Column(columnDefinition = "BINARY(16)")
+	private UUID id;
 
-	@Column(length = 50, nullable = false, updatable = false)
+	@Column(length = 50, nullable = false, updatable = false, unique = true)
 	private String username;
 
 	@Column(name = "display_name", length = 50, nullable = false)
 	private String displayName;
 
-	@Column(length = 255, nullable = false)
+	@Column(length = 255, nullable = false, unique = true)
 	private String email;
 
 	@Column(name = "hashed_password", nullable = false)
@@ -94,7 +96,7 @@ public class Member {
 	 */
 	@Builder
 	private Member(
-		Long id,
+		UUID id,
 		String username,
 		String displayName,
 		String email,

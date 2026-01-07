@@ -1,6 +1,6 @@
-package com.coDevs.cohiChat.member.service;
+package com.coDevs.cohiChat.member;
 
-import java.util.UUID;
+import java.security.SecureRandom;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -8,13 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.dto.CreateMemberRequestDTO;
-import com.coDevs.cohiChat.member.dto.CreateMemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.MemberResponseDTO;
-import com.coDevs.cohiChat.member.dto.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.request.CreateMemberRequestDTO;
+import com.coDevs.cohiChat.member.response.CreateMemberResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.mapper.MemberMapper;
-import com.coDevs.cohiChat.member.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,21 +42,21 @@ public class MemberService {
 	public CreateMemberResponseDTO signUp(CreateMemberRequestDTO request) {
 
 		if (!request.password().equals(request.passwordAgain())) {
-			throw new CustomException(ErrorCode.PASSWORD_MISMATCH_ERROR);
+			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
 		}
 
 		if (memberRepository.existsByUsername(request.username())) {
-			throw new CustomException(ErrorCode.DUPLICATED_USERNAME_ERROR);
+			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
 		}
 
 		if (memberRepository.existsByEmail(request.email())) {
-			throw new CustomException(ErrorCode.DUPLICATED_EMAIL_ERROR);
+			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
 		}
 
 		String encodedPassword = passwordEncoder.encode(request.password());
 
 		String displayName = request.displayName();
-		if (displayName == null) {
+		if (displayName == null|| displayName.isBlank()) {
 			displayName = generateRandomDisplayName();
 		}
 		Member member = Member.create(
@@ -73,11 +72,43 @@ public class MemberService {
 		return memberMapper.toSignupResponse(savedMember);
 	}
 
+	private static final String[] FIRST = {
+		"달콤한",
+		"고소한",
+		"포근한",
+		"따뜻한"
+	};
+
+	private static final String[] SECOND = {
+		"커피",
+		"라떼",
+		"카페",
+		"모카"
+	};
+
+	private static final String[] THIRD = {
+		"직장인",
+		"개발자",
+		"취준생",
+		"방문자"
+	};
+
+	private static final SecureRandom RANDOM = new SecureRandom();
+
 	private String generateRandomDisplayName() {
-		return UUID.randomUUID()
-			.toString()
-			.replace("-", "")
-			.substring(0, 8);
+		String nickname =
+			FIRST[RANDOM.nextInt(FIRST.length)] +
+				SECOND[RANDOM.nextInt(SECOND.length)] +
+				THIRD[RANDOM.nextInt(THIRD.length)];
+
+
+		if (nickname.length() != 8) {
+			throw new IllegalStateException(
+				"닉네임 길이가 8글자가 아닙니다: " + nickname
+			);
+		}
+
+		return nickname;
 	}
 
 	/**
@@ -91,7 +122,7 @@ public class MemberService {
 
 		Member member = memberRepository.findByUsername(username)
 			.orElseThrow(() ->
-				new CustomException(ErrorCode.USER_NOT_FOUND_ERROR)
+				new CustomException(ErrorCode.USER_NOT_FOUND)
 			);
 
 		return memberMapper.toResponse(member);
@@ -109,7 +140,7 @@ public class MemberService {
 
 		Member member = memberRepository.findByUsername(username)
 			.orElseThrow(() ->
-				new CustomException(ErrorCode.USER_NOT_FOUND_ERROR)
+				new CustomException(ErrorCode.USER_NOT_FOUND)
 			);
 
 		if (request.displayName() != null) {
@@ -139,7 +170,7 @@ public class MemberService {
 	private Member getMemberEntityByUsername(String username) {
 		return memberRepository.findByUsername(username)
 			.orElseThrow(() ->
-				new CustomException(ErrorCode.USER_NOT_FOUND_ERROR)
+				new CustomException(ErrorCode.USER_NOT_FOUND)
 			);
 	}
 }

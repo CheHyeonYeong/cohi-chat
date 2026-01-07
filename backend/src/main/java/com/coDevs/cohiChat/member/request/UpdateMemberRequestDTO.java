@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.member.dto;
+package com.coDevs.cohiChat.member.request;
 
 /**
  * 회원 정보 수정 요청 데이터.
