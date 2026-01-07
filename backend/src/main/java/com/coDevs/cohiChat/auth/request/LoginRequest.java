@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.auth.dto;
+package com.coDevs.cohiChat.auth.request;
 
 public record LoginRequest (
 	String username,

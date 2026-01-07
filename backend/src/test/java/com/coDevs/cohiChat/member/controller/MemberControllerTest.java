@@ -50,10 +50,9 @@ class MemberControllerTest {
 
 		CreateMemberRequestDTO request = new CreateMemberRequestDTO(
 			"testuser",
-			"password123",
-			"password123",
+			"test_nickname",
 			"test@test.com",
-			null,
+			"test123",
 			false
 		);
 
