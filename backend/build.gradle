@@ -41,7 +41,7 @@ dependencies {
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 	testAnnotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"
 
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
 	testImplementation 'org.springframework.security:spring-security-test'
 
