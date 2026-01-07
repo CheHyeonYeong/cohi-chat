@@ -35,6 +35,12 @@ dependencies {
 	//JPA 추가
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+	//SQLite JDBC
+	runtimeOnly 'org.xerial:sqlite-jdbc:3.45.2.0'
+
+	// Hibernate SQLite dialect
+	implementation 'org.hibernate.orm:hibernate-community-dialects'
+
 	//AssertJ 추가 (가독성 위해 추가)
 	testImplementation 'org.assertj:assertj-core:3.25.3'
 
