@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.NicknameGenerator;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.request.CreateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.CreateMemberResponseDTO;
@@ -41,6 +42,9 @@ class MemberServiceTest {
 
 	@InjectMocks
 	private MemberService memberService;
+
+	@Mock
+	private NicknameGenerator nicknameGenerator;
 
 	@Test
 	@DisplayName("성공: 유효한 정보로 회원가입 시 응답 DTO를 반환한다")
@@ -164,17 +168,19 @@ class MemberServiceTest {
 		given(memberRepository.existsByEmail(anyString())).willReturn(false);
 		given(passwordEncoder.encode(anyString())).willReturn("ENCODED_PW");
 
+		String mockNickname = "포근한 카페 방문자";
+		given(nicknameGenerator.generate()).willReturn(mockNickname);
+
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(inv -> inv.getArgument(0));
 
 		given(memberMapper.toSignupResponse(any(Member.class)))
 			.willAnswer(inv -> {
 				Member member = inv.getArgument(0);
-
 				return new CreateMemberResponseDTO(
 					UUID.randomUUID(),
 					member.getUsername(),
-					member.getDisplayName(),
+					member.getDisplayName(), // 여기서 mockNickname이 담긴 member를 사용하게 됨
 					member.getEmail(),
 					member.isHost(),
 					LocalDateTime.now(),
@@ -186,7 +192,9 @@ class MemberServiceTest {
 
 		assertThat(result.displayName())
 			.isNotNull()
-			.hasSize(8);
+			.isEqualTo(mockNickname);
+
+		verify(nicknameGenerator, times(1)).generate();
 	}
 
 	@Test
