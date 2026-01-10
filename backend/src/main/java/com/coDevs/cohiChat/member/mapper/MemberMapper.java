@@ -1,18 +1,22 @@
-/*package com.coDevs.cohiChat.member.mapper;
+package com.coDevs.cohiChat.member.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
-import com.coDevs.cohiChat.member.response.MemberResponseDTO;
-import com.coDevs.cohiChat.member.response.CreateMemberResponseDTO;
+import com.coDevs.cohiChat.global.config.GlobalMapperConfig;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
-@Mapper(componentModel = "spring")
+@Mapper(config = GlobalMapperConfig.class)
 public interface MemberMapper {
 
-	@Mapping(target = "isHost", source = "host")
-	CreateMemberResponseDTO toSignupResponse(Member member);
-
-	@Mapping(target = "isHost", source = "host")
 	MemberResponseDTO toResponse(Member member);
-}*/
+
+	@Mapping(target = "hashedPassword", ignore = true)
+	void updateEntity(
+		UpdateMemberRequestDTO dto,
+		@MappingTarget Member member
+	);
+}

@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.member;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.mapper.MemberMapper;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,13 +17,12 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final MemberMapper memberMapper;
 
-	//저장
 	public Member saveMember(Member member){
 		return  memberRepository.save(member);
 	}
 
-	//조회
 	public Member getMember(String username) {
 		return memberRepository.findByUsername(username)
 			.orElseThrow(() ->
@@ -30,13 +30,10 @@ public class MemberService {
 			);
 	}
 
-	//수정
 	public Member updateMember(String username, UpdateMemberRequestDTO dto){
 		Member member = getMember(username);
 
-		if (dto.displayName() != null){
-			member.updateDisplayName(dto.displayName());
-		}
+		memberMapper.updateEntity(dto, member);
 
 		if (dto.password() != null){
 			String hashedPassword = passwordEncoder.encode(dto.password());
@@ -47,7 +44,6 @@ public class MemberService {
 
 	}
 
-	//삭제
 	public void deleteMember(String username) {
 		Member member = getMember(username);
 		memberRepository.delete(member);
