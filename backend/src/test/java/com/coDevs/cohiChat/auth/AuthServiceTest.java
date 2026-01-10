@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +23,7 @@ import com.coDevs.cohiChat.auth.request.LocalSignupRequestDTO;
 import com.coDevs.cohiChat.auth.response.LoginResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.MemberRepository;
@@ -34,7 +35,7 @@ class AuthServiceTest {
 	private MemberRepository memberRepository;
 
 	@Mock
-	private RefreshTokenRepository refreshTokenRepository;
+	private JwtTokenProvider jwtTokenProvider;
 
 	@Mock
 	private PasswordEncoder passwordEncoder;
@@ -77,7 +78,7 @@ class AuthServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		Member result = authService.signup(request);
+		Member result = authService.signupLocal(request);
 
 		assertThat(result.getUsername()).isEqualTo("testuser");
 		assertThat(result.getHashedPassword()).isEqualTo("hashedPassword");
@@ -97,7 +98,7 @@ class AuthServiceTest {
 			.build();
 
 
-		assertThatThrownBy(() -> authService.signup(request))
+		assertThatThrownBy(() -> authService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.INVALID_USERNAME);
@@ -120,7 +121,7 @@ class AuthServiceTest {
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> authService.signup(request))
+		assertThatThrownBy(() -> authService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
@@ -144,7 +145,7 @@ class AuthServiceTest {
 		given(memberRepository.existsByEmail("test@test.com"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> authService.signup(request))
+		assertThatThrownBy(() -> authService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
@@ -173,7 +174,7 @@ class AuthServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		Member result = authService.signup(request);
+		Member result = authService.signupLocal(request);
 
 		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
@@ -193,10 +194,13 @@ class AuthServiceTest {
 			.willReturn(Optional.of(member));
 		given(passwordEncoder.matches("password123", "hashedPassword"))
 			.willReturn(true);
+		given(jwtTokenProvider.createAccessToken(any(), any()))
+			.willReturn("test-access-token");
 
 		LoginResponseDTO response = authService.login(request);
 
 		assertThat(response.accessToken()).isNotNull();
+		assertThat(response.accessToken()).isEqualTo("test-access-token");
 	}
 
 	@Test
@@ -238,18 +242,6 @@ class AuthServiceTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.PASSWORD_MISMATCH);
-	}
-
-	@Test
-	@DisplayName("성공: 로그아웃 시 refresh token을 Redis에서 삭제한다")
-	void logoutSuccess() {
-
-		String refreshToken = "refreshTokenValue";
-
-		authService.logout(refreshToken);
-
-		then(refreshTokenRepository).should().deleteByToken(refreshToken);
-		then(memberRepository).shouldHaveNoInteractions();
 	}
 
 }
