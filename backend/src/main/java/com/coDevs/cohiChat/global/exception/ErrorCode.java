@@ -11,9 +11,14 @@ public enum ErrorCode {
 
 	/**
 	 * 계정, 인증 관련 예외들.
+	 * 400: 잘못된 요청 (입력값 검증 실패)
 	 * 401: 인증 실패 (토큰 문제, 로그인 실패)
 	 * 403: 인증은 되었으나 권한 없음
 	 */
+	INVALID_USERNAME(HttpStatus.BAD_REQUEST, "유효하지 않은 계정 ID입니다."),
+	INVALID_EMAIL(HttpStatus.BAD_REQUEST, "유효하지 않은 E-mail 주소입니다."),
+	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "유효하지 않은 비밀번호입니다."),
+
 	DUPLICATED_USERNAME(HttpStatus.CONFLICT, "중복된 계정 ID입니다."),
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "중복된 E-mail 주소입니다."),
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자가 없습니다."),
