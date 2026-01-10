@@ -2,9 +2,9 @@ package com.coDevs.cohiChat.global.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +15,10 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -23,6 +27,17 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
 	private  final JwtTokenProvider jwtTokenProvider;
+
+	@Bean
+	public WebSecurityCustomizer webSecurityCustomizer() {
+		return (web) -> web.ignoring()
+			.requestMatchers(
+				"/v3/api-docs/**",
+				"/swagger-ui/**",
+				"/swagger-ui.html",
+				"/favicon.ico"
+			);
+	}
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -38,16 +53,17 @@ public class SecurityConfig {
 
 				.requestMatchers(
 					"/swagger-ui/**",
+					"/swagger-ui.html",
 					"/v3/api-docs/**"
 				).permitAll()
 
-				.requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
-				.requestMatchers("/api/v1/members/login").permitAll()
+				.requestMatchers("/api/v1/auth/**").permitAll()
 
 				.requestMatchers("/api/v1/members/**").authenticated()
 
 				.anyRequest().authenticated()
 			)
+
 
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
 				UsernamePasswordAuthenticationFilter.class);
@@ -60,5 +76,23 @@ public class SecurityConfig {
 
 		return new BCryptPasswordEncoder();
 
+	}
+
+	@Bean
+	public OpenAPI openAPI() {
+		String jwtSchemeName = "jwtAuth";
+
+		SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwtSchemeName);
+
+		Components components = new Components()
+			.addSecuritySchemes(jwtSchemeName, new SecurityScheme()
+				.name(jwtSchemeName)
+				.type(SecurityScheme.Type.HTTP)
+				.scheme("bearer")
+				.bearerFormat("JWT"));
+
+		return new OpenAPI()
+			.addSecurityItem(securityRequirement)
+			.components(components);
 	}
 }
