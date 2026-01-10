@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class SignupRequestDTO {
 
 	private AuthProvider provider;
+	private String displayName;
 	private String email;
 	private Role role;
-	private String displayName;
 }
