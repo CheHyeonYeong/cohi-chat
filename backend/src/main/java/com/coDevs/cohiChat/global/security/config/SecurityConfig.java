@@ -2,39 +2,63 @@ package com.coDevs.cohiChat.global.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+
+import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
+import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+	private  final JwtTokenProvider jwtTokenProvider;
+
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
-			.csrf(csrf -> csrf.disable())
+			.csrf(AbstractHttpConfigurer::disable)
+			.formLogin(AbstractHttpConfigurer::disable)
+			.httpBasic(AbstractHttpConfigurer::disable)
+
+			.sessionManagement(session ->
+				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
 			.authorizeHttpRequests(auth -> auth
-				// swagger 허용
+
 				.requestMatchers(
 					"/swagger-ui/**",
 					"/v3/api-docs/**"
 				).permitAll()
 
-				// 회원가입 API 허용
-				.requestMatchers("/api/members/**").permitAll()
+				.requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
+				.requestMatchers("/api/v1/members/login").permitAll()
 
-				// 그 외 전부 허용 (지금 단계)
-				.anyRequest().permitAll()
+				.requestMatchers("/api/v1/members/**").authenticated()
+
+				.anyRequest().authenticated()
 			)
-			.formLogin(form -> form.disable()) // 로그인 화면 제거
-			.httpBasic(basic -> basic.disable());
+
+			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+				UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}
 
-
 	@Bean
 	public PasswordEncoder passwordEncoder() {
+
 		return new BCryptPasswordEncoder();
+
 	}
 }
