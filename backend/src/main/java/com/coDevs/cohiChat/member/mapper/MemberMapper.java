@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.member.mapper;
+/*package com.coDevs.cohiChat.member.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,4 +15,4 @@ public interface MemberMapper {
 
 	@Mapping(target = "isHost", source = "host")
 	MemberResponseDTO toResponse(Member member);
-}
+}*/
