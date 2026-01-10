@@ -17,8 +17,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.coDevs.cohiChat.auth.request.SignupRequestDTO;
-import com.coDevs.cohiChat.auth.request.LoginRequestDTO;
+import com.coDevs.cohiChat.auth.entity.AuthProvider;
+import com.coDevs.cohiChat.auth.request.LocalLoginRequestDTO;
+import com.coDevs.cohiChat.auth.request.LocalSignupRequestDTO;
+import com.coDevs.cohiChat.auth.response.LoginResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -57,13 +59,14 @@ class AuthServiceTest {
 	@DisplayName("성공: 모든 입력 항목이 존재하면 계정 생성")
 	void signupSuccess() {
 
-		SignupRequestDTO request = new SignupRequestDTO(
-			"testuser",
-			"nickname",
-			"test@test.com",
-			"password123",
-			Role.GUEST
-		);
+		LocalSignupRequestDTO request = LocalSignupRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("testuser")
+			.displayName("nickname")
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
 
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(false);
@@ -84,13 +87,15 @@ class AuthServiceTest {
 	@DisplayName("실패: 사용자명이 없으면 유효하지 않다는 오류 반환")
 	void signupFailWithoutUsername() {
 
-		SignupRequestDTO request = new SignupRequestDTO(
-			null,
-			"nickname",
-			"test@test.com",
-			"password123",
-			Role.GUEST
-		);
+		LocalSignupRequestDTO request = LocalSignupRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username(null)
+			.displayName("nickname")
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
+
 
 		assertThatThrownBy(() -> authService.signup(request))
 			.isInstanceOf(CustomException.class)
@@ -102,13 +107,15 @@ class AuthServiceTest {
 	@DisplayName("실패: 계정 id가 중복되면 오류")
 	void signupFailWithDuplicateUsername() {
 
-		SignupRequestDTO request = new SignupRequestDTO(
-			"testuser",
-			"nickname",
-			"test@test.com",
-			"password123",
-			Role.GUEST
-		);
+		LocalSignupRequestDTO request = LocalSignupRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("testuser")
+			.displayName("nickname")
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
+
 
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(true);
@@ -123,13 +130,14 @@ class AuthServiceTest {
 	@DisplayName("실패: 계정 email이 중복되면 오류")
 	void signupFailWithDuplicateEmail() {
 
-		SignupRequestDTO request = new SignupRequestDTO(
-			"testuser",
-			"nickname",
-			"test@test.com",
-			"password123",
-			Role.GUEST
-		);
+		LocalSignupRequestDTO request = LocalSignupRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("testuser")
+			.displayName("nickname")
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
 
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(false);
@@ -146,13 +154,15 @@ class AuthServiceTest {
 	@DisplayName("성공: 표시명이 없으면 무작위 문자열 8글자 생성")
 	void signupWithRandomDisplayName() {
 
-		SignupRequestDTO request = new SignupRequestDTO(
-			"testuser",
-			null,
-			"test@test.com",
-			"password123",
-			Role.GUEST
-		);
+		LocalSignupRequestDTO request = LocalSignupRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("testuser")
+			.displayName(null)
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
+
 
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(false);
@@ -173,31 +183,31 @@ class AuthServiceTest {
 	@DisplayName("성공: 로그인 성공")
 	void loginSuccess() {
 
-		LoginRequestDTO request = new LoginRequestDTO(
-			"loginUser",
-			"password123"
-		);
+		LocalLoginRequestDTO request = LocalLoginRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("loginUser")
+			.password("password123")
+			.build();
 
 		given(memberRepository.findByUsername("loginUser"))
 			.willReturn(Optional.of(member));
 		given(passwordEncoder.matches("password123", "hashedPassword"))
 			.willReturn(true);
 
-		// When
-		String token = authService.login(request);
+		LoginResponseDTO response = authService.login(request);
 
-		// Then
-		assertThat(token).isNotNull();
+		assertThat(response.accessToken()).isNotNull();
 	}
 
 	@Test
 	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
 	void loginFailUserNotFound() {
 
-		LoginRequestDTO request = new LoginRequestDTO(
-			"wrongUser",
-			"password123"
-		);
+		LocalLoginRequestDTO request = LocalLoginRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("wrongUser")
+			.password("password123")
+			.build();
 
 		given(memberRepository.findByUsername("wrongUser"))
 			.willReturn(Optional.empty());
@@ -213,10 +223,11 @@ class AuthServiceTest {
 	@DisplayName("실패: 비밀번호 틀리면 오류 반환")
 	void loginFailPasswordMismatch() {
 
-		LoginRequestDTO request = new LoginRequestDTO(
-			"loginUser",
-			"wrongPassword"
-		);
+		LocalLoginRequestDTO request = LocalLoginRequestDTO.builder()
+			.provider(AuthProvider.LOCAL)
+			.username("loginUser")
+			.password("wrongPassword")
+			.build();
 
 		given(memberRepository.findByUsername("loginUser"))
 			.willReturn(Optional.of(member));
@@ -233,7 +244,7 @@ class AuthServiceTest {
 	@DisplayName("성공: 로그아웃 시 refresh token을 Redis에서 삭제한다")
 	void logoutSuccess() {
 
-		String refreshToken = "refresh_token_value";
+		String refreshToken = "refreshTokenValue";
 
 		authService.logout(refreshToken);
 
