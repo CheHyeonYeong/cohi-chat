@@ -3,23 +3,26 @@ package com.coDevs.cohiChat.member.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import lombok.Builder;
+import jakarta.persistence.Column;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
 
 	@Id
@@ -39,35 +42,43 @@ public class Member {
 	@Column(name = "hashed_password", nullable = false)
 	private String hashedPassword;
 
-	@Column(name = "is_host", nullable = false)
-	private boolean isHost = false;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "role", nullable = false, length = 20)
+	private Role role;
 
+	@CreatedDate
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
+	@LastModifiedDate
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
-
-	protected Member() {
-
-	}
 
 	public static Member create(
 		String username,
 		String displayName,
 		String email,
 		String hashedPassword,
-		boolean isHost
+		Role role
 	) {
+
 		Member member = new Member();
 		member.username = username;
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
-		member.isHost = isHost;
+		member.role = role;
 		return member;
 	}
 
+	public void updateInfo(String displayName, String hashedPassword) {
+		if (displayName != null && !displayName.isBlank()) {
+			this.updateDisplayName(displayName);
+		}
+		if (hashedPassword != null && !hashedPassword.isBlank()) {
+			this.updatePassword(hashedPassword);
+		}
+	}
 
 	public void updateDisplayName(String displayName) {
 		this.displayName = displayName;
@@ -77,36 +88,4 @@ public class Member {
 		this.hashedPassword = hashedPassword;
 	}
 
-
-	@Builder
-	private Member(
-		UUID id,
-		String username,
-		String displayName,
-		String email,
-		String hashedPassword,
-		boolean isHost,
-		LocalDateTime createdAt,
-		LocalDateTime updatedAt
-	) {
-		this.id = id;
-		this.username = username;
-		this.displayName = displayName;
-		this.email = email;
-		this.hashedPassword = hashedPassword;
-		this.isHost = isHost;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-	}
-
-	@PrePersist
-	protected void onCreate() {
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = this.createdAt;
-	}
-
-	@PreUpdate
-	protected void onUpdate() {
-		this.updatedAt = LocalDateTime.now();
-	}
 }
