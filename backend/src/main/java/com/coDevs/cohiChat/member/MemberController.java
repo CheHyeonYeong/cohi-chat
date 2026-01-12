@@ -20,6 +20,7 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
@@ -60,5 +61,6 @@ public class MemberController {
 
 		return ResponseEntity.ok(response);
 	}
+
 
 }
