@@ -100,8 +100,10 @@ public class JwtTokenProvider {
 		UUID memberId = getMemberIdFromToken(token);
 		String roleStr = getRoleFromToken(token);
 
+		String finalRole = (roleStr != null) ? roleStr : "GUEST";
+
 		List<GrantedAuthority> authorities = Collections.singletonList(
-			new SimpleGrantedAuthority("ROLE_" + (roleStr != null ? roleStr : "USER"))
+			new SimpleGrantedAuthority("ROLE_" + finalRole)
 		);
 
 		UserDetails principal = new User(memberId.toString(), "", authorities);
