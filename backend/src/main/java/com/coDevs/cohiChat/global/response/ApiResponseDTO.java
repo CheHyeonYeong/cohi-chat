@@ -1,7 +1,5 @@
 package com.coDevs.cohiChat.global.response;
 
-import org.springframework.web.ErrorResponse;
-
 import lombok.Getter;
 
 @Getter
