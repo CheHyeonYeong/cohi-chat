@@ -24,35 +24,25 @@ public class MemberService {
 
 	public SignupResponseDTO signupLocal(SignupLocalRequestDTO request){
 
-		if (request.getUsername() == null || request.getUsername().isBlank()) {
-			throw new CustomException(ErrorCode.INVALID_USERNAME);
-		}
-
 		validateDuplicate(request.getUsername(), request.getEmail());
 
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-		String displayName = request.getDisplayName();
-		if (displayName == null || displayName.isBlank()) {
-			RandomStringGenerator generator = new RandomStringGenerator.Builder()
-				.withinRange('0', 'z')
-				.filteredBy(Character::isLetterOrDigit)
-				.build();
-
-			displayName = generator.generate(8);
-		}
-
 		Member member = Member.create(
 			request.getUsername(),
-			displayName,
+			request.getDisplayName(),
 			request.getEmail(),
 			encodedPassword,
-			request.getRole() != null ? request.getRole() : Role.GUEST
+			request.getRole()
 		);
 
 		memberRepository.save(member);
 
-		return SignupResponseDTO.of(member.getId(), member.getUsername(), member.getDisplayName());
+		return new SignupResponseDTO(
+			member.getId(),
+			member.getUsername(),
+			member.getDisplayName()
+		);
 	}
 
 	private void validateDuplicate(String username, String email) {

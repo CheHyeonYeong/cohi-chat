@@ -3,9 +3,13 @@ package com.coDevs.cohiChat.member.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -55,37 +59,49 @@ public class Member {
 	private LocalDateTime updatedAt;
 
 	public static Member create(
+
 		String username,
 		String displayName,
 		String email,
 		String hashedPassword,
 		Role role
 	) {
+		validateRequired(username, email, hashedPassword);
 
 		Member member = new Member();
 		member.username = username;
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
-		member.role = role;
+
+		member.displayName = (displayName == null || displayName.isBlank())
+			? generateDefaultDisplayName() : displayName;
+
+		member.role = (role != null) ? role : Role.GUEST;
+
 		return member;
+	}
+
+	private static void validateRequired(String username, String email, String hashedPassword) {
+		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
+		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL); // 필요시 추가
+		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
+	}
+
+	private static String generateDefaultDisplayName() {
+		return new RandomStringGenerator.Builder()
+			.withinRange('0', 'z')
+			.filteredBy(Character::isLetterOrDigit)
+			.build()
+			.generate(8);
 	}
 
 	public void updateInfo(String displayName, String hashedPassword) {
 		if (displayName != null && !displayName.isBlank()) {
-			this.updateDisplayName(displayName);
+			this.displayName = displayName;
 		}
 		if (hashedPassword != null && !hashedPassword.isBlank()) {
-			this.updatePassword(hashedPassword);
+			this.hashedPassword = hashedPassword;
 		}
 	}
-
-	public void updateDisplayName(String displayName) {
-		this.displayName = displayName;
-	}
-
-	public void updatePassword(String hashedPassword) {
-		this.hashedPassword = hashedPassword;
-	}
-
 }

@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.member.entity;
 
-public enum AuthProvider {
+public enum Provider {
 	LOCAL,
 	KAKAO,
 	GOOGLE

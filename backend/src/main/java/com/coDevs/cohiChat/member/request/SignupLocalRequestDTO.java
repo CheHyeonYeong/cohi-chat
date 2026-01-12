@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.member.request;
 
-import com.coDevs.cohiChat.member.entity.AuthProvider;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Role;
 
 import lombok.AllArgsConstructor;
@@ -20,7 +20,7 @@ public class SignupLocalRequestDTO {
 	private String displayName;
 
 	@Builder.Default
-	private AuthProvider provider = AuthProvider.LOCAL;
+	private Provider provider = Provider.LOCAL;
 
 	@Builder.Default
 	private Role role = Role.GUEST;

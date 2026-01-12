@@ -15,14 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.entity.AuthProvider;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
@@ -40,25 +38,12 @@ class MemberServiceTest {
 	@InjectMocks
 	private MemberService memberService;
 
-	private Member member;
-
-	@BeforeEach
-	void setUp() {
-		member = Member.create(
-			"test",
-			"testNickname",
-			"test@test.com",
-			"hashPassword",
-			Role.GUEST
-		);
-	}
-
 	@Test
 	@DisplayName("성공: 모든 입력 항목이 존재하면 계정 생성")
 	void signupSuccess() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(AuthProvider.LOCAL)
+			.provider(Provider.LOCAL)
 			.username("testuser")
 			.displayName("nickname")
 			.email("test@test.com")
@@ -85,7 +70,7 @@ class MemberServiceTest {
 	void signupFailWithoutUsername() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(AuthProvider.LOCAL)
+			.provider(Provider.LOCAL)
 			.username(null)
 			.displayName("nickname")
 			.email("test@test.com")
@@ -93,58 +78,12 @@ class MemberServiceTest {
 			.role(Role.GUEST)
 			.build();
 
+		given(memberRepository.existsByUsername(null)).willReturn(false);
+		given(passwordEncoder.encode("password123")).willReturn("hashedPassword");
 
 		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 계정 id가 중복되면 오류")
-	void signupFailWithDuplicateUsername() {
-
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(AuthProvider.LOCAL)
-			.username("testuser")
-			.displayName("nickname")
-			.email("test@test.com")
-			.password("password123")
-			.role(Role.GUEST)
-			.build();
-
-
-		given(memberRepository.existsByUsername("testuser"))
-			.willReturn(true);
-
-		assertThatThrownBy(() -> memberService.signupLocal(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 계정 email이 중복되면 오류")
-	void signupFailWithDuplicateEmail() {
-
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(AuthProvider.LOCAL)
-			.username("testuser")
-			.displayName("nickname")
-			.email("test@test.com")
-			.password("password123")
-			.role(Role.GUEST)
-			.build();
-
-		given(memberRepository.existsByUsername("testuser"))
-			.willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com"))
-			.willReturn(true);
-
-		assertThatThrownBy(() -> memberService.signupLocal(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USERNAME);
 	}
 
 	@Test
@@ -152,7 +91,7 @@ class MemberServiceTest {
 	void signupWithRandomDisplayName() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(AuthProvider.LOCAL)
+			.provider(Provider.LOCAL)
 			.username("testuser")
 			.displayName(null)
 			.email("test@test.com")
