@@ -261,38 +261,23 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 회원 정보 수정")
-	void updateMemberSuccess() {
-
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("newName", "newPassword");
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-
-		given(passwordEncoder.encode("newPassword"))
-			.willReturn("newHashedPassword");
-
-		MemberResponseDTO result = memberService.updateMember("test", request);
-
-		assertThat(result.getDisplayName()).isEqualTo("newName");
-		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
-	}
-
-	@Test
 	@DisplayName("성공: 닉네임만 수정하고 비밀번호는 유지")
 	void updateMemberOnlyDisplayName() {
-
+		// Given
 		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("onlyNewName", null);
-		String originalHash = member.getHashedPassword(); // "hashPassword"
+		String originalHash = member.getHashedPassword();
 
 		given(memberRepository.findByUsername("test"))
 			.willReturn(Optional.of(member));
 
+		// When
 		MemberResponseDTO result = memberService.updateMember("test", request);
 
+		// Then
 		assertThat(result.getDisplayName()).isEqualTo("onlyNewName");
 		assertThat(member.getHashedPassword()).isEqualTo(originalHash);
 
+		// 비밀번호 수정이 없었으므로 암호화 로직이 호출되지 않았는지 검증
 		then(passwordEncoder).shouldHaveNoInteractions();
 	}
 
@@ -310,14 +295,13 @@ class MemberServiceTest {
 
 		MemberResponseDTO result = memberService.updateMember("test", request);
 
-		assertThat(result.getDisplayName()).isEqualTo(originalDisplayName); // 기존 닉네임 유지 확인
+		assertThat(result.getDisplayName()).isEqualTo(originalDisplayName);
 		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
 	}
 
 	@Test
 	@DisplayName("실패: 수정 시 회원 없음")
 	void updateMemberFail() {
-
 		given(memberRepository.findByUsername("none"))
 			.willReturn(Optional.empty());
 

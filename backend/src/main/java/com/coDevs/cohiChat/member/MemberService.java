@@ -2,7 +2,9 @@ package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -10,9 +12,11 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +29,7 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final ModelMapper modelMapper;
 
 	public SignupResponseDTO signupLocal(SignupLocalRequestDTO request){
 
@@ -88,6 +93,35 @@ public class MemberService {
 	public Member getMember(String username) {
 		return memberRepository.findByUsername(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+	}
+
+	@Transactional
+	public MemberResponseDTO updateMember(String username, UpdateMemberRequestDTO dto){
+
+		Member member = getMember(username);
+
+		String encryptedPassword = null;
+		if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+			encryptedPassword = passwordEncoder.encode(dto.getPassword());
+		}
+
+		member.updateInfo(dto.getDisplayName(), encryptedPassword);
+
+		return MemberResponseDTO.builder()
+			.id(member.getId())
+			.username(member.getUsername())
+			.displayName(member.getDisplayName())
+			.email(member.getEmail())
+			.role(member.getRole())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(member.getUpdatedAt())
+			.build();
+
+	}
+
+	public void deleteMember(String username) {
+		Member member = getMember(username);
+		memberRepository.delete(member);
 	}
 
 }
