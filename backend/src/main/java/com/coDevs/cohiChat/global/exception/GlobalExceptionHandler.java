@@ -4,21 +4,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.coDevs.cohiChat.global.response.ApiResponse;
-import com.coDevs.cohiChat.global.response.ErrorResponse;
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
+import com.coDevs.cohiChat.global.response.ErrorResponseDTO;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(CustomException.class)
-	public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
+	public ResponseEntity<ApiResponseDTO<Void>> handleCustomException(CustomException e) {
 		ErrorCode code = e.getErrorCode();
 
 		return ResponseEntity
 			.status(code.getStatus())
-			.body(ApiResponse.fail(
-				new ErrorResponse(code.name(), code.getMessage())
+			.body(ApiResponseDTO.fail(
+				new ErrorResponseDTO(code.name(), code.getMessage())
 			));
 	}
-
 }
