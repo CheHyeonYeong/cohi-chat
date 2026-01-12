@@ -3,9 +3,7 @@ package com.coDevs.cohiChat.member;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Optional;
 
@@ -15,21 +13,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.AuthProvider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
+
+	private Member member;
 
 	@Mock
 	private MemberRepository memberRepository;
@@ -40,7 +41,9 @@ class MemberServiceTest {
 	@InjectMocks
 	private MemberService memberService;
 
-	private Member member;
+	@Mock
+	private JwtTokenProvider jwtTokenProvider;
+
 
 	@BeforeEach
 	void setUp() {
@@ -174,6 +177,58 @@ class MemberServiceTest {
 
 		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
+	}
+
+	@Test
+	@DisplayName("성공: 로그인 성공")
+	void loginSuccess() {
+
+		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("loginUser", "password123");
+
+		given(memberRepository.findByUsername("loginUser"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.matches("password123", "hashedPassword"))
+			.willReturn(true);
+		given(jwtTokenProvider.createAccessToken(any(), any()))
+			.willReturn("test-access-token");
+
+		LoginResponseDTO response = memberService.login(request);
+
+		assertThat(response.getAccessToken()).isNotNull();
+		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
+	void loginFailUserNotFound() {
+
+		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("wrongUser", "password123");
+
+		given(memberRepository.findByUsername("wrongUser"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
+
+	}
+
+	@Test
+	@DisplayName("실패: 비밀번호 틀리면 오류 반환")
+	void loginFailPasswordMismatch() {
+
+		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("loginUser", "wrongPassword");
+
+		given(memberRepository.findByUsername("loginUser"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.matches("wrongPassword", "hashedPassword"))
+			.willReturn(false);
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.PASSWORD_MISMATCH);
 	}
 
 }
