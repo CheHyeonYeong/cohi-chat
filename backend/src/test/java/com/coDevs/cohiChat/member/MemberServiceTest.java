@@ -51,7 +51,7 @@ class MemberServiceTest {
 			"test",
 			"testNickname",
 			"test@test.com",
-			"hashPassword",
+			"hashedPassword",
 			Role.GUEST
 		);
 	}

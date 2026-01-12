@@ -17,9 +17,10 @@ import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
-import com.coDevs.cohiChat.member.memberService;
-import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/members")
@@ -62,21 +63,4 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@PatchMapping("/{username}")
-	public ResponseEntity<MemberResponseDTO> updateMember(
-		@PathVariable(name = "username") String username,
-		@RequestBody UpdateMemberRequestDTO requestDto) {
-		MemberResponseDTO response = memberService.updateMember(username, requestDto);
-
-		return ResponseEntity.ok(response);
-	}
-
-	@DeleteMapping("/{username}")
-	public ResponseEntity<Void> deleteMember(
-		@PathVariable(name = "username") String username) {
-		memberService.deleteMember(username);
-
-		return ResponseEntity.noContent()
-			.build();
-	}
 }
