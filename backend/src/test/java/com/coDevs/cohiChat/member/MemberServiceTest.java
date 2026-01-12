@@ -2,8 +2,8 @@ package com.coDevs.cohiChat.member;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.*;
 
 import java.util.Optional;
 
@@ -24,7 +24,9 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -229,6 +231,127 @@ class MemberServiceTest {
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.PASSWORD_MISMATCH);
+	}
+
+	@Test
+	@DisplayName("성공: username으로 회원 조회")
+	void getMemberSuccess() {
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+
+		Member result = memberService.getMember("test");
+
+		assertThat(result.getUsername())
+			.isEqualTo("test");
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 username 조회")
+	void getMemberFail() {
+
+		given(memberRepository.findByUsername("none"))
+			.willReturn(Optional.empty());
+
+
+		assertThatThrownBy(() -> memberService.getMember("none"))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("성공: 회원 정보 수정")
+	void updateMemberSuccess() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("newName", "newPassword");
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+
+		given(passwordEncoder.encode("newPassword"))
+			.willReturn("newHashedPassword");
+
+		MemberResponseDTO result = memberService.updateMember("test", request);
+
+		assertThat(result.getDisplayName()).isEqualTo("newName");
+		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
+	}
+
+	@Test
+	@DisplayName("성공: 닉네임만 수정하고 비밀번호는 유지")
+	void updateMemberOnlyDisplayName() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("onlyNewName", null);
+		String originalHash = member.getHashedPassword(); // "hashPassword"
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+
+		MemberResponseDTO result = memberService.updateMember("test", request);
+
+		assertThat(result.getDisplayName()).isEqualTo("onlyNewName");
+		assertThat(member.getHashedPassword()).isEqualTo(originalHash);
+
+		then(passwordEncoder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	@DisplayName("성공: 비밀번호만 수정하고 닉네임은 유지")
+	void updateMemberOnlyPassword() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(null, "newPassword");
+		String originalDisplayName = member.getDisplayName();
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPassword"))
+			.willReturn("newHashedPassword");
+
+		MemberResponseDTO result = memberService.updateMember("test", request);
+
+		assertThat(result.getDisplayName()).isEqualTo(originalDisplayName); // 기존 닉네임 유지 확인
+		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
+	}
+
+	@Test
+	@DisplayName("실패: 수정 시 회원 없음")
+	void updateMemberFail() {
+
+		given(memberRepository.findByUsername("none"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.updateMember("none",
+			new UpdateMemberRequestDTO("a", "b")))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("성공: 회원 삭제")
+	void deleteMemberSuccess() {
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+
+		memberService.deleteMember("test");
+
+		then(memberRepository).should()
+			.delete(member);
+	}
+
+	@Test
+	@DisplayName("실패: 회원 삭제 - 없음")
+	void deleteMemberFail() {
+
+		given(memberRepository.findByUsername("none"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.deleteMember("none"))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.USER_NOT_FOUND);
 	}
 
 }
