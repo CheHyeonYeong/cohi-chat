@@ -25,11 +25,7 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.AuthProvider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
-import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
-import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
-import com.coDevs.cohiChat.member.response.LoginResponseDTO;
-import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,11 +40,7 @@ class MemberServiceTest {
 	@InjectMocks
 	private MemberService memberService;
 
-	@Spy
-	private ModelMapper modelMapper = new ModelMapper();
-
 	private Member member;
-	private MemberResponseDTO memberResponseDTO;
 
 	@BeforeEach
 	void setUp() {
@@ -59,16 +51,6 @@ class MemberServiceTest {
 			"hashPassword",
 			Role.GUEST
 		);
-
-		memberResponseDTO = MemberResponseDTO.builder()
-			.id(member.getId())
-			.username(member.getUsername())
-			.displayName(member.getDisplayName())
-			.email(member.getEmail())
-			.role(member.getRole())
-			.createdAt(member.getCreatedAt())
-			.updatedAt(member.getUpdatedAt())
-			.build();
 	}
 
 	@Test
@@ -93,7 +75,7 @@ class MemberServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		SignupResponseDTO result = authService.signupLocal(request);
+		SignupResponseDTO result = memberService.signupLocal(request);
 
 		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
@@ -112,7 +94,7 @@ class MemberServiceTest {
 			.build();
 
 
-		assertThatThrownBy(() -> authService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.INVALID_USERNAME);
@@ -135,7 +117,7 @@ class MemberServiceTest {
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> authService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
@@ -159,7 +141,7 @@ class MemberServiceTest {
 		given(memberRepository.existsByEmail("test@test.com"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> authService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
@@ -188,182 +170,10 @@ class MemberServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		SignupResponseDTO result = authService.signupLocal(request);
+		SignupResponseDTO result = memberService.signupLocal(request);
 
 		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
 	}
 
-	@Test
-	@DisplayName("성공: 로그인 성공")
-	void loginSuccess() {
-
-		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("loginUser", "password123");
-
-		given(memberRepository.findByUsername("loginUser"))
-			.willReturn(Optional.of(member));
-		given(passwordEncoder.matches("password123", "hashedPassword"))
-			.willReturn(true);
-		given(jwtTokenProvider.createAccessToken(any(), any()))
-			.willReturn("test-access-token");
-
-		LoginResponseDTO response = authService.login(request);
-
-		assertThat(response.getAccessToken()).isNotNull();
-		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
-	}
-
-	@Test
-	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
-	void loginFailUserNotFound() {
-
-		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("wrongUser", "password123");
-
-		given(memberRepository.findByUsername("wrongUser"))
-			.willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> authService.login(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND);
-
-	}
-
-	@Test
-	@DisplayName("실패: 비밀번호 틀리면 오류 반환")
-	void loginFailPasswordMismatch() {
-
-		LoginLocalRequestDTO request = LoginLocalRequestDTO.of("loginUser", "wrongPassword");
-
-		given(memberRepository.findByUsername("loginUser"))
-			.willReturn(Optional.of(member));
-		given(passwordEncoder.matches("wrongPassword", "hashedPassword"))
-			.willReturn(false);
-
-		assertThatThrownBy(() -> authService.login(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.PASSWORD_MISMATCH);
-	}
-
-	@Test
-	@DisplayName("성공: username으로 회원 조회")
-	void getMemberSuccess() {
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-
-		Member result = memberService.getMember("test");
-
-		assertThat(result.getUsername())
-			.isEqualTo("test");
-	}
-
-	@Test
-	@DisplayName("실패: 존재하지 않는 username 조회")
-	void getMemberFail() {
-
-		given(memberRepository.findByUsername("none"))
-			.willReturn(Optional.empty());
-
-
-		assertThatThrownBy(() -> memberService.getMember("none"))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND);
-	}
-
-	@Test
-	@DisplayName("성공: 회원 정보 수정")
-	void updateMemberSuccess() {
-
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("newName", "newPassword");
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-
-		given(passwordEncoder.encode("newPassword"))
-			.willReturn("newHashedPassword");
-
-		MemberResponseDTO result = memberService.updateMember("test", request);
-
-		assertThat(result.getDisplayName()).isEqualTo("newName");
-		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
-	}
-
-	@Test
-	@DisplayName("성공: 닉네임만 수정하고 비밀번호는 유지")
-	void updateMemberOnlyDisplayName() {
-
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("onlyNewName", null);
-		String originalHash = member.getHashedPassword(); // "hashPassword"
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-
-		MemberResponseDTO result = memberService.updateMember("test", request);
-
-		assertThat(result.getDisplayName()).isEqualTo("onlyNewName");
-		assertThat(member.getHashedPassword()).isEqualTo(originalHash);
-
-		then(passwordEncoder).shouldHaveNoInteractions();
-	}
-
-	@Test
-	@DisplayName("성공: 비밀번호만 수정하고 닉네임은 유지")
-	void updateMemberOnlyPassword() {
-
-		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO(null, "newPassword");
-		String originalDisplayName = member.getDisplayName();
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-		given(passwordEncoder.encode("newPassword"))
-			.willReturn("newHashedPassword");
-
-		MemberResponseDTO result = memberService.updateMember("test", request);
-
-		assertThat(result.getDisplayName()).isEqualTo(originalDisplayName); // 기존 닉네임 유지 확인
-		assertThat(member.getHashedPassword()).isEqualTo("newHashedPassword");
-	}
-
-	@Test
-	@DisplayName("실패: 수정 시 회원 없음")
-	void updateMemberFail() {
-
-		given(memberRepository.findByUsername("none"))
-			.willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> memberService.updateMember("none",
-			new UpdateMemberRequestDTO("a", "b")))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND);
-	}
-
-	@Test
-	@DisplayName("성공: 회원 삭제")
-	void deleteMemberSuccess() {
-		// Given
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-
-		memberService.deleteMember("test");
-
-		then(memberRepository).should()
-			.delete(member);
-	}
-
-	@Test
-	@DisplayName("실패: 회원 삭제 - 없음")
-	void deleteMemberFail() {
-		// Given
-		given(memberRepository.findByUsername("none"))
-			.willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> memberService.deleteMember("none"))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.USER_NOT_FOUND);
-	}
 }

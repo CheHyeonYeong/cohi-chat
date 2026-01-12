@@ -1,6 +1,5 @@
 package com.coDevs.cohiChat.member.response;
 
-
 import java.util.UUID;
 
 import lombok.Getter;

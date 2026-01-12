@@ -6,14 +6,10 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
-import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
-import org.apache.commons.text.RandomStringGenerator;
-
-import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.apache.commons.text.RandomStringGenerator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +21,6 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final ModelMapper modelMapper;
 
 	public SignupResponseDTO signupLocal(SignupLocalRequestDTO request){
 
@@ -60,5 +55,13 @@ public class MemberService {
 		return SignupResponseDTO.of(member.getId(), member.getUsername(), member.getDisplayName());
 	}
 
-}
+	private void validateDuplicate(String username, String email) {
+		if (memberRepository.existsByUsername(username)) {
+			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
+		}
+		if (memberRepository.existsByEmail(email)) {
+			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
+		}
+	}
 
+}
