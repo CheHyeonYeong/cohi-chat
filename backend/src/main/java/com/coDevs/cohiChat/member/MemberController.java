@@ -3,9 +3,7 @@ package com.coDevs.cohiChat.member;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,13 +21,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/members")
 @RequiredArgsConstructor
 public class MemberController {
 
 	private final MemberService memberService;
 
-	@PostMapping("/signup")
+	@PostMapping("/v1/signup")
 	public ResponseEntity<SignupResponseDTO> signupLocal(
 		@Valid @RequestBody SignupLocalRequestDTO request) {
 
@@ -38,7 +36,7 @@ public class MemberController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
-	@PostMapping("/login")
+	@PostMapping("/v1/login")
 	public ResponseEntity<LoginResponseDTO> login(
 		@Valid @RequestBody LoginLocalRequestDTO request) {
 
@@ -46,7 +44,7 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/{username}")
+	@GetMapping("/v1/{username}")
 	public ResponseEntity<MemberResponseDTO> getMember(
 		@PathVariable(name = "username") String username) {
 		Member member = memberService.getMember(username);
