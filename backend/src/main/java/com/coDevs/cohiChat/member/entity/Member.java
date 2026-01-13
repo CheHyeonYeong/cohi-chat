@@ -34,10 +34,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
 
+	private static final String USERNAME_REGEX = "^[a-zA-Z0-9._-]{4,20}$";
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	@Column(columnDefinition = "BINARY(16)")
 	private UUID id;
+
+	/**
+	 *  사용자 로그인 아이디.
+	 */
 
 	@Column(length = 50, nullable = false, updatable = false, unique = true)
 	private String username;
@@ -85,13 +91,18 @@ public class Member {
 
 	private static void validateRequired(String username, String displayName, String email, String hashedPassword, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
+
+		if (!username.matches(USERNAME_REGEX)) {
+
+			throw new CustomException(ErrorCode.INVALID_USERNAME);
+		}
+		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
 		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL); // 필요시 추가
 		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
 
 	}
-
 
 	public void updateInfo(String displayName, String hashedPassword) {
 		if (displayName != null && !displayName.isBlank()) {
