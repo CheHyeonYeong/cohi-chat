@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 import java.util.Optional;
 
@@ -23,9 +24,12 @@ import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -279,4 +283,91 @@ class MemberServiceTest {
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
+
+	@Test
+	@DisplayName("회원 조회 성공")
+	void getMemberSuccess() {
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+
+		Member result = memberService.getMember("test"); // getMemberByUsername -> getMember 로 수정
+
+		assertThat(result.getUsername()).isEqualTo("test");
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 성공 - 닉네임과 비밀번호 모두 변경")
+	void updateMemberSuccess() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("test", "newName", "newPassword123");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPassword123")).willReturn("hashedNewPw");
+
+		MemberResponseDTO response = memberService.updateMember(request);
+
+		assertThat(response.getDisplayName()).isEqualTo("newName");
+		assertThat(member.getHashedPassword()).isEqualTo("hashedNewPw");
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 성공 - 닉네임만 변경 (비밀번호 null)")
+	void updateMemberOnlyDisplayName() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("test", "onlyNewName", null);
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+
+		memberService.updateMember(request);
+
+		assertThat(member.getDisplayName()).isEqualTo("onlyNewName");
+		assertThat(member.getHashedPassword()).isEqualTo("hashedPassword");
+	}
+
+	@Test
+	@DisplayName("회원 정보 수정 성공 - 닉네임 null, 비밀번호만 변경")
+	void updateMemberOnlyPassword() {
+
+		UpdateMemberRequestDTO request = new UpdateMemberRequestDTO("test", null, "newPassword123");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPassword123")).willReturn("hashedNewPw");
+
+		String oldDisplayName = member.getDisplayName();
+
+		memberService.updateMember(request);
+
+		assertThat(member.getHashedPassword()).isEqualTo("hashedNewPw");
+		assertThat(member.getDisplayName()).isEqualTo(oldDisplayName);
+	}
+
+	@Test
+	@DisplayName("회원 삭제 성공")
+	void deleteMemberSuccess() {
+
+		DeleteMemberRequestDTO request = new DeleteMemberRequestDTO("test", "correctPw");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.matches("correctPw", member.getHashedPassword())).willReturn(true);
+
+		memberService.deleteMember(request);
+
+		verify(memberRepository, times(1)).delete(member);
+	}
+
+	@Test
+	@DisplayName("회원 삭제 실패 - 비밀번호 불일치")
+	void deleteMemberFailPasswordMismatch() {
+
+		DeleteMemberRequestDTO request = new DeleteMemberRequestDTO("test", "wrongPw");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.matches("wrongPw", member.getHashedPassword())).willReturn(false);
+
+		assertThatThrownBy(() -> memberService.deleteMember(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
+	}
+
+
 }

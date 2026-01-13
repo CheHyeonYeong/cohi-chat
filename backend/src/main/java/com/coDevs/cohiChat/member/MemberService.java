@@ -131,7 +131,8 @@ public class MemberService {
 
 		Member member = getMember(request.getUsername());
 
-		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
+		String hashPw = (request.getPassword() != null
+			&& !request.getPassword().isBlank())
 			? passwordEncoder.encode(request.getPassword()) : null;
 
 		if (request.getDisplayName() != null
