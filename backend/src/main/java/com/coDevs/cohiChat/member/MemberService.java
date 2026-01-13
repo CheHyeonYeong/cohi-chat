@@ -2,9 +2,12 @@ package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -121,6 +124,39 @@ public class MemberService {
 	public Member getMember(String username) {
 		return memberRepository.findByUsername(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+	}
+
+	@Transactional
+	public MemberResponseDTO updateMember(UpdateMemberRequestDTO request) {
+
+		Member member = getMember(request.getUsername());
+
+		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
+			? passwordEncoder.encode(request.getPassword()) : null;
+
+		if (request.getDisplayName() != null) {
+			if (request.getDisplayName().length() < 2
+				|| request.getDisplayName().length() > 20) {
+				throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
+			}
+		}
+
+		member.updateInfo(request.getDisplayName(), hashPw);
+
+		return MemberResponseDTO.from(member);
+
+	}
+
+	@Transactional
+	public void deleteMember(DeleteMemberRequestDTO request) {
+
+		Member member = getMember(request.getUsername());
+
+		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
+			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+		}
+
+		memberRepository.delete(member);
 	}
 
 }
