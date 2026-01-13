@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -42,6 +43,9 @@ class MemberServiceTest {
 			.password("password123")
 			.build();
 
+		given(passwordEncoder.encode(anyString()))
+			.willReturn("hashed_password");
+
 		SignupResponseDTO result = memberService.signupLocal(request);
 
 		assertThat(result.getUsername()).isEqualTo("testuser");
@@ -70,6 +74,9 @@ class MemberServiceTest {
 			.email("test@test.com")
 			.password("password123")
 			.build();
+
+		given(passwordEncoder.encode(anyString()))
+			.willReturn("hashed_password");
 
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
