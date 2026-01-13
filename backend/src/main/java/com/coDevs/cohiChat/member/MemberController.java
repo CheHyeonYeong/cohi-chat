@@ -27,12 +27,13 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
 	private final MemberService memberService;
+	private final MemberRepository memberRepository;
 
 	@PostMapping("/v1/signup")
 	public ResponseEntity<SignupResponseDTO> signupLocal(
 		@Valid @RequestBody SignupRequestDTO request) {
 
-		SignupResponseDTO response = memberService.signupLocal(request);
+		SignupResponseDTO response = memberService.signup(request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
@@ -46,19 +47,9 @@ public class MemberController {
 	}
 
 	@GetMapping("/v1/{username}")
-	public ResponseEntity<MemberResponseDTO> getMember(
-		@PathVariable(name = "username") String username) {
+	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable(name = "username") String username) {
 		Member member = memberService.getMember(username);
-		MemberResponseDTO response = MemberResponseDTO.builder()
-			.id(member.getId())
-			.username(member.getUsername())
-			.displayName(member.getDisplayName())
-			.email(member.getEmail())
-			.role(member.getRole())
-			.createdAt(member.getCreatedAt())
-			.updatedAt(member.getUpdatedAt())
-			.build();
-
+		MemberResponseDTO response = MemberResponseDTO.from(member);
 		return ResponseEntity.ok(response);
 	}
 

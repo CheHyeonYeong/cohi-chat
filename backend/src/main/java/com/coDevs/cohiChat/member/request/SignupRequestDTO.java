@@ -20,7 +20,7 @@ public class SignupRequestDTO {
 
 	@NotBlank(message = "아이디는 필수입니다.")
 	@Size(min = 4, max = 12)
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,20}$")
+	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,12}$")
 	private String username;
 
 	@NotBlank(message = "비밀번호는 필수입니다.")

@@ -28,7 +28,7 @@ public class MemberService {
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Transactional
-	public SignupResponseDTO signupLocal(SignupRequestDTO request){
+	public SignupResponseDTO signup(SignupRequestDTO request){
 
 		validateDuplicate(request.getUsername(), request.getEmail());
 
