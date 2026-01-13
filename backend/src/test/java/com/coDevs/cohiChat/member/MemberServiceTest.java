@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,16 +15,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import static org.mockito.ArgumentMatchers.anyString;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Member;
-import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.request.LoginRequestDTO;
+import com.coDevs.cohiChat.member.request.SignupRequestDTO;
+import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
+
+	private Member member;
 
 	@Mock
 	private MemberRepository memberRepository;
@@ -32,81 +41,198 @@ class MemberServiceTest {
 	@InjectMocks
 	private MemberService memberService;
 
+	@Mock
+	private JwtTokenProvider jwtTokenProvider;
+
+
+	@BeforeEach
+	void setUp() {
+		member = Member.create(
+			"test",
+			"testNickname",
+			"test@test.com",
+			"hashedPassword",
+			Role.GUEST
+		);
+	}
+
 	@Test
 	@DisplayName("성공: 모든 입력 항목이 존재하면 계정 생성")
 	void signupSuccess() {
 
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
+		SignupRequestDTO request = SignupRequestDTO.builder()
+			.provider(Provider.LOCAL)
 			.username("testuser")
-			.password("password123") // 유효성 검사 통과를 위해 수정
+			.displayName("nickname")
 			.email("test@test.com")
-			.displayName("테스트")
+			.password("password123")
+			.role(Role.GUEST)
 			.build();
 
-		given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
-
+		given(memberRepository.existsByUsername("testuser"))
+			.willReturn(false);
+		given(memberRepository.existsByEmail("test@test.com"))
+			.willReturn(false);
+		given(passwordEncoder.encode("password123"))
+			.willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponseDTO result = memberService.signupLocal(request);
 
-		assertThat(result.getUsername()).isEqualTo(request.getUsername());
+		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
 
 	@Test
 	@DisplayName("실패: 사용자명이 없으면 유효하지 않다는 오류 반환")
 	void signupFailWithoutUsername() {
 
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
+		SignupRequestDTO request = SignupRequestDTO.builder()
+			.provider(Provider.LOCAL)
 			.username(null)
+			.displayName("nickname")
 			.email("test@test.com")
-			.password("password123!")
+			.password("password123")
+			.role(Role.GUEST)
 			.build();
+
 
 		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USERNAME);
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.INVALID_USERNAME);
 	}
 
 	@Test
-	@DisplayName("실패: 중복된 사용자명이 존재하면 오류 반환")
-	void signupFailDuplicateUsername() {
+	@DisplayName("실패: 계정 id가 중복되면 오류")
+	void signupFailWithDuplicateUsername() {
 
-		String duplicateUsername = "testuser";
-
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.username(duplicateUsername)
+		SignupRequestDTO request = SignupRequestDTO.builder()
+			.provider(Provider.LOCAL)
+			.username("testuser")
+			.displayName("nickname")
+			.email("test@test.com")
 			.password("password123")
+			.role(Role.GUEST)
 			.build();
 
-		given(memberRepository.existsByUsername(duplicateUsername)).willReturn(true);
+
+		given(memberRepository.existsByUsername("testuser"))
+			.willReturn(true);
 
 		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATED_USERNAME);
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
+	}
 
+	@Test
+	@DisplayName("실패: 계정 email이 중복되면 오류")
+	void signupFailWithDuplicateEmail() {
+
+		SignupRequestDTO request = SignupRequestDTO.builder()
+			.provider(Provider.LOCAL)
+			.username("testuser")
+			.displayName("nickname")
+			.email("test@test.com")
+			.password("password123")
+			.role(Role.GUEST)
+			.build();
+
+		given(memberRepository.existsByUsername("testuser"))
+			.willReturn(false);
+		given(memberRepository.existsByEmail("test@test.com"))
+			.willReturn(true);
+
+		assertThatThrownBy(() -> memberService.signupLocal(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
 	}
 
 	@Test
 	@DisplayName("성공: 표시명이 없으면 무작위 문자열 8글자 생성")
 	void signupWithRandomDisplayName() {
 
-		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
+		SignupRequestDTO request = SignupRequestDTO.builder()
+			.provider(Provider.LOCAL)
 			.username("testuser")
 			.displayName(null)
 			.email("test@test.com")
 			.password("password123")
+			.role(Role.GUEST)
 			.build();
 
-		given(passwordEncoder.encode(anyString()))
-			.willReturn("hashed_password");
 
+		given(memberRepository.existsByUsername("testuser"))
+			.willReturn(false);
+		given(memberRepository.existsByEmail("test@test.com"))
+			.willReturn(false);
+		given(passwordEncoder.encode("password123"))
+			.willReturn("hashed_password");
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponseDTO result = memberService.signupLocal(request);
 
+		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
 	}
 
+	@Test
+	@DisplayName("성공: 로그인 성공")
+	void loginSuccess() {
+
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username("test")
+			.password("password123")
+			.build();
+
+		given(memberRepository.findByUsername("test"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.matches("password123", "hashedPassword"))
+			.willReturn(true);
+		given(jwtTokenProvider.createAccessToken(any(), any()))
+			.willReturn("test-access-token");
+
+		LoginResponseDTO response = memberService.login(request);
+
+		assertThat(response.getAccessToken()).isEqualTo("Bearer test-access-token");
+		assertThat(response.getUsername()).isEqualTo("test");
+		assertThat(response.getExpiredIn()).isEqualTo(3600L);
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
+	void loginFailUserNotFound() {
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username("wrongUser")
+			.password("password123")
+			.build();
+
+		given(memberRepository.findByUsername("wrongUser"))
+			.willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("실패: 비밀번호 틀리면 오류 반환")
+	void loginFailPasswordMismatch() {
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username("loginUser")
+			.password("wrongPassword")
+			.build();
+
+		given(memberRepository.findByUsername("loginUser"))
+			.willReturn(Optional.of(member));
+		given(passwordEncoder.matches("wrongPassword", "hashedPassword"))
+			.willReturn(false);
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
+	}
 }
