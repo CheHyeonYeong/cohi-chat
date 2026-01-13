@@ -111,8 +111,8 @@ public class MemberService {
 		);
 
 		return LoginResponseDTO.builder()
-			.accessToken("Bearer " + accessToken)
-			.expiredIn(accessTokenExpiration / 1000)
+			.accessToken(accessToken)
+			.expiredInSeconds(accessTokenExpiration / 1000)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
 			.build();

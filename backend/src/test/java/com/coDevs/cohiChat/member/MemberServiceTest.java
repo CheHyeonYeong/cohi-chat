@@ -240,7 +240,7 @@ class MemberServiceTest {
 
 		assertThat(response.getAccessToken()).isEqualTo("Bearer test-access-token");
 		assertThat(response.getUsername()).isEqualTo("test");
-		assertThat(response.getExpiredIn()).isEqualTo(expectedExpiredIn);
+		assertThat(response.getExpiredInSeconds()).isEqualTo(expectedExpiredIn);
 	}
 
 	@Test
