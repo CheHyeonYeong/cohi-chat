@@ -70,7 +70,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 중복된 사용자명이 존재하면 오류 반환")
+	@DisplayName("실패: 중복된 사용자명이 존재하면 오류 반환")
 	void signupFailDuplicateUsername() {
 
 		String duplicateUsername = "testuser";

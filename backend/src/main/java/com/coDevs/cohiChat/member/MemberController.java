@@ -15,13 +15,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/v1/member")
+@RequestMapping("/member")
 @RequiredArgsConstructor
 public class MemberController {
 
 	private final MemberService memberService;
 
-	@PostMapping("/signup")
+	@PostMapping("/v1/signup")
 	public ResponseEntity<SignupResponseDTO> signupLocal(
 		@Valid @RequestBody SignupLocalRequestDTO request) {
 
