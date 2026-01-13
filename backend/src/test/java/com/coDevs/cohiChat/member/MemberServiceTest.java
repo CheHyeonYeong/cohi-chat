@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
@@ -38,17 +39,19 @@ class MemberServiceTest {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
 			.username("testuser")
-			.displayName("nickname")
+			.password("password123") // 유효성 검사 통과를 위해 수정
 			.email("test@test.com")
-			.password("password123")
+			.displayName("테스트")
 			.build();
 
-		given(passwordEncoder.encode(anyString()))
-			.willReturn("hashed_password");
+		given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
+
+		given(memberRepository.save(any(Member.class)))
+			.willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponseDTO result = memberService.signupLocal(request);
 
-		assertThat(result.getUsername()).isEqualTo("testuser");
+		assertThat(result.getUsername()).isEqualTo(request.getUsername());
 	}
 
 	@Test
@@ -57,11 +60,32 @@ class MemberServiceTest {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
 			.username(null)
+			.email("test@test.com")
+			.password("password123!")
 			.build();
 
 		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USERNAME);
+	}
+
+	@Test
+	@DisplayName("성공: 중복된 사용자명이 존재하면 오류 반환")
+	void signupFailDuplicateUsername() {
+
+		String duplicateUsername = "testuser";
+
+		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
+			.username(duplicateUsername)
+			.password("password123")
+			.build();
+
+		given(memberRepository.existsByUsername(duplicateUsername)).willReturn(true);
+
+		assertThatThrownBy(() -> memberService.signupLocal(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATED_USERNAME);
+
 	}
 
 	@Test

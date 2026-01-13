@@ -3,7 +3,6 @@ package com.coDevs.cohiChat.member.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,12 +18,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "member", indexes = {
+	@Index(name = "idx_member_email", columnList = "email"),
+	@Index(name = "idx_member_username", columnList = "username")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
@@ -66,35 +71,27 @@ public class Member {
 		String hashedPassword,
 		Role role
 	) {
-		validateRequired(username, email, hashedPassword);
+		validateRequired(username, displayName, email, hashedPassword, role);
 
 		Member member = new Member();
 		member.username = username;
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
-
-		member.displayName = (displayName == null || displayName.isBlank())
-			? generateDefaultDisplayName() : displayName;
-
-		member.role = (role != null) ? role : Role.GUEST;
+		member.role = role;
 
 		return member;
 	}
 
-	private static void validateRequired(String username, String email, String hashedPassword) {
+	private static void validateRequired(String username, String displayName, String email, String hashedPassword, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
+		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
 		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL); // 필요시 추가
 		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
+		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
+
 	}
 
-	private static String generateDefaultDisplayName() {
-		return new RandomStringGenerator.Builder()
-			.withinRange('0', 'z')
-			.filteredBy(Character::isLetterOrDigit)
-			.build()
-			.generate(8);
-	}
 
 	public void updateInfo(String displayName, String hashedPassword) {
 		if (displayName != null && !displayName.isBlank()) {
