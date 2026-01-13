@@ -3,13 +3,8 @@ package com.coDevs.cohiChat.member;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 
-import java.util.Optional;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Member;
-import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
@@ -43,22 +36,11 @@ class MemberServiceTest {
 	void signupSuccess() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(Provider.LOCAL)
 			.username("testuser")
 			.displayName("nickname")
 			.email("test@test.com")
 			.password("password123")
-			.role(Role.GUEST)
 			.build();
-
-		given(memberRepository.existsByUsername("testuser"))
-			.willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com"))
-			.willReturn(false);
-		given(passwordEncoder.encode("password123"))
-			.willReturn("hashedPassword");
-		given(memberRepository.save(any(Member.class)))
-			.willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponseDTO result = memberService.signupLocal(request);
 
@@ -70,16 +52,8 @@ class MemberServiceTest {
 	void signupFailWithoutUsername() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(Provider.LOCAL)
 			.username(null)
-			.displayName("nickname")
-			.email("test@test.com")
-			.password("password123")
-			.role(Role.GUEST)
 			.build();
-
-		given(memberRepository.existsByUsername(null)).willReturn(false);
-		given(passwordEncoder.encode("password123")).willReturn("hashedPassword");
 
 		assertThatThrownBy(() -> memberService.signupLocal(request))
 			.isInstanceOf(CustomException.class)
@@ -91,27 +65,17 @@ class MemberServiceTest {
 	void signupWithRandomDisplayName() {
 
 		SignupLocalRequestDTO request = SignupLocalRequestDTO.builder()
-			.provider(Provider.LOCAL)
 			.username("testuser")
 			.displayName(null)
 			.email("test@test.com")
 			.password("password123")
-			.role(Role.GUEST)
 			.build();
 
-
-		given(memberRepository.existsByUsername("testuser"))
-			.willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com"))
-			.willReturn(false);
-		given(passwordEncoder.encode("password123"))
-			.willReturn("hashed_password");
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponseDTO result = memberService.signupLocal(request);
 
-		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
 	}
 
