@@ -238,7 +238,7 @@ class MemberServiceTest {
 
 		LoginResponseDTO response = memberService.login(request);
 
-		assertThat(response.getAccessToken()).isEqualTo("Bearer test-access-token");
+		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 		assertThat(response.getUsername()).isEqualTo("test");
 		assertThat(response.getExpiredInSeconds()).isEqualTo(expectedExpiredIn);
 	}
