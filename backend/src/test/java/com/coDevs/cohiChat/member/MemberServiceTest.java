@@ -141,6 +141,38 @@ class MemberServiceTest {
 	}
 
 	@Test
+	@DisplayName("실패: 닉네임이 2자 미만인 경우")
+	void signupDisplayNameMinFail() {
+		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", "a"); // 1자
+
+		assertThatThrownBy(() -> memberService.signup(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
+	}
+
+	@Test
+	@DisplayName("실패: 닉네임이 20자를 초과하는 경우")
+	void signupDisplayNameMaxFail() {
+		String longNickname = "a".repeat(21);
+		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", longNickname);
+
+		assertThatThrownBy(() -> memberService.signup(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
+	}
+
+	@Test
+	@DisplayName("성공: 닉네임이 경계값(2자, 20자)인 경우")
+	void signupDisplayNameBoundarySuccess() {
+		SignupRequestDTO requestMin = createSignupRequest("user1", "user1@test.com", "aa");
+		given(memberRepository.existsByUsername(any())).willReturn(false);
+		given(passwordEncoder.encode(any())).willReturn("hash");
+		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+		assertThat(memberService.signup(requestMin).getDisplayName().length()).isEqualTo(2);
+	}
+
+	@Test
 	@DisplayName("실패: 계정 id가 중복되면 오류")
 	void signupFailWithDuplicateUsername() {
 

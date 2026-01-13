@@ -43,6 +43,14 @@ public class MemberService {
 			throw new CustomException(ErrorCode.INVALID_USERNAME);
 		}
 
+		if (request.getDisplayName() != null) {
+			if (request.getDisplayName().isBlank()
+				|| request.getDisplayName().length() < 2
+				|| request.getDisplayName().length() > 20) {
+				throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
+			}
+		}
+
 		validateDuplicate(request.getUsername(), request.getEmail());
 
 		String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
