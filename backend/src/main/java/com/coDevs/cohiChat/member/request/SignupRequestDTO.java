@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SignupLocalRequestDTO {
+public class SignupRequestDTO {
 
 	@NotBlank(message = "아이디는 필수입니다.")
 	@Size(min = 4, max = 12)

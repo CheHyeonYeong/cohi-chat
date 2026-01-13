@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginLocalRequestDTO {
+public class LoginRequestDTO {
 
 	@NotBlank(message = "아이디는 필수입니다.")
 	private String username;

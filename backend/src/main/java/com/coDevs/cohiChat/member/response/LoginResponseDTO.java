@@ -12,10 +12,7 @@ import lombok.NoArgsConstructor;
 public class LoginResponseDTO {
 
 	private String accessToken;
-
-	@Builder.Default
-	private String tokenType = "Bearer";
-
+	private long expiredIn;
 	private String refreshToken;
 	private String username;
 	private String displayName;

@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
-import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.request.LoginRequestDTO;
+import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -30,7 +30,7 @@ public class MemberController {
 
 	@PostMapping("/v1/signup")
 	public ResponseEntity<SignupResponseDTO> signupLocal(
-		@Valid @RequestBody SignupLocalRequestDTO request) {
+		@Valid @RequestBody SignupRequestDTO request) {
 
 		SignupResponseDTO response = memberService.signupLocal(request);
 
@@ -39,7 +39,7 @@ public class MemberController {
 
 	@PostMapping("/v1/login")
 	public ResponseEntity<LoginResponseDTO> login(
-		@Valid @RequestBody LoginLocalRequestDTO request) {
+		@Valid @RequestBody LoginRequestDTO request) {
 
 		LoginResponseDTO response = memberService.login(request);
 		return ResponseEntity.ok(response);

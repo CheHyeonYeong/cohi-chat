@@ -2,8 +2,8 @@ package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Role;
-import com.coDevs.cohiChat.member.request.LoginLocalRequestDTO;
-import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
+import com.coDevs.cohiChat.member.request.LoginRequestDTO;
+import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -28,7 +28,7 @@ public class MemberService {
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Transactional
-	public SignupResponseDTO signupLocal(SignupLocalRequestDTO request){
+	public SignupResponseDTO signupLocal(SignupRequestDTO request){
 
 		validateDuplicate(request.getUsername(), request.getEmail());
 
@@ -75,7 +75,7 @@ public class MemberService {
 			.generate(8);
 	}
 
-	public LoginResponseDTO login(LoginLocalRequestDTO request){
+	public LoginResponseDTO login(LoginRequestDTO request){
 
 		Member member = memberRepository.findByUsername(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -90,7 +90,8 @@ public class MemberService {
 		);
 
 		return LoginResponseDTO.builder()
-			.accessToken(accessToken)
+			.accessToken("Bearer " + accessToken)
+			.expiredIn(3600)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
 			.build();
