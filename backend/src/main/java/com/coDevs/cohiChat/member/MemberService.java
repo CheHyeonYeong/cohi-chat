@@ -37,6 +37,12 @@ public class MemberService {
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
 
+		if (request.getUsername() == null
+			|| request.getUsername().length() < 4
+			|| request.getUsername().length() > 12) {
+			throw new CustomException(ErrorCode.INVALID_USERNAME);
+		}
+
 		validateDuplicate(request.getUsername(), request.getEmail());
 
 		String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
