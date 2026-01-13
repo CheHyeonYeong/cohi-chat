@@ -18,13 +18,20 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SignupLocalRequestDTO {
 
-
+	@NotBlank(message = "아이디는 필수입니다.")
 	@Size(min = 4, max = 12)
 	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,20}$")
 	private String username;
+
+	@NotBlank(message = "비밀번호는 필수입니다.")
 	private String password;
+
+	@NotBlank(message = "이메일은 필수입니다.")
 	@Email
 	private String email;
+
+	@NotBlank(message = "닉네임은 필수입니다.")
+	@Size(min = 2, max = 20)
 	private String displayName;
 
 	@Builder.Default
