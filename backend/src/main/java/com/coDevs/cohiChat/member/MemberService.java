@@ -11,6 +11,7 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,12 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+
+	@Value("${jwt.access-token-expiration}")
+	private long accessTokenExpiration;
+
+	@Value("${jwt.refresh-token-expiration}")
+	private long refreshTokenExpiration;
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
@@ -91,7 +98,7 @@ public class MemberService {
 
 		return LoginResponseDTO.builder()
 			.accessToken("Bearer " + accessToken)
-			.expiredIn(3600)
+			.expiredIn(accessTokenExpiration / 1000)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
 			.build();

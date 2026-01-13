@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -44,7 +45,6 @@ class MemberServiceTest {
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
 
-
 	@BeforeEach
 	void setUp() {
 		member = Member.create(
@@ -54,6 +54,8 @@ class MemberServiceTest {
 			"hashedPassword",
 			Role.GUEST
 		);
+
+			ReflectionTestUtils.setField(memberService, "accessTokenExpiration", 3600000L);
 	}
 
 	@Test
@@ -78,7 +80,7 @@ class MemberServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		SignupResponseDTO result = memberService.signupLocal(request);
+		SignupResponseDTO result = memberService.signup(request);
 
 		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
@@ -97,7 +99,7 @@ class MemberServiceTest {
 			.build();
 
 
-		assertThatThrownBy(() -> memberService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signup(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.INVALID_USERNAME);
@@ -120,7 +122,7 @@ class MemberServiceTest {
 		given(memberRepository.existsByUsername("testuser"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> memberService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signup(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
@@ -144,7 +146,7 @@ class MemberServiceTest {
 		given(memberRepository.existsByEmail("test@test.com"))
 			.willReturn(true);
 
-		assertThatThrownBy(() -> memberService.signupLocal(request))
+		assertThatThrownBy(() -> memberService.signup(request))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
@@ -173,7 +175,7 @@ class MemberServiceTest {
 		given(memberRepository.save(any(Member.class)))
 			.willAnswer(invocation -> invocation.getArgument(0));
 
-		SignupResponseDTO result = memberService.signupLocal(request);
+		SignupResponseDTO result = memberService.signup(request);
 
 		assertThat(result.getDisplayName()).isNotNull();
 		assertThat(result.getDisplayName().length()).isEqualTo(8);
@@ -182,6 +184,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 로그인 성공")
 	void loginSuccess() {
+		long expectedExpiredIn = 3600L;
 
 		LoginRequestDTO request = LoginRequestDTO.builder()
 			.username("test")
@@ -199,7 +202,7 @@ class MemberServiceTest {
 
 		assertThat(response.getAccessToken()).isEqualTo("Bearer test-access-token");
 		assertThat(response.getUsername()).isEqualTo("test");
-		assertThat(response.getExpiredIn()).isEqualTo(3600L);
+		assertThat(response.getExpiredIn()).isEqualTo(expectedExpiredIn);
 	}
 
 	@Test
