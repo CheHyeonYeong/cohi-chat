@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 import java.util.Optional;
 
@@ -23,8 +24,10 @@ import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
@@ -66,6 +69,34 @@ class MemberServiceTest {
 			.username(username)
 			.password(password)
 			.build();
+	}
+
+	private UpdateMemberRequestDTO createUpdateAllRequest(String username, String newNick, String newPw) {
+		return UpdateMemberRequestDTO.builder()
+			.username(username)
+			.displayName(newNick)
+			.password(newPw)
+			.build();
+	}
+
+	private UpdateMemberRequestDTO createUpdateNickRequest(String username, String newNick) {
+		return UpdateMemberRequestDTO.builder()
+			.username(username)
+			.displayName(newNick)
+			.password(null)
+			.build();
+	}
+
+	private UpdateMemberRequestDTO createUpdatePasswordRequest(String username, String newPw) {
+		return UpdateMemberRequestDTO.builder()
+			.username(username)
+			.displayName(null)
+			.password(newPw)
+			.build();
+	}
+
+	private DeleteMemberRequestDTO createDeleteRequest(String username, String password) {
+		return new DeleteMemberRequestDTO(username, password);
 	}
 
 	@Test
@@ -279,4 +310,107 @@ class MemberServiceTest {
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
+
+	@Test
+	@DisplayName("성공: 존재하는 아이디로 회원 정보 조회")
+	void getMemberSuccess() {
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+
+		Member result = memberService.getMember("test");
+
+		assertThat(result.getUsername()).isEqualTo("test");
+		assertThat(result.getEmail()).isEqualTo("test@test.com");
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 아이디로 조회 시 USER_NOT_FOUND")
+	void getMemberFailNotFound() {
+		given(memberRepository.findByUsername("none")).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.getMember("none"))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("성공: 닉네임과 비밀번호 모두 수정")
+	void updateMemberSuccess() {
+		UpdateMemberRequestDTO request = createUpdateAllRequest("test", "newNick", "newPass");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPass")).willReturn("newHash");
+
+		memberService.updateMember(request);
+
+		assertThat(member.getDisplayName()).isEqualTo("newNick");
+		assertThat(member.getHashedPassword()).isEqualTo("newHash");
+	}
+
+	@Test
+	@DisplayName("성공: 닉네임만 변경 시 비밀번호 유지")
+	void updateMemberOnlyDisplayName() {
+		UpdateMemberRequestDTO request = createUpdateNickRequest("test", "onlyNick");
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+
+		memberService.updateMember(request);
+
+		assertThat(member.getDisplayName()).isEqualTo("onlyNick");
+		assertThat(member.getHashedPassword()).isEqualTo("hashedPassword");
+	}
+
+	@Test
+	@DisplayName("성공: 비밀번호만 변경")
+	void updateMemberOnlyPassword() {
+		String oldDisplayName = member.getDisplayName();
+		UpdateMemberRequestDTO request = createUpdatePasswordRequest("test", "newPassword123");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.encode("newPassword123")).willReturn("hashedNewPw");
+
+		memberService.updateMember(request);
+
+		assertThat(member.getHashedPassword()).isEqualTo("hashedNewPw");
+		assertThat(member.getDisplayName()).isEqualTo(oldDisplayName); // 기존 닉네임 유지
+	}
+
+	@Test
+	@DisplayName("실패: 수정할 닉네임 길이 위반(1자)")
+	void updateMemberFailInvalidDisplayName() {
+		UpdateMemberRequestDTO request = createUpdateNickRequest("test", "a");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+
+		assertThatThrownBy(() -> memberService.updateMember(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_DISPLAY_NAME);
+	}
+
+	@Test
+	@DisplayName("성공: 올바른 비밀번호로 회원 삭제")
+	void deleteMemberSuccess() {
+		DeleteMemberRequestDTO request = createDeleteRequest("test", "password123");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.matches("password123", "hashedPassword")).willReturn(true);
+
+		memberService.deleteMember(request);
+
+		verify(memberRepository).delete(member);
+	}
+
+	@Test
+	@DisplayName("실패: 삭제 시 비밀번호 불일치")
+	void deleteMemberFailPasswordMismatch() {
+		DeleteMemberRequestDTO request = createDeleteRequest("test", "wrongPassword");
+
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.matches("wrongPassword", "hashedPassword")).willReturn(false);
+
+		assertThatThrownBy(() -> memberService.deleteMember(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
+
+		verify(memberRepository, never()).delete(any());
+	}
+
 }
