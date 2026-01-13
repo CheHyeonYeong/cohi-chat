@@ -20,6 +20,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,7 +38,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
 
-	private static final String USERNAME_REGEX = "^[a-zA-Z0-9._-]{4,20}$";
+	private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -49,9 +53,11 @@ public class Member {
 	private String username;
 
 	@Column(name = "display_name", length = 50, nullable = false)
+	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,20}$")
 	private String displayName;
 
 	@Column(length = 255, nullable = false, unique = true)
+	@Email
 	private String email;
 
 	@Column(name = "hashed_password", nullable = false)
@@ -90,15 +96,16 @@ public class Member {
 	}
 
 	private static void validateRequired(String username, String displayName, String email, String hashedPassword, Role role) {
-		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 
-		if (!username.matches(USERNAME_REGEX)) {
-
+		if (username == null || !validator.validateValue(Member.class, "username", username).isEmpty()) {
 			throw new CustomException(ErrorCode.INVALID_USERNAME);
 		}
-		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
+
+		if (email == null || !validator.validateValue(Member.class, "email", email).isEmpty()) {
+			throw new CustomException(ErrorCode.INVALID_EMAIL);
+		}
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
-		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL); // 필요시 추가
+		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
 		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
 

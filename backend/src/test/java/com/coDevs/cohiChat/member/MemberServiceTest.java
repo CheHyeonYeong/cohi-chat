@@ -17,7 +17,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
-import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.SignupLocalRequestDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
