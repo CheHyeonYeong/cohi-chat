@@ -57,7 +57,7 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@PatchMapping("/v1")
+	@PatchMapping("/v1/{uesrname}")
 	@PreAuthorize("#request.username == authentication.name")
 	public ResponseEntity<MemberResponseDTO> updateMember(
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
@@ -66,7 +66,7 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@DeleteMapping("/v1")
+	@DeleteMapping("/v1/{username}")
 	@PreAuthorize("#request.username == authentication.name")
 	public ResponseEntity<Void> deleteMember(@Valid @RequestBody DeleteMemberRequestDTO request) {
 		memberService.deleteMember(request);
