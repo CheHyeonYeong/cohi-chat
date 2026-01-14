@@ -36,10 +36,10 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
 
-	private  static final String TEST_USERNAME = "test";
-	private  static final String TEST_EMAIL = "test@test.com";
-	private  static final String TEST_PASSWORD = "testPw";
-	private  static final String TEST_NICKNAME = "testNick";
+	private static final String TEST_USERNAME = "test";
+	private static final String TEST_EMAIL = "test@test.com";
+	private static final String TEST_PASSWORD = "testPw";
+	private static final String TEST_DISPLAY_NAME = "testDisplayName";
 
 	private Member member;
 
@@ -58,9 +58,8 @@ class MemberServiceTest {
 	@BeforeEach
 	void setUp() {
 
-		member = Member.create(TEST_USERNAME, TEST_NICKNAME, TEST_EMAIL, "hashedPassword", Role.GUEST);
+		member = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.GUEST);
 	}
-
 
 	@Test
 	@DisplayName("성공: 모든 입력 항목이 존재하면 계정 생성")
@@ -69,7 +68,7 @@ class MemberServiceTest {
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName(TEST_NICKNAME)
+			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
 		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(false);
@@ -77,8 +76,8 @@ class MemberServiceTest {
 		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
-		SignupResponseDTO result = memberService.signup(signupRequestDTO);
-		assertThat(result.getUsername()).isEqualTo(TEST_USERNAME);
+		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
+		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
 
 	}
 
@@ -86,22 +85,22 @@ class MemberServiceTest {
 	@DisplayName("성공: 표시명이 없으면(null) 무작위 문자열 8글자 생성")
 	void signupWithRandomDisplayName() {
 
-			SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-				.username(TEST_USERNAME)
-				.password(TEST_PASSWORD)
-				.email(TEST_EMAIL)
-				.displayName(null)
-				.build();
+		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.email(TEST_EMAIL)
+			.displayName(null)
+			.build();
 
 		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(false);
 		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
 		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
-		SignupResponseDTO result = memberService.signup(signupRequestDTO);
+		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
 
-		assertThat(result.getDisplayName()).isNotNull();
-		assertThat(result.getDisplayName().length()).isEqualTo(8);
+		assertThat(signupResponseDTO.getDisplayName()).isNotNull();
+		assertThat(signupResponseDTO.getDisplayName().length()).isEqualTo(8);
 	}
 
 	@Test
@@ -111,7 +110,7 @@ class MemberServiceTest {
 			.username("aaa")
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName(TEST_NICKNAME)
+			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
@@ -127,16 +126,16 @@ class MemberServiceTest {
 			.username(maxUsername)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName(TEST_NICKNAME)
+			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
 		given(memberRepository.existsByUsername(maxUsername)).willReturn(false);
 		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
-		given(passwordEncoder.encode(any())).willReturn("hash");
+		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hash");
 		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-		SignupResponseDTO result = memberService.signup(signupRequestDTO);
-		assertThat(result.getUsername().length()).isEqualTo(12);
+		SignupResponseDTO signipResponseDTO = memberService.signup(signupRequestDTO);
+		assertThat(signipResponseDTO.getUsername()).isEqualTo(maxUsername);
 	}
 
 	@Test
@@ -147,7 +146,7 @@ class MemberServiceTest {
 			.username(tooLongUsername)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName(TEST_NICKNAME)
+			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
@@ -162,7 +161,7 @@ class MemberServiceTest {
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName(TEST_NICKNAME)
+			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
 		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(true);
@@ -170,6 +169,23 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode").isEqualTo(ErrorCode.DUPLICATED_USERNAME);
+	}
+
+	@Test
+	@DisplayName("실패: 계정 email 중복되면 오류")
+	void signupFailWithDuplicateEmail() {
+		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.email(TEST_EMAIL)
+			.displayName(TEST_DISPLAY_NAME)
+			.build();
+
+		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(true);
+
+		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.DUPLICATED_EMAIL);
 	}
 
 	@Test
@@ -184,9 +200,38 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
-
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
+	void loginFailUserNotFound() {
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username("wrongUser")
+			.password(TEST_PASSWORD)
+			.build();
+
+		given(memberRepository.findByUsername("wrongUser")).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("실패: 틀린 비밀번호로 로그인 시 오류 반환")
+	void loginFailPasswordMismatch() {
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password("wrongPassword")
+			.build();
+
+		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
 
 	@Test
@@ -195,6 +240,16 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 		Member result = memberService.getMember(TEST_USERNAME);
 		assertThat(result.getUsername()).isEqualTo(TEST_USERNAME);
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 아이디로 회원 정보 조회 시 오류 반환")
+	void getMemberFailNotFound() {
+		given(memberRepository.findByUsername("nonExist")).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.getMember("nonExist"))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 	}
 
 	@Test
@@ -260,5 +315,19 @@ class MemberServiceTest {
 		memberService.deleteMember(deleteMemberRequestDTO);
 
 		verify(memberRepository, times(1)).delete(member);
+	}
+
+	@Test
+	@DisplayName("실패: 존재하지 않는 회원 삭제 시 오류 반환")
+	void deleteMemberFailNotFound() {
+		DeleteMemberRequestDTO request = new DeleteMemberRequestDTO("nonExist");
+
+		given(memberRepository.findByUsername("nonExist")).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.deleteMember(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+
+		verify(memberRepository, never()).delete(any(Member.class));
 	}
 }
