@@ -41,6 +41,16 @@ class MemberServiceTest {
 	private static final String TEST_PASSWORD = "testPw";
 	private static final String TEST_DISPLAY_NAME = "testDisplayName";
 
+	/**
+	 * 회원가입 성공을 위한 공통 Mock 설정
+	 */
+	private void givenSuccessfulSignupMocks() {
+		given(memberRepository.existsByUsername(anyString())).willReturn(false);
+		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
+		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
+		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+	}
+
 	private Member member;
 
 	@Mock
@@ -71,10 +81,7 @@ class MemberServiceTest {
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
-		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(false);
-		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
-		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
-		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+		givenSuccessfulSignupMocks();
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
 		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
@@ -92,10 +99,7 @@ class MemberServiceTest {
 			.displayName(null)
 			.build();
 
-		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(false);
-		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
-		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
-		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+		givenSuccessfulSignupMocks();
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
 
@@ -129,10 +133,7 @@ class MemberServiceTest {
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
-		given(memberRepository.existsByUsername(maxUsername)).willReturn(false);
-		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
-		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hash");
-		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+		givenSuccessfulSignupMocks();
 
 		SignupResponseDTO signipResponseDTO = memberService.signup(signupRequestDTO);
 		assertThat(signipResponseDTO.getUsername()).isEqualTo(maxUsername);
