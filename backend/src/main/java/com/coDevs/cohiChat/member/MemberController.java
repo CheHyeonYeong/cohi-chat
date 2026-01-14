@@ -26,12 +26,11 @@ import lombok.RequiredArgsConstructor;
 
 
 @RestController
-@RequestMapping("/member")
+@RequestMapping("/members")
 @RequiredArgsConstructor
 public class MemberController {
 
 	private final MemberService memberService;
-	private final MemberRepository memberRepository;
 
 	@PostMapping("/v1/signup")
 	public ResponseEntity<SignupResponseDTO> signupLocal(
@@ -57,7 +56,7 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@PatchMapping("/v1/update")
+	@PatchMapping("/v1")
 	public ResponseEntity<MemberResponseDTO> updateMember(
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
 
@@ -65,7 +64,7 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
-	@DeleteMapping("/v1/delete")
+	@DeleteMapping("/v1")
 	public ResponseEntity<Void> deleteMember(@Valid @RequestBody DeleteMemberRequestDTO request) {
 		memberService.deleteMember(request);
 		return ResponseEntity.noContent().build();
