@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateMemberRequestDTO {
 
-	@Size(min = 4, max = 12)
 	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,12}$")
 	private String username;
 

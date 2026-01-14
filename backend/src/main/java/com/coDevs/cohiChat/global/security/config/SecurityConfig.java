@@ -5,6 +5,7 @@ import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -23,6 +24,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
@@ -43,8 +45,8 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/api/v1/members/signup", "/api/v1/members/login").permitAll()
-				.requestMatchers("/api/v1/members/**").authenticated()
+				.requestMatchers("/api/members/v1/signup", "/api/members/v1/login").permitAll()
+				.requestMatchers("/api/members/**").authenticated()
 
 				.anyRequest().authenticated()
 			)

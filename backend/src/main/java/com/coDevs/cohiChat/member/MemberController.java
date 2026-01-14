@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.member;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -57,6 +58,7 @@ public class MemberController {
 	}
 
 	@PatchMapping("/v1")
+	@PreAuthorize("#request.username == authentication.name")
 	public ResponseEntity<MemberResponseDTO> updateMember(
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
 
