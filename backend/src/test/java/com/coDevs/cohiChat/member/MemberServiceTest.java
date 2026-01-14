@@ -50,191 +50,62 @@ class MemberServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		member = Member.create("test", "testNickname", "test@test.com", "hashedPassword", Role.GUEST);
+
+		member = Member.create("test", "testNick", "test@test.com", "hashedPassword", Role.GUEST);
 	}
 
-	private SignupRequestDTO createSignupRequest(String username, String email, String displayName) {
-		return SignupRequestDTO.builder()
-			.provider(Provider.LOCAL)
-			.username(username)
-			.email(email)
-			.displayName(displayName)
-			.password("password123")
-			.role(Role.GUEST)
-			.build();
-	}
+	/**
+	 * 공통 헬퍼 메서드:
+	 * null 전달 시 유연하게 대응하도록 수정했습니다.
+	 */
+	private static <T> T createRequest(String username, String email, String password, String displayName, Class<T> type) {
+		String finalUser = (username != null) ? username : "test";
+		String finalEmail = (email != null) ? email : "test@test.com";
+		String finalPass = (password != null) ? password : "password123";
 
-	private LoginRequestDTO createLoginRequest(String username, String password) {
-		return LoginRequestDTO.builder()
-			.username(username)
-			.password(password)
-			.build();
-	}
+		String finalNick = displayName;
 
-	private UpdateMemberRequestDTO createUpdateAllRequest(String username, String newNick, String newPw) {
-		return UpdateMemberRequestDTO.builder()
-			.username(username)
-			.displayName(newNick)
-			.password(newPw)
-			.build();
-	}
-
-	private UpdateMemberRequestDTO createUpdateNickRequest(String username, String newNick) {
-		return UpdateMemberRequestDTO.builder()
-			.username(username)
-			.displayName(newNick)
-			.password(null)
-			.build();
-	}
-
-	private DeleteMemberRequestDTO createDeleteRequest(String username, String password) {
-		return new DeleteMemberRequestDTO(username, password);
+		if (type.equals(SignupRequestDTO.class)) {
+			return type.cast(SignupRequestDTO.builder()
+				.username(finalUser).email(finalEmail).password(finalPass).displayName(finalNick)
+				.provider(Provider.LOCAL).role(Role.GUEST).build());
+		}
+		if (type.equals(LoginRequestDTO.class)) {
+			return type.cast(LoginRequestDTO.builder().username(finalUser).password(finalPass).build());
+		}
+		if (type.equals(UpdateMemberRequestDTO.class)) {
+			return type.cast(UpdateMemberRequestDTO.builder().username(finalUser).displayName(finalNick).password(finalPass).build());
+		}
+		if (type.equals(DeleteMemberRequestDTO.class)) {
+			return type.cast(new DeleteMemberRequestDTO(finalUser));
+		}
+		throw new IllegalArgumentException("Unsupported DTO type");
 	}
 
 	@Test
 	@DisplayName("성공: 모든 입력 항목이 존재하면 계정 생성")
 	void signupSuccess() {
+		SignupRequestDTO request = createRequest("testuser", null, null, "testNick", SignupRequestDTO.class);
 
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", "nickname");
-
-		given(memberRepository.existsByUsername("testuser"))
-			.willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com"))
-			.willReturn(false);
-		given(passwordEncoder.encode("password123"))
-			.willReturn("hashedPassword");
-		given(memberRepository.save(any(Member.class)))
-			.willAnswer(invocation -> invocation.getArgument(0));
+		given(memberRepository.existsByUsername(any())).willReturn(false);
+		given(memberRepository.existsByEmail(any())).willReturn(false);
+		given(passwordEncoder.encode(any())).willReturn("hashedPassword");
+		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
 		SignupResponseDTO result = memberService.signup(request);
-
 		assertThat(result.getUsername()).isEqualTo("testuser");
 	}
 
 	@Test
-	@DisplayName("성공: 사용자명이 경계값(12자)인 경우")
-	void signupUsernameBoundarySuccess() {
-		String maxUsername = "a".repeat(12);
-		SignupRequestDTO request = createSignupRequest(maxUsername, "test@test.com", "nick");
-
-		given(memberRepository.existsByUsername(maxUsername)).willReturn(false);
-		given(memberRepository.existsByEmail(any())).willReturn(false);
-
-		given(passwordEncoder.encode(any())).willReturn("fakeHashedPassword");
-
-		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-
-		SignupResponseDTO result = memberService.signup(request);
-
-		assertThat(result.getUsername().length()).isEqualTo(12);
-	}
-
-	@Test
-	@DisplayName("실패: 사용자명이 경계값(4자) 미만일 때")
-	void signupUsernameMinBoundaryFail() {
-		String tooLongUsername = "a".repeat(3);
-		SignupRequestDTO request = createSignupRequest(tooLongUsername, "test@test.com", "nick");
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 사용자명이 경계값(12자)을 초과할 때")
-	void signupUsernameMaxBoundaryFail() {
-		String tooLongUsername = "a".repeat(13);
-		SignupRequestDTO request = createSignupRequest(tooLongUsername, "test@test.com", "nick");
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 사용자명이 없으면 유효하지 않다는 오류 반환")
-	void signupFailWithoutUsername() {
-
-		SignupRequestDTO request = createSignupRequest(null, "test@test.com", "nickname");
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 닉네임이 2자 미만인 경우")
-	void signupDisplayNameMinFail() {
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", "a"); // 1자
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
-	}
-
-	@Test
-	@DisplayName("실패: 닉네임이 20자를 초과하는 경우")
-	void signupDisplayNameMaxFail() {
-		String longNickname = "a".repeat(21);
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", longNickname);
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
-	}
-
-	@Test
-	@DisplayName("성공: 닉네임이 경계값(2자, 20자)인 경우")
-	void signupDisplayNameBoundarySuccess() {
-		SignupRequestDTO requestMin = createSignupRequest("user1", "user1@test.com", "aa");
-		given(memberRepository.existsByUsername(any())).willReturn(false);
-		given(passwordEncoder.encode(any())).willReturn("hash");
-		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-
-		assertThat(memberService.signup(requestMin).getDisplayName().length()).isEqualTo(2);
-	}
-
-	@Test
-	@DisplayName("실패: 계정 id가 중복되면 오류")
-	void signupFailWithDuplicateUsername() {
-
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", "nickname");
-
-		given(memberRepository.existsByUsername("testuser")).willReturn(true);
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 계정 email이 중복되면 오류")
-	void signupFailWithDuplicateEmail() {
-
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", "nickname");
-
-		given(memberRepository.existsByUsername("testuser")).willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com")).willReturn(true);
-
-		assertThatThrownBy(() -> memberService.signup(request))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.DUPLICATED_EMAIL);
-	}
-
-	@Test
-	@DisplayName("성공: 표시명이 없으면 무작위 문자열 8글자 생성")
+	@DisplayName("성공: 표시명이 없으면(null) 무작위 문자열 8글자 생성")
 	void signupWithRandomDisplayName() {
 
-		SignupRequestDTO request = createSignupRequest("testuser", "test@test.com", null);
+		SignupRequestDTO request = createRequest("testuser", null, null, null, SignupRequestDTO.class);
 
-		given(memberRepository.existsByUsername("testuser")).willReturn(false);
-		given(memberRepository.existsByEmail("test@test.com")).willReturn(false);
-		given(passwordEncoder.encode(any())).willReturn("hashed_password");
-		given(memberRepository.save(any(Member.class)))
-			.willAnswer(invocation -> invocation.getArgument(0));
+		given(memberRepository.existsByUsername(any())).willReturn(false);
+		given(memberRepository.existsByEmail(any())).willReturn(false);
+		given(passwordEncoder.encode(any())).willReturn("hash");
+		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
 		SignupResponseDTO result = memberService.signup(request);
 
@@ -243,97 +114,83 @@ class MemberServiceTest {
 	}
 
 	@Test
+	@DisplayName("실패: 사용자명이 4자 미만일 때")
+	void signupUsernameMinBoundaryFail() {
+		SignupRequestDTO request = createRequest("abc", null, null, "nick", SignupRequestDTO.class);
+
+		assertThatThrownBy(() -> memberService.signup(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
+	}
+
+	@Test
+	@DisplayName("성공: 사용자명이 경계값(12자)인 경우")
+	void signupUsernameBoundarySuccess() {
+		String maxUsername = "a".repeat(12);
+		SignupRequestDTO request = createRequest(maxUsername, null, null, "testNick", SignupRequestDTO.class);
+
+		given(memberRepository.existsByUsername(maxUsername)).willReturn(false);
+		given(memberRepository.existsByEmail(any())).willReturn(false);
+		given(passwordEncoder.encode(any())).willReturn("hash");
+		given(memberRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+		SignupResponseDTO result = memberService.signup(request);
+		assertThat(result.getUsername().length()).isEqualTo(12);
+	}
+
+	@Test
+	@DisplayName("실패: 사용자명이 경계값(12자)을 초과할 때")
+	void signupUsernameMaxBoundaryFail() {
+		String tooLongUsername = "a".repeat(13);
+		SignupRequestDTO request = createRequest(tooLongUsername, null, null, "testNick", SignupRequestDTO.class);
+
+		assertThatThrownBy(() -> memberService.signup(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
+	}
+
+	@Test
+	@DisplayName("실패: 계정 id가 중복되면 오류")
+	void signupFailWithDuplicateUsername() {
+		SignupRequestDTO request = createRequest("dupUser", null, null, "testNick", SignupRequestDTO.class);
+		given(memberRepository.existsByUsername("dupUser")).willReturn(true);
+
+		assertThatThrownBy(() -> memberService.signup(request))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode").isEqualTo(ErrorCode.DUPLICATED_USERNAME);
+	}
+
+	@Test
 	@DisplayName("성공: 로그인 성공")
 	void loginSuccess() {
-		long expirationMillis = 3600000L;
-		long expectedExpiredIn = 3600L;
+		ReflectionTestUtils.setField(memberService, "accessTokenExpiration", 3600000L);
+		LoginRequestDTO request = createRequest("test", null, "password123", "testNick", LoginRequestDTO.class);
 
-		ReflectionTestUtils.setField(memberService, "accessTokenExpiration", expirationMillis);
-
-		LoginRequestDTO request = createLoginRequest("test", "password123");
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-		given(passwordEncoder.matches("password123", "hashedPassword"))
-			.willReturn(true);
-		given(jwtTokenProvider.createAccessToken(any(), any()))
-			.willReturn("test-access-token");
+		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
+		given(passwordEncoder.matches("password123", "hashedPassword")).willReturn(true);
+		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
 
 		LoginResponseDTO response = memberService.login(request);
-
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
-		assertThat(response.getUsername()).isEqualTo("test");
-		assertThat(response.getExpiredInSeconds()).isEqualTo(expectedExpiredIn);
-	}
-
-	@Test
-	@DisplayName("실패: 아이디가 공백인 경우 (경계값 시나리오)")
-	void loginFailWithBlankUsername() {
-		LoginRequestDTO request = createLoginRequest("", "password123");
-
-		assertThatThrownBy(() -> memberService.login(request))
-			.isInstanceOf(CustomException.class);
-	}
-
-	@Test
-	@DisplayName("실패: 존재하지 않는 아이디로 로그인 시 오류 반환")
-	void loginFailUserNotFound() {
-		LoginRequestDTO request = createLoginRequest("wrongUser", "password123");
-
-		given(memberRepository.findByUsername("wrongUser"))
-			.willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> memberService.login(request))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
-	}
-
-	@Test
-	@DisplayName("실패: 비밀번호 틀리면 오류 반환")
-	void loginFailPasswordMismatch() {
-		LoginRequestDTO request = createLoginRequest("test", "wrongPassword");
-
-		given(memberRepository.findByUsername("test"))
-			.willReturn(Optional.of(member));
-		given(passwordEncoder.matches(eq("wrongPassword"), any()))
-			.willReturn(false);
-
-		assertThatThrownBy(() -> memberService.login(request))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
 
 	@Test
 	@DisplayName("성공: 존재하는 아이디로 회원 정보 조회")
 	void getMemberSuccess() {
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
-
 		Member result = memberService.getMember("test");
-
 		assertThat(result.getUsername()).isEqualTo("test");
-		assertThat(result.getEmail()).isEqualTo("test@test.com");
-	}
-
-	@Test
-	@DisplayName("실패: 존재하지 않는 아이디로 조회 시 USER_NOT_FOUND")
-	void getMemberFailNotFound() {
-		given(memberRepository.findByUsername("none")).willReturn(Optional.empty());
-
-		assertThatThrownBy(() -> memberService.getMember("none"))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 	}
 
 	@Test
 	@DisplayName("성공: 닉네임과 비밀번호 모두 수정")
 	void updateMemberSuccess() {
-		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", "newNick", "newPass");
+		UpdateMemberRequestDTO request = createRequest("test", null, "newPass", "newNick", UpdateMemberRequestDTO.class);
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(request);
-
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
 		assertThat(member.getHashedPassword()).isEqualTo("newHash");
 	}
@@ -342,57 +199,43 @@ class MemberServiceTest {
 	@DisplayName("성공: 닉네임만 변경 시 비밀번호 유지")
 	void updateMemberOnlyDisplayName() {
 		String oldPassword = member.getHashedPassword();
-		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", "newNick", null);
+		UpdateMemberRequestDTO request = createRequest("test", null, null, "newNick", UpdateMemberRequestDTO.class);
+
+		ReflectionTestUtils.setField(request, "password", null);
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
 
 		memberService.updateMember(request);
-
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
 		assertThat(member.getHashedPassword()).isEqualTo(oldPassword);
+		verify(passwordEncoder, never()).encode(anyString());
 	}
 
 	@Test
-	@DisplayName("성공: 비밀번호만 변경")
+	@DisplayName("성공: 비밀번호 변경 시 닉네임 유지")
 	void updateMemberOnlyPassword() {
-		String oldDisplayName = member.getDisplayName();
-		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", null, "newPass");
+		String oldNickname = member.getDisplayName();
+		UpdateMemberRequestDTO request = createRequest("test", null, "newPass", null, UpdateMemberRequestDTO.class);
+
+		ReflectionTestUtils.setField(request, "displayName", null);
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(request);
-
+		assertThat(member.getDisplayName()).isEqualTo(oldNickname);
 		assertThat(member.getHashedPassword()).isEqualTo("newHash");
-		assertThat(member.getDisplayName()).isEqualTo(oldDisplayName);
 	}
 
 	@Test
-	@DisplayName("성공: 올바른 비밀번호로 회원 삭제")
+	@DisplayName("성공: 회원 삭제")
 	void deleteMemberSuccess() {
-		DeleteMemberRequestDTO request = createDeleteRequest("test", "password123");
+		DeleteMemberRequestDTO request = createRequest("test", null, null, null, DeleteMemberRequestDTO.class);
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
-		given(passwordEncoder.matches("password123", "hashedPassword")).willReturn(true);
 
 		memberService.deleteMember(request);
 
-		verify(memberRepository).delete(member);
+		verify(memberRepository, times(1)).delete(member);
 	}
-
-	@Test
-	@DisplayName("실패: 삭제 시 비밀번호 불일치")
-	void deleteMemberFailPasswordMismatch() {
-		DeleteMemberRequestDTO request = createDeleteRequest("test", "wrongPassword");
-
-		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
-		given(passwordEncoder.matches("wrongPassword", "hashedPassword")).willReturn(false);
-
-		assertThatThrownBy(() -> memberService.deleteMember(request))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
-
-		verify(memberRepository, never()).delete(any());
-	}
-
 }

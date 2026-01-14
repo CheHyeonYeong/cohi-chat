@@ -22,11 +22,4 @@ public class UpdateMemberRequestDTO {
 
 	private String password;
 
-	public static UpdateMemberRequestDTO of(String username, String displayName, String password) {
-		return UpdateMemberRequestDTO.builder()
-			.username(username)
-			.displayName(displayName)
-			.password(password)
-			.build();
-	}
 }
