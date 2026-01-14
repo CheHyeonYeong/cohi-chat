@@ -38,11 +38,6 @@ public class MemberService {
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
-		// [추가] 현재 서버가 인식하는 DB 파일의 절대 경로를 로그로 출력
-		String dbPath = new java.io.File("./cohi-chat.db").getAbsolutePath();
-		log.info("================================================");
-		log.info("현재 DB 파일 실제 위치: {}", dbPath);
-		log.info("================================================");
 
 		if (request.getUsername() == null
 			|| request.getUsername().length() < 4
@@ -127,7 +122,7 @@ public class MemberService {
 	}
 
 	public Member getMember(String username) {
-		log.info("getMember success");
+
 		return memberRepository.findByUsername(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}

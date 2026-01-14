@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.global.exception;
 
 import org.springframework.http.HttpStatus;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,10 +9,7 @@ import lombok.Getter;
 public enum ErrorCode {
 
 	/**
-	 * 계정, 인증 관련 예외들.
-	 * 400: 잘못된 요청 (입력값 검증 실패)
-	 * 401: 인증 실패 (토큰 문제, 로그인 실패)
-	 * 403: 인증은 되었으나 권한 없음
+	 * 계정, 인증 관련 예외들
 	 */
 	INVALID_USERNAME(HttpStatus.BAD_REQUEST, "유효하지 않은 계정 ID입니다."),
 	INVALID_EMAIL(HttpStatus.BAD_REQUEST, "유효하지 않은 E-mail 주소입니다."),
@@ -30,8 +26,18 @@ public enum ErrorCode {
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 인증 토큰입니다."),
 	AUTH_NOT_PROVIDED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
 
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
+	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
+
 	/**
-	 * 캘린더, 타임슬롯, 예약 관련 예외들.
+	 * 시스템 및 데이터베이스 관련
+	 */
+	DATABASE_CONNECTION_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "데이터베이스 연결에 실패하였습니다."),
+	DATABASE_SCHEMA_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "데이터베이스 구조 오류가 발생했습니다."),
+	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
+
+	/**
+	 * 캘린더, 타임슬롯, 예약 관련 예외들
 	 */
 	HOST_NOT_FOUND(HttpStatus.NOT_FOUND, "호스트가 없습니다."),
 	CALENDAR_NOT_FOUND(HttpStatus.NOT_FOUND, "캘린더가 없습니다."),
@@ -43,11 +49,8 @@ public enum ErrorCode {
 
 	SELF_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "자기 자신에게는 부킹을 할 수 없습니다."),
 	PAST_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "과거 일자에는 부킹을 할 수 없습니다."),
-	INVALID_YEAR_MONTH(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 년도 또는 월입니다."),
-
-	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트는 캘린더를 생성할 수 없습니다.");
+	INVALID_YEAR_MONTH(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 년도 또는 월입니다.");
 
 	private final HttpStatus status;
 	private final String message;
-
 }
