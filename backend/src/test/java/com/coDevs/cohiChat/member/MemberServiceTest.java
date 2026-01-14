@@ -26,7 +26,6 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
-import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -257,7 +256,6 @@ class MemberServiceTest {
 	@DisplayName("성공: 닉네임과 비밀번호 모두 수정")
 	void updateMemberSuccess() {
 		UpdateMemberRequestDTO updateMemberRequestDTO = UpdateMemberRequestDTO.builder()
-			.username(TEST_USERNAME)
 			.displayName("newNick")
 			.password("newPass")
 			.build();
@@ -265,7 +263,7 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
-		memberService.updateMember(updateMemberRequestDTO);
+		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
 		assertThat(member.getHashedPassword()).isEqualTo("newHash");
 	}
@@ -275,14 +273,13 @@ class MemberServiceTest {
 	void updateMemberOnlyDisplayName() {
 		String oldPassword = member.getHashedPassword();
 		UpdateMemberRequestDTO updateMemberRequestDTO = UpdateMemberRequestDTO.builder()
-			.username(TEST_USERNAME)
 			.displayName("newNick")
 			.password(null)
 			.build();
 
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 
-		memberService.updateMember(updateMemberRequestDTO);
+		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
 		assertThat(member.getHashedPassword()).isEqualTo(oldPassword);
 		verify(passwordEncoder, never()).encode(anyString());
@@ -293,7 +290,6 @@ class MemberServiceTest {
 	void updateMemberOnlyPassword() {
 		String oldNickname = member.getDisplayName();
 		UpdateMemberRequestDTO updateMemberRequestDTO = UpdateMemberRequestDTO.builder()
-			.username(TEST_USERNAME)
 			.displayName(null)
 			.password("newPass")
 			.build();
@@ -301,7 +297,7 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
-		memberService.updateMember(updateMemberRequestDTO);
+		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
 		assertThat(member.getDisplayName()).isEqualTo(oldNickname);
 		assertThat(member.getHashedPassword()).isEqualTo("newHash");
 	}
@@ -309,11 +305,9 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 회원 삭제")
 	void deleteMemberSuccess() {
-		DeleteMemberRequestDTO deleteMemberRequestDTO = new DeleteMemberRequestDTO(TEST_USERNAME);
-
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 
-		memberService.deleteMember(deleteMemberRequestDTO);
+		memberService.deleteMember(TEST_USERNAME);
 
 		verify(memberRepository, times(1)).delete(member);
 	}
@@ -321,11 +315,9 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 존재하지 않는 회원 삭제 시 오류 반환")
 	void deleteMemberFailNotFound() {
-		DeleteMemberRequestDTO request = new DeleteMemberRequestDTO("nonExist");
-
 		given(memberRepository.findByUsername("nonExist")).willReturn(Optional.empty());
 
-		assertThatThrownBy(() -> memberService.deleteMember(request))
+		assertThatThrownBy(() -> memberService.deleteMember("nonExist"))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 

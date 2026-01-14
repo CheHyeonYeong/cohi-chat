@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -51,25 +50,27 @@ public class MemberController {
 	}
 
 	@GetMapping("/v1/{username}")
-	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable(name = "username") String username) {
+	@PreAuthorize("isAuthenticated() and #username == authentication.name")
+	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable String username) {
 		Member member = memberService.getMember(username);
 		MemberResponseDTO response = MemberResponseDTO.from(member);
 		return ResponseEntity.ok(response);
 	}
 
-	@PatchMapping("/v1/{uesrname}")
-	@PreAuthorize("#request.username == authentication.name")
+	@PatchMapping("/v1/{username}")
+	@PreAuthorize("isAuthenticated() and #username == authentication.name")
 	public ResponseEntity<MemberResponseDTO> updateMember(
+		@PathVariable String username,
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
 
-		MemberResponseDTO response = memberService.updateMember(request);
+		MemberResponseDTO response = memberService.updateMember(username, request);
 		return ResponseEntity.ok(response);
 	}
 
 	@DeleteMapping("/v1/{username}")
-	@PreAuthorize("#request.username == authentication.name")
-	public ResponseEntity<Void> deleteMember(@Valid @RequestBody DeleteMemberRequestDTO request) {
-		memberService.deleteMember(request);
+	@PreAuthorize("isAuthenticated() and #username == authentication.name")
+	public ResponseEntity<Void> deleteMember(@PathVariable String username) {
+		memberService.deleteMember(username);
 		return ResponseEntity.noContent().build();
 	}
 

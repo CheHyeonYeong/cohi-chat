@@ -14,10 +14,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateMemberRequestDTO {
 
-	@NotBlank(message = "아이디는 필수입니다.")
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,12}$")
-	private String username;
-
 	@Size(min = 2, max = 20, message = "닉네임은 2자 이상 20자 이하로 입력해주세요.")
 	private String displayName;
 

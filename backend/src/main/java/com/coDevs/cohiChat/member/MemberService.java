@@ -2,7 +2,6 @@ package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Role;
-import com.coDevs.cohiChat.member.request.DeleteMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -127,9 +126,9 @@ public class MemberService {
 	}
 
 	@Transactional
-	public MemberResponseDTO updateMember(UpdateMemberRequestDTO request) {
+	public MemberResponseDTO updateMember(String username, UpdateMemberRequestDTO request) {
 
-		Member member = getMember(request.getUsername());
+		Member member = getMember(username);
 
 		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
 			? passwordEncoder.encode(request.getPassword()) : null;
@@ -141,9 +140,9 @@ public class MemberService {
 	}
 
 	@Transactional
-	public void deleteMember(DeleteMemberRequestDTO request) {
+	public void deleteMember(String username) {
 
-		Member member = getMember(request.getUsername());
+		Member member = getMember(username);
 
 		memberRepository.delete(member);
 	}
