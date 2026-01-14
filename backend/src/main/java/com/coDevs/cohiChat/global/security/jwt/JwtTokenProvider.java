@@ -43,19 +43,19 @@ public class JwtTokenProvider {
 		this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public String createAccessToken(UUID memberId, String role) {
-		return createToken(memberId, role, accessTokenExpiration);
+	public String createAccessToken(String username, String role) {
+		return createToken(username, role, accessTokenExpiration);
 	}
 
-	public String createRefreshToken(UUID memberId) {
-		return createToken(memberId, null, refreshTokenExpiration);
+	public String createRefreshToken(String username) {
+		return createToken(username, null, refreshTokenExpiration);
 	}
 
-	private String createToken(UUID memberId, String role, long expirationTime) {
+	private String createToken(String username, String role, long expirationTime) {
 		Date now = new Date();
 
 		var builder = Jwts.builder()
-			.subject(memberId.toString())
+			.subject(username.toString())
 			.issuedAt(now)
 			.expiration(new Date(now.getTime() + expirationTime));
 
@@ -79,8 +79,8 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public UUID getMemberIdFromToken(String token) {
-		return UUID.fromString(parseClaims(token).getSubject());
+	public String getUsernameFromToken(String token) {
+		return parseClaims(token).getSubject();
 	}
 
 	public String getRoleFromToken(String token) {
@@ -97,7 +97,7 @@ public class JwtTokenProvider {
 
 	public Authentication getAuthentication(String token) {
 
-		UUID memberId = getMemberIdFromToken(token);
+		String username = getUsernameFromToken(token);
 		String roleStr = getRoleFromToken(token);
 
 		String finalRole = (roleStr != null) ? roleStr : "GUEST";
@@ -106,7 +106,7 @@ public class JwtTokenProvider {
 			new SimpleGrantedAuthority("ROLE_" + finalRole)
 		);
 
-		UserDetails principal = new User(memberId.toString(), "", authorities);
+		UserDetails principal = new User(username.toString(), "", authorities);
 
 		return new UsernamePasswordAuthenticationToken(principal, token, authorities);
 	}

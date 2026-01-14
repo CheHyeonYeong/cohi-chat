@@ -4,6 +4,7 @@ package com.coDevs.cohiChat.member;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,8 +24,9 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
@@ -45,13 +47,17 @@ public class MemberController {
 	public ResponseEntity<LoginResponseDTO> login(
 		@Valid @RequestBody LoginRequestDTO request) {
 
+		log.info("login success");
 		LoginResponseDTO response = memberService.login(request);
 		return ResponseEntity.ok(response);
+
 	}
 
 	@GetMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable String username) {
+	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable(name = "username") String username) {
+
+		log.info("get member");
 		Member member = memberService.getMember(username);
 		MemberResponseDTO response = MemberResponseDTO.from(member);
 		return ResponseEntity.ok(response);
@@ -60,7 +66,7 @@ public class MemberController {
 	@PatchMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated() and #username == authentication.name")
 	public ResponseEntity<MemberResponseDTO> updateMember(
-		@PathVariable String username,
+		@PathVariable(name = "username") String username,
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
 
 		MemberResponseDTO response = memberService.updateMember(username, request);
@@ -69,7 +75,7 @@ public class MemberController {
 
 	@DeleteMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<Void> deleteMember(@PathVariable String username) {
+	public ResponseEntity<Void> deleteMember(@PathVariable(name = "username") String username) {
 		memberService.deleteMember(username);
 		return ResponseEntity.noContent().build();
 	}
