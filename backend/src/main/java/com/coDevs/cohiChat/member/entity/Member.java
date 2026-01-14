@@ -60,11 +60,11 @@ public class Member {
 	private Role role;
 
 	@CreatedDate
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", updatable = false)
 	private LocalDateTime createdAt;
 
 	@LastModifiedDate
-	@Column(name = "updated_at", nullable = false)
+	@Column(name = "updated_at", updatable = false)
 	private LocalDateTime updatedAt;
 
 	public static Member create(
