@@ -67,11 +67,10 @@ public class MemberController {
 	}
 
 	@DeleteMapping("/v1")
+	@PreAuthorize("#request.username == authentication.name")
 	public ResponseEntity<Void> deleteMember(@Valid @RequestBody DeleteMemberRequestDTO request) {
 		memberService.deleteMember(request);
 		return ResponseEntity.noContent().build();
 	}
-
-
 
 }
