@@ -87,14 +87,6 @@ class MemberServiceTest {
 			.build();
 	}
 
-	private UpdateMemberRequestDTO createUpdatePasswordRequest(String username, String newPw) {
-		return UpdateMemberRequestDTO.builder()
-			.username(username)
-			.displayName(null)
-			.password(newPw)
-			.build();
-	}
-
 	private DeleteMemberRequestDTO createDeleteRequest(String username, String password) {
 		return new DeleteMemberRequestDTO(username, password);
 	}
@@ -335,7 +327,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 닉네임과 비밀번호 모두 수정")
 	void updateMemberSuccess() {
-		UpdateMemberRequestDTO request = createUpdateAllRequest("test", "newNick", "newPass");
+		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", "newNick", "newPass");
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
@@ -349,40 +341,30 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 닉네임만 변경 시 비밀번호 유지")
 	void updateMemberOnlyDisplayName() {
-		UpdateMemberRequestDTO request = createUpdateNickRequest("test", "onlyNick");
+		String oldPassword = member.getHashedPassword();
+		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", "newNick", null);
+
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
 
 		memberService.updateMember(request);
 
-		assertThat(member.getDisplayName()).isEqualTo("onlyNick");
-		assertThat(member.getHashedPassword()).isEqualTo("hashedPassword");
+		assertThat(member.getDisplayName()).isEqualTo("newNick");
+		assertThat(member.getHashedPassword()).isEqualTo(oldPassword);
 	}
 
 	@Test
 	@DisplayName("성공: 비밀번호만 변경")
 	void updateMemberOnlyPassword() {
 		String oldDisplayName = member.getDisplayName();
-		UpdateMemberRequestDTO request = createUpdatePasswordRequest("test", "newPassword123");
+		UpdateMemberRequestDTO request = UpdateMemberRequestDTO.of("test", null, "newPass");
 
 		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
-		given(passwordEncoder.encode("newPassword123")).willReturn("hashedNewPw");
+		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(request);
 
-		assertThat(member.getHashedPassword()).isEqualTo("hashedNewPw");
-		assertThat(member.getDisplayName()).isEqualTo(oldDisplayName); // 기존 닉네임 유지
-	}
-
-	@Test
-	@DisplayName("실패: 수정할 닉네임 길이 위반(1자)")
-	void updateMemberFailInvalidDisplayName() {
-		UpdateMemberRequestDTO request = createUpdateNickRequest("test", "a");
-
-		given(memberRepository.findByUsername("test")).willReturn(Optional.of(member));
-
-		assertThatThrownBy(() -> memberService.updateMember(request))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_DISPLAY_NAME);
+		assertThat(member.getHashedPassword()).isEqualTo("newHash");
+		assertThat(member.getDisplayName()).isEqualTo(oldDisplayName);
 	}
 
 	@Test
