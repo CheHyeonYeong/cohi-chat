@@ -134,13 +134,6 @@ public class MemberService {
 		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
 			? passwordEncoder.encode(request.getPassword()) : null;
 
-		if (request.getDisplayName() != null) {
-			if (request.getDisplayName().length() < 2
-				|| request.getDisplayName().length() > 20) {
-				throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
-			}
-		}
-
 		member.updateInfo(request.getDisplayName(), hashPw);
 
 		return MemberResponseDTO.from(member);
