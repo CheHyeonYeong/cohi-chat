@@ -55,8 +55,7 @@ class MemberServiceTest {
 	}
 
 	/**
-	 * 공통 헬퍼 메서드:
-	 * null 전달 시 유연하게 대응하도록 수정했습니다.
+	 * 공통 헬퍼 메서드.
 	 */
 	private static <T> T createRequest(String username, String email, String password, String displayName, Class<T> type) {
 		String finalUser = (username != null) ? username : "test";
