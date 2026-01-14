@@ -145,10 +145,6 @@ public class MemberService {
 
 		Member member = getMember(request.getUsername());
 
-		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
-			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
-		}
-
 		memberRepository.delete(member);
 	}
 
