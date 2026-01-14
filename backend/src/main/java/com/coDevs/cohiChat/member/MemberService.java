@@ -30,10 +30,10 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 
-	@Value("${jwt.access-token-expiration}")
+	@Value("${jwt.access-token-expiration-minutes}")
 	private long accessTokenExpiration;
 
-	@Value("${jwt.refresh-token-expiration}")
+	@Value("${jwt.refresh-token-expiration-days}")
 	private long refreshTokenExpiration;
 
 	@Transactional

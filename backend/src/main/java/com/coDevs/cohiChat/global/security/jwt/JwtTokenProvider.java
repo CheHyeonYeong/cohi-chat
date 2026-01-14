@@ -32,10 +32,10 @@ public class JwtTokenProvider {
 	@Value("${jwt.secret}")
 	private String secretKey;
 
-	@Value("${jwt.access-token-expiration}")
+	@Value("${jwt.access-token-expiration-minutes}")
 	private long accessTokenExpiration;
 
-	@Value("${jwt.refresh-token-expiration}")
+	@Value("${jwt.refresh-token-expiration-days}")
 	private long refreshTokenExpiration;
 
 	@PostConstruct
@@ -44,11 +44,13 @@ public class JwtTokenProvider {
 	}
 
 	public String createAccessToken(String username, String role) {
-		return createToken(username, role, accessTokenExpiration);
+		long expirationTimeMs = accessTokenExpiration * 60 * 1000;
+		return createToken(username, role, expirationTimeMs);
 	}
 
 	public String createRefreshToken(String username) {
-		return createToken(username, null, refreshTokenExpiration);
+		long expirationTimeMs = refreshTokenExpiration * 24 * 60 * 60 * 1000;
+		return createToken(username, null, expirationTimeMs);
 	}
 
 	private String createToken(String username, String role, long expirationTime) {

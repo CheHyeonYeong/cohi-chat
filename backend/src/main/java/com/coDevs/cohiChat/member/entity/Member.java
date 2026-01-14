@@ -64,7 +64,7 @@ public class Member {
 	private LocalDateTime createdAt;
 
 	@LastModifiedDate
-	@Column(name = "updated_at", updatable = false)
+	@Column(name = "updated_at", updatable = true)
 	private LocalDateTime updatedAt;
 
 	public static Member create(
