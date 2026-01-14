@@ -30,8 +30,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String requestURI = request.getRequestURI();
 		String token = resolveToken(request);
 
-		log.info("Incoming Request: {} | Token: {}", requestURI, (token != null ? "Found" : "Null"));
-
 		if (token != null && jwtTokenProvider.validateToken(token)) {
 			try {
 				Authentication auth = jwtTokenProvider.getAuthentication(token);
