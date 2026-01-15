@@ -33,9 +33,9 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
 
-	private static final String TEST_USERNAME = "test";
+	private static final String TEST_USERNAME = "testtest";
 	private static final String TEST_EMAIL = "test@test.com";
-	private static final String TEST_PASSWORD = "testPw";
+	private static final String TEST_PASSWORD = "testPassword123!";
 	private static final String TEST_DISPLAY_NAME = "testDisplayName";
 
 	/**
@@ -61,6 +61,7 @@ class MemberServiceTest {
 
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
+
 
 	@BeforeEach
 	void setUp() {
@@ -102,203 +103,6 @@ class MemberServiceTest {
 
 		assertThat(signupResponseDTO.getDisplayName()).isNotNull();
 		assertThat(signupResponseDTO.getDisplayName().length()).isEqualTo(8);
-	}
-
-	@Test
-	@DisplayName("실패: 아이디가 경계값(4자) 미만일 때")
-	void signupUsernameMinBoundaryFail() {
-		String minUsername = "aaa";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(minUsername)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("성공: 아이디가 경계값(4자)일 때")
-	void signupUsernameMinBoundarySuccess() {
-		String minUsername = "aaaa";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(minUsername)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(minUsername);
-	}
-
-	@Test
-	@DisplayName("실패: 아이디가 경계값(12자)을 초과할 때")
-	void signupUsernameMaxBoundaryFail() {
-		String maxUsername = "a".repeat(13);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(maxUsername)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_USERNAME);
-	}
-
-	@Test
-	@DisplayName("성공: 아이디가 경계값(12자)일 때")
-	void signupUsernameMaxBoundarySuccess() {
-		String maxUsername = "a".repeat(12);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(maxUsername)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(maxUsername);
-	}
-
-	@Test
-	@DisplayName("실패: 비밀번호가 경계값(4자) 미만일 때")
-	void signupPasswordMinBoundaryFail() {
-		String minPassword = "aaaa";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(minPassword)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_PASSWORD);
-	}
-
-	@Test
-	@DisplayName("성공: 비밀번호가 경계값(4자)일 때")
-	void signupPasswordMinBoundarySuccess() {
-		String minPassword = "aaaa";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(minPassword)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 비밀번호가 경계값(20자)를 초과할 때")
-	void signupPasswordMaxBoundaryFail() {
-		String maxPassword = "a".repeat(21);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(maxPassword)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_PASSWORD);
-	}
-
-	@Test
-	@DisplayName("성공: 비밀번호가 경계값(20자)일 때")
-	void signupPasswordMaxBoundarySuccess() {
-		String maxPassword = "a".repeat(20);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(maxPassword)
-			.email(TEST_EMAIL)
-			.displayName(TEST_DISPLAY_NAME)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 닉네임이 경계값(2자) 미만일 때")
-	void signupDisplayNameMinBoundaryFail() {
-		String minDisplayname = "a";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(minDisplayname)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
-	}
-	@Test
-	@DisplayName("성공: 닉네임이 경계값(2자)일 때")
-	void signupDisplayNameMinBoundarySuccess() {
-		String minDisplayname = "aa";
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(minDisplayname)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
-	}
-
-	@Test
-	@DisplayName("실패: 닉네임이 경계값(20자)을 초과할 때")
-	void signupDisplayNameMaxBoundaryFail() {
-		String maxDisplayName = "a".repeat(21);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(maxDisplayName)
-			.build();
-
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_DISPLAY_NAME);
-	}
-
-	@Test
-	@DisplayName("성공: 닉네임이 경계값(20자)인 경우")
-	void signupDisplayNameMaxBoundarySuccess() {
-		String maxDisplayName = "a".repeat(20);
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(maxDisplayName)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
 	}
 
 	@Test

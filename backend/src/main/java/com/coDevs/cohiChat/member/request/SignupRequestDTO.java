@@ -29,8 +29,7 @@ public class SignupRequestDTO {
 	@NotBlank(message = "이메일은 필수입니다.")
 	@Email
 	private String email;
-
-	@NotBlank(message = "닉네임은 필수입니다.")
+	
 	@Size(min = 2, max = 20)
 	private String displayName;
 

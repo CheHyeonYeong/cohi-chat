@@ -18,9 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -31,20 +29,6 @@ public class MemberService {
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
-
-		if (request.getUsername() == null
-			|| request.getUsername().length() < 4
-			|| request.getUsername().length() > 12) {
-			throw new CustomException(ErrorCode.INVALID_USERNAME);
-		}
-
-		if (request.getDisplayName() != null) {
-			if (request.getDisplayName().isBlank()
-				|| request.getDisplayName().length() < 2
-				|| request.getDisplayName().length() > 20) {
-				throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
-			}
-		}
 
 		validateDuplicate(request.getUsername(), request.getEmail());
 

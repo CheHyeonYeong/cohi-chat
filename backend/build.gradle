@@ -47,6 +47,8 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.15.0'
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
 }
 
 tasks.named('test') {
