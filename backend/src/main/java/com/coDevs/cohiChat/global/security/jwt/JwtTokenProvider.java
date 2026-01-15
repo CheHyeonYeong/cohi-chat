@@ -7,6 +7,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,10 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 @Component
-@Slf4j
 public class JwtTokenProvider {
 
 	private SecretKey key;
@@ -57,7 +56,7 @@ public class JwtTokenProvider {
 		Date now = new Date();
 
 		var builder = Jwts.builder()
-			.subject(username.toString())
+			.subject(username)
 			.issuedAt(now)
 			.expiration(new Date(now.getTime() + expirationTime));
 
@@ -73,10 +72,8 @@ public class JwtTokenProvider {
 			parseClaims(token);
 			return true;
 		} catch (ExpiredJwtException e) {
-			log.warn("만료된 JWT 토큰");
 			return false;
 		} catch (JwtException | IllegalArgumentException e) {
-			log.error("유효하지 않은 JWT 토큰");
 			return false;
 		}
 	}
@@ -108,7 +105,7 @@ public class JwtTokenProvider {
 			new SimpleGrantedAuthority("ROLE_" + finalRole)
 		);
 
-		UserDetails principal = new User(username.toString(), "", authorities);
+		UserDetails principal = new User(username, "", authorities);
 
 		return new UsernamePasswordAuthenticationToken(principal, token, authorities);
 	}

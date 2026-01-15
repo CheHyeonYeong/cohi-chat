@@ -8,7 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErrorCode {
 
-	 /**
+	/**
 	 * 계정, 인증 관련 예외들.
 	 * 400: 잘못된 요청 (입력값 검증 실패)
 	 * 401: 인증 실패 (토큰 문제, 로그인 실패)

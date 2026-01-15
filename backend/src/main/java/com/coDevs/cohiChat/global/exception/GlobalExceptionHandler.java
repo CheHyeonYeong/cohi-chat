@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
+
 import com.coDevs.cohiChat.global.response.ErrorResponseDTO;
 
 @RestControllerAdvice

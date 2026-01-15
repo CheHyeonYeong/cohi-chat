@@ -93,8 +93,6 @@ public class MemberService {
 	}
 
 	public LoginResponseDTO login(LoginRequestDTO request){
-
-
 		Member member = memberRepository.findByUsername(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
