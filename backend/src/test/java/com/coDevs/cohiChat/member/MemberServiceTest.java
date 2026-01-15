@@ -133,8 +133,8 @@ class MemberServiceTest {
 
 		givenSuccessfulSignupMocks();
 
-		SignupResponseDTO signipResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signipResponseDTO.getUsername()).isEqualTo(maxUsername);
+		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
+		assertThat(signupResponseDTO.getUsername()).isEqualTo(maxUsername);
 	}
 
 	@Test

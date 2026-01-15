@@ -124,6 +124,11 @@ public class MemberService {
 	@Transactional
 	public MemberResponseDTO updateMember(String username, UpdateMemberRequestDTO request) {
 
+		if ((request.getDisplayName() == null || request.getDisplayName().isBlank())
+			&& (request.getPassword() == null || request.getPassword().isBlank())) {
+			throw new CustomException(ErrorCode.NO_UPDATE_FIELDS);
+		}
+
 		Member member = getMember(username);
 
 		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
