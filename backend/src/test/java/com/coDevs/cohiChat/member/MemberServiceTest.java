@@ -19,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -191,7 +190,6 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 로그인 성공")
 	void loginSuccess() {
-		ReflectionTestUtils.setField(memberService, "accessTokenExpiration", 3600000L);
 		LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
@@ -200,6 +198,7 @@ class MemberServiceTest {
 		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
+		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 	}

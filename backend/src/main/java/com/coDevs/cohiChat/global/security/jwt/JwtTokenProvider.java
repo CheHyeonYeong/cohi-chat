@@ -112,4 +112,12 @@ public class JwtTokenProvider {
 
 		return new UsernamePasswordAuthenticationToken(principal, token, authorities);
 	}
+
+	public long getExpirationSeconds(String token) {
+		Claims claims = parseClaims(token);
+		Date expiration = claims.getExpiration();
+		long now = new Date().getTime();
+
+		return (expiration.getTime() - now) / 1000;
+	}
 }

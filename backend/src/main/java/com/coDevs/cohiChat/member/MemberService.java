@@ -30,12 +30,6 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 
-	@Value("${jwt.access-token-expiration-minutes}")
-	private long accessTokenExpiration;
-
-	@Value("${jwt.refresh-token-expiration-days}")
-	private long refreshTokenExpiration;
-
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
 
@@ -113,9 +107,11 @@ public class MemberService {
 			member.getRole().name()
 		);
 
+		long expiredIn = jwtTokenProvider.getExpirationSeconds(accessToken);
+
 		return LoginResponseDTO.builder()
 			.accessToken(accessToken)
-			.expiredInSeconds(accessTokenExpiration / 1000)
+			.expiredInMinutes(expiredIn / 60)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
 			.build();
