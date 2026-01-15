@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.never;
 
 import java.util.Optional;
@@ -43,9 +42,9 @@ class MemberServiceTest {
 	 * 회원가입 성공을 위한 공통 Mock 설정
 	 */
 	private void givenSuccessfulSignupMocks() {
-		given(memberRepository.existsByUsername(anyString())).willReturn(false);
-		given(memberRepository.existsByEmail(TEST_EMAIL)).willReturn(false);
-		given(passwordEncoder.encode(TEST_PASSWORD)).willReturn("hashedPassword");
+		given(memberRepository.existsByUsernameAndIsDeleted(anyString())).willReturn(false);
+		given(memberRepository.existsByEmail(anyString())).willReturn(false);
+		given(passwordEncoder.encode(anyString())).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 	}
 
@@ -108,8 +107,9 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 아이디가 경계값(4자) 미만일 때")
 	void signupUsernameMinBoundaryFail() {
+		String minUsername = "aaa";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username("aaa")
+			.username(minUsername)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
 			.displayName(TEST_DISPLAY_NAME)
@@ -123,8 +123,9 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 아이디가 경계값(4자)일 때")
 	void signupUsernameMinBoundarySuccess() {
+		String minUsername = "aaaa";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username("aaaa")
+			.username(minUsername)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
 			.displayName(TEST_DISPLAY_NAME)
@@ -133,15 +134,15 @@ class MemberServiceTest {
 		givenSuccessfulSignupMocks();
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
+		assertThat(signupResponseDTO.getUsername()).isEqualTo(minUsername);
 	}
 
 	@Test
 	@DisplayName("실패: 아이디가 경계값(12자)을 초과할 때")
 	void signupUsernameMaxBoundaryFail() {
-		String tooLongUsername = "a".repeat(13);
+		String maxUsername = "a".repeat(13);
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(tooLongUsername)
+			.username(maxUsername)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
 			.displayName(TEST_DISPLAY_NAME)
@@ -166,15 +167,16 @@ class MemberServiceTest {
 		givenSuccessfulSignupMocks();
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
+		assertThat(signupResponseDTO.getUsername()).isEqualTo(maxUsername);
 	}
 
 	@Test
 	@DisplayName("실패: 비밀번호가 경계값(4자) 미만일 때")
 	void signupPasswordMinBoundaryFail() {
+		String minPassword = "aaaa";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
 			.username(TEST_USERNAME)
-			.password("aaa")
+			.password(minPassword)
 			.email(TEST_EMAIL)
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
@@ -185,11 +187,12 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 사용자명이 경계값(4자)일 때")
+	@DisplayName("성공: 비밀번호가 경계값(4자)일 때")
 	void signupPasswordMinBoundarySuccess() {
+		String minPassword = "aaaa";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
 			.username(TEST_USERNAME)
-			.password("aaaa")
+			.password(minPassword)
 			.email(TEST_EMAIL)
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
@@ -236,11 +239,12 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 닉네임이 경계값(2자) 미만일 때")
 	void signupDisplayNameMinBoundaryFail() {
+		String minDisplayname = "a";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName("a")
+			.displayName(minDisplayname)
 			.build();
 
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
@@ -250,11 +254,12 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 닉네임이 경계값(2자)일 때")
 	void signupDisplayNameMinBoundarySuccess() {
+		String minDisplayname = "aa";
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.email(TEST_EMAIL)
-			.displayName("aa")
+			.displayName(minDisplayname)
 			.build();
 
 		givenSuccessfulSignupMocks();
@@ -290,9 +295,10 @@ class MemberServiceTest {
 			.displayName(maxDisplayName)
 			.build();
 
-		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode").isEqualTo(ErrorCode.INVALID_PASSWORD);
+		givenSuccessfulSignupMocks();
+
+		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
+		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
 	}
 
 	@Test
@@ -305,7 +311,7 @@ class MemberServiceTest {
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
-		given(memberRepository.existsByUsername(TEST_USERNAME)).willReturn(true);
+		given(memberRepository.existsByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(true);
 
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
 			.isInstanceOf(CustomException.class)
@@ -337,7 +343,7 @@ class MemberServiceTest {
 			.password(TEST_PASSWORD)
 			.build();
 
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
 		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
@@ -353,7 +359,7 @@ class MemberServiceTest {
 			.password(TEST_PASSWORD)
 			.build();
 
-		given(memberRepository.findByUsername("wrongUser")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeleted("wrongUser")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
@@ -368,7 +374,7 @@ class MemberServiceTest {
 			.password("wrongPassword")
 			.build();
 
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
@@ -378,7 +384,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 존재하는 아이디로 회원 정보 조회")
 	void getMemberSuccess() {
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 		Member result = memberService.getMember(TEST_USERNAME);
 		assertThat(result.getUsername()).isEqualTo(TEST_USERNAME);
 	}
@@ -386,7 +392,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 존재하지 않는 아이디로 회원 정보 조회 시 오류 반환")
 	void getMemberFailNotFound() {
-		given(memberRepository.findByUsername("nonExist")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeleted("nonExist")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.getMember("nonExist"))
 			.isInstanceOf(CustomException.class)
@@ -401,7 +407,7 @@ class MemberServiceTest {
 			.password("newPass")
 			.build();
 
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
@@ -418,7 +424,7 @@ class MemberServiceTest {
 			.password(null)
 			.build();
 
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
@@ -435,7 +441,7 @@ class MemberServiceTest {
 			.password("newPass")
 			.build();
 
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
@@ -444,19 +450,36 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 회원 삭제")
-	void deleteMemberSuccess() {
-		given(memberRepository.findByUsername(TEST_USERNAME)).willReturn(Optional.of(member));
+	@DisplayName("실패: 닉네임과 비밀번호 둘 다 null일 때 오류 반환")
+	void updateMemberFailBothNull() {
+		UpdateMemberRequestDTO updateMemberRequestDTO = UpdateMemberRequestDTO.builder()
+			.displayName(null)
+			.password(null)
+			.build();
+
+		assertThatThrownBy(() -> memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_UPDATE_FIELDS);
+
+	}
+
+	@Test
+	@DisplayName("성공: 회원 탈퇴 (Soft Delete)")
+	void deleteMemberSoftDeleteSuccess() {
+
+		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME))
+			.willReturn(Optional.of(member));
 
 		memberService.deleteMember(TEST_USERNAME);
 
-		verify(memberRepository, times(1)).delete(member);
+		assertThat(member.isDeleted()).isTrue();
+		assertThat(member.getDeletedAt()).isNotNull();
 	}
 
 	@Test
 	@DisplayName("실패: 존재하지 않는 회원 삭제 시 오류 반환")
 	void deleteMemberFailNotFound() {
-		given(memberRepository.findByUsername("nonExist")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeleted("nonExist")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.deleteMember("nonExist"))
 			.isInstanceOf(CustomException.class)

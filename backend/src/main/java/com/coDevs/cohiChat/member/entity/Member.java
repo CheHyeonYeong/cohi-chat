@@ -67,6 +67,12 @@ public class Member {
 	@Column(name = "updated_at", updatable = true)
 	private LocalDateTime updatedAt;
 
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
+
+	@Column(name = "deleted_at")
+	private LocalDateTime deletedAt;
+
 	public static Member create(
 
 		String username,
@@ -83,6 +89,7 @@ public class Member {
 		member.email = email;
 		member.hashedPassword = hashedPassword;
 		member.role = role;
+		member.isDeleted = false;
 
 		return member;
 	}
@@ -104,5 +111,14 @@ public class Member {
 		if (hashedPassword != null && !hashedPassword.isBlank()) {
 			this.hashedPassword = hashedPassword;
 		}
+	}
+
+	public void softDelete() {
+		this.isDeleted = true;
+		this.deletedAt = LocalDateTime.now();
+	}
+
+	public boolean isActive() {
+		return !isDeleted;
 	}
 }

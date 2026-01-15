@@ -13,7 +13,6 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 
 import org.apache.commons.text.RandomStringGenerator;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +74,7 @@ public class MemberService {
 
 	private void validateDuplicate(String username, String email) {
 
-		if (memberRepository.existsByUsername(username)) {
+		if (memberRepository.existsByUsernameAndIsDeleted(username)) {
 			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
 		}
 		if (memberRepository.existsByEmail(email.toLowerCase())) {
@@ -93,7 +92,7 @@ public class MemberService {
 	}
 
 	public LoginResponseDTO login(LoginRequestDTO request){
-		Member member = memberRepository.findByUsername(request.getUsername())
+		Member member = memberRepository.findByUsernameAndIsDeleted(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
@@ -117,7 +116,7 @@ public class MemberService {
 
 	public Member getMember(String username) {
 
-		return memberRepository.findByUsername(username)
+		return memberRepository.findByUsernameAndIsDeleted(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
 
@@ -141,10 +140,7 @@ public class MemberService {
 
 	@Transactional
 	public void deleteMember(String username) {
-
 		Member member = getMember(username);
-
-		memberRepository.delete(member);
+		member.softDelete();
 	}
-
 }
