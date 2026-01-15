@@ -105,11 +105,11 @@ public class MemberService {
 			member.getRole().name()
 		);
 
-		long expiredIn = jwtTokenProvider.getExpirationSeconds(accessToken);
+		long expiredInSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
 
 		return LoginResponseDTO.builder()
 			.accessToken(accessToken)
-			.expiredInMinutes(expiredIn / 60)
+			.expiredInMinutes(expiredInSeconds / 60)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
 			.build();
