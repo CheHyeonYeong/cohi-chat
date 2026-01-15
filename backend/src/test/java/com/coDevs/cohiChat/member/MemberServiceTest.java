@@ -42,7 +42,7 @@ class MemberServiceTest {
 	 * 회원가입 성공을 위한 공통 Mock 설정
 	 */
 	private void givenSuccessfulSignupMocks() {
-		given(memberRepository.existsByUsernameAndIsDeleted(anyString())).willReturn(false);
+		given(memberRepository.existsByUsernameAndIsDeletedFalse(anyString())).willReturn(false);
 		given(memberRepository.existsByEmail(anyString())).willReturn(false);
 		given(passwordEncoder.encode(anyString())).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
@@ -311,7 +311,7 @@ class MemberServiceTest {
 			.displayName(TEST_DISPLAY_NAME)
 			.build();
 
-		given(memberRepository.existsByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(true);
+		given(memberRepository.existsByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(true);
 
 		assertThatThrownBy(() -> memberService.signup(signupRequestDTO))
 			.isInstanceOf(CustomException.class)
@@ -343,7 +343,7 @@ class MemberServiceTest {
 			.password(TEST_PASSWORD)
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
 		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
@@ -359,7 +359,7 @@ class MemberServiceTest {
 			.password(TEST_PASSWORD)
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted("wrongUser")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeletedFalse("wrongUser")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
@@ -374,7 +374,7 @@ class MemberServiceTest {
 			.password("wrongPassword")
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
@@ -384,7 +384,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("성공: 존재하는 아이디로 회원 정보 조회")
 	void getMemberSuccess() {
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		Member result = memberService.getMember(TEST_USERNAME);
 		assertThat(result.getUsername()).isEqualTo(TEST_USERNAME);
 	}
@@ -392,7 +392,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 존재하지 않는 아이디로 회원 정보 조회 시 오류 반환")
 	void getMemberFailNotFound() {
-		given(memberRepository.findByUsernameAndIsDeleted("nonExist")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeletedFalse("nonExist")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.getMember("nonExist"))
 			.isInstanceOf(CustomException.class)
@@ -407,7 +407,7 @@ class MemberServiceTest {
 			.password("newPass")
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
@@ -424,7 +424,7 @@ class MemberServiceTest {
 			.password(null)
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
 		assertThat(member.getDisplayName()).isEqualTo("newNick");
@@ -441,7 +441,7 @@ class MemberServiceTest {
 			.password("newPass")
 			.build();
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.encode("newPass")).willReturn("newHash");
 
 		memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO);
@@ -467,7 +467,7 @@ class MemberServiceTest {
 	@DisplayName("성공: 회원 탈퇴 (Soft Delete)")
 	void deleteMemberSoftDeleteSuccess() {
 
-		given(memberRepository.findByUsernameAndIsDeleted(TEST_USERNAME))
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
 			.willReturn(Optional.of(member));
 
 		memberService.deleteMember(TEST_USERNAME);
@@ -479,7 +479,7 @@ class MemberServiceTest {
 	@Test
 	@DisplayName("실패: 존재하지 않는 회원 삭제 시 오류 반환")
 	void deleteMemberFailNotFound() {
-		given(memberRepository.findByUsernameAndIsDeleted("nonExist")).willReturn(Optional.empty());
+		given(memberRepository.findByUsernameAndIsDeletedFalse("nonExist")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.deleteMember("nonExist"))
 			.isInstanceOf(CustomException.class)

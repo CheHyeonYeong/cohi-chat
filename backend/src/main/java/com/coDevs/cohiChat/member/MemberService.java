@@ -74,7 +74,7 @@ public class MemberService {
 
 	private void validateDuplicate(String username, String email) {
 
-		if (memberRepository.existsByUsernameAndIsDeleted(username)) {
+		if (memberRepository.existsByUsernameAndIsDeletedFalse(username)) {
 			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
 		}
 		if (memberRepository.existsByEmail(email.toLowerCase())) {
@@ -92,7 +92,7 @@ public class MemberService {
 	}
 
 	public LoginResponseDTO login(LoginRequestDTO request){
-		Member member = memberRepository.findByUsernameAndIsDeleted(request.getUsername())
+		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
@@ -116,7 +116,7 @@ public class MemberService {
 
 	public Member getMember(String username) {
 
-		return memberRepository.findByUsernameAndIsDeleted(username)
+		return memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
 

@@ -38,16 +38,6 @@ public class GlobalExceptionHandler {
 		return createErrorResponse(ErrorCode.INVALID_INPUT, errorMessage);
 	}
 
-	@ExceptionHandler(CannotCreateTransactionException.class)
-	public ResponseEntity<ApiResponseDTO<Void>> handleDbConnectionError(CannotCreateTransactionException e) {
-		return createErrorResponse(ErrorCode.DATABASE_CONNECTION_ERROR);
-	}
-
-	@ExceptionHandler(BadSqlGrammarException.class)
-	public ResponseEntity<ApiResponseDTO<Void>> handleSqlError(BadSqlGrammarException e) {
-		return createErrorResponse(ErrorCode.DATABASE_SCHEMA_ERROR);
-	}
-
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponseDTO<Void>> handleAllException(Exception e) {
 		return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);

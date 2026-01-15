@@ -20,6 +20,7 @@ public enum ErrorCode {
 	INVALID_DISPLAY_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 닉네임입니다."),
 	INVALID_ROLE(HttpStatus.BAD_REQUEST, "유효하지 않은 권한입니다."),
 	NO_UPDATE_FIELDS(HttpStatus.BAD_REQUEST, "수정할 항목을 최소 하나 이상 입력해주세요."),
+	INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
 	DUPLICATED_USERNAME(HttpStatus.CONFLICT, "중복된 계정 ID입니다."),
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "중복된 E-mail 주소입니다."),
@@ -34,13 +35,10 @@ public enum ErrorCode {
 	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
 
 	/**
-	 * 시스템 및 데이터베이스 관련.
+	 * 시스템 관련.
+	 * 500: 서버 내부 오류
 	 */
-	DATABASE_CONNECTION_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "데이터베이스 연결에 실패하였습니다."),
-	DATABASE_SCHEMA_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "데이터베이스 구조 오류가 발생했습니다."),
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
-
-	INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
 	/**
 	 * 캘린더, 타임슬롯, 예약 관련 예외들.

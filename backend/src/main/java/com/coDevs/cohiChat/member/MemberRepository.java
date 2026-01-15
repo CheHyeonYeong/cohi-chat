@@ -11,9 +11,9 @@ import com.coDevs.cohiChat.member.entity.Member;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, UUID> {
 
-	Optional<Member> findByUsernameAndIsDeleted(String username);
+	Optional<Member> findByUsernameAndIsDeletedFalse(String username);
 
-	boolean existsByUsernameAndIsDeleted(String username);
+	boolean existsByUsernameAndIsDeletedFalse(String username);
 
 	boolean existsByEmail(String email);
 
