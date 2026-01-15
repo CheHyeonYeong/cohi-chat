@@ -8,8 +8,11 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErrorCode {
 
-	/**
-	 * 계정, 인증 관련 예외들
+	 /**
+	 * 계정, 인증 관련 예외들.
+	 * 400: 잘못된 요청 (입력값 검증 실패)
+	 * 401: 인증 실패 (토큰 문제, 로그인 실패)
+	 * 403: 인증은 되었으나 권한 없음
 	 */
 	INVALID_USERNAME(HttpStatus.BAD_REQUEST, "유효하지 않은 계정 ID입니다."),
 	INVALID_EMAIL(HttpStatus.BAD_REQUEST, "유효하지 않은 E-mail 주소입니다."),
@@ -30,7 +33,7 @@ public enum ErrorCode {
 	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
 
 	/**
-	 * 시스템 및 데이터베이스 관련
+	 * 시스템 및 데이터베이스 관련.
 	 */
 	DATABASE_CONNECTION_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "데이터베이스 연결에 실패하였습니다."),
 	DATABASE_SCHEMA_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "데이터베이스 구조 오류가 발생했습니다."),
@@ -39,7 +42,7 @@ public enum ErrorCode {
 	INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
 	/**
-	 * 캘린더, 타임슬롯, 예약 관련 예외들
+	 * 캘린더, 타임슬롯, 예약 관련 예외들.
 	 */
 	HOST_NOT_FOUND(HttpStatus.NOT_FOUND, "호스트가 없습니다."),
 	CALENDAR_NOT_FOUND(HttpStatus.NOT_FOUND, "캘린더가 없습니다."),
