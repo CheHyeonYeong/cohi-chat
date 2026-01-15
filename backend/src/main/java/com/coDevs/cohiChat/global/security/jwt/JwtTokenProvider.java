@@ -30,11 +30,11 @@ public class JwtTokenProvider {
 	@Value("${jwt.secret}")
 	private String secretKey;
 
-	@Value("${jwt.access-token-expiration-minutes}")
-	private long accessTokenExpiration;
+	@Value("${jwt.access-token-expiration-ms}")
+	private long accessTokenExpirationMs;
 
-	@Value("${jwt.refresh-token-expiration-days}")
-	private long refreshTokenExpiration;
+	@Value("${jwt.refresh-token-expiration-ms}")
+	private long refreshTokenExpirationMs;
 
 	@PostConstruct
 	protected void init() {
@@ -42,22 +42,20 @@ public class JwtTokenProvider {
 	}
 
 	public String createAccessToken(String username, String role) {
-		long expirationTimeMs = accessTokenExpiration * 60 * 1000;
-		return createToken(username, role, expirationTimeMs);
+		return createToken(username, role, accessTokenExpirationMs);
 	}
 
 	public String createRefreshToken(String username) {
-		long expirationTimeMs = refreshTokenExpiration * 24 * 60 * 60 * 1000;
-		return createToken(username, null, expirationTimeMs);
+		return createToken(username, null, refreshTokenExpirationMs);
 	}
 
-	private String createToken(String username, String role, long expirationTime) {
+	private String createToken(String username, String role, long expirationTimeMs) {
 		Date now = new Date();
 
 		var builder = Jwts.builder()
 			.subject(username)
 			.issuedAt(now)
-			.expiration(new Date(now.getTime() + expirationTime));
+			.expiration(new Date(now.getTime() + expirationTimeMs));
 
 		if (role != null) {
 			builder.claim("role", role);
