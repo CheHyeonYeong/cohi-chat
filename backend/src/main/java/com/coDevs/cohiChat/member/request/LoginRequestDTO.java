@@ -16,11 +16,9 @@ import lombok.NoArgsConstructor;
 public class LoginRequestDTO {
 
 	@NotBlank(message = "아이디는 필수입니다.")
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,12}$", message = "아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능합니다.")
 	private String username;
 
 	@NotBlank(message = "비밀번호는 필수입니다.")
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,20}$", message = "비밀번호는 4~20자의 영문, 숫자, 특수문자(._-)만 가능합니다.")
 	private String password;
 
 	@Builder.Default
