@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class LoginResponseDTO {
 
 	private String accessToken;
-	private long expiredInSeconds;
+	private long expiredInMinutes;
 	private String refreshToken;
 	private String username;
 	private String displayName;

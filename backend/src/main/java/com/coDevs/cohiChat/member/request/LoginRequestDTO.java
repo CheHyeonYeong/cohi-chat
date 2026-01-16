@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.member.request;
 import com.coDevs.cohiChat.member.entity.Provider;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
