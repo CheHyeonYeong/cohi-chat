@@ -2,8 +2,8 @@ package com.coDevs.cohiChat.calendar;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,11 +27,10 @@ public class CalendarController {
 
     @PostMapping("/v1")
     public ResponseEntity<CalendarResponseDTO> createCalendar(
-        @Valid @RequestBody CalendarCreateRequestDTO request
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody CalendarCreateRequestDTO request
     ) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication != null ? authentication.getName() : null;
-        Member member = memberService.getMember(username);
+        Member member = memberService.getMember(userDetails.getUsername());
         CalendarResponseDTO response = calendarService.createCalendar(member, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.calendar;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,7 +34,8 @@ import com.coDevs.cohiChat.member.entity.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(CalendarController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
+@WithMockUser(username = "testuser")
 class CalendarControllerTest {
 
     @Autowired
@@ -89,7 +92,8 @@ class CalendarControllerTest {
 
         // when & then
         mockMvc.perform(post("/calendar/v1")
-                                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.topics[0]").value("커리어 상담"))
@@ -108,7 +112,8 @@ class CalendarControllerTest {
 
         // when & then
         mockMvc.perform(post("/calendar/v1")
-                                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error.message").exists());
@@ -126,7 +131,8 @@ class CalendarControllerTest {
 
         // when & then
         mockMvc.perform(post("/calendar/v1")
-                                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.error.message").exists());
@@ -147,7 +153,8 @@ class CalendarControllerTest {
 
         // when & then
         mockMvc.perform(post("/calendar/v1")
-                                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.error.code").value("GUEST_PERMISSION"));
@@ -168,7 +175,8 @@ class CalendarControllerTest {
 
         // when & then
         mockMvc.perform(post("/calendar/v1")
-                                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.error.code").value("CALENDAR_ALREADY_EXISTS"));
