@@ -22,14 +22,14 @@ class CalendarRepositoryTest {
     @Autowired
     private CalendarRepository calendarRepository;
 
-    private UUID hostId;
+    private UUID userId;
     private Calendar savedCalendar;
 
     @BeforeEach
     void setUp() {
-        hostId = UUID.randomUUID();
+        userId = UUID.randomUUID();
         Calendar calendar = Calendar.create(
-            hostId,
+            userId,
             List.of("커리어 상담", "이력서 리뷰"),
             "게스트에게 보여줄 설명입니다.",
             "test@group.calendar.google.com"
@@ -41,50 +41,50 @@ class CalendarRepositoryTest {
     @DisplayName("성공: 캘린더 저장 및 조회")
     void saveAndFindCalendar() {
         // when
-        Optional<Calendar> found = calendarRepository.findById(savedCalendar.getId());
+        Optional<Calendar> found = calendarRepository.findById(savedCalendar.getUserId());
 
         // then
         assertThat(found).isPresent();
-        assertThat(found.get().getHostId()).isEqualTo(hostId);
+        assertThat(found.get().getUserId()).isEqualTo(userId);
         assertThat(found.get().getTopics()).containsExactly("커리어 상담", "이력서 리뷰");
     }
 
     @Test
-    @DisplayName("성공: hostId로 캘린더 조회")
-    void findByHostId() {
+    @DisplayName("성공: userId로 캘린더 조회")
+    void findByUserId() {
         // when
-        Optional<Calendar> found = calendarRepository.findByHostIdAndIsDeletedFalse(hostId);
+        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(userId);
 
         // then
         assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(savedCalendar.getId());
+        assertThat(found.get().getUserId()).isEqualTo(savedCalendar.getUserId());
     }
 
     @Test
-    @DisplayName("성공: 존재하지 않는 hostId로 조회 시 빈 Optional 반환")
-    void findByHostIdNotFound() {
+    @DisplayName("성공: 존재하지 않는 userId로 조회 시 빈 Optional 반환")
+    void findByUserIdNotFound() {
         // when
-        Optional<Calendar> found = calendarRepository.findByHostIdAndIsDeletedFalse(UUID.randomUUID());
+        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(UUID.randomUUID());
 
         // then
         assertThat(found).isEmpty();
     }
 
     @Test
-    @DisplayName("성공: hostId로 캘린더 존재 여부 확인 - 존재함")
-    void existsByHostIdTrue() {
+    @DisplayName("성공: userId로 캘린더 존재 여부 확인 - 존재함")
+    void existsByUserIdTrue() {
         // when
-        boolean exists = calendarRepository.existsByHostIdAndIsDeletedFalse(hostId);
+        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(userId);
 
         // then
         assertThat(exists).isTrue();
     }
 
     @Test
-    @DisplayName("성공: hostId로 캘린더 존재 여부 확인 - 존재하지 않음")
-    void existsByHostIdFalse() {
+    @DisplayName("성공: userId로 캘린더 존재 여부 확인 - 존재하지 않음")
+    void existsByUserIdFalse() {
         // when
-        boolean exists = calendarRepository.existsByHostIdAndIsDeletedFalse(UUID.randomUUID());
+        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(UUID.randomUUID());
 
         // then
         assertThat(exists).isFalse();
@@ -98,8 +98,8 @@ class CalendarRepositoryTest {
         calendarRepository.save(savedCalendar);
 
         // when
-        Optional<Calendar> found = calendarRepository.findByHostIdAndIsDeletedFalse(hostId);
-        boolean exists = calendarRepository.existsByHostIdAndIsDeletedFalse(hostId);
+        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(userId);
+        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(userId);
 
         // then
         assertThat(found).isEmpty();

@@ -76,8 +76,7 @@ class CalendarControllerTest {
             .build();
 
         CalendarResponseDTO response = CalendarResponseDTO.builder()
-            .id(UUID.randomUUID())
-            .hostId(UUID.randomUUID())
+            .userId(UUID.randomUUID())
             .topics(TEST_TOPICS)
             .description(TEST_DESCRIPTION)
             .googleCalendarId(TEST_GOOGLE_CALENDAR_ID)

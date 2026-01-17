@@ -10,16 +10,10 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.coDevs.cohiChat.global.exception.CustomException;
-import com.coDevs.cohiChat.global.exception.ErrorCode;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,22 +21,14 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "calendar", indexes = {
-    @Index(name = "idx_calendar_host_id", columnList = "host_id")
-})
+@Table(name = "calendar")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Calendar {
 
-    private static final int MIN_DESCRIPTION_LENGTH = 10;
-
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "BINARY(16)")
-    private UUID id;
-
-    @Column(name = "host_id", nullable = false, unique = true, columnDefinition = "BINARY(16)")
-    private UUID hostId;
+    @Column(name = "user_id", columnDefinition = "BINARY(16)")
+    private UUID userId;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "topics", nullable = false, columnDefinition = "TEXT")
@@ -69,41 +55,19 @@ public class Calendar {
     private LocalDateTime deletedAt;
 
     public static Calendar create(
-        UUID hostId,
+        UUID userId,
         List<String> topics,
         String description,
         String googleCalendarId
     ) {
-        validateRequired(hostId, topics, description, googleCalendarId);
-
         Calendar calendar = new Calendar();
-        calendar.hostId = hostId;
+        calendar.userId = userId;
         calendar.topics = topics;
         calendar.description = description;
         calendar.googleCalendarId = googleCalendarId;
         calendar.isDeleted = false;
 
         return calendar;
-    }
-
-    private static void validateRequired(
-        UUID hostId,
-        List<String> topics,
-        String description,
-        String googleCalendarId
-    ) {
-        if (hostId == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-        if (topics == null || topics.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-        if (description == null || description.length() < MIN_DESCRIPTION_LENGTH) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-        if (googleCalendarId == null || googleCalendarId.isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
     }
 
     public void softDelete() {

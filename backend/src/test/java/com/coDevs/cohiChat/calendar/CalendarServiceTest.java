@@ -27,7 +27,7 @@ import com.coDevs.cohiChat.member.entity.Role;
 @ExtendWith(MockitoExtension.class)
 class CalendarServiceTest {
 
-    private static final UUID TEST_HOST_ID = UUID.randomUUID();
+    private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final List<String> TEST_TOPICS = List.of("커리어 상담", "이력서 리뷰");
     private static final String TEST_DESCRIPTION = "게스트에게 보여줄 설명입니다.";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
@@ -53,13 +53,13 @@ class CalendarServiceTest {
     }
 
     private void givenHostMember() {
-        given(hostMember.getId()).willReturn(TEST_HOST_ID);
+        given(hostMember.getId()).willReturn(TEST_USER_ID);
         given(hostMember.getRole()).willReturn(Role.HOST);
     }
 
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
-        given(calendarRepository.existsByHostIdAndIsDeletedFalse(TEST_HOST_ID)).willReturn(false);
+        given(calendarRepository.existsByUserIdAndIsDeletedFalse(TEST_USER_ID)).willReturn(false);
         given(calendarRepository.save(any(Calendar.class))).willAnswer(inv -> inv.getArgument(0));
     }
 
@@ -95,7 +95,7 @@ class CalendarServiceTest {
     void createCalendarFailWhenAlreadyExists() {
         // given
         givenHostMember();
-        given(calendarRepository.existsByHostIdAndIsDeletedFalse(TEST_HOST_ID)).willReturn(true);
+        given(calendarRepository.existsByUserIdAndIsDeletedFalse(TEST_USER_ID)).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))

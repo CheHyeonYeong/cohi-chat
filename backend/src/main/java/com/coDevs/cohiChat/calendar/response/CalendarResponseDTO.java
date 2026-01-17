@@ -17,8 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CalendarResponseDTO {
 
-    private UUID id;
-    private UUID hostId;
+    private UUID userId;
     private List<String> topics;
     private String description;
     private String googleCalendarId;
@@ -27,8 +26,7 @@ public class CalendarResponseDTO {
 
     public static CalendarResponseDTO from(Calendar calendar) {
         return CalendarResponseDTO.builder()
-            .id(calendar.getId())
-            .hostId(calendar.getHostId())
+            .userId(calendar.getUserId())
             .topics(calendar.getTopics())
             .description(calendar.getDescription())
             .googleCalendarId(calendar.getGoogleCalendarId())
