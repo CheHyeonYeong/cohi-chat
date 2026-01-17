@@ -11,7 +11,7 @@ import com.coDevs.cohiChat.calendar.entity.Calendar;
 @Repository
 public interface CalendarRepository extends JpaRepository<Calendar, UUID> {
 
-    Optional<Calendar> findByUserIdAndIsDeletedFalse(UUID userId);
+    Optional<Calendar> findByUserId(UUID userId);
 
-    boolean existsByUserIdAndIsDeletedFalse(UUID userId);
+    boolean existsByUserId(UUID userId);
 }

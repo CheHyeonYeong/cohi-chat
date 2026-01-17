@@ -42,7 +42,7 @@ public class CalendarService {
     }
 
     private void validateCalendarNotExists(Member member) {
-        if (calendarRepository.existsByUserIdAndIsDeletedFalse(member.getId())) {
+        if (calendarRepository.existsByUserId(member.getId())) {
             throw new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS);
         }
     }

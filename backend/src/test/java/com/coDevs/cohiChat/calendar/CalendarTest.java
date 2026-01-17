@@ -33,6 +33,5 @@ class CalendarTest {
         assertThat(calendar.getTopics()).isEqualTo(TEST_TOPICS);
         assertThat(calendar.getDescription()).isEqualTo(TEST_DESCRIPTION);
         assertThat(calendar.getGoogleCalendarId()).isEqualTo(TEST_GOOGLE_CALENDAR_ID);
-        assertThat(calendar.isDeleted()).isFalse();
     }
 }

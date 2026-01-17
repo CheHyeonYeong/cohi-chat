@@ -59,7 +59,7 @@ class CalendarServiceTest {
 
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
-        given(calendarRepository.existsByUserIdAndIsDeletedFalse(TEST_USER_ID)).willReturn(false);
+        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(false);
         given(calendarRepository.save(any(Calendar.class))).willAnswer(inv -> inv.getArgument(0));
     }
 
@@ -95,7 +95,7 @@ class CalendarServiceTest {
     void createCalendarFailWhenAlreadyExists() {
         // given
         givenHostMember();
-        given(calendarRepository.existsByUserIdAndIsDeletedFalse(TEST_USER_ID)).willReturn(true);
+        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))

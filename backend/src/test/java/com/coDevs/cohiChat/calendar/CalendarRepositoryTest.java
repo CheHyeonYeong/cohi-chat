@@ -53,7 +53,7 @@ class CalendarRepositoryTest {
     @DisplayName("성공: userId로 캘린더 조회")
     void findByUserId() {
         // when
-        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(userId);
+        Optional<Calendar> found = calendarRepository.findByUserId(userId);
 
         // then
         assertThat(found).isPresent();
@@ -64,7 +64,7 @@ class CalendarRepositoryTest {
     @DisplayName("성공: 존재하지 않는 userId로 조회 시 빈 Optional 반환")
     void findByUserIdNotFound() {
         // when
-        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(UUID.randomUUID());
+        Optional<Calendar> found = calendarRepository.findByUserId(UUID.randomUUID());
 
         // then
         assertThat(found).isEmpty();
@@ -74,7 +74,7 @@ class CalendarRepositoryTest {
     @DisplayName("성공: userId로 캘린더 존재 여부 확인 - 존재함")
     void existsByUserIdTrue() {
         // when
-        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(userId);
+        boolean exists = calendarRepository.existsByUserId(userId);
 
         // then
         assertThat(exists).isTrue();
@@ -84,25 +84,9 @@ class CalendarRepositoryTest {
     @DisplayName("성공: userId로 캘린더 존재 여부 확인 - 존재하지 않음")
     void existsByUserIdFalse() {
         // when
-        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(UUID.randomUUID());
+        boolean exists = calendarRepository.existsByUserId(UUID.randomUUID());
 
         // then
-        assertThat(exists).isFalse();
-    }
-
-    @Test
-    @DisplayName("성공: 삭제된 캘린더는 조회되지 않음")
-    void deletedCalendarNotFound() {
-        // given
-        savedCalendar.softDelete();
-        calendarRepository.save(savedCalendar);
-
-        // when
-        Optional<Calendar> found = calendarRepository.findByUserIdAndIsDeletedFalse(userId);
-        boolean exists = calendarRepository.existsByUserIdAndIsDeletedFalse(userId);
-
-        // then
-        assertThat(found).isEmpty();
         assertThat(exists).isFalse();
     }
 }

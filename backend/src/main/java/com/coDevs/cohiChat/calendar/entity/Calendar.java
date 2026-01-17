@@ -48,12 +48,6 @@ public class Calendar {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     public static Calendar create(
         UUID userId,
         List<String> topics,
@@ -65,17 +59,7 @@ public class Calendar {
         calendar.topics = topics;
         calendar.description = description;
         calendar.googleCalendarId = googleCalendarId;
-        calendar.isDeleted = false;
 
         return calendar;
-    }
-
-    public void softDelete() {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public boolean isActive() {
-        return !isDeleted;
     }
 }
