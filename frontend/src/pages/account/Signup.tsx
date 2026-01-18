@@ -9,16 +9,23 @@ export default function Signup() {
     const [displayName, setDisplayName] = useState('');
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const signupMutation = useSignup();
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
+
+        if (password !== passwordAgain) {
+            setPasswordError('비밀번호가 일치하지 않습니다.');
+            return;
+        }
+        setPasswordError('');
+
         signupMutation.mutate({
             username,
             email,
-            display_name: displayName || undefined,
+            displayName: displayName || undefined,
             password,
-            password_again: passwordAgain
         });
     };
 
@@ -95,6 +102,12 @@ export default function Signup() {
                         className="border px-3 py-2 rounded"
                     />
                 </div>
+
+                {passwordError && (
+                    <div className="text-red-600 text-sm">
+                        {passwordError}
+                    </div>
+                )}
 
                 <Button
                     variant='primary'
