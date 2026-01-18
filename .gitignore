@@ -6,7 +6,8 @@
 ### dotenv ###
 .env
 ./issues
-./.claude
+.claude/issue/
+.claude/settings.local.json
 
 .envrc
 
