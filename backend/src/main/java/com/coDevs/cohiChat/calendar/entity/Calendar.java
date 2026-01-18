@@ -69,4 +69,5 @@ public class Calendar {
         this.googleCalendarId = googleCalendarId;
         this.updatedAt = LocalDateTime.now();
     }
+
 }
