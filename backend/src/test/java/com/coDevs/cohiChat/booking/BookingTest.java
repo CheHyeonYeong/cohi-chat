@@ -1,0 +1,59 @@
+package com.coDevs.cohiChat.booking;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
+import com.coDevs.cohiChat.booking.entity.Booking;
+
+class BookingTest {
+
+    private static final Long TEST_TIME_SLOT_ID = 1L;
+    private static final UUID TEST_GUEST_ID = UUID.randomUUID();
+    private static final LocalDate TEST_BOOKING_DATE = LocalDate.of(2025, 1, 20);
+    private static final String TEST_TOPIC = "프로젝트 상담";
+    private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
+
+    @Test
+    @DisplayName("성공: Booking 엔티티를 생성할 수 있다")
+    void createBookingSuccess() {
+        // when
+        Booking booking = Booking.create(
+            TEST_TIME_SLOT_ID,
+            TEST_GUEST_ID,
+            TEST_BOOKING_DATE,
+            TEST_TOPIC,
+            TEST_DESCRIPTION
+        );
+
+        // then
+        assertThat(booking.getTimeSlotId()).isEqualTo(TEST_TIME_SLOT_ID);
+        assertThat(booking.getGuestId()).isEqualTo(TEST_GUEST_ID);
+        assertThat(booking.getBookingDate()).isEqualTo(TEST_BOOKING_DATE);
+        assertThat(booking.getTopic()).isEqualTo(TEST_TOPIC);
+        assertThat(booking.getDescription()).isEqualTo(TEST_DESCRIPTION);
+        assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
+        assertThat(booking.getGoogleEventId()).isNull();
+    }
+
+    @Test
+    @DisplayName("성공: 생성 시 기본 상태는 SCHEDULED이다")
+    void defaultStatusIsScheduled() {
+        // when
+        Booking booking = Booking.create(
+            TEST_TIME_SLOT_ID,
+            TEST_GUEST_ID,
+            TEST_BOOKING_DATE,
+            TEST_TOPIC,
+            TEST_DESCRIPTION
+        );
+
+        // then
+        assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
+    }
+}
