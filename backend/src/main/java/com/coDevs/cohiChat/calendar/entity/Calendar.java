@@ -62,4 +62,10 @@ public class Calendar {
 
         return calendar;
     }
+
+    public void update(List<String> topics, String description, String googleCalendarId) {
+        this.topics = topics;
+        this.description = description;
+        this.googleCalendarId = googleCalendarId;
+    }
 }
