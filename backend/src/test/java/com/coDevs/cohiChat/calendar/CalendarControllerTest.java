@@ -149,7 +149,7 @@ class CalendarControllerTest {
             .build();
 
         when(calendarService.createCalendar(any(Member.class), any(CalendarCreateRequestDTO.class)))
-            .thenThrow(new CustomException(ErrorCode.GUEST_PERMISSION));
+            .thenThrow(new CustomException(ErrorCode.GUEST_ACCESS_DENIED ));
 
         // when & then
         mockMvc.perform(post("/calendar/v1")

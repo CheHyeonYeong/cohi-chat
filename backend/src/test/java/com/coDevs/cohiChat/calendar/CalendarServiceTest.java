@@ -87,7 +87,7 @@ class CalendarServiceTest {
         // when & then
         assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))
             .isInstanceOf(CustomException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUEST_PERMISSION);
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUEST_ACCESS_DENIED );
     }
 
     @Test
