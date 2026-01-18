@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
+import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -101,5 +103,111 @@ class CalendarServiceTest {
         assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CALENDAR_ALREADY_EXISTS);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 캘린더 조회")
+    void getCalendarSuccess() {
+        // given
+        givenHostMember();
+        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+
+        // when
+        CalendarResponseDTO response = calendarService.getCalendar(hostMember);
+
+        // then
+        assertThat(response.getTopics()).isEqualTo(TEST_TOPICS);
+        assertThat(response.getDescription()).isEqualTo(TEST_DESCRIPTION);
+        assertThat(response.getGoogleCalendarId()).isEqualTo(TEST_GOOGLE_CALENDAR_ID);
+    }
+
+    @Test
+    @DisplayName("실패: 게스트가 캘린더 조회 시도 시 GUEST_ACCESS_DENIED 예외")
+    void getCalendarFailWhenGuest() {
+        // given
+        given(hostMember.getRole()).willReturn(Role.GUEST);
+
+        // when & then
+        assertThatThrownBy(() -> calendarService.getCalendar(hostMember))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUEST_ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 캘린더가 없으면 CALENDAR_NOT_FOUND 예외")
+    void getCalendarFailWhenNotFound() {
+        // given
+        givenHostMember();
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> calendarService.getCalendar(hostMember))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CALENDAR_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 캘린더 수정")
+    void updateCalendarSuccess() {
+        // given
+        givenHostMember();
+        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+
+        List<String> updatedTopics = List.of("새로운 주제");
+        String updatedDescription = "수정된 설명입니다. 10자 이상입니다.";
+        String updatedGoogleCalendarId = "updated@group.calendar.google.com";
+
+        CalendarUpdateRequestDTO updateRequest = CalendarUpdateRequestDTO.builder()
+            .topics(updatedTopics)
+            .description(updatedDescription)
+            .googleCalendarId(updatedGoogleCalendarId)
+            .build();
+
+        // when
+        CalendarResponseDTO response = calendarService.updateCalendar(hostMember, updateRequest);
+
+        // then
+        assertThat(response.getTopics()).isEqualTo(updatedTopics);
+        assertThat(response.getDescription()).isEqualTo(updatedDescription);
+        assertThat(response.getGoogleCalendarId()).isEqualTo(updatedGoogleCalendarId);
+    }
+
+    @Test
+    @DisplayName("실패: 게스트가 캘린더 수정 시도 시 GUEST_ACCESS_DENIED 예외")
+    void updateCalendarFailWhenGuest() {
+        // given
+        given(hostMember.getRole()).willReturn(Role.GUEST);
+
+        CalendarUpdateRequestDTO updateRequest = CalendarUpdateRequestDTO.builder()
+            .topics(List.of("새로운 주제"))
+            .description("수정된 설명입니다.")
+            .googleCalendarId("updated@group.calendar.google.com")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> calendarService.updateCalendar(hostMember, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUEST_ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 수정할 캘린더가 없으면 CALENDAR_NOT_FOUND 예외")
+    void updateCalendarFailWhenNotFound() {
+        // given
+        givenHostMember();
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.empty());
+
+        CalendarUpdateRequestDTO updateRequest = CalendarUpdateRequestDTO.builder()
+            .topics(List.of("새로운 주제"))
+            .description("수정된 설명입니다.")
+            .googleCalendarId("updated@group.calendar.google.com")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> calendarService.updateCalendar(hostMember, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CALENDAR_NOT_FOUND);
     }
 }
