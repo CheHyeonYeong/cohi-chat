@@ -92,4 +92,12 @@ public class Booking {
         booking.attendanceStatus = AttendanceStatus.SCHEDULED;
         return booking;
     }
+
+    public void updateSchedule(Long timeSlotId, LocalDate bookingDate) {
+        Objects.requireNonNull(timeSlotId, "timeSlotId must not be null");
+        Objects.requireNonNull(bookingDate, "bookingDate must not be null");
+
+        this.timeSlotId = timeSlotId;
+        this.bookingDate = bookingDate;
+    }
 }

@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -283,5 +284,160 @@ class BookingServiceTest {
 
         // then
         assertThat(result).isEmpty();
+    }
+
+    // ==================== updateBookingSchedule 테스트 ====================
+
+    @Mock
+    private Member hostMember;
+
+    @Mock
+    private TimeSlot newTimeSlot;
+
+    private static final Long BOOKING_ID = 1L;
+    private static final Long NEW_TIME_SLOT_ID = 2L;
+    private static final LocalDate NEW_FUTURE_DATE = LocalDate.now().plusDays(14);
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 일정을 수정할 수 있다")
+    void updateBookingScheduleSuccess() {
+        // given
+        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .build();
+
+        given(hostMember.getId()).willReturn(HOST_ID);
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(newTimeSlot.getWeekdays()).willReturn(List.of(NEW_FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
+        given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
+        given(timeSlotRepository.findById(NEW_TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotInAndIdNot(
+            eq(NEW_TIME_SLOT_ID), eq(NEW_FUTURE_DATE), any(), eq(BOOKING_ID)
+        )).willReturn(false);
+
+        // when
+        BookingResponseDTO response = bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest);
+
+        // then
+        assertThat(response.getTimeSlotId()).isEqualTo(NEW_TIME_SLOT_ID);
+        assertThat(response.getBookingDate()).isEqualTo(NEW_FUTURE_DATE);
+        assertThat(response.getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(response.getEndTime()).isEqualTo(LocalTime.of(15, 0));
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 아닌 사용자는 예약을 수정할 수 없다")
+    void updateBookingScheduleFailWhenNotHost() {
+        // given
+        UUID otherUserId = UUID.randomUUID();
+        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .build();
+
+        given(hostMember.getId()).willReturn(otherUserId);
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약은 수정할 수 없다")
+    void updateBookingScheduleFailWhenBookingNotFound() {
+        // given
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .build();
+
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 과거 날짜로 예약을 수정할 수 없다")
+    void updateBookingScheduleFailWhenPastDate() {
+        // given
+        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(PAST_DATE)
+            .build();
+
+        given(hostMember.getId()).willReturn(HOST_ID);
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAST_BOOKING);
+    }
+
+    @Test
+    @DisplayName("실패: 타임슬롯에서 허용하지 않는 요일로 수정할 수 없다")
+    void updateBookingScheduleFailWhenWeekdayNotAvailable() {
+        // given
+        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .build();
+
+        given(hostMember.getId()).willReturn(HOST_ID);
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        // 다른 요일 반환
+        given(newTimeSlot.getWeekdays()).willReturn(List.of((NEW_FUTURE_DATE.getDayOfWeek().getValue() + 1) % 7));
+        given(timeSlotRepository.findById(NEW_TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WEEKDAY_NOT_AVAILABLE);
+    }
+
+    @Test
+    @DisplayName("실패: 중복 예약이 있으면 수정할 수 없다")
+    void updateBookingScheduleFailWhenDuplicateBooking() {
+        // given
+        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        BookingScheduleUpdateRequestDTO updateRequest = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .build();
+
+        given(hostMember.getId()).willReturn(HOST_ID);
+        given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(newTimeSlot.getWeekdays()).willReturn(List.of(NEW_FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlotRepository.findById(NEW_TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        // 중복 예약 존재
+        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotInAndIdNot(
+            eq(NEW_TIME_SLOT_ID), eq(NEW_FUTURE_DATE), any(), eq(BOOKING_ID)
+        )).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(hostMember, BOOKING_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_ALREADY_EXISTS);
     }
 }

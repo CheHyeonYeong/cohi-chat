@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -241,6 +242,117 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
             .andExpect(status().isNotFound());
+    }
+
+    // ==================== updateBookingSchedule 테스트 ====================
+
+    private static final Long BOOKING_ID = 1L;
+    private static final Long NEW_TIME_SLOT_ID = 2L;
+    private static final LocalDate NEW_FUTURE_DATE = LocalDate.now().plusDays(14);
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 일정 수정 - 200 OK")
+    @WithMockUser(username = "host")
+    void updateBookingScheduleSuccess() throws Exception {
+        // given
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(BOOKING_ID)
+            .timeSlotId(NEW_TIME_SLOT_ID)
+            .guestId(GUEST_ID)
+            .bookingDate(NEW_FUTURE_DATE)
+            .startTime(LocalTime.of(14, 0))
+            .endTime(LocalTime.of(15, 0))
+            .topic("프로젝트 상담")
+            .description("Spring Boot 프로젝트 관련 질문")
+            .attendanceStatus(AttendanceStatus.SCHEDULED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        given(bookingService.updateBookingSchedule(any(Member.class), any(Long.class), any()))
+            .willReturn(response);
+
+        String requestBody = """
+            {
+                "timeSlotId": %d,
+                "bookingDate": "%s"
+            }
+            """.formatted(NEW_TIME_SLOT_ID, NEW_FUTURE_DATE);
+
+        // when & then
+        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", BOOKING_ID)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(BOOKING_ID))
+            .andExpect(jsonPath("$.timeSlotId").value(NEW_TIME_SLOT_ID))
+            .andExpect(jsonPath("$.bookingDate").value(NEW_FUTURE_DATE.toString()));
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 아닌 사용자 수정 시도 - 403")
+    @WithMockUser(username = "other")
+    void updateBookingScheduleFailAccessDenied() throws Exception {
+        // given
+        given(bookingService.updateBookingSchedule(any(Member.class), any(Long.class), any()))
+            .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+        String requestBody = """
+            {
+                "timeSlotId": %d,
+                "bookingDate": "%s"
+            }
+            """.formatted(NEW_TIME_SLOT_ID, NEW_FUTURE_DATE);
+
+        // when & then
+        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", BOOKING_ID)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 수정 시도 - 404")
+    @WithMockUser(username = "host")
+    void updateBookingScheduleFailNotFound() throws Exception {
+        // given
+        given(bookingService.updateBookingSchedule(any(Member.class), any(Long.class), any()))
+            .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        String requestBody = """
+            {
+                "timeSlotId": %d,
+                "bookingDate": "%s"
+            }
+            """.formatted(NEW_TIME_SLOT_ID, NEW_FUTURE_DATE);
+
+        // when & then
+        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", 999L)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("실패: 과거 날짜로 수정 시도 - 400 (DTO 검증)")
+    @WithMockUser(username = "host")
+    void updateBookingScheduleFailPastDate() throws Exception {
+        // given - @FutureOrPresent 검증으로 인해 서비스 호출 전에 거부됨
+        String requestBody = """
+            {
+                "timeSlotId": %d,
+                "bookingDate": "2020-01-01"
+            }
+            """.formatted(NEW_TIME_SLOT_ID);
+
+        // when & then
+        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", BOOKING_ID)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadRequest());
     }
 
 }

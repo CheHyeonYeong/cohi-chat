@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -142,5 +143,51 @@ public class BookingService {
         return bookings.stream()
             .map(booking -> BookingResponseDTO.from(booking, timeSlotMap.get(booking.getTimeSlotId())))
             .toList();
+    }
+
+    @Transactional
+    public BookingResponseDTO updateBookingSchedule(Member host, Long bookingId, BookingScheduleUpdateRequestDTO request) {
+        // 1. 예약 조회
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        // 2. 기존 타임슬롯 조회하여 호스트 권한 검증
+        TimeSlot currentTimeSlot = timeSlotRepository.findById(booking.getTimeSlotId())
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        validateHostPermission(host, currentTimeSlot);
+
+        // 3. DB 조회 없이 가능한 검증
+        validateNotPastBooking(request.getBookingDate());
+
+        // 4. 새로운 타임슬롯 조회 및 검증
+        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateNotDuplicateBookingExcludingSelf(request.getTimeSlotId(), request.getBookingDate(), bookingId);
+
+        // 5. 예약 업데이트
+        booking.updateSchedule(request.getTimeSlotId(), request.getBookingDate());
+
+        return BookingResponseDTO.from(booking, newTimeSlot);
+    }
+
+    private void validateHostPermission(Member host, TimeSlot timeSlot) {
+        if (!host.getId().equals(timeSlot.getUserId())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    private void validateNotDuplicateBookingExcludingSelf(Long timeSlotId, LocalDate bookingDate, Long excludeBookingId) {
+        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotInAndIdNot(
+            timeSlotId,
+            bookingDate,
+            AttendanceStatus.getCancelledStatuses(),
+            excludeBookingId
+        );
+        if (exists) {
+            throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
+        }
     }
 }
