@@ -90,9 +90,9 @@ class TimeSlotServiceTest {
         TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, requestDTO);
 
         // then
-        assertThat(response.getStartTime()).isEqualTo(TEST_START_TIME);
-        assertThat(response.getEndTime()).isEqualTo(TEST_END_TIME);
-        assertThat(response.getWeekdays()).isEqualTo(TEST_WEEKDAYS);
+        assertThat(response)
+            .extracting("startTime", "endTime", "weekdays")
+            .containsExactly(TEST_START_TIME, TEST_END_TIME, TEST_WEEKDAYS);
     }
 
     @Test

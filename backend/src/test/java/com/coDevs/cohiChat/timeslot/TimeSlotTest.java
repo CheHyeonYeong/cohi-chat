@@ -79,6 +79,20 @@ class TimeSlotTest {
             LocalTime.of(10, 30),
             List.of(1)
         )).isTrue();
+
+        // 요일이 일부만 겹침 (월,화,수 vs 수,목,금 - 수요일 겹침)
+        assertThat(existingSlot.isOverlapping(
+            LocalTime.of(10, 0),
+            LocalTime.of(11, 0),
+            List.of(2, 3, 4)
+        )).isTrue();
+
+        // 시간이 부분적으로 겹침 (10:00-11:00 vs 10:30-11:30)
+        assertThat(existingSlot.isOverlapping(
+            LocalTime.of(10, 30),
+            LocalTime.of(11, 30),
+            List.of(0, 1, 2)
+        )).isTrue();
     }
 
     @Test
