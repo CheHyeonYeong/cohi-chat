@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +10,7 @@ import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -23,6 +25,7 @@ public class TimeSlotService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional
     public TimeSlotResponseDTO createTimeSlot(Member member, TimeSlotCreateRequestDTO request) {
@@ -49,6 +52,20 @@ public class TimeSlotService {
         validateHostPermission(member);
 
         Calendar calendar = calendarRepository.findByUserId(member.getId())
+            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        List<TimeSlot> timeSlots = timeSlotRepository.findByCalendarId(calendar.getUserId());
+        return timeSlots.stream()
+            .map(TimeSlotResponseDTO::from)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TimeSlotResponseDTO> getTimeSlotsByHostId(UUID hostId) {
+        memberRepository.findByIdAndRoleAndIsDeletedFalse(hostId, Role.HOST)
+            .orElseThrow(() -> new CustomException(ErrorCode.HOST_NOT_FOUND));
+
+        Calendar calendar = calendarRepository.findByUserId(hostId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         List<TimeSlot> timeSlots = timeSlotRepository.findByCalendarId(calendar.getUserId());
