@@ -32,7 +32,7 @@ public enum ErrorCode {
 	AUTH_NOT_PROVIDED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
 
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
-	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
+    GUEST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
 
 	/**
 	 * 시스템 관련.

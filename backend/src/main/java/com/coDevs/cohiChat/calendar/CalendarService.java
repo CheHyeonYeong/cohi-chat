@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.calendar;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,13 +32,17 @@ public class CalendarService {
             request.getGoogleCalendarId()
         );
 
-        Calendar savedCalendar = calendarRepository.save(calendar);
-        return CalendarResponseDTO.from(savedCalendar);
+        try {
+            Calendar savedCalendar = calendarRepository.save(calendar);
+            return CalendarResponseDTO.from(savedCalendar);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS);
+        }
     }
 
     private void validateHostPermission(Member member) {
         if (member.getRole() != Role.HOST) {
-            throw new CustomException(ErrorCode.GUEST_PERMISSION);
+            throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED );
         }
     }
 
