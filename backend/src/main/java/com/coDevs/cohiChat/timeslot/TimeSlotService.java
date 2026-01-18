@@ -50,26 +50,21 @@ public class TimeSlotService {
     @Transactional(readOnly = true)
     public List<TimeSlotResponseDTO> getTimeSlotsByHost(Member member) {
         validateHostPermission(member);
-
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
-            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
-
-        List<TimeSlot> timeSlots = timeSlotRepository.findByUserId(calendar.getUserId());
-        return timeSlots.stream()
-            .map(TimeSlotResponseDTO::from)
-            .toList();
+        return getTimeSlotsByUserId(member.getId());
     }
 
     @Transactional(readOnly = true)
     public List<TimeSlotResponseDTO> getTimeSlotsByHostId(UUID hostId) {
         memberRepository.findByIdAndRoleAndIsDeletedFalse(hostId, Role.HOST)
             .orElseThrow(() -> new CustomException(ErrorCode.HOST_NOT_FOUND));
+        return getTimeSlotsByUserId(hostId);
+    }
 
-        Calendar calendar = calendarRepository.findByUserId(hostId)
+    private List<TimeSlotResponseDTO> getTimeSlotsByUserId(UUID userId) {
+        calendarRepository.findByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        List<TimeSlot> timeSlots = timeSlotRepository.findByUserId(calendar.getUserId());
-        return timeSlots.stream()
+        return timeSlotRepository.findByUserId(userId).stream()
             .map(TimeSlotResponseDTO::from)
             .toList();
     }

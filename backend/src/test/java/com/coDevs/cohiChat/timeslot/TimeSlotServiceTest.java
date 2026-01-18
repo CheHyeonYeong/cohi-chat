@@ -180,7 +180,7 @@ class TimeSlotServiceTest {
     void getTimeSlotsByHostSuccess() {
         // given
         givenHostMember();
-        givenCalendarExists();
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
 
         TimeSlot timeSlot1 = TimeSlot.create(TEST_USER_ID, LocalTime.of(10, 0), LocalTime.of(11, 0), List.of(0));
         TimeSlot timeSlot2 = TimeSlot.create(TEST_USER_ID, LocalTime.of(14, 0), LocalTime.of(15, 0), List.of(1));
