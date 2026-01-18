@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -16,7 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
+import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+import com.coDevs.cohiChat.timeslot.response.TimeSlotResponseDTO;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -29,14 +36,28 @@ class TimeSlotIntegrationTest {
     @Autowired
     private CalendarRepository calendarRepository;
 
-    private UUID calendarId;
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
+    private TimeSlotService timeSlotService;
+
+    private UUID hostId;
 
     @BeforeEach
     void setUp() {
-        calendarId = UUID.randomUUID();
+        Member host = Member.create(
+            "testhost",
+            "Test Host",
+            "host@test.com",
+            "encodedPassword",
+            Role.HOST
+        );
+        Member savedHost = memberRepository.save(host);
+        hostId = savedHost.getId();
 
         Calendar calendar = Calendar.create(
-            calendarId,
+            hostId,
             List.of("커리어 상담"),
             "게스트에게 보여줄 설명입니다.",
             "test@group.calendar.google.com"
@@ -49,7 +70,7 @@ class TimeSlotIntegrationTest {
     void createAndRetrieveTimeSlotFlow() {
         // given - 타임슬롯 생성
         TimeSlot timeSlot = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
@@ -60,7 +81,7 @@ class TimeSlotIntegrationTest {
 
         // then - 조회 확인
         assertThat(savedTimeSlot.getId()).isNotNull();
-        assertThat(savedTimeSlot.getCalendarId()).isEqualTo(calendarId);
+        assertThat(savedTimeSlot.getCalendarId()).isEqualTo(hostId);
         assertThat(savedTimeSlot.getStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(savedTimeSlot.getEndTime()).isEqualTo(LocalTime.of(11, 0));
         assertThat(savedTimeSlot.getWeekdays()).containsExactly(0, 1, 2);
@@ -72,19 +93,19 @@ class TimeSlotIntegrationTest {
     void createMultipleTimeSlotsAndRetrieve() {
         // given
         TimeSlot timeSlot1 = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0)
         );
         TimeSlot timeSlot2 = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(14, 0),
             LocalTime.of(15, 0),
             List.of(1)
         );
         TimeSlot timeSlot3 = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(16, 0),
             LocalTime.of(17, 0),
             List.of(2, 3)
@@ -93,7 +114,7 @@ class TimeSlotIntegrationTest {
         timeSlotRepository.saveAll(List.of(timeSlot1, timeSlot2, timeSlot3));
 
         // when
-        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByCalendarId(calendarId);
+        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByCalendarId(hostId);
 
         // then
         assertThat(foundTimeSlots).hasSize(3);
@@ -104,7 +125,7 @@ class TimeSlotIntegrationTest {
     void overlappingTimeSlotQuery() {
         // given - 기존 타임슬롯: 10:00-11:00
         TimeSlot existingTimeSlot = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
@@ -113,7 +134,7 @@ class TimeSlotIntegrationTest {
 
         // when - 겹치는 시간대 조회 (10:30-11:30)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
-            calendarId,
+            hostId,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30)
         );
@@ -128,7 +149,7 @@ class TimeSlotIntegrationTest {
     void nonOverlappingTimeSlotQuery() {
         // given - 기존 타임슬롯: 10:00-11:00
         TimeSlot existingTimeSlot = TimeSlot.create(
-            calendarId,
+            hostId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
@@ -137,12 +158,80 @@ class TimeSlotIntegrationTest {
 
         // when - 겹치지 않는 시간대 조회 (11:00-12:00)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
-            calendarId,
+            hostId,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0)
         );
 
         // then
         assertThat(overlapping).isEmpty();
+    }
+
+    @Test
+    @DisplayName("통합 테스트: 호스트 ID로 타임슬롯 조회 성공")
+    void getTimeSlotsByHostIdSuccess() {
+        // given
+        TimeSlot timeSlot1 = TimeSlot.create(
+            hostId,
+            LocalTime.of(10, 0),
+            LocalTime.of(11, 0),
+            List.of(0, 1, 2)
+        );
+        TimeSlot timeSlot2 = TimeSlot.create(
+            hostId,
+            LocalTime.of(14, 0),
+            LocalTime.of(15, 0),
+            List.of(3, 4)
+        );
+        timeSlotRepository.saveAll(List.of(timeSlot1, timeSlot2));
+
+        // when
+        List<TimeSlotResponseDTO> result = timeSlotService.getTimeSlotsByHostId(hostId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(result.get(1).getStartTime()).isEqualTo(LocalTime.of(14, 0));
+    }
+
+    @Test
+    @DisplayName("통합 테스트: 호스트 ID로 조회 시 타임슬롯이 없으면 빈 목록 반환")
+    void getTimeSlotsByHostIdEmpty() {
+        // when
+        List<TimeSlotResponseDTO> result = timeSlotService.getTimeSlotsByHostId(hostId);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("통합 테스트: 존재하지 않는 호스트 ID로 조회 시 HOST_NOT_FOUND 예외")
+    void getTimeSlotsByHostIdHostNotFound() {
+        // given
+        UUID nonExistentHostId = UUID.randomUUID();
+
+        // when & then
+        assertThatThrownBy(() -> timeSlotService.getTimeSlotsByHostId(nonExistentHostId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.HOST_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("통합 테스트: 호스트는 존재하지만 캘린더가 없으면 CALENDAR_NOT_FOUND 예외")
+    void getTimeSlotsByHostIdCalendarNotFound() {
+        // given
+        Member hostWithoutCalendar = Member.create(
+            "hostwithoutcalendar",
+            "No Calendar Host",
+            "nocal@test.com",
+            "encodedPassword",
+            Role.HOST
+        );
+        Member savedHost = memberRepository.save(hostWithoutCalendar);
+
+        // when & then
+        assertThatThrownBy(() -> timeSlotService.getTimeSlotsByHostId(savedHost.getId()))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CALENDAR_NOT_FOUND);
     }
 }
