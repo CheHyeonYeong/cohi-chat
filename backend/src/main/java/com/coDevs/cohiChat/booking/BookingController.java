@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,5 +49,18 @@ public class BookingController {
         Member member = memberService.getMember(userDetails.getUsername());
         BookingResponseDTO response = bookingService.createBooking(member, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "예약 상세 조회", description = "예약 ID로 예약 상세 정보를 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
+    })
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<BookingResponseDTO> getBookingById(
+            @PathVariable Long bookingId
+    ) {
+        BookingResponseDTO response = bookingService.getBookingById(bookingId);
+        return ResponseEntity.ok(response);
     }
 }

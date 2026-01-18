@@ -171,4 +171,117 @@ class BookingServiceTest {
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WEEKDAY_NOT_AVAILABLE);
     }
+
+    @Test
+    @DisplayName("성공: 예약 상세 조회")
+    void getBookingByIdSuccess() {
+        // given
+        Long bookingId = 1L;
+        Booking booking = Booking.create(
+            TIME_SLOT_ID,
+            GUEST_ID,
+            FUTURE_DATE,
+            TEST_TOPIC,
+            TEST_DESCRIPTION
+        );
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when
+        BookingResponseDTO response = bookingService.getBookingById(bookingId);
+
+        // then
+        assertThat(response)
+            .extracting("timeSlotId", "guestId", "topic", "description")
+            .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 조회")
+    void getBookingByIdFailWhenNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.getBookingById(bookingId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("성공: 게스트 예약 목록 조회")
+    void getBookingsByGuestIdSuccess() {
+        // given
+        Booking booking1 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE.plusDays(1), "두번째 주제", "두번째 설명");
+
+        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
+            .willReturn(List.of(booking2, booking1));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlotRepository.findAllById(List.of(TIME_SLOT_ID))).willReturn(List.of(timeSlot));
+
+        // when
+        List<BookingResponseDTO> result = bookingService.getBookingsByGuestId(GUEST_ID);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getBookingDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(result.get(1).getBookingDate()).isEqualTo(FUTURE_DATE);
+    }
+
+    @Test
+    @DisplayName("성공: 게스트 예약 목록이 없으면 빈 리스트 반환")
+    void getBookingsByGuestIdReturnsEmptyList() {
+        // given
+        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
+            .willReturn(List.of());
+
+        // when
+        List<BookingResponseDTO> result = bookingService.getBookingsByGuestId(GUEST_ID);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("성공: 호스트 예약 목록 조회")
+    void getBookingsByHostIdSuccess() {
+        // given
+        Booking booking1 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE.plusDays(1), "두번째 주제", "두번째 설명");
+
+        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
+            .willReturn(List.of(booking2, booking1));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlotRepository.findAllById(List.of(TIME_SLOT_ID))).willReturn(List.of(timeSlot));
+
+        // when
+        List<BookingResponseDTO> result = bookingService.getBookingsByHostId(HOST_ID);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getBookingDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(result.get(1).getBookingDate()).isEqualTo(FUTURE_DATE);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트 예약 목록이 없으면 빈 리스트 반환")
+    void getBookingsByHostIdReturnsEmptyList() {
+        // given
+        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
+            .willReturn(List.of());
+
+        // when
+        List<BookingResponseDTO> result = bookingService.getBookingsByHostId(HOST_ID);
+
+        // then
+        assertThat(result).isEmpty();
+    }
 }
