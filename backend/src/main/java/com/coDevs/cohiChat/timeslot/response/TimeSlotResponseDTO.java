@@ -17,7 +17,7 @@ import lombok.Getter;
 public class TimeSlotResponseDTO {
 
     private Long id;
-    private UUID calendarId;
+    private UUID userId;
     private LocalTime startTime;
     private LocalTime endTime;
     private List<Integer> weekdays;
@@ -27,7 +27,7 @@ public class TimeSlotResponseDTO {
     public static TimeSlotResponseDTO from(TimeSlot timeSlot) {
         return TimeSlotResponseDTO.builder()
             .id(timeSlot.getId())
-            .calendarId(timeSlot.getCalendarId())
+            .userId(timeSlot.getUserId())
             .startTime(timeSlot.getStartTime())
             .endTime(timeSlot.getEndTime())
             .weekdays(timeSlot.getWeekdays())

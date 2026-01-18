@@ -81,7 +81,7 @@ class TimeSlotIntegrationTest {
 
         // then - 조회 확인
         assertThat(savedTimeSlot.getId()).isNotNull();
-        assertThat(savedTimeSlot.getCalendarId()).isEqualTo(hostId);
+        assertThat(savedTimeSlot.getUserId()).isEqualTo(hostId);
         assertThat(savedTimeSlot.getStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(savedTimeSlot.getEndTime()).isEqualTo(LocalTime.of(11, 0));
         assertThat(savedTimeSlot.getWeekdays()).containsExactly(0, 1, 2);
@@ -114,7 +114,7 @@ class TimeSlotIntegrationTest {
         timeSlotRepository.saveAll(List.of(timeSlot1, timeSlot2, timeSlot3));
 
         // when
-        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByCalendarId(hostId);
+        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByUserId(hostId);
 
         // then
         assertThat(foundTimeSlots).hasSize(3);

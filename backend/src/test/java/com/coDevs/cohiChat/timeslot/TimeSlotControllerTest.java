@@ -56,7 +56,7 @@ class TimeSlotControllerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     private static final String TEST_USERNAME = "testuser";
-    private static final UUID TEST_CALENDAR_ID = UUID.randomUUID();
+    private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
     private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2);
@@ -83,7 +83,7 @@ class TimeSlotControllerTest {
 
         TimeSlotResponseDTO response = TimeSlotResponseDTO.builder()
             .id(1L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(TEST_START_TIME)
             .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
@@ -254,7 +254,7 @@ class TimeSlotControllerTest {
         // given
         TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
             .id(1L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(10, 0))
             .endTime(LocalTime.of(11, 0))
             .weekdays(List.of(0))
@@ -264,7 +264,7 @@ class TimeSlotControllerTest {
 
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
             .id(2L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(14, 0))
             .endTime(LocalTime.of(15, 0))
             .weekdays(List.of(1))
@@ -290,7 +290,7 @@ class TimeSlotControllerTest {
         UUID hostId = UUID.randomUUID();
         TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
             .id(1L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(10, 0))
             .endTime(LocalTime.of(11, 0))
             .weekdays(List.of(0, 1, 2))
@@ -300,7 +300,7 @@ class TimeSlotControllerTest {
 
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
             .id(2L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(14, 0))
             .endTime(LocalTime.of(15, 0))
             .weekdays(List.of(3, 4))

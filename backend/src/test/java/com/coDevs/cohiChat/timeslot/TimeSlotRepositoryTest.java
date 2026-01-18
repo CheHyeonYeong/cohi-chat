@@ -22,14 +22,14 @@ class TimeSlotRepositoryTest {
     @Autowired
     private TimeSlotRepository timeSlotRepository;
 
-    private UUID calendarId;
+    private UUID userId;
     private TimeSlot savedTimeSlot;
 
     @BeforeEach
     void setUp() {
-        calendarId = UUID.randomUUID();
+        userId = UUID.randomUUID();
         TimeSlot timeSlot = TimeSlot.create(
-            calendarId,
+            userId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2) // 월, 화, 수
@@ -45,18 +45,18 @@ class TimeSlotRepositoryTest {
 
         // then
         assertThat(found).isPresent();
-        assertThat(found.get().getCalendarId()).isEqualTo(calendarId);
+        assertThat(found.get().getUserId()).isEqualTo(userId);
         assertThat(found.get().getStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(found.get().getEndTime()).isEqualTo(LocalTime.of(11, 0));
         assertThat(found.get().getWeekdays()).containsExactly(0, 1, 2);
     }
 
     @Test
-    @DisplayName("성공: calendarId로 타임슬롯 목록 조회")
-    void findByCalendarId() {
+    @DisplayName("성공: userId로 타임슬롯 목록 조회")
+    void findByUserId() {
         // given - 추가 타임슬롯 생성
         TimeSlot anotherTimeSlot = TimeSlot.create(
-            calendarId,
+            userId,
             LocalTime.of(14, 0),
             LocalTime.of(15, 0),
             List.of(3, 4) // 목, 금
@@ -64,17 +64,17 @@ class TimeSlotRepositoryTest {
         timeSlotRepository.save(anotherTimeSlot);
 
         // when
-        List<TimeSlot> found = timeSlotRepository.findByCalendarId(calendarId);
+        List<TimeSlot> found = timeSlotRepository.findByUserId(userId);
 
         // then
         assertThat(found).hasSize(2);
     }
 
     @Test
-    @DisplayName("성공: 다른 calendarId로 조회 시 빈 목록 반환")
-    void findByCalendarIdNotFound() {
+    @DisplayName("성공: 다른 userId로 조회 시 빈 목록 반환")
+    void findByUserIdNotFound() {
         // when
-        List<TimeSlot> found = timeSlotRepository.findByCalendarId(UUID.randomUUID());
+        List<TimeSlot> found = timeSlotRepository.findByUserId(UUID.randomUUID());
 
         // then
         assertThat(found).isEmpty();
@@ -85,7 +85,7 @@ class TimeSlotRepositoryTest {
     void findOverlappingTimeSlotsExists() {
         // when - 10:30-11:30은 기존 10:00-11:00과 겹침
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
-            calendarId,
+            userId,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30)
         );
@@ -100,7 +100,7 @@ class TimeSlotRepositoryTest {
     void findOverlappingTimeSlotsNotExists() {
         // when - 11:00-12:00은 기존 10:00-11:00과 겹치지 않음 (경계)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
-            calendarId,
+            userId,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0)
         );
@@ -110,9 +110,9 @@ class TimeSlotRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: 겹치는 시간대 조회 - 다른 캘린더는 무시")
-    void findOverlappingTimeSlotsIgnoresOtherCalendar() {
-        // when - 다른 캘린더 ID로 조회
+    @DisplayName("성공: 겹치는 시간대 조회 - 다른 사용자는 무시")
+    void findOverlappingTimeSlotsIgnoresOtherUser() {
+        // when - 다른 사용자 ID로 조회
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             UUID.randomUUID(),
             LocalTime.of(10, 0),
