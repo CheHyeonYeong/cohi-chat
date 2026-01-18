@@ -4,7 +4,7 @@ import { httpClient } from '~/libs/httpClient';
 import { IBookingDetail, IBookingPayload } from '~/types/booking';
 
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export function useCreateBooking(slug: string, year: number, month: number): UseMutationResult<IBookingDetail, Error, IBookingPayload> {
     const navigate = useNavigate();
