@@ -64,7 +64,7 @@ public class TimeSlotService {
         calendarRepository.findByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        return timeSlotRepository.findByUserId(userId).stream()
+        return timeSlotRepository.findByUserIdOrderByStartTimeAsc(userId).stream()
             .map(TimeSlotResponseDTO::from)
             .toList();
     }

@@ -14,7 +14,7 @@ import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 @Repository
 public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
-    List<TimeSlot> findByUserId(UUID userId);
+    List<TimeSlot> findByUserIdOrderByStartTimeAsc(UUID userId);
 
     @Query("SELECT t FROM TimeSlot t WHERE t.userId = :userId " +
            "AND t.startTime < :endTime AND t.endTime > :startTime")

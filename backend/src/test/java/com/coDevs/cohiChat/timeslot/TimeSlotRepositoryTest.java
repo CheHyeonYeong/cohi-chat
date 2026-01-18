@@ -52,29 +52,29 @@ class TimeSlotRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: userId로 타임슬롯 목록 조회")
-    void findByUserId() {
-        // given - 추가 타임슬롯 생성
-        TimeSlot anotherTimeSlot = TimeSlot.create(
-            userId,
-            LocalTime.of(14, 0),
-            LocalTime.of(15, 0),
-            List.of(3, 4) // 목, 금
-        );
-        timeSlotRepository.save(anotherTimeSlot);
+    @DisplayName("성공: userId로 타임슬롯 목록 조회 - startTime 오름차순 정렬")
+    void findByUserIdOrderByStartTimeAsc() {
+        // given - 여러 시간대의 타임슬롯 생성 (순서 섞어서)
+        TimeSlot timeSlot14 = TimeSlot.create(userId, LocalTime.of(14, 0), LocalTime.of(15, 0), List.of(3, 4));
+        TimeSlot timeSlot09 = TimeSlot.create(userId, LocalTime.of(9, 0), LocalTime.of(10, 0), List.of(1));
+        timeSlotRepository.save(timeSlot14);
+        timeSlotRepository.save(timeSlot09);
 
         // when
-        List<TimeSlot> found = timeSlotRepository.findByUserId(userId);
+        List<TimeSlot> found = timeSlotRepository.findByUserIdOrderByStartTimeAsc(userId);
 
-        // then
-        assertThat(found).hasSize(2);
+        // then - startTime 오름차순 정렬 확인
+        assertThat(found).hasSize(3);
+        assertThat(found.get(0).getStartTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(found.get(1).getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(found.get(2).getStartTime()).isEqualTo(LocalTime.of(14, 0));
     }
 
     @Test
     @DisplayName("성공: 다른 userId로 조회 시 빈 목록 반환")
     void findByUserIdNotFound() {
         // when
-        List<TimeSlot> found = timeSlotRepository.findByUserId(UUID.randomUUID());
+        List<TimeSlot> found = timeSlotRepository.findByUserIdOrderByStartTimeAsc(UUID.randomUUID());
 
         // then
         assertThat(found).isEmpty();

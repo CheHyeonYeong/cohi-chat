@@ -89,35 +89,38 @@ class TimeSlotIntegrationTest {
     }
 
     @Test
-    @DisplayName("통합 테스트: 여러 타임슬롯 생성 후 목록 조회")
+    @DisplayName("통합 테스트: 여러 타임슬롯 생성 후 목록 조회 - startTime 오름차순 정렬")
     void createMultipleTimeSlotsAndRetrieve() {
-        // given
-        TimeSlot timeSlot1 = TimeSlot.create(
-            hostId,
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(0)
-        );
-        TimeSlot timeSlot2 = TimeSlot.create(
-            hostId,
-            LocalTime.of(14, 0),
-            LocalTime.of(15, 0),
-            List.of(1)
-        );
-        TimeSlot timeSlot3 = TimeSlot.create(
+        // given - 순서를 섞어서 저장
+        TimeSlot timeSlot16 = TimeSlot.create(
             hostId,
             LocalTime.of(16, 0),
             LocalTime.of(17, 0),
             List.of(2, 3)
         );
+        TimeSlot timeSlot10 = TimeSlot.create(
+            hostId,
+            LocalTime.of(10, 0),
+            LocalTime.of(11, 0),
+            List.of(0)
+        );
+        TimeSlot timeSlot14 = TimeSlot.create(
+            hostId,
+            LocalTime.of(14, 0),
+            LocalTime.of(15, 0),
+            List.of(1)
+        );
 
-        timeSlotRepository.saveAll(List.of(timeSlot1, timeSlot2, timeSlot3));
+        timeSlotRepository.saveAll(List.of(timeSlot16, timeSlot10, timeSlot14));
 
         // when
-        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByUserId(hostId);
+        List<TimeSlot> foundTimeSlots = timeSlotRepository.findByUserIdOrderByStartTimeAsc(hostId);
 
-        // then
+        // then - startTime 오름차순 정렬 확인
         assertThat(foundTimeSlots).hasSize(3);
+        assertThat(foundTimeSlots.get(0).getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(foundTimeSlots.get(1).getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(foundTimeSlots.get(2).getStartTime()).isEqualTo(LocalTime.of(16, 0));
     }
 
     @Test
