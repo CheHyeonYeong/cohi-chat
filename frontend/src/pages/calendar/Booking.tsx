@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Button } from "~/components/button";
 import { useBooking, useUploadBookingFile } from "~/hooks/useBookings";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export default function Booking() {
     const { id } = useParams({ from: '/app/booking/$id' });

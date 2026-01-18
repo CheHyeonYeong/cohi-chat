@@ -16,7 +16,7 @@ import './calendar.less';
 import { useAuth } from '~/hooks/useAuth';
 import { useBookingsStreamQuery } from '~/hooks/useBookings';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });

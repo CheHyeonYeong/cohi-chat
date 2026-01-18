@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '~/libs/httpClient';
 import { ITimeSlot } from '~/types/timeslot';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export function useCalendarDateSelection() {
     const queryClient = useQueryClient();
