@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
+import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -38,6 +39,32 @@ public class CalendarService {
         } catch (DataIntegrityViolationException e) {
             throw new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public CalendarResponseDTO getCalendar(Member member) {
+        validateHostPermission(member);
+
+        Calendar calendar = calendarRepository.findByUserId(member.getId())
+            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        return CalendarResponseDTO.from(calendar);
+    }
+
+    @Transactional
+    public CalendarResponseDTO updateCalendar(Member member, CalendarUpdateRequestDTO request) {
+        validateHostPermission(member);
+
+        Calendar calendar = calendarRepository.findByUserId(member.getId())
+            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        calendar.update(
+            request.getTopics(),
+            request.getDescription(),
+            request.getGoogleCalendarId()
+        );
+
+        return CalendarResponseDTO.from(calendar);
     }
 
     private void validateHostPermission(Member member) {
