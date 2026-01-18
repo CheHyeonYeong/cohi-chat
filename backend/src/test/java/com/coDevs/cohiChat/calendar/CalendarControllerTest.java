@@ -157,7 +157,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.error.code").value("GUEST_PERMISSION"));
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
     @Test
@@ -179,6 +179,6 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.error.code").value("CALENDAR_ALREADY_EXISTS"));
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_ALREADY_EXISTS.toString()));
     }
 }
