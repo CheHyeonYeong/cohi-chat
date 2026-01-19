@@ -1,17 +1,24 @@
 import { useMutation, UseMutationResult } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { httpClient } from '~/libs/httpClient';
-import { User } from '~/types/user';
 
 interface LoginCredentials {
     username: string;
     password: string;
 }
 
+interface LoginRequest {
+    username: string;
+    password: string;
+    provider: string;
+}
+
 interface LoginResponse {
     accessToken: string;
-    tokenType: string;
-    user: User;
+    expiredInMinutes: number;
+    refreshToken: string;
+    username: string;
+    displayName: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -21,9 +28,14 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
 
     return useMutation<LoginResponse, Error, LoginCredentials>({
         mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-            const response = await httpClient<LoginResponse>(`${API_URL}/account/login`, {
+            const request: LoginRequest = {
+                ...credentials,
+                provider: 'LOCAL',
+            };
+
+            const response = await httpClient<LoginResponse>(`${API_URL}/members/v1/login`, {
                 method: 'POST',
-                body: credentials as unknown as BodyInit,
+                body: request as unknown as BodyInit,
             });
 
             if (!response || !response.accessToken) {
@@ -31,6 +43,8 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             }
 
             localStorage.setItem('auth_token', response.accessToken);
+            localStorage.setItem('refresh_token', response.refreshToken);
+            localStorage.setItem('username', response.username);
             return response;
         },
         onSuccess: () => {
@@ -41,6 +55,5 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
         onError: (error: Error) => {
             console.error('Login error:', error);
         },
-    }
-    );
+    });
 } 
