@@ -13,7 +13,7 @@ import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 class TimeSlotTest {
 
-    private static final UUID TEST_CALENDAR_ID = UUID.randomUUID();
+    private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
     private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 월, 화, 수
@@ -23,14 +23,14 @@ class TimeSlotTest {
     void createTimeSlotSuccess() {
         // when
         TimeSlot timeSlot = TimeSlot.create(
-            TEST_CALENDAR_ID,
+            TEST_USER_ID,
             TEST_START_TIME,
             TEST_END_TIME,
             TEST_WEEKDAYS
         );
 
         // then
-        assertThat(timeSlot.getCalendarId()).isEqualTo(TEST_CALENDAR_ID);
+        assertThat(timeSlot.getUserId()).isEqualTo(TEST_USER_ID);
         assertThat(timeSlot.getStartTime()).isEqualTo(TEST_START_TIME);
         assertThat(timeSlot.getEndTime()).isEqualTo(TEST_END_TIME);
         assertThat(timeSlot.getWeekdays()).isEqualTo(TEST_WEEKDAYS);
@@ -44,7 +44,7 @@ class TimeSlotTest {
 
         // when
         TimeSlot timeSlot = TimeSlot.create(
-            TEST_CALENDAR_ID,
+            TEST_USER_ID,
             TEST_START_TIME,
             TEST_END_TIME,
             weekdays
@@ -60,7 +60,7 @@ class TimeSlotTest {
     void isOverlappingTrue() {
         // given
         TimeSlot existingSlot = TimeSlot.create(
-            TEST_CALENDAR_ID,
+            TEST_USER_ID,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
@@ -100,7 +100,7 @@ class TimeSlotTest {
     void isOverlappingFalse() {
         // given
         TimeSlot existingSlot = TimeSlot.create(
-            TEST_CALENDAR_ID,
+            TEST_USER_ID,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2)

@@ -35,7 +35,7 @@ public class TimeSlot {
     private Long id;
 
     @Column(name = "calendar_id", nullable = false, columnDefinition = "BINARY(16)")
-    private UUID calendarId;
+    private UUID userId;
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
@@ -56,13 +56,13 @@ public class TimeSlot {
     private LocalDateTime updatedAt;
 
     public static TimeSlot create(
-        UUID calendarId,
+        UUID userId,
         LocalTime startTime,
         LocalTime endTime,
         List<Integer> weekdays
     ) {
         TimeSlot timeSlot = new TimeSlot();
-        timeSlot.calendarId = calendarId;
+        timeSlot.userId = userId;
         timeSlot.startTime = startTime;
         timeSlot.endTime = endTime;
         timeSlot.weekdays = weekdays;
