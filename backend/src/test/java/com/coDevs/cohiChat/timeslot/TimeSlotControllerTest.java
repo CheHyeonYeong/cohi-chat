@@ -56,7 +56,7 @@ class TimeSlotControllerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     private static final String TEST_USERNAME = "testuser";
-    private static final UUID TEST_CALENDAR_ID = UUID.randomUUID();
+    private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
     private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2);
@@ -83,7 +83,7 @@ class TimeSlotControllerTest {
 
         TimeSlotResponseDTO response = TimeSlotResponseDTO.builder()
             .id(1L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(TEST_START_TIME)
             .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
@@ -254,7 +254,7 @@ class TimeSlotControllerTest {
         // given
         TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
             .id(1L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(10, 0))
             .endTime(LocalTime.of(11, 0))
             .weekdays(List.of(0))
@@ -264,7 +264,7 @@ class TimeSlotControllerTest {
 
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
             .id(2L)
-            .calendarId(TEST_CALENDAR_ID)
+            .userId(TEST_USER_ID)
             .startTime(LocalTime.of(14, 0))
             .endTime(LocalTime.of(15, 0))
             .weekdays(List.of(1))
@@ -281,5 +281,93 @@ class TimeSlotControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[1].id").value(2));
+    }
+
+    @Test
+    @DisplayName("성공: 호스트 ID로 타임슬롯 목록 조회 시 200 OK 반환")
+    void getTimeSlotsByHostIdSuccess() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+        TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
+            .id(1L)
+            .userId(TEST_USER_ID)
+            .startTime(LocalTime.of(10, 0))
+            .endTime(LocalTime.of(11, 0))
+            .weekdays(List.of(0, 1, 2))
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
+
+        TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
+            .id(2L)
+            .userId(TEST_USER_ID)
+            .startTime(LocalTime.of(14, 0))
+            .endTime(LocalTime.of(15, 0))
+            .weekdays(List.of(3, 4))
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
+
+        when(timeSlotService.getTimeSlotsByHostId(hostId))
+            .thenReturn(List.of(response1, response2));
+
+        // when & then
+        mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].startTime").value("10:00:00"))
+            .andExpect(jsonPath("$[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$[0].weekdays[0]").value(0))
+            .andExpect(jsonPath("$[1].id").value(2));
+    }
+
+    @Test
+    @DisplayName("성공: 호스트 ID로 조회 시 타임슬롯이 없으면 빈 배열 반환")
+    void getTimeSlotsByHostIdEmpty() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+
+        when(timeSlotService.getTimeSlotsByHostId(hostId))
+            .thenReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 없으면 404 Not Found")
+    void getTimeSlotsByHostIdHostNotFound() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+
+        when(timeSlotService.getTimeSlotsByHostId(hostId))
+            .thenThrow(new CustomException(ErrorCode.HOST_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
+                .with(csrf()))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.HOST_NOT_FOUND.toString()));
+    }
+
+    @Test
+    @DisplayName("실패: 호스트의 캘린더가 없으면 404 Not Found")
+    void getTimeSlotsByHostIdCalendarNotFound() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+
+        when(timeSlotService.getTimeSlotsByHostId(hostId))
+            .thenThrow(new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
+                .with(csrf()))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 }

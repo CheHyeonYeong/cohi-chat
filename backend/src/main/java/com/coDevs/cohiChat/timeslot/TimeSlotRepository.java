@@ -14,12 +14,12 @@ import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 @Repository
 public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
-    List<TimeSlot> findByCalendarId(UUID calendarId);
+    List<TimeSlot> findByUserIdOrderByStartTimeAsc(UUID userId);
 
-    @Query("SELECT t FROM TimeSlot t WHERE t.calendarId = :calendarId " +
+    @Query("SELECT t FROM TimeSlot t WHERE t.userId = :userId " +
            "AND t.startTime < :endTime AND t.endTime > :startTime")
     List<TimeSlot> findOverlappingTimeSlots(
-        @Param("calendarId") UUID calendarId,
+        @Param("userId") UUID userId,
         @Param("startTime") LocalTime startTime,
         @Param("endTime") LocalTime endTime
     );

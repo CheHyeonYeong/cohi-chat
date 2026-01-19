@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +10,7 @@ import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -23,6 +25,7 @@ public class TimeSlotService {
 
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional
     public TimeSlotResponseDTO createTimeSlot(Member member, TimeSlotCreateRequestDTO request) {
@@ -47,12 +50,21 @@ public class TimeSlotService {
     @Transactional(readOnly = true)
     public List<TimeSlotResponseDTO> getTimeSlotsByHost(Member member) {
         validateHostPermission(member);
+        return getTimeSlotsByUserId(member.getId());
+    }
 
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
+    @Transactional(readOnly = true)
+    public List<TimeSlotResponseDTO> getTimeSlotsByHostId(UUID hostId) {
+        memberRepository.findByIdAndRoleAndIsDeletedFalse(hostId, Role.HOST)
+            .orElseThrow(() -> new CustomException(ErrorCode.HOST_NOT_FOUND));
+        return getTimeSlotsByUserId(hostId);
+    }
+
+    private List<TimeSlotResponseDTO> getTimeSlotsByUserId(UUID userId) {
+        calendarRepository.findByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        List<TimeSlot> timeSlots = timeSlotRepository.findByCalendarId(calendar.getUserId());
-        return timeSlots.stream()
+        return timeSlotRepository.findByUserIdOrderByStartTimeAsc(userId).stream()
             .map(TimeSlotResponseDTO::from)
             .toList();
     }
@@ -63,9 +75,9 @@ public class TimeSlotService {
         }
     }
 
-    private void validateNoOverlappingTimeSlots(java.util.UUID calendarId, TimeSlotCreateRequestDTO request) {
+    private void validateNoOverlappingTimeSlots(UUID userId, TimeSlotCreateRequestDTO request) {
         List<TimeSlot> overlappingTimeSlots = timeSlotRepository.findOverlappingTimeSlots(
-            calendarId,
+            userId,
             request.getStartTime(),
             request.getEndTime()
         );
