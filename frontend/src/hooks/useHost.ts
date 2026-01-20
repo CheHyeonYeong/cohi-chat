@@ -18,3 +18,9 @@ export function useHosts() {
     });
 }
 
+export function useHost(username: string) {
+    const { data: hosts, ...rest } = useHosts();
+    const host = hosts?.find((h) => h.username === username) ?? null;
+    return { data: host, ...rest };
+}
+
