@@ -41,7 +41,7 @@ export function useAuth() {
             if (!username) {
                 throw new Error('Not authenticated');
             }
-            const data = await httpClient<MemberResponseDTO>(`${API_URL}/members/v1/${username}`);
+            const data = await httpClient<MemberResponseDTO>(`${API_URL}/members/v1/${encodeURIComponent(username)}`);
             return {
                 ...data,
                 isHost: data.role === 'HOST',

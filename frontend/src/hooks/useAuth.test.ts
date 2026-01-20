@@ -63,7 +63,7 @@ describe('useAuth', () => {
             );
         });
 
-        it('doesNotRunQueryWheTokenIsMissing', () => {
+        it('doesNotRunQueryWhenTokenIsMissing', () => {
             vi.mocked(getValidToken).mockReturnValue(null);
             vi.mocked(getCurrentUsername).mockReturnValue(null);
 
