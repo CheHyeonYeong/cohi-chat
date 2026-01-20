@@ -27,7 +27,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     const navigate = useNavigate();
     const auth = useAuth();
     const calendar = useCalendarEvent(slug);
-    const { data: timeslots = [] } = useTimeslots(slug, selectedDate);
+    const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
     const bookingsStream = useBookingsStreamQuery({
         endpoint: `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`,

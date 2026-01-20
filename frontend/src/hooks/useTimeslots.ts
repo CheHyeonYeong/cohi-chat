@@ -1,23 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { httpClient } from '~/libs/httpClient';
 import { ITimeSlot } from '~/types/timeslot';
+import { useHost } from './useHost';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-export function useTimeslots(hostname: string, date: Date | null) {
+export function useTimeslots(hostname: string) {
+    const { data: host } = useHost(hostname);
+
     return useQuery<ITimeSlot[]>({
-        queryKey: ['timeslots', hostname, date?.toISOString()],
+        queryKey: ['timeslots', hostname, host?.id],
         queryFn: async () => {
-            if (!date) throw new Error("Date is required");
+            if (!host?.id) throw new Error("Host not found");
 
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-
-            const url = `${API_URL}/time-slots/${hostname}?year=${year}&month=${month}`;
+            const url = `${API_URL}/timeslot/v1/hosts/${host.id}`;
             const data: ITimeSlot[] = await httpClient(url);
             return data;
-           
         },
-        enabled: !!date,
+        enabled: !!host?.id,
     });
 } 
