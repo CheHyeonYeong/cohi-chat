@@ -7,14 +7,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.Role;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, UUID> {
 
-	Optional<Member> findByUsername(String username);
+	Optional<Member> findByUsernameAndIsDeletedFalse(String username);
 
-	boolean existsByUsername(String username);
+	boolean existsByUsernameAndIsDeletedFalse(String username);
 
 	boolean existsByEmail(String email);
+
+	Optional<Member> findByIdAndRoleAndIsDeletedFalse(UUID id, Role role);
 
 }

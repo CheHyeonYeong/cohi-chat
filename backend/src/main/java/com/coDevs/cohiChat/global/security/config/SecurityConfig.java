@@ -5,6 +5,7 @@ import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -23,6 +24,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
@@ -30,7 +32,7 @@ public class SecurityConfig {
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
 		return (web) -> web.ignoring()
-			.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/favicon.ico");
+			.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html");
 	}
 
 	@Bean
@@ -43,9 +45,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/api/v1/members/signup", "/api/v1/members/login").permitAll()
-				.requestMatchers("/api/v1/members/**").authenticated()
-
+				.requestMatchers("/swagger-ui/**","/members/v1/signup", "/members/v1/login", "/timeslot/v1/hosts/**").permitAll()
 				.anyRequest().authenticated()
 			)
 

@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.global.exception;
 
 import org.springframework.http.HttpStatus;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -20,6 +19,8 @@ public enum ErrorCode {
 	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "유효하지 않은 비밀번호입니다."),
 	INVALID_DISPLAY_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 닉네임입니다."),
 	INVALID_ROLE(HttpStatus.BAD_REQUEST, "유효하지 않은 권한입니다."),
+	NO_UPDATE_FIELDS(HttpStatus.BAD_REQUEST, "수정할 항목을 최소 하나 이상 입력해주세요."),
+	INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
 	DUPLICATED_USERNAME(HttpStatus.CONFLICT, "중복된 계정 ID입니다."),
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "중복된 E-mail 주소입니다."),
@@ -29,6 +30,15 @@ public enum ErrorCode {
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 인증 토큰입니다."),
 	AUTH_NOT_PROVIDED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
+
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
+    GUEST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
+
+	/**
+	 * 시스템 관련.
+	 * 500: 서버 내부 오류
+	 */
+	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
 
 	/**
 	 * 캘린더, 타임슬롯, 예약 관련 예외들.
@@ -43,11 +53,8 @@ public enum ErrorCode {
 
 	SELF_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "자기 자신에게는 부킹을 할 수 없습니다."),
 	PAST_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "과거 일자에는 부킹을 할 수 없습니다."),
-	INVALID_YEAR_MONTH(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 년도 또는 월입니다."),
-
-	GUEST_PERMISSION(HttpStatus.FORBIDDEN, "게스트는 캘린더를 생성할 수 없습니다.");
+	INVALID_YEAR_MONTH(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 년도 또는 월입니다.");
 
 	private final HttpStatus status;
 	private final String message;
-
 }

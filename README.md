@@ -11,7 +11,7 @@
 **2024.12.19 ~ 2026.01.31**
 
 ### 주요 목표
-- FastAPI 백엔드 개발 및 Spring Boot로의 마이그레이션 준비
+- FastAPI → Spring Boot 백엔드 마이그레이션 진행 중
 - AWS EC2 1GB 환경에서의 효율적인 배포
 - Google Calendar 연동을 통한 실시간 일정 관리
 
@@ -33,7 +33,16 @@
 
 ## 🛠 기술 스택
 
-### Backend
+### Backend (Spring Boot)
+- **Spring Boot 3.5** - Java 웹 프레임워크
+- **Java 21** - LTS 버전
+- **Spring Data JPA** - ORM
+- **Spring Security** - 인증/인가
+- **SQLite** - 경량 데이터베이스
+- **JWT (jjwt)** - 토큰 기반 인증
+- **SpringDoc OpenAPI** - API 문서 자동 생성
+
+### Backend (Python - 마이그레이션 원본)
 - **FastAPI** - 고성능 Python 웹 프레임워크
 - **SQLModel** - SQLAlchemy 기반 ORM
 - **SQLite** - 경량 데이터베이스 (개발/운영)
@@ -111,12 +120,18 @@ cd ..
 
 ### 4. 서버 실행
 
-**터미널 1 - 백엔드:**
+**옵션 A - Spring Boot 백엔드:**
+```bash
+cd backend
+./gradlew bootRun
+```
+
+**옵션 B - FastAPI 백엔드:**
 ```bash
 python -m uvicorn appserver.app:app --reload --port 8000
 ```
 
-**터미널 2 - 프론트엔드:**
+**프론트엔드:**
 ```bash
 cd frontend
 pnpm dev
@@ -124,7 +139,8 @@ pnpm dev
 
 ### 5. 접속
 - **프론트엔드**: http://localhost:3000
-- **API 문서**: http://localhost:8000/docs
+- **API 문서 (Spring Boot)**: http://localhost:8080/swagger-ui.html
+- **API 문서 (FastAPI)**: http://localhost:8000/docs
 - **관리자 페이지**: http://localhost:8000/@/-_-/@/nimda/
 
 ## 🔧 Google Calendar 연동 설정
@@ -159,17 +175,21 @@ GOOGLE_CALENDAR_ID=your-email@gmail.com
 
 ```
 coheChat/
-├── appserver/                 # 백엔드
-│   ├── apps/
-│   │   ├── account/          # 사용자 인증 및 계정 관리
-│   │   └── calendar/         # 캘린더 및 예약 관리
-│   ├── libs/
-│   │   ├── google/           # Google Calendar API 통합
-│   │   ├── datetime/         # 날짜/시간 유틸리티
-│   │   └── collections/      # 컬렉션 유틸리티
-│   ├── app.py                # FastAPI 애플리케이션
-│   ├── db.py                 # 데이터베이스 설정
-│   └── admin.py              # Admin 페이지 설정
+├── backend/                   # Spring Boot 백엔드 (Java 21)
+├── backend-python/            # FastAPI 백엔드 (마이그레이션 원본)
+│   ├── appserver/
+│   │   ├── apps/
+│   │   │   ├── account/      # 사용자 인증 및 계정 관리
+│   │   │   └── calendar/     # 캘린더 및 예약 관리
+│   │   ├── libs/
+│   │   │   ├── google/       # Google Calendar API 통합
+│   │   │   ├── datetime/     # 날짜/시간 유틸리티
+│   │   │   └── collections/  # 컬렉션 유틸리티
+│   │   ├── app.py            # FastAPI 애플리케이션
+│   │   ├── db.py             # 데이터베이스 설정
+│   │   └── admin.py          # Admin 페이지 설정
+│   ├── alembic/              # DB 마이그레이션
+│   └── tests/                # 테스트 코드
 │
 ├── frontend/                  # 프론트엔드
 │   └── src/
@@ -179,8 +199,9 @@ coheChat/
 │       ├── routes/           # 라우트 정의
 │       └── libs/             # 유틸리티 함수
 │
-├── alembic/                   # DB 마이그레이션
-├── tests/                     # 테스트 코드
+├── docs/                      # 문서
+├── CLAUDE.md                  # Claude Code 프로젝트 컨텍스트
+├── docker-compose.yml         # Docker 설정
 ├── static/                    # 정적 파일
 ├── uploads/                   # 업로드 파일 저장소
 └── local.db                   # SQLite 데이터베이스

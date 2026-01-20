@@ -1,7 +1,7 @@
 import { httpClient } from '~/libs/httpClient';
 import { IBooking, IBookingDetail, IPaginatedBookingDetail } from '~/types/booking';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
     const url = `${API_URL}/calendar/${slug}/bookings?year=${date.year}&month=${date.month}`;
