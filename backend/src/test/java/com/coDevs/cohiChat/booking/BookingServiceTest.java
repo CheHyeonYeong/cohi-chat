@@ -77,7 +77,7 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
         )).willReturn(false);
@@ -99,7 +99,7 @@ class BookingServiceTest {
     @DisplayName("실패: 존재하지 않는 타임슬롯에 예약할 수 없다")
     void createBookingFailWhenTimeSlotNotFound() {
         // given - 과거 날짜 검증 통과 후, TimeSlot 조회에서 실패
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.empty());
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -113,7 +113,7 @@ class BookingServiceTest {
         // given
         given(guestMember.getId()).willReturn(HOST_ID); // 게스트 ID == 호스트 ID
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -145,7 +145,7 @@ class BookingServiceTest {
         given(guestMember.getId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
         )).willReturn(true);
@@ -164,11 +164,36 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(timeSlot.getWeekdays()).willReturn(List.of((FUTURE_DATE.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WEEKDAY_NOT_AVAILABLE);
+    }
+
+    @Test
+    @DisplayName("성공: 취소된 예약이 있는 시간대에 재예약할 수 있다")
+    void createBookingSuccessWhenCancelledBookingExists() {
+        // given - 취소된 예약이 있지만, 활성 예약은 없는 상태
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        // 취소된 예약만 존재하므로 중복 체크에서 false 반환
+        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
+            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response)
+            .extracting("timeSlotId", "guestId", "attendanceStatus")
+            .containsExactly(TIME_SLOT_ID, GUEST_ID, AttendanceStatus.SCHEDULED);
     }
 }

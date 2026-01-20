@@ -30,8 +30,8 @@ public class BookingService {
         // 1. DB 조회 없이 가능한 검증 먼저
         validateNotPastBooking(request.getBookingDate());
 
-        // 2. DB 조회 필요한 검증
-        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        // 2. DB 조회 필요한 검증 (Pessimistic Lock으로 동시 예약 방지)
+        TimeSlot timeSlot = timeSlotRepository.findByIdWithLock(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         validateNotSelfBooking(guest, timeSlot);

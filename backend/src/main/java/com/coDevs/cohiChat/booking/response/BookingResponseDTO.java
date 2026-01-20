@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,8 @@ public class BookingResponseDTO {
     private Long id;
     private Long timeSlotId;
     private UUID guestId;
+
+    @JsonProperty("when")
     private LocalDate bookingDate;
     private LocalTime startTime;
     private LocalTime endTime;

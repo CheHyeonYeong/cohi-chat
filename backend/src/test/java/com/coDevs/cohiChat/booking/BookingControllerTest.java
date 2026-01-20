@@ -90,7 +90,7 @@ class BookingControllerTest {
         String requestBody = """
             {
                 "timeSlotId": 1,
-                "bookingDate": "%s",
+                "when": "%s",
                 "topic": "프로젝트 상담",
                 "description": "Spring Boot 프로젝트 관련 질문"
             }
@@ -118,7 +118,7 @@ class BookingControllerTest {
         String requestBody = """
             {
                 "timeSlotId": 1,
-                "bookingDate": "%s",
+                "when": "%s",
                 "topic": "프로젝트 상담",
                 "description": "Spring Boot 프로젝트 관련 질문"
             }
@@ -139,7 +139,7 @@ class BookingControllerTest {
         String requestBody = """
             {
                 "timeSlotId": 1,
-                "bookingDate": "2020-01-01",
+                "when": "2020-01-01",
                 "topic": "프로젝트 상담",
                 "description": "Spring Boot 프로젝트 관련 질문"
             }
@@ -163,7 +163,7 @@ class BookingControllerTest {
         String requestBody = """
             {
                 "timeSlotId": 1,
-                "bookingDate": "%s",
+                "when": "%s",
                 "topic": "프로젝트 상담",
                 "description": "Spring Boot 프로젝트 관련 질문"
             }
@@ -187,7 +187,7 @@ class BookingControllerTest {
         String requestBody = """
             {
                 "timeSlotId": 999,
-                "bookingDate": "%s",
+                "when": "%s",
                 "topic": "프로젝트 상담",
                 "description": "Spring Boot 프로젝트 관련 질문"
             }

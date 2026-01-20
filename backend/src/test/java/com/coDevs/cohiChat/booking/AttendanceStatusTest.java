@@ -2,6 +2,8 @@ package com.coDevs.cohiChat.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -51,5 +53,16 @@ class AttendanceStatusTest {
     @DisplayName("LATE 상태가 존재해야 한다")
     void shouldHaveLateStatus() {
         assertThat(AttendanceStatus.valueOf("LATE")).isEqualTo(AttendanceStatus.LATE);
+    }
+
+    @Test
+    @DisplayName("getCancelledStatuses는 CANCELLED와 SAME_DAY_CANCEL을 반환해야 한다")
+    void getCancelledStatusesShouldReturnCancelledAndSameDayCancel() {
+        List<AttendanceStatus> cancelled = AttendanceStatus.getCancelledStatuses();
+
+        assertThat(cancelled).containsExactlyInAnyOrder(
+            AttendanceStatus.CANCELLED,
+            AttendanceStatus.SAME_DAY_CANCEL
+        );
     }
 }
