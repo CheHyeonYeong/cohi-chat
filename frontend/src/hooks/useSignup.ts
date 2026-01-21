@@ -1,30 +1,28 @@
 import { useMutation, UseMutationResult } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { httpClient } from '~/libs/httpClient';
-import { User } from '~/types/user';
 
 interface SignupPayload {
     username: string;
     email: string;
-    display_name?: string;
+    displayName?: string;
     password: string;
-    password_again: string;
 }
 
 interface SignupResponse {
+    id: string;
     username: string;
-    display_name: string;
-    is_host: boolean;
+    displayName: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export function useSignup(): UseMutationResult<SignupResponse, Error, SignupPayload> {
     const navigate = useNavigate();
 
     return useMutation<SignupResponse, Error, SignupPayload>({
         mutationFn: async (payload: SignupPayload): Promise<SignupResponse> => {
-            const response = await httpClient<SignupResponse>(`${API_URL}/account/signup`, {
+            const response = await httpClient<SignupResponse>(`${API_URL}/members/v1/signup`, {
                 method: 'POST',
                 body: payload as unknown as BodyInit,
             });

@@ -2,7 +2,7 @@ import {useQuery} from '@tanstack/react-query';
 import {httpClient} from '~/libs/httpClient';
 import {MemberResponseDTO} from '~/types/user';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export function useHosts() {
     return useQuery<MemberResponseDTO[]>({
@@ -16,5 +16,11 @@ export function useHosts() {
         },
         retry: false,
     });
+}
+
+export function useHost(username: string) {
+    const { data: hosts, ...rest } = useHosts();
+    const host = hosts?.find((h) => h.username === username) ?? null;
+    return { data: host, ...rest };
 }
 

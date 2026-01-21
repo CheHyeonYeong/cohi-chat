@@ -3,7 +3,7 @@ import {useCallback, useSyncExternalStore} from 'react';
 import {httpClient} from '~/libs/httpClient';
 import {MemberResponseDTO} from '~/types/user';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export interface AuthUser extends MemberResponseDTO {
     isHost: boolean;
