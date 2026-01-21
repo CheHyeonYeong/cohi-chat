@@ -17,3 +17,7 @@ export interface IUserSimple {
     displayName: string;
     role: Role;
 }
+
+export interface AuthUser extends MemberResponseDTO {
+    isHost: boolean;
+}
