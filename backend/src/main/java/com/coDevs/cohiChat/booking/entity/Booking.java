@@ -18,20 +18,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(
-    name = "booking",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_booking_timeslot_date",
-        columnNames = {"time_slot_id", "booking_date"}
-    )
-)
+@Table(name = "booking")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Booking {
@@ -91,5 +84,9 @@ public class Booking {
         booking.description = description;
         booking.attendanceStatus = AttendanceStatus.SCHEDULED;
         return booking;
+    }
+
+    public void cancel() {
+        this.attendanceStatus = AttendanceStatus.CANCELLED;
     }
 }

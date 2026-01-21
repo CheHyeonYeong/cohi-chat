@@ -264,4 +264,50 @@ class BookingIntegrationTest {
         assertThat(response.getId()).isNotNull();
         assertThat(response.getBookingDate()).isEqualTo(nextMonday);
     }
+
+    @Test
+    @DisplayName("통합 테스트: 취소된 예약이 있는 시간대에 재예약 가능")
+    void createBookingSuccessAfterCancellation() {
+        // given - 첫 번째 예약 생성 후 취소
+        BookingCreateRequestDTO firstRequest = BookingCreateRequestDTO.builder()
+            .timeSlotId(timeSlot.getId())
+            .bookingDate(futureMonday)
+            .topic("첫 번째 상담")
+            .description("첫 번째 예약 - 취소 예정")
+            .build();
+        BookingResponseDTO firstResponse = bookingService.createBooking(guest, firstRequest);
+
+        // 예약 취소
+        var cancelledBooking = bookingRepository.findById(firstResponse.getId()).orElseThrow();
+        cancelledBooking.cancel();
+        bookingRepository.save(cancelledBooking);
+
+        // 다른 게스트 생성
+        Member anotherGuest = Member.create(
+            "rebookguest",
+            "Rebook Guest",
+            "rebook@test.com",
+            "encodedPassword",
+            Role.GUEST
+        );
+        anotherGuest = memberRepository.save(anotherGuest);
+
+        // when - 같은 날짜, 같은 타임슬롯에 새 예약 생성
+        BookingCreateRequestDTO rebookRequest = BookingCreateRequestDTO.builder()
+            .timeSlotId(timeSlot.getId())
+            .bookingDate(futureMonday)
+            .topic("재예약 상담")
+            .description("취소 후 재예약")
+            .build();
+        BookingResponseDTO rebookResponse = bookingService.createBooking(anotherGuest, rebookRequest);
+
+        // then
+        assertThat(rebookResponse.getId()).isNotNull();
+        assertThat(rebookResponse.getId()).isNotEqualTo(firstResponse.getId());
+        assertThat(rebookResponse.getBookingDate()).isEqualTo(futureMonday);
+        assertThat(rebookResponse.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
+
+        // DB에 2개의 예약이 존재하는지 확인 (취소된 것 + 새 예약)
+        assertThat(bookingRepository.count()).isEqualTo(2);
+    }
 }
