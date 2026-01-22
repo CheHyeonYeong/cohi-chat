@@ -2,6 +2,11 @@ package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,5 +101,46 @@ public class BookingService {
         if (exists) {
             throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public BookingResponseDTO getBookingById(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        TimeSlot timeSlot = timeSlotRepository.findById(booking.getTimeSlotId())
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        return BookingResponseDTO.from(booking, timeSlot);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDTO> getBookingsByGuestId(UUID guestId) {
+        List<Booking> bookings = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId);
+        return toBookingResponseDTOs(bookings);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDTO> getBookingsByHostId(UUID hostId) {
+        List<Booking> bookings = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId);
+        return toBookingResponseDTOs(bookings);
+    }
+
+    private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> timeSlotIds = bookings.stream()
+            .map(Booking::getTimeSlotId)
+            .distinct()
+            .toList();
+
+        Map<Long, TimeSlot> timeSlotMap = timeSlotRepository.findAllById(timeSlotIds).stream()
+            .collect(Collectors.toMap(TimeSlot::getId, Function.identity()));
+
+        return bookings.stream()
+            .map(booking -> BookingResponseDTO.from(booking, timeSlotMap.get(booking.getTimeSlotId())))
+            .toList();
     }
 }
