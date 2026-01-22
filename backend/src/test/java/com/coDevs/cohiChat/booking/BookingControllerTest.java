@@ -1,8 +1,10 @@
 package com.coDevs.cohiChat.booking;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -222,7 +224,7 @@ class BookingControllerTest {
             .createdAt(LocalDateTime.now())
             .build();
 
-        given(bookingService.getBookingById(bookingId)).willReturn(response);
+        given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID))).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
@@ -238,12 +240,25 @@ class BookingControllerTest {
     void getBookingByIdFailNotFound() throws Exception {
         // given
         Long bookingId = 999L;
-        given(bookingService.getBookingById(bookingId))
+        given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID)))
             .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         // when & then
         mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("실패: 권한 없는 예약 조회 - 403 Forbidden")
+    void getBookingByIdFailAccessDenied() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID)))
+            .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+        // when & then
+        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -306,10 +321,13 @@ class BookingControllerTest {
         // given - 인증된 사용자의 ID로만 조회됨
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of());
 
-        // when & then
+        // when
         mockMvc.perform(get("/api/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray());
+
+        // then - 인증된 사용자의 ID로 서비스가 호출되었는지 검증
+        verify(bookingService).getBookingsByGuestId(GUEST_ID);
     }
 
 }

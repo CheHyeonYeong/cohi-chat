@@ -11,6 +11,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -40,6 +43,7 @@ public class Booking {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_slot_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.NO_ACTION)
     private TimeSlot timeSlot;
 
     @Column(name = "guest_id", nullable = false, columnDefinition = "BINARY(16)")

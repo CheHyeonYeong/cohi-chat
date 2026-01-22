@@ -27,12 +27,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /**
      * 게스트 ID로 예약 목록 조회 (예약 날짜 내림차순)
+     * FETCH JOIN으로 N+1 문제 방지
      */
-    List<Booking> findByGuestIdOrderByBookingDateDesc(UUID guestId);
+    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
+    List<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
 
     /**
      * 호스트 ID로 예약 목록 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
+     * FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
     List<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 }

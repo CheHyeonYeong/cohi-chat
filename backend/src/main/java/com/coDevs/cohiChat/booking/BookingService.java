@@ -101,11 +101,22 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingResponseDTO getBookingById(Long bookingId) {
+    public BookingResponseDTO getBookingById(Long bookingId, UUID requesterId) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
+        validateBookingAccess(booking, requesterId);
+
         return BookingResponseDTO.from(booking);
+    }
+
+    private void validateBookingAccess(Booking booking, UUID requesterId) {
+        boolean isGuest = booking.getGuestId().equals(requesterId);
+        boolean isHost = booking.getTimeSlot().getUserId().equals(requesterId);
+
+        if (!isGuest && !isHost) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
     }
 
     @Transactional(readOnly = true)

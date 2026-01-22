@@ -200,18 +200,40 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("성공: 예약 ID로 예약 상세 조회")
-    void getBookingByIdSuccess() {
+    @DisplayName("성공: 게스트가 본인 예약 상세 조회")
+    void getBookingByIdSuccessAsGuest() {
         // given
         Long bookingId = 1L;
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
 
         // when
-        BookingResponseDTO response = bookingService.getBookingById(bookingId);
+        BookingResponseDTO response = bookingService.getBookingById(bookingId, GUEST_ID);
+
+        // then
+        assertThat(response)
+            .extracting("timeSlotId", "guestId", "topic", "description")
+            .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 본인 예약 상세 조회")
+    void getBookingByIdSuccessAsHost() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when
+        BookingResponseDTO response = bookingService.getBookingById(bookingId, HOST_ID);
 
         // then
         assertThat(response)
@@ -227,9 +249,25 @@ class BookingServiceTest {
         given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> bookingService.getBookingById(bookingId))
+        assertThatThrownBy(() -> bookingService.getBookingById(bookingId, GUEST_ID))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 권한 없는 사용자가 예약 조회 시 ACCESS_DENIED")
+    void getBookingByIdFailWhenAccessDenied() {
+        // given
+        Long bookingId = 1L;
+        UUID otherUserId = UUID.randomUUID();
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then - 게스트도 호스트도 아닌 사용자
+        assertThatThrownBy(() -> bookingService.getBookingById(bookingId, otherUserId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
     }
 
     @Test
