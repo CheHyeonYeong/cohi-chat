@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -32,14 +31,14 @@ public class BookingResponseDTO {
     private AttendanceStatus attendanceStatus;
     private LocalDateTime createdAt;
 
-    public static BookingResponseDTO from(Booking booking, TimeSlot timeSlot) {
+    public static BookingResponseDTO from(Booking booking) {
         return BookingResponseDTO.builder()
             .id(booking.getId())
-            .timeSlotId(booking.getTimeSlotId())
+            .timeSlotId(booking.getTimeSlot().getId())
             .guestId(booking.getGuestId())
             .bookingDate(booking.getBookingDate())
-            .startTime(timeSlot.getStartTime())
-            .endTime(timeSlot.getEndTime())
+            .startTime(booking.getTimeSlot().getStartTime())
+            .endTime(booking.getTimeSlot().getEndTime())
             .topic(booking.getTopic())
             .description(booking.getDescription())
             .attendanceStatus(booking.getAttendanceStatus())

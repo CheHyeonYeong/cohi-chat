@@ -9,14 +9,19 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -33,8 +38,9 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "time_slot_id", nullable = false)
-    private Long timeSlotId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_slot_id", nullable = false)
+    private TimeSlot timeSlot;
 
     @Column(name = "guest_id", nullable = false, columnDefinition = "BINARY(16)")
     private UUID guestId;
@@ -64,20 +70,20 @@ public class Booking {
     private LocalDateTime updatedAt;
 
     public static Booking create(
-        Long timeSlotId,
+        TimeSlot timeSlot,
         UUID guestId,
         LocalDate bookingDate,
         String topic,
         String description
     ) {
-        Objects.requireNonNull(timeSlotId, "timeSlotId must not be null");
+        Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(guestId, "guestId must not be null");
         Objects.requireNonNull(bookingDate, "bookingDate must not be null");
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
 
         Booking booking = new Booking();
-        booking.timeSlotId = timeSlotId;
+        booking.timeSlot = timeSlot;
         booking.guestId = guestId;
         booking.bookingDate = bookingDate;
         booking.topic = topic;

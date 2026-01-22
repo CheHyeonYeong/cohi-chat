@@ -3,10 +3,7 @@ package com.coDevs.cohiChat.booking;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,10 +38,10 @@ public class BookingService {
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
-        validateNotDuplicateBooking(request.getTimeSlotId(), request.getBookingDate());
+        validateNotDuplicateBooking(timeSlot, request.getBookingDate());
 
         Booking booking = Booking.create(
-            request.getTimeSlotId(),
+            timeSlot,
             guest.getId(),
             request.getBookingDate(),
             request.getTopic(),
@@ -52,7 +49,7 @@ public class BookingService {
         );
 
         Booking savedBooking = bookingRepository.save(booking);
-        return BookingResponseDTO.from(savedBooking, timeSlot);
+        return BookingResponseDTO.from(savedBooking);
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -92,9 +89,9 @@ public class BookingService {
         return dayOfWeek.getValue() % 7;
     }
 
-    private void validateNotDuplicateBooking(Long timeSlotId, LocalDate bookingDate) {
-        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            timeSlotId,
+    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate) {
+        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            timeSlot,
             bookingDate,
             AttendanceStatus.getCancelledStatuses()
         );
@@ -108,10 +105,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        TimeSlot timeSlot = timeSlotRepository.findById(booking.getTimeSlotId())
-            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
-
-        return BookingResponseDTO.from(booking, timeSlot);
+        return BookingResponseDTO.from(booking);
     }
 
     @Transactional(readOnly = true)
@@ -127,20 +121,8 @@ public class BookingService {
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
-        if (bookings.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> timeSlotIds = bookings.stream()
-            .map(Booking::getTimeSlotId)
-            .distinct()
-            .toList();
-
-        Map<Long, TimeSlot> timeSlotMap = timeSlotRepository.findAllById(timeSlotIds).stream()
-            .collect(Collectors.toMap(TimeSlot::getId, Function.identity()));
-
         return bookings.stream()
-            .map(booking -> BookingResponseDTO.from(booking, timeSlotMap.get(booking.getTimeSlotId())))
+            .map(BookingResponseDTO::from)
             .toList();
     }
 }

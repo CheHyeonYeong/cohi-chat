@@ -77,9 +77,10 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            eq(timeSlot), eq(FUTURE_DATE), any()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -146,8 +147,8 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            eq(timeSlot), eq(FUTURE_DATE), any()
         )).willReturn(true);
 
         // when & then
@@ -181,10 +182,11 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         // 취소된 예약만 존재하므로 중복 체크에서 false 반환
-        given(bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            eq(timeSlot), eq(FUTURE_DATE), any()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -202,11 +204,11 @@ class BookingServiceTest {
     void getBookingByIdSuccess() {
         // given
         Long bookingId = 1L;
-        Booking booking = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
 
         // when
         BookingResponseDTO response = bookingService.getBookingById(bookingId);
@@ -234,14 +236,13 @@ class BookingServiceTest {
     @DisplayName("성공: 게스트 ID로 예약 목록 조회")
     void getBookingsByGuestIdSuccess() {
         // given
-        Booking booking1 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
-        Booking booking2 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
-        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
-            .willReturn(List.of(booking2, booking1));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        given(timeSlotRepository.findAllById(List.of(TIME_SLOT_ID))).willReturn(List.of(timeSlot));
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
+        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
+            .willReturn(List.of(booking2, booking1));
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByGuestId(GUEST_ID);
@@ -270,14 +271,13 @@ class BookingServiceTest {
     @DisplayName("성공: 호스트 ID로 예약 목록 조회")
     void getBookingsByHostIdSuccess() {
         // given
-        Booking booking1 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
-        Booking booking2 = Booking.create(TIME_SLOT_ID, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
-        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
-            .willReturn(List.of(booking2, booking1));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        given(timeSlotRepository.findAllById(List.of(TIME_SLOT_ID))).willReturn(List.of(timeSlot));
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
+        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
+            .willReturn(List.of(booking2, booking1));
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(HOST_ID);
