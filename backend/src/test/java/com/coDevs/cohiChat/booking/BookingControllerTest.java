@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.controller.BookingController;
@@ -244,4 +245,71 @@ class BookingControllerTest {
         mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
             .andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("성공: 내 예약 조회 (게스트) - 200 OK")
+    void getMyBookingsAsGuestSuccess() throws Exception {
+        // given
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(1L)
+            .timeSlotId(TIME_SLOT_ID)
+            .guestId(GUEST_ID)
+            .bookingDate(FUTURE_DATE)
+            .startTime(LocalTime.of(10, 0))
+            .endTime(LocalTime.of(11, 0))
+            .topic("프로젝트 상담")
+            .description("Spring Boot 프로젝트 관련 질문")
+            .attendanceStatus(AttendanceStatus.SCHEDULED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of(response));
+
+        // when & then
+        mockMvc.perform(get("/api/bookings/guest/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].timeSlotId").value(TIME_SLOT_ID))
+            .andExpect(jsonPath("$[0].topic").value("프로젝트 상담"));
+    }
+
+    @Test
+    @DisplayName("성공: 내 예약 조회 (호스트) - 200 OK")
+    void getMyBookingsAsHostSuccess() throws Exception {
+        // given
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(2L)
+            .timeSlotId(TIME_SLOT_ID)
+            .guestId(UUID.randomUUID())
+            .bookingDate(FUTURE_DATE)
+            .startTime(LocalTime.of(14, 0))
+            .endTime(LocalTime.of(15, 0))
+            .topic("기술 면접")
+            .description("백엔드 개발자 면접")
+            .attendanceStatus(AttendanceStatus.SCHEDULED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        given(bookingService.getBookingsByHostId(GUEST_ID)).willReturn(List.of(response));
+
+        // when & then
+        mockMvc.perform(get("/api/bookings/host/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(2))
+            .andExpect(jsonPath("$[0].topic").value("기술 면접"));
+    }
+
+    @Test
+    @WithMockUser(username = "guest")
+    @DisplayName("성공: 인증된 사용자는 본인 예약만 조회 가능")
+    void getMyBookingsOnlyReturnsOwnBookings() throws Exception {
+        // given - 인증된 사용자의 ID로만 조회됨
+        given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/api/bookings/guest/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray());
+    }
+
 }

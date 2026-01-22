@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.booking.controller;
 
+import java.util.List;
+
 import com.coDevs.cohiChat.booking.BookingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,5 +66,33 @@ public class BookingController {
     ) {
         BookingResponseDTO response = bookingService.getBookingById(bookingId);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "내 예약 조회 (게스트)", description = "내가 게스트로 신청한 예약 목록을 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/guest/me")
+    public ResponseEntity<List<BookingResponseDTO>> getMyBookingsAsGuest(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        List<BookingResponseDTO> responses = bookingService.getBookingsByGuestId(member.getId());
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "내 예약 조회 (호스트)", description = "내가 호스트로 받은 예약 목록을 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/host/me")
+    public ResponseEntity<List<BookingResponseDTO>> getMyBookingsAsHost(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(member.getId());
+        return ResponseEntity.ok(responses);
     }
 }
