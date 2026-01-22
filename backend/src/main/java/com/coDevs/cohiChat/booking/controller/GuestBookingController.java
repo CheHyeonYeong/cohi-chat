@@ -1,8 +1,9 @@
-package com.coDevs.cohiChat.booking;
+package com.coDevs.cohiChat.booking.controller;
 
 import java.util.List;
 import java.util.UUID;
 
+import com.coDevs.cohiChat.booking.BookingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

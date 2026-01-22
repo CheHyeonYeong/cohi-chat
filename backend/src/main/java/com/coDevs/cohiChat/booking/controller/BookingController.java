@@ -1,5 +1,6 @@
-package com.coDevs.cohiChat.booking;
+package com.coDevs.cohiChat.booking.controller;
 
+import com.coDevs.cohiChat.booking.BookingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
