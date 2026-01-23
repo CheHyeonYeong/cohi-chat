@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Booking", description = "예약 관리 API")
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/bookings")
 @RequiredArgsConstructor
 public class BookingController {
 

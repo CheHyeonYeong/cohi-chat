@@ -3,6 +3,9 @@ package com.coDevs.cohiChat.timeslot.request;
 import java.time.LocalTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -16,9 +19,13 @@ import lombok.Getter;
 public class TimeSlotCreateRequestDTO {
 
     @NotNull(message = "시작 시간은 필수 입력 항목입니다.")
+    @JsonFormat(pattern = "HH:mm:ss")
+    @Schema(example = "09:00:00", type = "string")
     private LocalTime startTime;
 
     @NotNull(message = "종료 시간은 필수 입력 항목입니다.")
+    @JsonFormat(pattern = "HH:mm:ss")
+    @Schema(example = "18:00:00", type = "string")
     private LocalTime endTime;
 
     @NotEmpty(message = "요일은 최소 1개 이상 선택해야 합니다.")

@@ -2,6 +2,8 @@ package com.coDevs.cohiChat.global.exception;
 
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +16,8 @@ import com.coDevs.cohiChat.global.response.ErrorResponseDTO;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<ApiResponseDTO<Void>> handleCustomException(CustomException e) {
@@ -38,6 +42,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponseDTO<Void>> handleAllException(Exception e) {
+		log.error("Unhandled exception occurred: {}", e.getMessage(), e);
 		return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);
 	}
 
