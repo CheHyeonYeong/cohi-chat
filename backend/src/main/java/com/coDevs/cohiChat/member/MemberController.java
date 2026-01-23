@@ -1,9 +1,7 @@
 package com.coDevs.cohiChat.member;
 
 
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -54,17 +52,7 @@ public class MemberController {
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<LogoutResponseDTO> logout() {
-		ResponseCookie cookie = ResponseCookie.from("auth_token", "")
-			.maxAge(0)
-			.path("/")
-			.httpOnly(true)
-			.secure(true)
-			.sameSite("Strict")
-			.build();
-
-		return ResponseEntity.ok()
-			.header(HttpHeaders.SET_COOKIE, cookie.toString())
-			.body(LogoutResponseDTO.success());
+		return ResponseEntity.ok(LogoutResponseDTO.success());
 	}
 
 	@GetMapping("/v1/{username}")
