@@ -1,9 +1,11 @@
 package com.coDevs.cohiChat.member;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -166,6 +169,12 @@ class MemberControllerTest {
 	void logoutSuccess() throws Exception {
 		mockMvc.perform(delete("/members/v1/logout"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."))
+			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+			.andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("auth_token=")))
+			.andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")))
+			.andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
+			.andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Secure")))
+			.andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("SameSite=Strict")));
 	}
 }
