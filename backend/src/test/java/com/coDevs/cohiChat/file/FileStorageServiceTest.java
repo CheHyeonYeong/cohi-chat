@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.coDevs.cohiChat.file.serviceImpl.LocalFileStorageServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,7 @@ class FileStorageServiceTest {
     @BeforeEach
     void setUp() throws IOException {
         tempDir = Files.createTempDirectory("test-uploads");
-        fileStorageService = new LocalFileStorageService(tempDir.toString());
+        fileStorageService = new LocalFileStorageServiceImpl(tempDir.toString());
     }
 
     @AfterEach

@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.file;
+package com.coDevs.cohiChat.file.serviceImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import com.coDevs.cohiChat.file.FileStorageResult;
+import com.coDevs.cohiChat.file.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -17,11 +19,11 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 
 @Service
-public class LocalFileStorageService implements FileStorageService {
+public class LocalFileStorageServiceImpl implements FileStorageService {
 
     private final Path rootLocation;
 
-    public LocalFileStorageService(@Value("${file.upload-dir:./uploads}") String uploadDir) {
+    public LocalFileStorageServiceImpl(@Value("${file.upload-dir:./uploads}") String uploadDir) {
         this.rootLocation = Path.of(uploadDir);
         init();
     }
@@ -50,7 +52,9 @@ public class LocalFileStorageService implements FileStorageService {
         try {
             Files.createDirectories(targetDir);
             Path targetPath = targetDir.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            try (var inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             return new FileStorageResult(
                 storedFileName,
@@ -69,20 +73,20 @@ public class LocalFileStorageService implements FileStorageService {
             Path path = Path.of(filePath);
             Files.deleteIfExists(path);
         } catch (IOException e) {
-            // Silently ignore deletion errors
+            // 로컬 파일 삭제 실패는 무시 - 고아 파일은 배치로 정리 가능
         }
     }
 
     @Override
     public byte[] load(String filePath) {
+        Path path = Path.of(filePath);
+        if (!Files.exists(path)) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
         try {
-            Path path = Path.of(filePath);
-            if (!Files.exists(path)) {
-                throw new CustomException(ErrorCode.FILE_NOT_FOUND);
-            }
             return Files.readAllBytes(path);
         } catch (IOException e) {
-            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+            throw new CustomException(ErrorCode.FILE_STORAGE_ERROR);
         }
     }
 

@@ -1,7 +1,9 @@
 package com.coDevs.cohiChat.booking.controller;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -109,8 +111,20 @@ public class BookingFileController {
         FileDownloadResult result = bookingFileService.downloadFile(bookingId, fileId, member.getId());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(result.contentType()));
-        headers.setContentDispositionFormData("attachment", result.originalFileName());
+
+        MediaType mediaType;
+        try {
+            mediaType = MediaType.parseMediaType(result.contentType());
+        } catch (IllegalArgumentException e) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+        headers.setContentType(mediaType);
+
+        headers.setContentDisposition(
+            ContentDisposition.attachment()
+                .filename(result.originalFileName(), StandardCharsets.UTF_8)
+                .build()
+        );
 
         return new ResponseEntity<>(result.content(), headers, HttpStatus.OK);
     }

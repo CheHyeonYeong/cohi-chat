@@ -34,17 +34,22 @@ public class BookingFileService {
 
         FileStorageResult storageResult = fileStorageService.store(file);
 
-        BookingFile bookingFile = BookingFile.create(
-            booking,
-            storageResult.fileName(),
-            file.getOriginalFilename() != null ? file.getOriginalFilename() : "file",
-            storageResult.filePath(),
-            storageResult.fileSize(),
-            storageResult.contentType()
-        );
+        try {
+            BookingFile bookingFile = BookingFile.create(
+                booking,
+                storageResult.fileName(),
+                file.getOriginalFilename() != null ? file.getOriginalFilename() : "file",
+                storageResult.filePath(),
+                storageResult.fileSize(),
+                storageResult.contentType()
+            );
 
-        BookingFile savedFile = bookingFileRepository.save(bookingFile);
-        return BookingFileResponseDTO.from(savedFile);
+            BookingFile savedFile = bookingFileRepository.save(bookingFile);
+            return BookingFileResponseDTO.from(savedFile);
+        } catch (Exception e) {
+            fileStorageService.delete(storageResult.filePath());
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -62,17 +67,7 @@ public class BookingFileService {
 
     @Transactional
     public void deleteFile(Long bookingId, Long fileId, UUID requesterId) {
-        Booking booking = bookingRepository.findById(bookingId)
-            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
-
-        validateBookingAccess(booking, requesterId);
-
-        BookingFile bookingFile = bookingFileRepository.findById(fileId)
-            .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
-
-        if (!bookingFile.getBooking().getId().equals(bookingId)) {
-            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
-        }
+        BookingFile bookingFile = getBookingFileWithAccessCheck(bookingId, fileId, requesterId);
 
         fileStorageService.delete(bookingFile.getFilePath());
         bookingFileRepository.delete(bookingFile);
@@ -80,6 +75,13 @@ public class BookingFileService {
 
     @Transactional(readOnly = true)
     public FileDownloadResult downloadFile(Long bookingId, Long fileId, UUID requesterId) {
+        BookingFile bookingFile = getBookingFileWithAccessCheck(bookingId, fileId, requesterId);
+
+        byte[] content = fileStorageService.load(bookingFile.getFilePath());
+        return new FileDownloadResult(content, bookingFile.getOriginalFileName(), bookingFile.getContentType());
+    }
+
+    private BookingFile getBookingFileWithAccessCheck(Long bookingId, Long fileId, UUID requesterId) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
@@ -92,8 +94,7 @@ public class BookingFileService {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
 
-        byte[] content = fileStorageService.load(bookingFile.getFilePath());
-        return new FileDownloadResult(content, bookingFile.getOriginalFileName(), bookingFile.getContentType());
+        return bookingFile;
     }
 
     private void validateBookingAccess(Booking booking, UUID requesterId) {
