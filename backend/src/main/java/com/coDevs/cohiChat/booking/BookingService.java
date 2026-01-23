@@ -2,6 +2,8 @@ package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,10 +38,10 @@ public class BookingService {
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
-        validateNotDuplicateBooking(request.getTimeSlotId(), request.getBookingDate());
+        validateNotDuplicateBooking(timeSlot, request.getBookingDate());
 
         Booking booking = Booking.create(
-            request.getTimeSlotId(),
+            timeSlot,
             guest.getId(),
             request.getBookingDate(),
             request.getTopic(),
@@ -47,7 +49,7 @@ public class BookingService {
         );
 
         Booking savedBooking = bookingRepository.save(booking);
-        return BookingResponseDTO.from(savedBooking, timeSlot);
+        return BookingResponseDTO.from(savedBooking);
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -87,14 +89,51 @@ public class BookingService {
         return dayOfWeek.getValue() % 7;
     }
 
-    private void validateNotDuplicateBooking(Long timeSlotId, LocalDate bookingDate) {
-        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            timeSlotId,
+    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate) {
+        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            timeSlot,
             bookingDate,
             AttendanceStatus.getCancelledStatuses()
         );
         if (exists) {
             throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public BookingResponseDTO getBookingById(Long bookingId, UUID requesterId) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateBookingAccess(booking, requesterId);
+
+        return BookingResponseDTO.from(booking);
+    }
+
+    private void validateBookingAccess(Booking booking, UUID requesterId) {
+        boolean isGuest = booking.getGuestId().equals(requesterId);
+        boolean isHost = booking.getTimeSlot().getUserId().equals(requesterId);
+
+        if (!isGuest && !isHost) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDTO> getBookingsByGuestId(UUID guestId) {
+        List<Booking> bookings = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId);
+        return toBookingResponseDTOs(bookings);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDTO> getBookingsByHostId(UUID hostId) {
+        List<Booking> bookings = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId);
+        return toBookingResponseDTOs(bookings);
+    }
+
+    private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
+        return bookings.stream()
+            .map(BookingResponseDTO::from)
+            .toList();
     }
 }

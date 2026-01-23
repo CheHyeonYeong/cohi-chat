@@ -47,7 +47,7 @@ class BookingRepositoryTest {
         savedTimeSlot = timeSlotRepository.save(timeSlot);
 
         Booking booking = Booking.create(
-            savedTimeSlot.getId(),
+            savedTimeSlot,
             guestId,
             LocalDate.of(2025, 1, 20),
             "프로젝트 상담",
@@ -64,7 +64,7 @@ class BookingRepositoryTest {
 
         // then
         assertThat(found).isPresent();
-        assertThat(found.get().getTimeSlotId()).isEqualTo(savedTimeSlot.getId());
+        assertThat(found.get().getTimeSlot().getId()).isEqualTo(savedTimeSlot.getId());
         assertThat(found.get().getGuestId()).isEqualTo(guestId);
         assertThat(found.get().getBookingDate()).isEqualTo(LocalDate.of(2025, 1, 20));
         assertThat(found.get().getTopic()).isEqualTo("프로젝트 상담");
@@ -72,10 +72,10 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 특정 날짜와 타임슬롯에 취소되지 않은 예약이 존재하는지 확인")
-    void existsByTimeSlotIdAndBookingDateAndNotCancelled() {
+    void existsByTimeSlotAndBookingDateAndNotCancelled() {
         // when
-        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            savedTimeSlot.getId(),
+        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            savedTimeSlot,
             LocalDate.of(2025, 1, 20),
             AttendanceStatus.getCancelledStatuses()
         );
@@ -86,10 +86,10 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 다른 날짜에는 예약이 존재하지 않음")
-    void notExistsByTimeSlotIdAndBookingDateDifferentDate() {
+    void notExistsByTimeSlotAndBookingDateDifferentDate() {
         // when
-        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            savedTimeSlot.getId(),
+        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            savedTimeSlot,
             LocalDate.of(2025, 1, 21),
             AttendanceStatus.getCancelledStatuses()
         );
@@ -100,10 +100,19 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 다른 타임슬롯에는 예약이 존재하지 않음")
-    void notExistsByTimeSlotIdAndBookingDateDifferentTimeSlot() {
+    void notExistsByTimeSlotAndBookingDateDifferentTimeSlot() {
+        // given
+        TimeSlot anotherTimeSlot = TimeSlot.create(
+            UUID.randomUUID(),
+            java.time.LocalTime.of(14, 0),
+            java.time.LocalTime.of(15, 0),
+            List.of(0, 1, 2)
+        );
+        TimeSlot savedAnotherTimeSlot = timeSlotRepository.save(anotherTimeSlot);
+
         // when
-        boolean exists = bookingRepository.existsByTimeSlotIdAndBookingDateAndAttendanceStatusNotIn(
-            999L,
+        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+            savedAnotherTimeSlot,
             LocalDate.of(2025, 1, 20),
             AttendanceStatus.getCancelledStatuses()
         );

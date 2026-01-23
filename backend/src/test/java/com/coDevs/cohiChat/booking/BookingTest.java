@@ -7,10 +7,15 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
+@ExtendWith(MockitoExtension.class)
 class BookingTest {
 
     private static final Long TEST_TIME_SLOT_ID = 1L;
@@ -19,12 +24,15 @@ class BookingTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
 
+    @Mock
+    private TimeSlot timeSlot;
+
     @Test
     @DisplayName("성공: Booking 엔티티를 생성할 수 있다")
     void createBookingSuccess() {
         // when
         Booking booking = Booking.create(
-            TEST_TIME_SLOT_ID,
+            timeSlot,
             TEST_GUEST_ID,
             TEST_BOOKING_DATE,
             TEST_TOPIC,
@@ -32,7 +40,7 @@ class BookingTest {
         );
 
         // then
-        assertThat(booking.getTimeSlotId()).isEqualTo(TEST_TIME_SLOT_ID);
+        assertThat(booking.getTimeSlot()).isEqualTo(timeSlot);
         assertThat(booking.getGuestId()).isEqualTo(TEST_GUEST_ID);
         assertThat(booking.getBookingDate()).isEqualTo(TEST_BOOKING_DATE);
         assertThat(booking.getTopic()).isEqualTo(TEST_TOPIC);
@@ -46,7 +54,7 @@ class BookingTest {
     void defaultStatusIsScheduled() {
         // when
         Booking booking = Booking.create(
-            TEST_TIME_SLOT_ID,
+            timeSlot,
             TEST_GUEST_ID,
             TEST_BOOKING_DATE,
             TEST_TOPIC,
