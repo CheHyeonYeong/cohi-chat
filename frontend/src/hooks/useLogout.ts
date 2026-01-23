@@ -12,12 +12,16 @@ export function useLogout(): UseMutationResult<void, Error, void> {
             const authToken = localStorage.getItem('auth_token');
 
             if (authToken) {
-                await fetch(`${API_URL}/members/v1/logout`, {
+                const response = await fetch(`${API_URL}/members/v1/logout`, {
                     method: 'DELETE',
                     headers: {
                         Authorization: `Bearer ${authToken}`,
                     },
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Logout failed: ${response.status}`);
+                }
             }
         },
         onSettled: () => {
