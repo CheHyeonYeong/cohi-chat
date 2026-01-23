@@ -13,6 +13,7 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -199,6 +200,30 @@ public class BookingService {
         }
 
         booking.cancel();
+    }
+
+    @Transactional
+    public BookingResponseDTO updateBooking(Long bookingId, UUID guestId, BookingUpdateRequestDTO request) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateGuestAccess(booking, guestId);
+        validateNotPastBooking(request.getBookingDate());
+
+        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        UUID originalHostId = booking.getTimeSlot().getUserId();
+        if (!newTimeSlot.getUserId().equals(originalHostId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
+
+        booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
+
+        return BookingResponseDTO.from(booking);
     }
 
     private void validateGuestAccess(Booking booking, UUID requesterId) {

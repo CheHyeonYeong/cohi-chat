@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -160,5 +161,26 @@ public class BookingController {
         Member member = memberService.getMember(userDetails.getUsername());
         bookingService.cancelBooking(bookingId, member.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "예약 수정 (게스트)", description = "게스트가 본인의 예약 정보(주제, 설명, 일정)를 수정합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "예약 수정 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (게스트만 수정 가능)"),
+        @ApiResponse(responseCode = "404", description = "예약 또는 타임슬롯을 찾을 수 없음"),
+        @ApiResponse(responseCode = "409", description = "중복 예약"),
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (과거 날짜, 요일 불가)")
+    })
+    @PatchMapping("/{bookingId}")
+    public ResponseEntity<BookingResponseDTO> updateBooking(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody BookingUpdateRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingResponseDTO response = bookingService.updateBooking(bookingId, member.getId(), request);
+        return ResponseEntity.ok(response);
     }
 }
