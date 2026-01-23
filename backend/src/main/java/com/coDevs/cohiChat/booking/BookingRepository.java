@@ -14,18 +14,6 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /**
-     * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인
-     * @param timeSlot 타임슬롯
-     * @param bookingDate 예약 날짜
-     * @param excludedStatuses 제외할 상태 목록 (CANCELLED, SAME_DAY_CANCEL 등)
-     */
-    boolean existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-        com.coDevs.cohiChat.timeslot.entity.TimeSlot timeSlot,
-        LocalDate bookingDate,
-        List<AttendanceStatus> excludedStatuses
-    );
-
-    /**
      * 게스트 ID로 예약 목록 조회 (예약 날짜 내림차순)
      * FETCH JOIN으로 N+1 문제 방지
      */
@@ -40,25 +28,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 
     /**
-     * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인 (특정 예약 ID 제외)
-     * 예약 수정 시 자신을 제외하고 중복 검사할 때 사용
-     *
-     * Query Method 대신 @Query 사용 이유:
-     * - 조건이 4개로 메서드명이 과도하게 길어짐 (existsByTimeSlotAndBookingDateAndAttendanceStatusNotInAndIdNot)
-     * - Spring Data JPA 공식 문서에서도 복잡한 경우 @Query 권장
-     * - JPQL이 쿼리 의도를 더 명확하게 표현함
+     * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인
+     * @param excludedId 제외할 예약 ID (새 예약 생성 시 null, 수정 시 자신의 ID)
      */
     @Query("""
-    SELECT EXISTS (
-        SELECT 1
-        FROM Booking b
-        WHERE b.timeSlot = :timeSlot
-          AND b.bookingDate = :bookingDate
-          AND b.attendanceStatus NOT IN :excludedStatuses
-          AND b.id <> :excludedId
-              )
+        SELECT EXISTS (
+            SELECT 1 FROM Booking b
+            WHERE b.timeSlot = :timeSlot
+              AND b.bookingDate = :bookingDate
+              AND b.attendanceStatus NOT IN :excludedStatuses
+              AND (:excludedId IS NULL OR b.id <> :excludedId)
+        )
     """)
-    boolean existsDuplicateBookingExcludingSelf(
+    boolean existsDuplicateBooking(
         @Param("timeSlot") com.coDevs.cohiChat.timeslot.entity.TimeSlot timeSlot,
         @Param("bookingDate") LocalDate bookingDate,
         @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,

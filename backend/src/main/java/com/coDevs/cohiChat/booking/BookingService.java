@@ -37,7 +37,7 @@ public class BookingService {
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
-        validateNotDuplicateBooking(timeSlot, request.getBookingDate());
+        validateNotDuplicateBooking(timeSlot, request.getBookingDate(), null);
 
         Booking booking = Booking.create(
             timeSlot,
@@ -88,11 +88,12 @@ public class BookingService {
         return dayOfWeek.getValue() % 7;
     }
 
-    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate) {
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
+        boolean exists = bookingRepository.existsDuplicateBooking(
             timeSlot,
             bookingDate,
-            AttendanceStatus.getCancelledStatuses()
+            AttendanceStatus.getCancelledStatuses(),
+            excludedId
         );
         if (exists) {
             throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
@@ -152,7 +153,7 @@ public class BookingService {
         }
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
-        validateNotDuplicateBookingExcludingSelf(newTimeSlot, request.getBookingDate(), bookingId);
+        validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
 
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
 
@@ -162,18 +163,6 @@ public class BookingService {
     private void validateHostAccess(Booking booking, UUID requesterId) {
         if (!booking.getTimeSlot().getUserId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-    }
-
-    private void validateNotDuplicateBookingExcludingSelf(TimeSlot timeSlot, LocalDate bookingDate, Long excludedBookingId) {
-        boolean exists = bookingRepository.existsDuplicateBookingExcludingSelf(
-            timeSlot,
-            bookingDate,
-            AttendanceStatus.getCancelledStatuses(),
-            excludedBookingId
-        );
-        if (exists) {
-            throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
         }
     }
 }

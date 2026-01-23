@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDate;
@@ -80,8 +81,8 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -148,8 +149,8 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(true);
 
         // when & then
@@ -186,8 +187,8 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         // 취소된 예약만 존재하므로 중복 체크에서 false 반환
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -363,7 +364,7 @@ class BookingServiceTest {
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
         given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
-        given(bookingRepository.existsDuplicateBookingExcludingSelf(
+        given(bookingRepository.existsDuplicateBooking(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
@@ -505,7 +506,7 @@ class BookingServiceTest {
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
         given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
         // 해당 날짜에 이미 다른 예약이 존재
-        given(bookingRepository.existsDuplicateBookingExcludingSelf(
+        given(bookingRepository.existsDuplicateBooking(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
         )).willReturn(true);
 
