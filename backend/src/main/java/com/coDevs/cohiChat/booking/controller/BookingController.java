@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -120,5 +122,43 @@ public class BookingController {
         Member member = memberService.getMember(userDetails.getUsername());
         BookingResponseDTO response = bookingService.updateBookingSchedule(bookingId, member.getId(), request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "예약 상태 변경", description = "호스트가 예약의 출석 상태(ATTENDED, NO_SHOW, LATE)를 변경합니다. 호스트만 변경 가능합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "상태 변경 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (호스트만 변경 가능)"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (상태 변경 불가, 유효하지 않은 상태)")
+    })
+    @PatchMapping("/{bookingId}/status")
+    public ResponseEntity<BookingResponseDTO> updateBookingStatus(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody BookingStatusUpdateRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingResponseDTO response = bookingService.updateBookingStatus(bookingId, member.getId(), request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "예약 취소", description = "게스트가 본인의 예약을 취소합니다. 게스트만 취소 가능합니다. 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED 상태로 변경됩니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "취소 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (게스트만 취소 가능)"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (취소 불가능한 상태)")
+    })
+    @DeleteMapping("/{bookingId}")
+    public ResponseEntity<Void> cancelBooking(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        bookingService.cancelBooking(bookingId, member.getId());
+        return ResponseEntity.noContent().build();
     }
 }

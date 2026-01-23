@@ -96,8 +96,33 @@ public class Booking {
         return booking;
     }
 
+    /**
+     * 게스트 예약 취소
+     * 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED
+     */
     public void cancel() {
-        this.attendanceStatus = AttendanceStatus.CANCELLED;
+        if (!this.attendanceStatus.isCancellable()) {
+            throw new IllegalStateException("취소할 수 없는 예약 상태입니다: " + this.attendanceStatus);
+        }
+        if (this.bookingDate.equals(LocalDate.now())) {
+            this.attendanceStatus = AttendanceStatus.SAME_DAY_CANCEL;
+        } else {
+            this.attendanceStatus = AttendanceStatus.CANCELLED;
+        }
+    }
+
+    /**
+     * 호스트가 예약 상태 변경 (출석/노쇼/지각)
+     */
+    public void updateStatus(AttendanceStatus newStatus) {
+        Objects.requireNonNull(newStatus, "status must not be null");
+        if (!this.attendanceStatus.isModifiable()) {
+            throw new IllegalStateException("상태를 변경할 수 없는 예약입니다: " + this.attendanceStatus);
+        }
+        if (!newStatus.isHostSettable()) {
+            throw new IllegalArgumentException("호스트가 설정할 수 없는 상태입니다: " + newStatus);
+        }
+        this.attendanceStatus = newStatus;
     }
 
     public void updateSchedule(TimeSlot newTimeSlot, LocalDate newBookingDate) {
