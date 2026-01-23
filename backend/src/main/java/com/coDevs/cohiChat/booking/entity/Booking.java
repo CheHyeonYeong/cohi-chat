@@ -99,4 +99,11 @@ public class Booking {
     public void cancel() {
         this.attendanceStatus = AttendanceStatus.CANCELLED;
     }
+
+    public void updateSchedule(TimeSlot newTimeSlot, LocalDate newBookingDate) {
+        Objects.requireNonNull(newTimeSlot, "timeSlot must not be null");
+        Objects.requireNonNull(newBookingDate, "bookingDate must not be null");
+        this.timeSlot = newTimeSlot;
+        this.bookingDate = newBookingDate;
+    }
 }

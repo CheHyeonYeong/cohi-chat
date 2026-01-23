@@ -72,12 +72,13 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 특정 날짜와 타임슬롯에 취소되지 않은 예약이 존재하는지 확인")
-    void existsByTimeSlotAndBookingDateAndNotCancelled() {
+    void existsDuplicateBookingTrue() {
         // when
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+        boolean exists = bookingRepository.existsDuplicateBooking(
             savedTimeSlot,
             LocalDate.of(2025, 1, 20),
-            AttendanceStatus.getCancelledStatuses()
+            AttendanceStatus.getCancelledStatuses(),
+            null
         );
 
         // then
@@ -86,12 +87,13 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 다른 날짜에는 예약이 존재하지 않음")
-    void notExistsByTimeSlotAndBookingDateDifferentDate() {
+    void existsDuplicateBookingFalseDifferentDate() {
         // when
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+        boolean exists = bookingRepository.existsDuplicateBooking(
             savedTimeSlot,
             LocalDate.of(2025, 1, 21),
-            AttendanceStatus.getCancelledStatuses()
+            AttendanceStatus.getCancelledStatuses(),
+            null
         );
 
         // then
@@ -100,7 +102,7 @@ class BookingRepositoryTest {
 
     @Test
     @DisplayName("성공: 다른 타임슬롯에는 예약이 존재하지 않음")
-    void notExistsByTimeSlotAndBookingDateDifferentTimeSlot() {
+    void existsDuplicateBookingFalseDifferentTimeSlot() {
         // given
         TimeSlot anotherTimeSlot = TimeSlot.create(
             UUID.randomUUID(),
@@ -111,10 +113,26 @@ class BookingRepositoryTest {
         TimeSlot savedAnotherTimeSlot = timeSlotRepository.save(anotherTimeSlot);
 
         // when
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+        boolean exists = bookingRepository.existsDuplicateBooking(
             savedAnotherTimeSlot,
             LocalDate.of(2025, 1, 20),
-            AttendanceStatus.getCancelledStatuses()
+            AttendanceStatus.getCancelledStatuses(),
+            null
+        );
+
+        // then
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @DisplayName("성공: 자신을 제외하면 중복 예약이 없음")
+    void existsDuplicateBookingFalseWhenExcludingSelf() {
+        // when
+        boolean exists = bookingRepository.existsDuplicateBooking(
+            savedTimeSlot,
+            LocalDate.of(2025, 1, 20),
+            AttendanceStatus.getCancelledStatuses(),
+            savedBooking.getId()
         );
 
         // then
