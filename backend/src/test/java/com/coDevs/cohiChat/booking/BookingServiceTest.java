@@ -3,9 +3,12 @@ package com.coDevs.cohiChat.booking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,8 +33,11 @@ import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.calendar.CalendarRepository;
+import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -53,6 +59,12 @@ class BookingServiceTest {
 
     @Mock
     private TimeSlotRepository timeSlotRepository;
+
+    @Mock
+    private CalendarRepository calendarRepository;
+
+    @Mock
+    private GoogleCalendarService googleCalendarService;
 
     @Mock
     private Member guestMember;
@@ -1007,5 +1019,156 @@ class BookingServiceTest {
         assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    // ===== Google Calendar 연동 테스트 (Issue #63) =====
+
+    @Test
+    @DisplayName("성공: 예약 생성 시 Google Calendar 이벤트가 생성된다")
+    void createBookingWithGoogleCalendarEvent() {
+        // given
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+        String googleEventId = "created-event-id";
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        given(googleCalendarService.createEvent(
+            anyString(), anyString(), any(), any(), eq(googleCalendarId)
+        )).willReturn(googleEventId);
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response.getGoogleEventId()).isEqualTo(googleEventId);
+        verify(googleCalendarService).createEvent(
+            anyString(), anyString(), any(), any(), eq(googleCalendarId)
+        );
+    }
+
+    @Test
+    @DisplayName("성공: 호스트 캘린더가 없어도 예약은 정상 생성된다")
+    void createBookingWithoutCalendar() {
+        // given
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.empty());
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response.getGoogleEventId()).isNull();
+        verify(googleCalendarService, never()).createEvent(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("성공: 예약 수정 시 Google Calendar 이벤트가 업데이트된다")
+    void updateBookingScheduleWithGoogleCalendarUpdate() {
+        // given
+        Long bookingId = 1L;
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+        Long newTimeSlotId = 2L;
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+        String googleEventId = "existing-event-id";
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.setGoogleEventId(googleEventId);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(newTimeSlot.getId()).willReturn(newTimeSlotId);
+        given(newTimeSlot.getUserId()).willReturn(HOST_ID);
+        given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
+        given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
+        given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
+        )).willReturn(false);
+
+        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        given(googleCalendarService.updateEvent(
+            eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
+        )).willReturn(true);
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(newTimeSlotId)
+            .bookingDate(newDate)
+            .build();
+
+        // when
+        bookingService.updateBookingSchedule(bookingId, HOST_ID, request);
+
+        // then
+        verify(googleCalendarService).updateEvent(
+            eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
+        );
+    }
+
+    @Test
+    @DisplayName("성공: 예약 취소 시 Google Calendar 이벤트가 삭제된다")
+    void cancelBookingWithGoogleCalendarDelete() {
+        // given
+        Long bookingId = 1L;
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+        String googleEventId = "event-to-delete";
+        LocalDate futureBookingDate = LocalDate.now().plusDays(3);
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.setGoogleEventId(googleEventId);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        given(googleCalendarService.deleteEvent(eq(googleEventId), eq(googleCalendarId))).willReturn(true);
+
+        // when
+        bookingService.cancelBooking(bookingId, GUEST_ID);
+
+        // then
+        verify(googleCalendarService).deleteEvent(eq(googleEventId), eq(googleCalendarId));
+    }
+
+    @Test
+    @DisplayName("성공: googleEventId가 없으면 Google Calendar 삭제를 호출하지 않는다")
+    void cancelBookingWithoutGoogleEventId() {
+        // given
+        Long bookingId = 1L;
+        LocalDate futureBookingDate = LocalDate.now().plusDays(3);
+
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
+        // googleEventId is null
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when
+        bookingService.cancelBooking(bookingId, GUEST_ID);
+
+        // then
+        verify(googleCalendarService, never()).deleteEvent(any(), any());
     }
 }
