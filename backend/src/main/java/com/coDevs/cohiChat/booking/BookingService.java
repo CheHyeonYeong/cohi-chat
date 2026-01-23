@@ -178,7 +178,7 @@ public class BookingService {
     }
 
     private void validateNotDuplicateBookingExcludingSelf(TimeSlot timeSlot, LocalDate bookingDate, Long excludedBookingId) {
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotInAndIdNot(
+        boolean exists = bookingRepository.existsDuplicateBookingExcludingSelf(
             timeSlot,
             bookingDate,
             AttendanceStatus.getCancelledStatuses(),

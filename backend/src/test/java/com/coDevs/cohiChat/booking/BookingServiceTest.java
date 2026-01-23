@@ -363,7 +363,7 @@ class BookingServiceTest {
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
         given(timeSlotRepository.findByIdWithLock(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotInAndIdNot(
+        given(bookingRepository.existsDuplicateBookingExcludingSelf(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
@@ -505,7 +505,7 @@ class BookingServiceTest {
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
         given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
         // 해당 날짜에 이미 다른 예약이 존재
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotInAndIdNot(
+        given(bookingRepository.existsDuplicateBookingExcludingSelf(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
         )).willReturn(true);
 
