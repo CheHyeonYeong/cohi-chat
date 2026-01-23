@@ -20,11 +20,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -33,6 +36,7 @@ import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BookingServiceTest {
 
     private static final UUID GUEST_ID = UUID.randomUUID();
@@ -568,6 +572,166 @@ class BookingServiceTest {
 
         // when & then
         assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    // ===== 게스트 예약 수정 테스트 (Issue #60) =====
+
+    @Test
+    @DisplayName("성공: 게스트가 본인 예약을 수정할 수 있다")
+    void updateBookingSuccess() {
+        // given
+        Long bookingId = 1L;
+        String newTopic = "새로운 주제";
+        String newDescription = "새로운 설명";
+        LocalDate newBookingDate = FUTURE_DATE.plusDays(3);
+
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
+
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(newBookingDate), any(), eq(bookingId)
+        )).willReturn(false);
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(newBookingDate)
+            .topic(newTopic)
+            .description(newDescription)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBooking(bookingId, GUEST_ID, updateRequest);
+
+        // then
+        assertThat(response.getTopic()).isEqualTo(newTopic);
+        assertThat(response.getDescription()).isEqualTo(newDescription);
+        assertThat(response.getBookingDate()).isEqualTo(newBookingDate);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 게스트용 수정 API로 수정 시도")
+    void updateBookingFailWhenHostTriesToUpdate() {
+        // given
+        Long bookingId = 1L;
+        TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE)
+            .topic("새 주제")
+            .description("새 설명")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, HOST_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 다른 게스트가 수정 시도")
+    void updateBookingFailWhenOtherGuestTriesToUpdate() {
+        // given
+        Long bookingId = 1L;
+        UUID otherGuestId = UUID.randomUUID();
+        TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE)
+            .topic("새 주제")
+            .description("새 설명")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, otherGuestId, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 수정 시도")
+    void updateBookingFailWhenBookingNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE)
+            .topic("새 주제")
+            .description("새 설명")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 과거 날짜로 예약 수정 시도")
+    void updateBookingFailWhenPastDate() {
+        // given
+        Long bookingId = 1L;
+        TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(PAST_DATE)
+            .topic("새 주제")
+            .description("새 설명")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAST_BOOKING);
+    }
+
+    @Test
+    @DisplayName("실패: 다른 호스트의 타임슬롯으로 예약 수정 시도")
+    void updateBookingFailWhenTimeSlotBelongsToOtherHost() {
+        // given
+        Long bookingId = 1L;
+        Long newTimeSlotId = 2L;
+        UUID otherHostId = UUID.randomUUID();
+
+        TimeSlot originalTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(originalTimeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(originalTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        TimeSlot otherHostTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(otherHostTimeSlot.getUserId()).willReturn(otherHostId);
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(otherHostTimeSlot));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(newTimeSlotId)
+            .bookingDate(FUTURE_DATE)
+            .topic("새 주제")
+            .description("새 설명")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
     }

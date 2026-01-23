@@ -106,4 +106,16 @@ public class Booking {
         this.timeSlot = newTimeSlot;
         this.bookingDate = newBookingDate;
     }
+
+    public void update(String topic, String description, TimeSlot timeSlot, LocalDate bookingDate) {
+        Objects.requireNonNull(topic, "topic must not be null");
+        Objects.requireNonNull(description, "description must not be null");
+        Objects.requireNonNull(timeSlot, "timeSlot must not be null");
+        Objects.requireNonNull(bookingDate, "bookingDate must not be null");
+
+        this.topic = topic;
+        this.description = description;
+        this.timeSlot = timeSlot;
+        this.bookingDate = bookingDate;
+    }
 }
