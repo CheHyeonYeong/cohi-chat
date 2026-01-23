@@ -12,6 +12,7 @@ import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -165,6 +166,40 @@ public class BookingService {
         if (!booking.getTimeSlot().getUserId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    @Transactional
+    public BookingResponseDTO updateBookingStatus(Long bookingId, UUID hostId, BookingStatusUpdateRequestDTO request) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateHostAccess(booking, hostId);
+
+        if (!booking.getAttendanceStatus().isModifiable()) {
+            throw new CustomException(ErrorCode.BOOKING_NOT_MODIFIABLE);
+        }
+
+        if (!request.getStatus().isHostSettable()) {
+            throw new CustomException(ErrorCode.INVALID_BOOKING_STATUS);
+        }
+
+        booking.updateStatus(request.getStatus());
+
+        return BookingResponseDTO.from(booking);
+    }
+
+    @Transactional
+    public void cancelBooking(Long bookingId, UUID guestId) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateGuestAccess(booking, guestId);
+
+        if (!booking.getAttendanceStatus().isCancellable()) {
+            throw new CustomException(ErrorCode.BOOKING_NOT_CANCELLABLE);
+        }
+
+        booking.cancel();
     }
 
     @Transactional

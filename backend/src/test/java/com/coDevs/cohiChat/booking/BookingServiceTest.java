@@ -27,6 +27,7 @@ import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -574,6 +575,278 @@ class BookingServiceTest {
         assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    // ===== 예약 상태 변경 테스트 (Issue #61) =====
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 상태를 ATTENDED로 변경")
+    void updateBookingStatusToAttendedSuccess() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.ATTENDED)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBookingStatus(bookingId, HOST_ID, request);
+
+        // then
+        assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.ATTENDED);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 상태를 NO_SHOW로 변경")
+    void updateBookingStatusToNoShowSuccess() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.NO_SHOW)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBookingStatus(bookingId, HOST_ID, request);
+
+        // then
+        assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.NO_SHOW);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 상태를 LATE로 변경")
+    void updateBookingStatusToLateSuccess() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.LATE)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBookingStatus(bookingId, HOST_ID, request);
+
+        // then
+        assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.LATE);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 아닌 사용자가 상태 변경 시도")
+    void updateBookingStatusFailWhenNotHost() {
+        // given
+        Long bookingId = 1L;
+        UUID otherUserId = UUID.randomUUID();
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.ATTENDED)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingStatus(bookingId, otherUserId, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 게스트가 상태 변경 시도")
+    void updateBookingStatusFailWhenGuest() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.ATTENDED)
+            .build();
+
+        // when & then - 게스트는 호스트가 아니므로 상태 변경 불가
+        assertThatThrownBy(() -> bookingService.updateBookingStatus(bookingId, GUEST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 상태 변경 시도")
+    void updateBookingStatusFailWhenBookingNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.ATTENDED)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingStatus(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 이미 취소된 예약 상태 변경 시도")
+    void updateBookingStatusFailWhenAlreadyCancelled() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION);
+        booking.cancel(); // 예약 취소 (CANCELLED)
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.ATTENDED)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingStatus(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_MODIFIABLE);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 CANCELLED 상태로 변경 시도")
+    void updateBookingStatusFailWhenInvalidStatus() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
+            .status(AttendanceStatus.CANCELLED)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingStatus(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_BOOKING_STATUS);
+    }
+
+    // ===== 예약 취소 테스트 (Issue #61) =====
+
+    @Test
+    @DisplayName("성공: 게스트가 사전 예약 취소 (CANCELLED)")
+    void cancelBookingSuccess() {
+        // given
+        Long bookingId = 1L;
+        LocalDate futureBookingDate = LocalDate.now().plusDays(3); // 사전 취소
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when
+        bookingService.cancelBooking(bookingId, GUEST_ID);
+
+        // then
+        assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+    }
+
+    @Test
+    @DisplayName("성공: 게스트가 당일 예약 취소 (SAME_DAY_CANCEL)")
+    void cancelBookingSameDaySuccess() {
+        // given
+        Long bookingId = 1L;
+        LocalDate today = LocalDate.now(); // 당일 취소
+        Booking booking = Booking.create(timeSlot, GUEST_ID, today, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when
+        bookingService.cancelBooking(bookingId, GUEST_ID);
+
+        // then
+        assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SAME_DAY_CANCEL);
+    }
+
+    @Test
+    @DisplayName("실패: 게스트가 아닌 사용자가 예약 취소 시도")
+    void cancelBookingFailWhenNotGuest() {
+        // given
+        Long bookingId = 1L;
+        UUID otherUserId = UUID.randomUUID();
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.cancelBooking(bookingId, otherUserId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 게스트 예약 취소 시도")
+    void cancelBookingFailWhenHost() {
+        // given
+        Long bookingId = 1L;
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then - 호스트는 게스트가 아니므로 취소 불가
+        assertThatThrownBy(() -> bookingService.cancelBooking(bookingId, HOST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 취소 시도")
+    void cancelBookingFailWhenBookingNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.cancelBooking(bookingId, GUEST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 이미 완료된 예약(ATTENDED) 취소 시도")
+    void cancelBookingFailWhenAlreadyAttended() {
+        // given
+        Long bookingId = 1L;
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.ATTENDED); // 이미 출석 처리됨
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.cancelBooking(bookingId, GUEST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_CANCELLABLE);
+    }
+
+    @Test
+    @DisplayName("실패: 이미 취소된 예약 재취소 시도")
+    void cancelBookingFailWhenAlreadyCancelled() {
+        // given
+        Long bookingId = 1L;
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION);
+        booking.cancel(); // 이미 취소됨
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.cancelBooking(bookingId, GUEST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_CANCELLABLE);
     }
 
     // ===== 게스트 예약 수정 테스트 (Issue #60) =====
