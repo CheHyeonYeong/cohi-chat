@@ -93,7 +93,7 @@ class BookingFileControllerTest {
                 .willReturn(response);
 
             // when & then
-            mockMvc.perform(multipart("/api/bookings/{bookingId}/files", BOOKING_ID)
+            mockMvc.perform(multipart("/bookings/{bookingId}/files", BOOKING_ID)
                     .file(file)
                     .with(csrf()))
                 .andExpect(status().isCreated())
@@ -113,7 +113,7 @@ class BookingFileControllerTest {
                 .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
             // when & then
-            mockMvc.perform(multipart("/api/bookings/{bookingId}/files", BOOKING_ID)
+            mockMvc.perform(multipart("/bookings/{bookingId}/files", BOOKING_ID)
                     .file(file)
                     .with(csrf()))
                 .andExpect(status().isNotFound());
@@ -131,7 +131,7 @@ class BookingFileControllerTest {
                 .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
 
             // when & then
-            mockMvc.perform(multipart("/api/bookings/{bookingId}/files", BOOKING_ID)
+            mockMvc.perform(multipart("/bookings/{bookingId}/files", BOOKING_ID)
                     .file(file)
                     .with(csrf()))
                 .andExpect(status().isForbidden());
@@ -156,7 +156,7 @@ class BookingFileControllerTest {
             given(bookingFileService.getFiles(BOOKING_ID, USER_ID)).willReturn(responses);
 
             // when & then
-            mockMvc.perform(get("/api/bookings/{bookingId}/files", BOOKING_ID))
+            mockMvc.perform(get("/bookings/{bookingId}/files", BOOKING_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(FILE_ID))
                 .andExpect(jsonPath("$[0].originalFileName").value("resume.pdf"));
@@ -170,7 +170,7 @@ class BookingFileControllerTest {
                 .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
 
             // when & then
-            mockMvc.perform(get("/api/bookings/{bookingId}/files", BOOKING_ID))
+            mockMvc.perform(get("/bookings/{bookingId}/files", BOOKING_ID))
                 .andExpect(status().isForbidden());
         }
     }
@@ -186,7 +186,7 @@ class BookingFileControllerTest {
             doNothing().when(bookingFileService).deleteFile(BOOKING_ID, FILE_ID, USER_ID);
 
             // when & then
-            mockMvc.perform(delete("/api/bookings/{bookingId}/files/{fileId}", BOOKING_ID, FILE_ID)
+            mockMvc.perform(delete("/bookings/{bookingId}/files/{fileId}", BOOKING_ID, FILE_ID)
                     .with(csrf()))
                 .andExpect(status().isNoContent());
         }
@@ -199,7 +199,7 @@ class BookingFileControllerTest {
                 .when(bookingFileService).deleteFile(BOOKING_ID, FILE_ID, USER_ID);
 
             // when & then
-            mockMvc.perform(delete("/api/bookings/{bookingId}/files/{fileId}", BOOKING_ID, FILE_ID)
+            mockMvc.perform(delete("/bookings/{bookingId}/files/{fileId}", BOOKING_ID, FILE_ID)
                     .with(csrf()))
                 .andExpect(status().isNotFound());
         }
@@ -219,7 +219,7 @@ class BookingFileControllerTest {
             given(bookingFileService.downloadFile(BOOKING_ID, FILE_ID, USER_ID)).willReturn(result);
 
             // when & then
-            mockMvc.perform(get("/api/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
+            mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(content))
                 .andExpect(header().string("Content-Type", "application/pdf"));
@@ -233,7 +233,7 @@ class BookingFileControllerTest {
                 .willThrow(new CustomException(ErrorCode.FILE_NOT_FOUND));
 
             // when & then
-            mockMvc.perform(get("/api/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
+            mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
                 .andExpect(status().isNotFound());
         }
     }

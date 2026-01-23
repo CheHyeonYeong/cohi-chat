@@ -106,7 +106,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -134,7 +134,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -155,7 +155,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -179,7 +179,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -203,7 +203,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -231,7 +231,7 @@ class BookingControllerTest {
         given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID))).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(bookingId))
             .andExpect(jsonPath("$.timeSlotId").value(TIME_SLOT_ID))
@@ -248,7 +248,7 @@ class BookingControllerTest {
             .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isNotFound());
     }
 
@@ -261,7 +261,7 @@ class BookingControllerTest {
             .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isForbidden());
     }
 
@@ -285,7 +285,7 @@ class BookingControllerTest {
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of(response));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/guest/me"))
+        mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[0].timeSlotId").value(TIME_SLOT_ID))
@@ -312,7 +312,7 @@ class BookingControllerTest {
         given(bookingService.getBookingsByHostId(GUEST_ID)).willReturn(List.of(response));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/host/me"))
+        mockMvc.perform(get("/bookings/host/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(2))
             .andExpect(jsonPath("$[0].topic").value("기술 면접"));
@@ -326,7 +326,7 @@ class BookingControllerTest {
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of());
 
         // when
-        mockMvc.perform(get("/api/bookings/guest/me"))
+        mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray());
 
@@ -367,7 +367,7 @@ class BookingControllerTest {
             """.formatted(newTimeSlotId, newDate);
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -393,7 +393,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE.plusDays(7));
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -416,7 +416,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE.plusDays(7));
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -436,7 +436,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/schedule", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -472,7 +472,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/status", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -496,7 +496,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/status", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -518,7 +518,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/status", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -540,7 +540,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(patch("/api/bookings/{bookingId}/status", bookingId)
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -557,7 +557,7 @@ class BookingControllerTest {
         doNothing().when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
 
         // when & then
-        mockMvc.perform(delete("/api/bookings/{bookingId}", bookingId)
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
             .andExpect(status().isNoContent());
     }
@@ -571,7 +571,7 @@ class BookingControllerTest {
             .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
 
         // when & then
-        mockMvc.perform(delete("/api/bookings/{bookingId}", bookingId)
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
             .andExpect(status().isForbidden());
     }
@@ -585,7 +585,7 @@ class BookingControllerTest {
             .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
 
         // when & then
-        mockMvc.perform(delete("/api/bookings/{bookingId}", bookingId)
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
             .andExpect(status().isNotFound());
     }
@@ -599,7 +599,7 @@ class BookingControllerTest {
             .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
 
         // when & then
-        mockMvc.perform(delete("/api/bookings/{bookingId}", bookingId)
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
             .andExpect(status().isUnprocessableEntity());
     }
