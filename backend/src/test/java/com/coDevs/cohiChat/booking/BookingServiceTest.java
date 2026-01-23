@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -78,9 +80,9 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -100,7 +102,7 @@ class BookingServiceTest {
     @DisplayName("실패: 존재하지 않는 타임슬롯에 예약할 수 없다")
     void createBookingFailWhenTimeSlotNotFound() {
         // given - 과거 날짜 검증 통과 후, TimeSlot 조회에서 실패
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.empty());
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -114,7 +116,7 @@ class BookingServiceTest {
         // given
         given(guestMember.getId()).willReturn(HOST_ID); // 게스트 ID == 호스트 ID
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -146,9 +148,9 @@ class BookingServiceTest {
         given(guestMember.getId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(true);
 
         // when & then
@@ -165,7 +167,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(timeSlot.getWeekdays()).willReturn(List.of((FUTURE_DATE.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -183,10 +185,10 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         // 취소된 예약만 존재하므로 중복 체크에서 false 반환
-        given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
-            eq(timeSlot), eq(FUTURE_DATE), any()
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -338,5 +340,235 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).isEmpty();
+    }
+
+    // ===== 예약 일정 수정 테스트 (Issue #59) =====
+
+    @Test
+    @DisplayName("성공: 호스트가 예약 일정을 수정할 수 있다")
+    void updateBookingScheduleSuccess() {
+        // given
+        Long bookingId = 1L;
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+        Long newTimeSlotId = 2L;
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // 새 타임슬롯 mock
+        TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(newTimeSlot.getId()).willReturn(newTimeSlotId);
+        given(newTimeSlot.getUserId()).willReturn(HOST_ID);
+        given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
+        given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
+        given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
+        )).willReturn(false);
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(newTimeSlotId)
+            .bookingDate(newDate)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBookingSchedule(bookingId, HOST_ID, request);
+
+        // then
+        assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
+        assertThat(response.getBookingDate()).isEqualTo(newDate);
+        assertThat(response.getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(response.getEndTime()).isEqualTo(LocalTime.of(15, 0));
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 아닌 사용자가 예약 수정 시도")
+    void updateBookingScheduleFailWhenNotHost() {
+        // given
+        Long bookingId = 1L;
+        UUID otherUserId = UUID.randomUUID();
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE.plusDays(7))
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, otherUserId, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 게스트가 예약 수정 시도")
+    void updateBookingScheduleFailWhenGuest() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE.plusDays(7))
+            .build();
+
+        // when & then - 게스트도 호스트가 아니므로 수정 불가
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, GUEST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 수정 시도")
+    void updateBookingScheduleFailWhenBookingNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE.plusDays(7))
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 과거 날짜로 예약 수정 시도")
+    void updateBookingScheduleFailWhenPastDate() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(PAST_DATE)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PAST_BOOKING);
+    }
+
+    @Test
+    @DisplayName("실패: 타임슬롯 요일과 맞지 않는 날짜로 예약 수정 시도")
+    void updateBookingScheduleFailWhenWeekdayNotAvailable() {
+        // given
+        Long bookingId = 1L;
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(newTimeSlot.getUserId()).willReturn(HOST_ID);
+        // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
+        given(newTimeSlot.getWeekdays()).willReturn(List.of((newDate.getDayOfWeek().getValue() + 1) % 7));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(newDate)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WEEKDAY_NOT_AVAILABLE);
+    }
+
+    @Test
+    @DisplayName("실패: 중복 예약이 발생하는 날짜로 수정 시도")
+    void updateBookingScheduleFailWhenDuplicateBooking() {
+        // given
+        Long bookingId = 1L;
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(newTimeSlot.getUserId()).willReturn(HOST_ID);
+        given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        // 해당 날짜에 이미 다른 예약이 존재
+        given(bookingRepository.existsDuplicateBooking(
+            eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
+        )).willReturn(true);
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(newDate)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_ALREADY_EXISTS);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 타임슬롯으로 변경 시도")
+    void updateBookingScheduleFailWhenTimeSlotNotFound() {
+        // given
+        Long bookingId = 1L;
+        Long newTimeSlotId = 999L;
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.empty());
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(newTimeSlotId)
+            .bookingDate(FUTURE_DATE.plusDays(7))
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TIMESLOT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("실패: 다른 호스트의 타임슬롯으로 변경 시도")
+    void updateBookingScheduleFailWhenDifferentHostTimeSlot() {
+        // given
+        Long bookingId = 1L;
+        Long newTimeSlotId = 2L;
+        UUID anotherHostId = UUID.randomUUID();
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        TimeSlot anotherHostTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
+        given(anotherHostTimeSlot.getUserId()).willReturn(anotherHostId); // 다른 호스트의 타임슬롯
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(anotherHostTimeSlot));
+
+        BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
+            .timeSlotId(newTimeSlotId)
+            .bookingDate(newDate)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBookingSchedule(bookingId, HOST_ID, request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
     }
 }

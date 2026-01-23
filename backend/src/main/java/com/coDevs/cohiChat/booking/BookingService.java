@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -29,16 +30,14 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
-        // 1. DB 조회 없이 가능한 검증 먼저
         validateNotPastBooking(request.getBookingDate());
 
-        // 2. DB 조회 필요한 검증 (Pessimistic Lock으로 동시 예약 방지)
-        TimeSlot timeSlot = timeSlotRepository.findByIdWithLock(request.getTimeSlotId())
+        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
-        validateNotDuplicateBooking(timeSlot, request.getBookingDate());
+        validateNotDuplicateBooking(timeSlot, request.getBookingDate(), null);
 
         Booking booking = Booking.create(
             timeSlot,
@@ -89,11 +88,12 @@ public class BookingService {
         return dayOfWeek.getValue() % 7;
     }
 
-    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate) {
-        boolean exists = bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
+    private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
+        boolean exists = bookingRepository.existsDuplicateBooking(
             timeSlot,
             bookingDate,
-            AttendanceStatus.getCancelledStatuses()
+            AttendanceStatus.getCancelledStatuses(),
+            excludedId
         );
         if (exists) {
             throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
@@ -135,5 +135,34 @@ public class BookingService {
         return bookings.stream()
             .map(BookingResponseDTO::from)
             .toList();
+    }
+
+    @Transactional
+    public BookingResponseDTO updateBookingSchedule(Long bookingId, UUID hostId, BookingScheduleUpdateRequestDTO request) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateHostAccess(booking, hostId);
+        validateNotPastBooking(request.getBookingDate());
+
+        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        if (!newTimeSlot.getUserId().equals(hostId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
+
+        booking.updateSchedule(newTimeSlot, request.getBookingDate());
+
+        return BookingResponseDTO.from(booking);
+    }
+
+    private void validateHostAccess(Booking booking, UUID requesterId) {
+        if (!booking.getTimeSlot().getUserId().equals(requesterId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
     }
 }
