@@ -30,11 +30,9 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
-        // 1. DB 조회 없이 가능한 검증 먼저
         validateNotPastBooking(request.getBookingDate());
 
-        // 2. DB 조회 필요한 검증 (Pessimistic Lock으로 동시 예약 방지)
-        TimeSlot timeSlot = timeSlotRepository.findByIdWithLock(request.getTimeSlotId())
+        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         validateNotSelfBooking(guest, timeSlot);
@@ -140,32 +138,22 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO updateBookingSchedule(Long bookingId, UUID hostId, BookingScheduleUpdateRequestDTO request) {
-        // 1. 예약 조회
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        // 2. 호스트 권한 검증 (현재 타임슬롯의 호스트만 수정 가능)
         validateHostAccess(booking, hostId);
-
-        // 3. 과거 날짜 검증
         validateNotPastBooking(request.getBookingDate());
 
-        // 4. 새 타임슬롯 조회 (Pessimistic Lock)
-        TimeSlot newTimeSlot = timeSlotRepository.findByIdWithLock(request.getTimeSlotId())
+        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
-        // 5. 새 타임슬롯이 같은 호스트 소유인지 검증
         if (!newTimeSlot.getUserId().equals(hostId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 6. 새 날짜가 타임슬롯의 허용 요일인지 검증
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
-
-        // 7. 중복 예약 검증 (자신 제외)
         validateNotDuplicateBookingExcludingSelf(newTimeSlot, request.getBookingDate(), bookingId);
 
-        // 8. 예약 일정 수정
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
 
         return BookingResponseDTO.from(booking);

@@ -79,7 +79,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
             eq(timeSlot), eq(FUTURE_DATE), any()
         )).willReturn(false);
@@ -101,7 +101,7 @@ class BookingServiceTest {
     @DisplayName("실패: 존재하지 않는 타임슬롯에 예약할 수 없다")
     void createBookingFailWhenTimeSlotNotFound() {
         // given - 과거 날짜 검증 통과 후, TimeSlot 조회에서 실패
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.empty());
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -115,7 +115,7 @@ class BookingServiceTest {
         // given
         given(guestMember.getId()).willReturn(HOST_ID); // 게스트 ID == 호스트 ID
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -147,7 +147,7 @@ class BookingServiceTest {
         given(guestMember.getId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
             eq(timeSlot), eq(FUTURE_DATE), any()
         )).willReturn(true);
@@ -166,7 +166,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(timeSlot.getWeekdays()).willReturn(List.of((FUTURE_DATE.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -184,7 +184,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         // 취소된 예약만 존재하므로 중복 체크에서 false 반환
         given(bookingRepository.existsByTimeSlotAndBookingDateAndAttendanceStatusNotIn(
             eq(timeSlot), eq(FUTURE_DATE), any()
@@ -362,7 +362,7 @@ class BookingServiceTest {
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
-        given(timeSlotRepository.findByIdWithLock(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
         given(bookingRepository.existsDuplicateBookingExcludingSelf(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -476,7 +476,7 @@ class BookingServiceTest {
         given(newTimeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(newTimeSlot.getWeekdays()).willReturn(List.of((newDate.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -503,7 +503,7 @@ class BookingServiceTest {
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getUserId()).willReturn(HOST_ID);
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findByIdWithLock(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
         // 해당 날짜에 이미 다른 예약이 존재
         given(bookingRepository.existsDuplicateBookingExcludingSelf(
             eq(newTimeSlot), eq(newDate), any(), eq(bookingId)
@@ -530,7 +530,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findByIdWithLock(newTimeSlotId)).willReturn(Optional.empty());
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.empty());
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(newTimeSlotId)
@@ -558,7 +558,7 @@ class BookingServiceTest {
 
         TimeSlot anotherHostTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(anotherHostTimeSlot.getUserId()).willReturn(anotherHostId); // 다른 호스트의 타임슬롯
-        given(timeSlotRepository.findByIdWithLock(newTimeSlotId)).willReturn(Optional.of(anotherHostTimeSlot));
+        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(anotherHostTimeSlot));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(newTimeSlotId)

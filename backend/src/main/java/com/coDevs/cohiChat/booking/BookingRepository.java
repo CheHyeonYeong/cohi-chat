@@ -48,11 +48,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * - Spring Data JPA 공식 문서에서도 복잡한 경우 @Query 권장
      * - JPQL이 쿼리 의도를 더 명확하게 표현함
      */
-    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
-           "WHERE b.timeSlot = :timeSlot " +
-           "AND b.bookingDate = :bookingDate " +
-           "AND b.attendanceStatus NOT IN :excludedStatuses " +
-           "AND b.id <> :excludedId")
+    @Query("""
+    SELECT EXISTS (
+        SELECT 1
+        FROM Booking b
+        WHERE b.timeSlot = :timeSlot
+          AND b.bookingDate = :bookingDate
+          AND b.attendanceStatus NOT IN :excludedStatuses
+          AND b.id <> :excludedId
+              )
+    """)
     boolean existsDuplicateBookingExcludingSelf(
         @Param("timeSlot") com.coDevs.cohiChat.timeslot.entity.TimeSlot timeSlot,
         @Param("bookingDate") LocalDate bookingDate,
