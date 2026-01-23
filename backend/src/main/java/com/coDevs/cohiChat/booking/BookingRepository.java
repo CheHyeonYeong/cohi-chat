@@ -38,4 +38,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
     List<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
+
+    /**
+     * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인 (특정 예약 ID 제외)
+     * 예약 수정 시 자신을 제외하고 중복 검사할 때 사용
+     */
+    boolean existsByTimeSlotAndBookingDateAndAttendanceStatusNotInAndIdNot(
+        com.coDevs.cohiChat.timeslot.entity.TimeSlot timeSlot,
+        LocalDate bookingDate,
+        List<AttendanceStatus> excludedStatuses,
+        Long excludedBookingId
+    );
 }

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -97,5 +99,26 @@ public class BookingController {
         Member member = memberService.getMember(userDetails.getUsername());
         List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(member.getId());
         return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "예약 일정 수정", description = "호스트가 예약의 일정(날짜, 타임슬롯)을 수정합니다. 호스트만 수정 가능합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "수정 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (호스트만 수정 가능)"),
+        @ApiResponse(responseCode = "404", description = "예약 또는 타임슬롯을 찾을 수 없음"),
+        @ApiResponse(responseCode = "409", description = "이미 예약된 시간대"),
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (과거 날짜, 요일 불가)")
+    })
+    @PatchMapping("/{bookingId}/schedule")
+    public ResponseEntity<BookingResponseDTO> updateBookingSchedule(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody BookingScheduleUpdateRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingResponseDTO response = bookingService.updateBookingSchedule(bookingId, member.getId(), request);
+        return ResponseEntity.ok(response);
     }
 }
