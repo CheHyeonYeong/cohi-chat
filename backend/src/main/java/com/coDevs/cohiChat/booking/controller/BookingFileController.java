@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Booking File", description = "예약 파일 관리 API")
 @RestController
-@RequestMapping("/api/bookings/{bookingId}/files")
+@RequestMapping("/bookings/{bookingId}/files")
 @RequiredArgsConstructor
 public class BookingFileController {
 
