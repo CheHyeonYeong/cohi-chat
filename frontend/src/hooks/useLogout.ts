@@ -1,42 +1,29 @@
-import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+export function useLogout() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  const logout = () => {
 
-export function useLogout(): UseMutationResult<void, Error, void> {
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('username');
 
-    return useMutation<void, Error, void>({
-        mutationFn: async (): Promise<void> => {
-            const authToken = localStorage.getItem('auth_token');
+    queryClient.clear();
+    window.dispatchEvent(new Event('auth-change'));
 
-            if (authToken) {
-                const response = await fetch(`${API_URL}/members/v1/logout`, {
-                    method: 'DELETE',
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                });
+    navigate({ to: '/app/login' });
 
-                if (!response.ok) {
-                    throw new Error(`Logout failed: ${response.status}`);
-                }
-            }
-        },
-        onSettled: () => {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('username');
+    const accessToken = localStorage.getItem('auth_token');
+    if (!accessToken) return;
 
-            queryClient.clear();
+    void fetch(`${API_URL}/members/v1/logout`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }).catch(() => {
 
-            navigate({
-                to: '/app/login',
-            });
-        },
-        onError: (error: Error) => {
-            console.error('Logout error:', error);
-        },
     });
+  };
+
+  return { logout };
 }

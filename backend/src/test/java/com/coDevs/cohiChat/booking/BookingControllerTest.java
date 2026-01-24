@@ -6,7 +6,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -102,7 +106,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -130,7 +134,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -151,7 +155,7 @@ class BookingControllerTest {
             """;
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -175,7 +179,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -199,7 +203,7 @@ class BookingControllerTest {
             """.formatted(FUTURE_DATE);
 
         // when & then
-        mockMvc.perform(post("/api/bookings")
+        mockMvc.perform(post("/bookings")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
@@ -227,7 +231,7 @@ class BookingControllerTest {
         given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID))).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(bookingId))
             .andExpect(jsonPath("$.timeSlotId").value(TIME_SLOT_ID))
@@ -244,7 +248,7 @@ class BookingControllerTest {
             .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isNotFound());
     }
 
@@ -257,7 +261,7 @@ class BookingControllerTest {
             .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId))
+        mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isForbidden());
     }
 
@@ -281,7 +285,7 @@ class BookingControllerTest {
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of(response));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/guest/me"))
+        mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[0].timeSlotId").value(TIME_SLOT_ID))
@@ -308,7 +312,7 @@ class BookingControllerTest {
         given(bookingService.getBookingsByHostId(GUEST_ID)).willReturn(List.of(response));
 
         // when & then
-        mockMvc.perform(get("/api/bookings/host/me"))
+        mockMvc.perform(get("/bookings/host/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(2))
             .andExpect(jsonPath("$[0].topic").value("기술 면접"));
@@ -322,12 +326,282 @@ class BookingControllerTest {
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of());
 
         // when
-        mockMvc.perform(get("/api/bookings/guest/me"))
+        mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray());
 
         // then - 인증된 사용자의 ID로 서비스가 호출되었는지 검증
         verify(bookingService).getBookingsByGuestId(GUEST_ID);
+    }
+
+    // ===== 예약 일정 수정 테스트 (Issue #59) =====
+
+    @Test
+    @DisplayName("성공: 예약 일정 수정 - 200 OK")
+    void updateBookingScheduleSuccess() throws Exception {
+        // given
+        Long bookingId = 1L;
+        LocalDate newDate = FUTURE_DATE.plusDays(7);
+        Long newTimeSlotId = 2L;
+
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(bookingId)
+            .timeSlotId(newTimeSlotId)
+            .guestId(UUID.randomUUID())
+            .bookingDate(newDate)
+            .startTime(LocalTime.of(14, 0))
+            .endTime(LocalTime.of(15, 0))
+            .topic("프로젝트 상담")
+            .description("Spring Boot 프로젝트 관련 질문")
+            .attendanceStatus(AttendanceStatus.SCHEDULED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        given(bookingService.updateBookingSchedule(eq(bookingId), eq(GUEST_ID), any())).willReturn(response);
+
+        String requestBody = """
+            {
+                "timeSlotId": %d,
+                "when": "%s"
+            }
+            """.formatted(newTimeSlotId, newDate);
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(bookingId))
+            .andExpect(jsonPath("$.timeSlotId").value(newTimeSlotId))
+            .andExpect(jsonPath("$.when").value(newDate.toString()));
+    }
+
+    @Test
+    @DisplayName("실패: 권한 없는 사용자의 예약 수정 시도 - 403 Forbidden")
+    void updateBookingScheduleFailAccessDenied() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.updateBookingSchedule(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+        String requestBody = """
+            {
+                "timeSlotId": 1,
+                "when": "%s"
+            }
+            """.formatted(FUTURE_DATE.plusDays(7));
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 수정 시도 - 404 Not Found")
+    void updateBookingScheduleFailNotFound() throws Exception {
+        // given
+        Long bookingId = 999L;
+        given(bookingService.updateBookingSchedule(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        String requestBody = """
+            {
+                "timeSlotId": 1,
+                "when": "%s"
+            }
+            """.formatted(FUTURE_DATE.plusDays(7));
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("실패: 과거 날짜로 예약 수정 시도 - 400 Bad Request")
+    void updateBookingScheduleFailPastDate() throws Exception {
+        // given - @FutureOrPresent 검증으로 인해 서비스 호출 전에 거부됨
+        Long bookingId = 1L;
+        String requestBody = """
+            {
+                "timeSlotId": 1,
+                "when": "2020-01-01"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/schedule", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadRequest());
+    }
+
+    // ===== 예약 상태 변경 테스트 (Issue #61) =====
+
+    @Test
+    @DisplayName("성공: 예약 상태 변경 - 200 OK")
+    void updateBookingStatusSuccess() throws Exception {
+        // given
+        Long bookingId = 1L;
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(bookingId)
+            .timeSlotId(TIME_SLOT_ID)
+            .guestId(UUID.randomUUID())
+            .bookingDate(FUTURE_DATE)
+            .startTime(LocalTime.of(10, 0))
+            .endTime(LocalTime.of(11, 0))
+            .topic("프로젝트 상담")
+            .description("Spring Boot 프로젝트 관련 질문")
+            .attendanceStatus(AttendanceStatus.ATTENDED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+        given(bookingService.updateBookingStatus(eq(bookingId), eq(GUEST_ID), any())).willReturn(response);
+
+        String requestBody = """
+            {
+                "status": "ATTENDED"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(bookingId))
+            .andExpect(jsonPath("$.attendanceStatus").value("ATTENDED"));
+    }
+
+    @Test
+    @DisplayName("실패: 권한 없는 사용자의 상태 변경 시도 - 403 Forbidden")
+    void updateBookingStatusFailAccessDenied() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.updateBookingStatus(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+        String requestBody = """
+            {
+                "status": "ATTENDED"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 상태 변경 시도 - 404 Not Found")
+    void updateBookingStatusFailNotFound() throws Exception {
+        // given
+        Long bookingId = 999L;
+        given(bookingService.updateBookingStatus(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        String requestBody = """
+            {
+                "status": "ATTENDED"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("실패: 상태 변경 불가능한 예약 - 422 Unprocessable Entity")
+    void updateBookingStatusFailNotModifiable() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.updateBookingStatus(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.BOOKING_NOT_MODIFIABLE));
+
+        String requestBody = """
+            {
+                "status": "ATTENDED"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(patch("/bookings/{bookingId}/status", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isUnprocessableEntity());
+    }
+
+    // ===== 예약 취소 테스트 (Issue #61) =====
+
+    @Test
+    @DisplayName("성공: 예약 취소 - 204 No Content")
+    void cancelBookingSuccess() throws Exception {
+        // given
+        Long bookingId = 1L;
+        doNothing().when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
+
+        // when & then
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
+                .with(csrf()))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("실패: 권한 없는 사용자의 예약 취소 시도 - 403 Forbidden")
+    void cancelBookingFailAccessDenied() throws Exception {
+        // given
+        Long bookingId = 1L;
+        doThrow(new CustomException(ErrorCode.ACCESS_DENIED))
+            .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
+
+        // when & then
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
+                .with(csrf()))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약 취소 시도 - 404 Not Found")
+    void cancelBookingFailNotFound() throws Exception {
+        // given
+        Long bookingId = 999L;
+        doThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND))
+            .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
+
+        // when & then
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
+                .with(csrf()))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("실패: 취소 불가능한 예약 취소 시도 - 422 Unprocessable Entity")
+    void cancelBookingFailNotCancellable() throws Exception {
+        // given
+        Long bookingId = 1L;
+        doThrow(new CustomException(ErrorCode.BOOKING_NOT_CANCELLABLE))
+            .when(bookingService).cancelBooking(eq(bookingId), eq(GUEST_ID));
+
+        // when & then
+        mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
+                .with(csrf()))
+            .andExpect(status().isUnprocessableEntity());
     }
 
 }

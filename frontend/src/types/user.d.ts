@@ -1,11 +1,13 @@
-import { ISO8601String } from "./base";
+import {ISO8601String} from "./base";
 
-export interface User {
-    id: number;
+export type Role = 'GUEST' | 'HOST' | 'ADMIN';
+
+export interface MemberResponseDTO {
+    id: string; // UUID
     username: string;
-    email: string;
     displayName: string;
-    isHost: boolean;
+    email: string;
+    role: Role;
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
 }
@@ -13,5 +15,9 @@ export interface User {
 export interface IUserSimple {
     username: string;
     displayName: string;
+    role: Role;
+}
+
+export interface AuthUser extends MemberResponseDTO {
     isHost: boolean;
 }
