@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy Gradle files first for better caching
 COPY build.gradle settings.gradle ./
+COPY gradle gradle/
 
 # Download dependencies (cached layer)
 RUN gradle dependencies --no-daemon || true
@@ -22,23 +23,32 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+# Install wget for healthcheck
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
 RUN groupadd -r spring && useradd -r -g spring spring
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chown -R spring:spring /app
 
 # Copy built JAR from builder stage
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Change ownership to non-root user
-RUN chown -R spring:spring /app
+RUN chown spring:spring app.jar
 
 USER spring
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+# SQLite data volume
+VOLUME ["/app/data"]
 
-# Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+
+# Run application with JVM memory settings
+ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]

@@ -23,3 +23,12 @@ Thumbs.db
 *.log
 *.md
 HELP.md
+
+# Database
+*.db
+
+# Environment
+.env*
+
+# Test files
+http/
