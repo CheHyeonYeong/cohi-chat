@@ -29,6 +29,7 @@ public class BookingResponseDTO {
     private String topic;
     private String description;
     private AttendanceStatus attendanceStatus;
+    private String googleEventId;
     private LocalDateTime createdAt;
 
     public static BookingResponseDTO from(Booking booking) {
@@ -42,6 +43,7 @@ public class BookingResponseDTO {
             .topic(booking.getTopic())
             .description(booking.getDescription())
             .attendanceStatus(booking.getAttendanceStatus())
+            .googleEventId(booking.getGoogleEventId())
             .createdAt(booking.getCreatedAt())
             .build();
     }
