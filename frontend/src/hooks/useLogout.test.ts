@@ -49,17 +49,15 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        result.current.mutate();
+        await result.current.logout();
 
-        await waitFor(() => {
-            expect(global.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('/members/v1/logout'),
-                expect.objectContaining({
-                    method: 'DELETE',
-                    headers: { Authorization: 'Bearer test-token' },
-                })
-            );
-        });
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/members/v1/logout'),
+            expect.objectContaining({
+                method: 'DELETE',
+                headers: { Authorization: 'Bearer test-token' },
+            })
+        );
     });
 
     it('should clear localStorage on logout', async () => {
@@ -67,13 +65,11 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        result.current.mutate();
+        await result.current.logout();
 
-        await waitFor(() => {
-            expect(localStorage.getItem('auth_token')).toBeNull();
-            expect(localStorage.getItem('refresh_token')).toBeNull();
-            expect(localStorage.getItem('username')).toBeNull();
-        });
+        expect(localStorage.getItem('auth_token')).toBeNull();
+        expect(localStorage.getItem('refresh_token')).toBeNull();
+        expect(localStorage.getItem('username')).toBeNull();
     });
 
     it('should navigate to login page after logout', async () => {
@@ -81,11 +77,9 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        result.current.mutate();
+        await result.current.logout();
 
-        await waitFor(() => {
-            expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/login' });
-        });
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/login' });
     });
 
     it('should clear localStorage even if API call fails', async () => {
@@ -95,13 +89,11 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        result.current.mutate();
+        await result.current.logout();
 
-        await waitFor(() => {
-            expect(localStorage.getItem('auth_token')).toBeNull();
-            expect(localStorage.getItem('refresh_token')).toBeNull();
-            expect(localStorage.getItem('username')).toBeNull();
-        });
+        expect(localStorage.getItem('auth_token')).toBeNull();
+        expect(localStorage.getItem('refresh_token')).toBeNull();
+        expect(localStorage.getItem('username')).toBeNull();
     });
 
     it('should not call API if no auth token exists', async () => {
@@ -111,10 +103,8 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        result.current.mutate();
+        await result.current.logout();
 
-        await waitFor(() => {
-            expect(global.fetch).not.toHaveBeenCalled();
-        });
+        expect(global.fetch).not.toHaveBeenCalled();
     });
 });
