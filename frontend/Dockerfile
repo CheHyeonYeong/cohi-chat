@@ -3,31 +3,35 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# pnpm 설치
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# pnpm install with fixed version
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-# 의존성 파일 복사
+# Copy dependency files
 COPY package.json pnpm-lock.yaml ./
 
-# 의존성 설치
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# 소스 복사
+# Copy source
 COPY . .
 
-# 빌드
+# Build arguments for environment variables
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+# Build
 RUN pnpm build
 
 # Production stage
 FROM nginx:alpine
 
-# nginx 설정 복사
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 빌드 결과물 복사
+# Copy build output
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# 80 포트 노출
+# Expose port 80
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
