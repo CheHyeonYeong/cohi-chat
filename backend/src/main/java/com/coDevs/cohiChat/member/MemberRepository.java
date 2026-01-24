@@ -20,4 +20,6 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	Optional<Member> findByIdAndRoleAndIsDeletedFalse(UUID id, Role role);
 
+	java.util.List<Member> findByRoleAndIsDeletedFalse(Role role);
+
 }
