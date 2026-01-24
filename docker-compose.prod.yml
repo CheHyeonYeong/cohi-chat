@@ -1,5 +1,6 @@
 services:
   frontend:
+    container_name: cohi-chat-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -9,6 +10,13 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - cohi-chat-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
       interval: 30s
@@ -17,6 +25,7 @@ services:
       start_period: 10s
 
   backend:
+    container_name: cohi-chat-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -29,6 +38,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
+    networks:
+      - cohi-chat-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -39,3 +55,7 @@ services:
 volumes:
   sqlite-data:
     driver: local
+
+networks:
+  cohi-chat-network:
+    driver: bridge
