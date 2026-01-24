@@ -17,6 +17,7 @@ import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
@@ -48,6 +49,12 @@ public class MemberController {
 		return ResponseEntity.ok(response);
 	}
 
+	@DeleteMapping("/v1/logout")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<LogoutResponseDTO> logout() {
+		return ResponseEntity.ok(LogoutResponseDTO.success());
+	}
+
 	@GetMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated() and #username == authentication.name")
 	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable(name = "username") String username) {
@@ -57,7 +64,7 @@ public class MemberController {
 	}
 
 	@PatchMapping("/v1/{username}")
-	@PreAuthorize("isAuthenticated() and #username == authentication.name")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<MemberResponseDTO> updateMember(
 		@PathVariable(name = "username") String username,
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
