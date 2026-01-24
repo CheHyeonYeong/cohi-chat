@@ -1,0 +1,50 @@
+### Member API 시나리오
+
+### 변수 설정
+@baseUrl = http://localhost:8080/api
+@contentType = application/json
+
+### 1. 회원가입
+POST {{baseUrl}}/members/v1/signup
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "email": "test@test.com",
+  "password": "test1234",
+  "displayName": "Test User"
+}
+
+> {%
+  client.global.set("username", response.body.username);
+%}
+
+### 2. 로그인
+POST {{baseUrl}}/members/v1/login
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "password": "test1234"
+}
+
+> {%
+  client.global.set("accessToken", response.body.accessToken);
+%}
+
+### 3. 회원 정보 조회
+GET {{baseUrl}}/members/v1/{{username}}
+Authorization: Bearer {{accessToken}}
+
+### 4. 회원 정보 수정
+PATCH {{baseUrl}}/members/v1/{{username}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "displayName": "Updated User"
+}
+
+### 5. 회원 탈퇴
+DELETE {{baseUrl}}/members/v1/{{username}}
+Authorization: Bearer {{accessToken}}

@@ -1,0 +1,34 @@
+### Booking File API 시나리오 (S3)
+
+### 변수 설정
+@baseUrl = http://localhost:8080/api
+# accessToken은 member.http에서 로그인 후 설정됨
+# bookingId는 booking.http에서 설정됨
+
+### 1. 파일 업로드
+POST {{baseUrl}}/bookings/{{bookingId}}/files
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test-document.pdf"
+Content-Type: application/pdf
+
+< ./test-files/test-document.pdf
+------WebKitFormBoundary--
+
+> {%
+  client.global.set("fileId", response.body.id);
+%}
+
+### 2. 파일 목록 조회
+GET {{baseUrl}}/bookings/{{bookingId}}/files
+Authorization: Bearer {{accessToken}}
+
+### 3. 파일 다운로드
+GET {{baseUrl}}/bookings/{{bookingId}}/files/{{fileId}}/download
+Authorization: Bearer {{accessToken}}
+
+### 4. 파일 삭제
+DELETE {{baseUrl}}/bookings/{{bookingId}}/files/{{fileId}}
+Authorization: Bearer {{accessToken}}
