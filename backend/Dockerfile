@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy Gradle files first for better caching
 COPY build.gradle settings.gradle ./
+COPY gradle gradle/
 
 # Download dependencies (cached layer)
 RUN gradle dependencies --no-daemon || true
@@ -25,20 +26,22 @@ WORKDIR /app
 # Create non-root user for security
 RUN groupadd -r spring && useradd -r -g spring spring
 
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chown -R spring:spring /app
+
 # Copy built JAR from builder stage
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 # Change ownership to non-root user
-RUN chown -R spring:spring /app
+RUN chown spring:spring app.jar
 
 USER spring
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+# SQLite 데이터 볼륨
+VOLUME ["/app/data"]
 
 # Run application
 ENTRYPOINT ["java", "-jar", "app.jar"]
