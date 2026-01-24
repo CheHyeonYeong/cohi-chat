@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useHosts } from '~/hooks/useHost';
-import LogoutButton from '~/components/LogoutButton';
+import { LogoutButton } from '~/components/button/LogoutButton';
 
 export default function Home() {
     const hosts = useHosts();
