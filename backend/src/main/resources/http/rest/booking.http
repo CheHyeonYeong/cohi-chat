@@ -1,0 +1,68 @@
+### Booking API 시나리오
+
+### 변수 설정
+@baseUrl = http://localhost:8080/api
+@contentType = application/json
+# accessToken은 member.http에서 로그인 후 설정됨
+# timeSlotId는 timeslot.http에서 설정됨
+
+### 1. 예약 생성 (게스트)
+POST {{baseUrl}}/bookings
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "timeSlotId": {{timeSlotId}},
+  "when": "2026-01-27",
+  "topic": "프로젝트 상담",
+  "description": "프로젝트 진행 상황에 대해 상담하고 싶습니다."
+}
+
+> {%
+  client.global.set("bookingId", response.body.id);
+%}
+
+### 2. 예약 상세 조회
+GET {{baseUrl}}/bookings/{{bookingId}}
+Authorization: Bearer {{accessToken}}
+
+### 3. 내 예약 조회 (게스트)
+GET {{baseUrl}}/bookings/guest/me
+Authorization: Bearer {{accessToken}}
+
+### 4. 내 예약 조회 (호스트)
+GET {{baseUrl}}/bookings/host/me
+Authorization: Bearer {{accessToken}}
+
+### 5. 예약 수정 (게스트)
+PATCH {{baseUrl}}/bookings/{{bookingId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "topic": "수정된 상담 주제",
+  "description": "수정된 상담 설명입니다."
+}
+
+### 6. 예약 일정 수정 (호스트)
+PATCH {{baseUrl}}/bookings/{{bookingId}}/schedule
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "timeSlotId": {{timeSlotId}},
+  "bookingDate": "2026-01-28"
+}
+
+### 7. 예약 상태 변경 (호스트)
+PATCH {{baseUrl}}/bookings/{{bookingId}}/status
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "attendanceStatus": "ATTENDED"
+}
+
+### 8. 예약 취소 (게스트)
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Authorization: Bearer {{accessToken}}

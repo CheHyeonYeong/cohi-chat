@@ -1,0 +1,31 @@
+### Calendar API 시나리오
+
+### 변수 설정
+@baseUrl = http://localhost:8080/api
+@contentType = application/json
+# accessToken은 member.http에서 로그인 후 설정됨
+
+### 1. 캘린더 생성
+POST {{baseUrl}}/calendar/v1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "topics": ["상담", "미팅", "코드리뷰"],
+  "description": "1:1 미팅 예약을 위한 캘린더입니다. 자유롭게 예약해주세요.",
+  "googleCalendarId": "example123@group.calendar.google.com"
+}
+
+### 2. 캘린더 조회
+GET {{baseUrl}}/calendar/v1
+Authorization: Bearer {{accessToken}}
+
+### 3. 캘린더 수정
+PUT {{baseUrl}}/calendar/v1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "topics": ["상담", "미팅", "코드리뷰", "면접"],
+  "description": "업데이트된 캘린더 설명입니다."
+}

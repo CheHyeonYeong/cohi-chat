@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.file.serviceImpl;
+package com.coDevs.cohiChat.global.common.file.serviceImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,8 +8,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-import com.coDevs.cohiChat.file.FileStorageResult;
-import com.coDevs.cohiChat.file.FileStorageService;
+import com.coDevs.cohiChat.global.common.file.FileStorageResult;
+import com.coDevs.cohiChat.global.common.file.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

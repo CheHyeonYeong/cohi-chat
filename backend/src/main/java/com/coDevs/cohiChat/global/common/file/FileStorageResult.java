@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.file;
+package com.coDevs.cohiChat.global.common.file;
 
 public record FileStorageResult(
     String fileName,
