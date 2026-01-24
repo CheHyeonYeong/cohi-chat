@@ -2,12 +2,16 @@ name: Client Deploy Production
 
 on:
   push:
-    branches: [main, cicd/test]
+    branches: [main]
     paths:
       - 'frontend/**'
       - 'docker-compose.prod.yml'
       - '.github/workflows/client-deploy-prod.yml'
   workflow_dispatch:
+
+concurrency:
+  group: client-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AWS_REGION: ap-northeast-2

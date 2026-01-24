@@ -2,12 +2,16 @@ name: Server Deploy Production
 
 on:
   push:
-    branches: [main, cicd/test]
+    branches: [main]
     paths:
       - 'backend/**'
       - 'docker-compose.prod.yml'
       - '.github/workflows/server-deploy-prod.yml'
   workflow_dispatch:
+
+concurrency:
+  group: server-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AWS_REGION: ap-northeast-2
