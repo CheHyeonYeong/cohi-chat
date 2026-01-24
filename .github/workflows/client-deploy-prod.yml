@@ -1,0 +1,82 @@
+name: Client Deploy Production
+
+on:
+  push:
+    branches: [main, cicd/test]
+    paths:
+      - 'frontend/**'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/client-deploy-prod.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          pnpm build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          command_timeout: 20m
+          script: |
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            export AWS_DEFAULT_REGION=$AWS_REGION
+            set -e
+
+            if [ ! -d ~/cohi-chat ]; then
+              git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
+            fi
+
+            cd ~/cohi-chat
+
+            git fetch origin
+            git reset --hard origin/${{ github.ref_name }}
+
+            aws s3 cp s3://cohi-chat-config/.env .env
+
+            docker-compose -f docker-compose.prod.yml build frontend
+            docker-compose -f docker-compose.prod.yml up -d frontend
+
+            echo "Waiting for frontend to start..."
+            sleep 10
+
+            docker-compose -f docker-compose.prod.yml ps
+            docker-compose -f docker-compose.prod.yml logs --tail=50 frontend
