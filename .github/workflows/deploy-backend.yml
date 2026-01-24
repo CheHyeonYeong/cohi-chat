@@ -36,22 +36,23 @@ jobs:
 
             # Build and run backend
             cd backend
-            docker build -t cohi-chat-backend .
+
+            # Image tagging with git SHA
+            IMAGE_TAG=$(git rev-parse --short HEAD)
+            docker build -t cohi-chat-backend:$IMAGE_TAG -t cohi-chat-backend:latest .
 
             # Stop and remove existing container
             docker stop cohi-chat-backend || true
             docker rm cohi-chat-backend || true
 
             # Run new container
+            # Note: EC2 IAM Role을 통해 S3 접근 권한 부여 필요 (환경변수로 AWS 자격증명 전달 제거)
             docker run -d \
               --name cohi-chat-backend \
               -p 8080:8080 \
-              -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-              -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-              -e AWS_REGION=ap-northeast-2 \
               -v /home/ec2-user/cohi-chat-data:/app/data \
               --restart unless-stopped \
-              cohi-chat-backend
+              cohi-chat-backend:$IMAGE_TAG
 
             # Cleanup old images
             docker image prune -f
