@@ -17,14 +17,17 @@ export function useLogout() {
 
         if (authToken) {
             try {
-                await fetch(`${API_URL}/members/v1/logout`, {
+                const response = await fetch(`${API_URL}/members/v1/logout`, {
                     method: 'DELETE',
                     headers: {
                         Authorization: `Bearer ${authToken}`,
                     },
                 });
-            } catch {
-                // 서버 로그아웃 실패해도 클라이언트 로그아웃은 진행
+                if (!response.ok) {
+                    console.warn(`로그아웃 API 실패: ${response.status}`);
+                }
+            } catch (error) {
+                console.warn('로그아웃 API 호출 중 오류:', error);
             }
         }
 
@@ -36,7 +39,7 @@ export function useLogout() {
 
         dispatchAuthChange();
 
-        navigate({ to: '/app/login' });
+        navigate({ to: '/app/login', replace: true });
     }, [navigate, queryClient]);
 
     return { logout };
