@@ -16,6 +16,7 @@ import com.coDevs.cohiChat.global.common.file.FileStorageService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -26,6 +27,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+@Slf4j
 @Service
 @Primary
 public class S3FileStorageServiceImpl implements FileStorageService {
@@ -73,8 +75,11 @@ public class S3FileStorageServiceImpl implements FileStorageService {
                     contentType
             );
         } catch (IOException e) {
+            log.error("Failed to read file input stream: {}", e.getMessage(), e);
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR);
         } catch (S3Exception e) {
+            log.error("Failed to upload file to S3. Bucket: {}, Key: {}, Error: {}",
+                bucketName, s3Key, e.getMessage(), e);
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR);
         }
     }
