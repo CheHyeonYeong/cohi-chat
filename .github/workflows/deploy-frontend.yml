@@ -1,0 +1,53 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+
+            # Clone or pull repository
+            if [ -d "/home/ec2-user/cohi-chat" ]; then
+              cd /home/ec2-user/cohi-chat
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/CheHyeonYeong/cohi-chat.git /home/ec2-user/cohi-chat
+              cd /home/ec2-user/cohi-chat
+            fi
+
+            # Build and run frontend
+            cd frontend
+            docker build -t cohi-chat-frontend .
+
+            # Stop and remove existing container
+            docker stop cohi-chat-frontend || true
+            docker rm cohi-chat-frontend || true
+
+            # Run new container
+            docker run -d \
+              --name cohi-chat-frontend \
+              -p 80:80 \
+              --restart unless-stopped \
+              cohi-chat-frontend
+
+            # Cleanup old images
+            docker image prune -f
