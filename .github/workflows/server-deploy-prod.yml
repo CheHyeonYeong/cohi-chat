@@ -37,7 +37,7 @@ jobs:
       - name: Build with Gradle
         run: |
           cd backend
-          ./gradlew build --no-daemon -x test
+          ./gradlew build --no-daemon
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
