@@ -18,7 +18,16 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'software.amazon.awssdk:bom:2.29.51'
+	}
+}
+
 dependencies {
+
+    // AWS SDK v2 - S3
+    implementation 'software.amazon.awssdk:s3'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'

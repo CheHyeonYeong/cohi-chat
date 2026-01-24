@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.file;
+package com.coDevs.cohiChat.global.common.file;
 
 import org.springframework.web.multipart.MultipartFile;
 
