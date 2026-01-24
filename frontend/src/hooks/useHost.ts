@@ -8,7 +8,7 @@ export function useHosts() {
     return useQuery<MemberResponseDTO[]>({
         queryKey: ['hosts'],
         queryFn: async () => {
-            const response = await httpClient<MemberResponseDTO[]>(`${API_URL}/account/hosts`);
+            const response = await httpClient<MemberResponseDTO[]>(`${API_URL}/members/v1/hosts`);
             if (!response) {
                 throw new Error('Failed to fetch hosts');
             }

@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.member;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,6 +11,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -157,5 +159,13 @@ class MemberControllerTest {
 			Arguments.of("a".repeat(20), true),
 			Arguments.of("a".repeat(21), false)
 		);
+	}
+
+	@Test
+	@DisplayName("로그아웃 성공 테스트")
+	void logoutSuccess() throws Exception {
+		mockMvc.perform(delete("/members/v1/logout"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));
 	}
 }
