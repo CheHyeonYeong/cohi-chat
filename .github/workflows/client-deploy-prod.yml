@@ -76,7 +76,7 @@ jobs:
 
             aws s3 cp s3://cohi-chat-config/.env .env
 
-            docker-compose -f docker-compose.prod.yml build frontend
+            docker-compose -f docker-compose.prod.yml build --no-cache frontend
             docker-compose -f docker-compose.prod.yml up -d frontend
 
             echo "Waiting for frontend to start..."
