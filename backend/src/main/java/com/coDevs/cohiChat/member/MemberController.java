@@ -84,7 +84,7 @@ public class MemberController {
 	}
 
 	@GetMapping("/v1/hosts")
-	public List<HostResponseDTO> getHosts() {
-		return memberService.getActiveHosts();
+	public ResponseEntity<List<HostResponseDTO>> getHosts() {
+		return ResponseEntity.ok(memberService.getActiveHosts());
 	}
 }

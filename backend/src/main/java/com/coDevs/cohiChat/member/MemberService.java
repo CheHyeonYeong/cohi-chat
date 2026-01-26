@@ -131,6 +131,7 @@ public class MemberService {
 		member.softDelete();
 	}
 
+	@Transactional(readOnly = true)
 	public List<HostResponseDTO> getActiveHosts() {
 		return memberRepository.findByRoleAndIsDeletedFalse(Role.HOST)
 			.stream()
