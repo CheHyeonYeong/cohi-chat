@@ -8,6 +8,9 @@ import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
+import com.coDevs.cohiChat.member.response.HostResponseDTO;
+
+import java.util.List;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -126,5 +129,12 @@ public class MemberService {
 	public void deleteMember(String username) {
 		Member member = getMember(username);
 		member.softDelete();
+	}
+
+	public List<HostResponseDTO> getActiveHosts() {
+		return memberRepository.findByRoleAndIsDeletedFalse(Role.HOST)
+			.stream()
+			.map(HostResponseDTO::from)
+			.toList();
 	}
 }

@@ -16,11 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+
+import java.util.List;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -78,5 +81,10 @@ public class MemberController {
 	public ResponseEntity<Void> deleteMember(@PathVariable(name = "username") String username) {
 		memberService.deleteMember(username);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/v1/hosts")
+	public List<HostResponseDTO> getHosts() {
+		return memberService.getActiveHosts();
 	}
 }
