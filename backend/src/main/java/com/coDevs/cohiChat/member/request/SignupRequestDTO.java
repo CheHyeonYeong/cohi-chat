@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public class SignupRequestDTO {
 
 	@NotBlank(message = "아이디는 필수입니다.")
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,12}$", message = "아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능합니다.")
+	@Pattern(regexp = "^(?!hosts$)[a-zA-Z0-9._-]{4,12}$", message = "아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능하며, 예약어는 사용할 수 없습니다.")
 	private String username;
 
 	@NotBlank(message = "비밀번호는 필수입니다.")
