@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,20 +16,27 @@ import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.calendar.CalendarRepository;
+import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final CalendarRepository calendarRepository;
+    private final GoogleCalendarService googleCalendarService;
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
@@ -50,7 +58,37 @@ public class BookingService {
         );
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        createGoogleCalendarEvent(savedBooking, timeSlot);
+
         return BookingResponseDTO.from(savedBooking);
+    }
+
+    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot) {
+        UUID hostId = timeSlot.getUserId();
+        calendarRepository.findById(hostId).ifPresent(calendar -> {
+            LocalDateTime startDateTime = LocalDateTime.of(
+                booking.getBookingDate(),
+                timeSlot.getStartTime()
+            );
+            LocalDateTime endDateTime = LocalDateTime.of(
+                booking.getBookingDate(),
+                timeSlot.getEndTime()
+            );
+
+            String eventId = googleCalendarService.createEvent(
+                booking.getTopic(),
+                booking.getDescription(),
+                startDateTime,
+                endDateTime,
+                calendar.getGoogleCalendarId()
+            );
+
+            if (eventId != null) {
+                booking.setGoogleEventId(eventId);
+                log.info("Google Calendar event created for booking: {}", booking.getId());
+            }
+        });
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -159,7 +197,40 @@ public class BookingService {
 
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
 
+        updateGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate());
+
         return BookingResponseDTO.from(booking);
+    }
+
+    private void updateGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate) {
+        if (booking.getGoogleEventId() == null) {
+            return;
+        }
+
+        UUID hostId = timeSlot.getUserId();
+        calendarRepository.findById(hostId).ifPresent(calendar -> {
+            LocalDateTime startDateTime = LocalDateTime.of(
+                bookingDate,
+                timeSlot.getStartTime()
+            );
+            LocalDateTime endDateTime = LocalDateTime.of(
+                bookingDate,
+                timeSlot.getEndTime()
+            );
+
+            boolean updated = googleCalendarService.updateEvent(
+                booking.getGoogleEventId(),
+                booking.getTopic(),
+                booking.getDescription(),
+                startDateTime,
+                endDateTime,
+                calendar.getGoogleCalendarId()
+            );
+
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
+        });
     }
 
     private void validateHostAccess(Booking booking, UUID requesterId) {
@@ -199,7 +270,27 @@ public class BookingService {
             throw new CustomException(ErrorCode.BOOKING_NOT_CANCELLABLE);
         }
 
+        deleteGoogleCalendarEvent(booking);
+
         booking.cancel();
+    }
+
+    private void deleteGoogleCalendarEvent(Booking booking) {
+        if (booking.getGoogleEventId() == null) {
+            return;
+        }
+
+        UUID hostId = booking.getTimeSlot().getUserId();
+        calendarRepository.findById(hostId).ifPresent(calendar -> {
+            boolean deleted = googleCalendarService.deleteEvent(
+                booking.getGoogleEventId(),
+                calendar.getGoogleCalendarId()
+            );
+
+            if (deleted) {
+                log.info("Google Calendar event deleted for booking: {}", booking.getId());
+            }
+        });
     }
 
     @Transactional
@@ -223,7 +314,40 @@ public class BookingService {
 
         booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
 
+        updateGoogleCalendarEventForGuestUpdate(booking, newTimeSlot, request);
+
         return BookingResponseDTO.from(booking);
+    }
+
+    private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {
+        if (booking.getGoogleEventId() == null) {
+            return;
+        }
+
+        UUID hostId = timeSlot.getUserId();
+        calendarRepository.findById(hostId).ifPresent(calendar -> {
+            LocalDateTime startDateTime = LocalDateTime.of(
+                request.getBookingDate(),
+                timeSlot.getStartTime()
+            );
+            LocalDateTime endDateTime = LocalDateTime.of(
+                request.getBookingDate(),
+                timeSlot.getEndTime()
+            );
+
+            boolean updated = googleCalendarService.updateEvent(
+                booking.getGoogleEventId(),
+                request.getTopic(),
+                request.getDescription(),
+                startDateTime,
+                endDateTime,
+                calendar.getGoogleCalendarId()
+            );
+
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
+        });
     }
 
     private void validateGuestAccess(Booking booking, UUID requesterId) {

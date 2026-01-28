@@ -18,7 +18,16 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'software.amazon.awssdk:bom:2.29.51'
+	}
+}
+
 dependencies {
+
+    // AWS SDK v2 - S3
+    implementation 'software.amazon.awssdk:s3'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -48,6 +57,12 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.15.0'
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Google Calendar API
+    implementation 'com.google.api-client:google-api-client:2.7.0'
+    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'
+    implementation 'com.google.apis:google-api-services-calendar:v3-rev20241101-2.0.0'
+    implementation 'com.google.auth:google-auth-library-oauth2-http:1.29.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
 }

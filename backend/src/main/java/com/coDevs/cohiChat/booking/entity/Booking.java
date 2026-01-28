@@ -143,4 +143,8 @@ public class Booking {
         this.timeSlot = timeSlot;
         this.bookingDate = bookingDate;
     }
+
+    public void setGoogleEventId(String googleEventId) {
+        this.googleEventId = googleEventId;
+    }
 }

@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.file;
+package com.coDevs.cohiChat.global.common.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.coDevs.cohiChat.file.serviceImpl.LocalFileStorageServiceImpl;
+import com.coDevs.cohiChat.global.common.file.serviceImpl.LocalFileStorageServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

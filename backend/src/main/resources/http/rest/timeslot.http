@@ -1,0 +1,40 @@
+### TimeSlot API 시나리오
+
+### 변수 설정
+@baseUrl = http://localhost:8080/api
+@contentType = application/json
+# accessToken은 member.http에서 로그인 후 설정됨
+
+### 1. 타임슬롯 생성 (호스트)
+POST {{baseUrl}}/timeslot/v1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "startTime": "10:00:00",
+  "endTime": "11:00:00",
+  "weekdays": [1, 2, 3, 4, 5]
+}
+
+> {%
+  client.global.set("timeSlotId", response.body.id);
+  client.global.set("hostId", response.body.userId);
+%}
+
+### 2. 내 타임슬롯 조회 (호스트)
+GET {{baseUrl}}/timeslot/v1
+Authorization: Bearer {{accessToken}}
+
+### 3. 호스트 타임슬롯 조회 (게스트용 - 인증 불필요)
+GET {{baseUrl}}/timeslot/v1/hosts/{{hostId}}
+
+### 4. 추가 타임슬롯 생성 (오후)
+POST {{baseUrl}}/timeslot/v1
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "startTime": "14:00:00",
+  "endTime": "15:00:00",
+  "weekdays": [1, 3, 5]
+}
