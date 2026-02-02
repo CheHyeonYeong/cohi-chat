@@ -6,7 +6,7 @@ import {
     createRoute,
 } from '@tanstack/react-router'
 import Calendar from '../pages/calendar/Calendar'
-import Login from '../pages/account/Login'
+import { LoginPage as Login } from '~/features/member'
 import Signup from '../pages/account/Signup'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
