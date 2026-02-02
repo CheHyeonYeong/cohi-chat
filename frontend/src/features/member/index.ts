@@ -1,3 +1,6 @@
+// hooks
+export { useAuth } from './hooks/useAuth';
+
 // types
 export type {
     Role,
@@ -9,7 +12,3 @@ export type {
     SignupPayload,
     SignupResponse,
 } from './types';
-
-// api (내부 사용, 외부 노출 안 함)
-
-// utils (내부 사용, 외부 노출 안 함)
