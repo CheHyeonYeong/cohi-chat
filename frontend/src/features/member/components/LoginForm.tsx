@@ -3,10 +3,6 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { useLogin } from '../hooks/useLogin';
 
-/**
- * 로그인 폼 컴포넌트입니다.
- * 로그인 성공 시 메인 페이지로 리다이렉트됩니다.
- */
 export function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');

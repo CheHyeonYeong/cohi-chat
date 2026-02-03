@@ -5,10 +5,6 @@ import { useSignup } from '../hooks/useSignup';
 
 const REDIRECT_DELAY_MS = 1500;
 
-/**
- * 회원가입 폼 컴포넌트입니다.
- * 회원가입 성공 시 로그인 페이지로 자동 리다이렉트됩니다.
- */
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
