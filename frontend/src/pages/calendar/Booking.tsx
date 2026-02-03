@@ -1,7 +1,7 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "~/components/button";
-import { useBooking, useUploadBookingFile } from "~/hooks/useBookings";
+import { useBooking, useUploadBookingFile } from "~/features/calendar";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
