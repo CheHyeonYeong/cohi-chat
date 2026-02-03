@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { useSignup } from '../hooks/useSignup';
 
 const REDIRECT_DELAY_MS = 1500;
 
+/**
+ * 회원가입 폼 컴포넌트입니다.
+ * 회원가입 성공 시 로그인 페이지로 자동 리다이렉트됩니다.
+ */
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -14,6 +18,15 @@ export function SignupForm() {
     const [passwordError, setPasswordError] = useState('');
     const navigate = useNavigate();
     const signupMutation = useSignup();
+    const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+    useEffect(() => {
+        return () => {
+            if (redirectTimerRef.current) {
+                clearTimeout(redirectTimerRef.current);
+            }
+        };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,14 +39,14 @@ export function SignupForm() {
 
         signupMutation.mutate(
             {
-                username,
-                email,
-                displayName: displayName || undefined,
+                username: username.trim(),
+                email: email.trim(),
+                displayName: displayName.trim() || undefined,
                 password,
             },
             {
                 onSuccess: () => {
-                    setTimeout(() => {
+                    redirectTimerRef.current = setTimeout(() => {
                         navigate({ to: '/app/login' });
                     }, REDIRECT_DELAY_MS);
                 },
