@@ -5,6 +5,21 @@ import { useSignup } from './useSignup';
 /** 회원가입 성공 후 로그인 페이지로 이동하기까지 대기 시간 (ms) */
 const REDIRECT_DELAY_MS = 1500;
 
+/**
+ * 회원가입 폼 상태 관리 훅입니다.
+ *
+ * 기능:
+ * - username, email, displayName, password, passwordAgain 상태 관리
+ * - 비밀번호 일치 검증
+ * - 회원가입 성공 시 로그인 페이지로 자동 리다이렉트
+ *
+ * @returns 폼 상태와 핸들러
+ * - username, email, displayName, password, passwordAgain: 입력값
+ * - setUsername, setEmail 등: setter 함수
+ * - passwordError: 비밀번호 검증 에러 메시지
+ * - handleSubmit: 폼 제출 핸들러
+ * - isPending, isError, isSuccess: mutation 상태
+ */
 export function useSignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -35,7 +50,7 @@ export function useSignupForm() {
                 onSuccess: () => {
                     setTimeout(() => {
                         navigate({ to: '/app/login' });
-                    }, 1500);
+                    }, REDIRECT_DELAY_MS);
                 },
             }
         );
