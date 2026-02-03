@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {httpClient} from '~/libs/httpClient';
-import {MemberResponseDTO} from '~/types/user';
+import type {MemberResponseDTO} from '~/features/member';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 

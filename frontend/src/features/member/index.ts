@@ -2,6 +2,7 @@
 export { useAuth } from './hooks/useAuth';
 export { useLogin } from './hooks/useLogin';
 export { useLoginForm } from './hooks/useLoginForm';
+export { useLogout } from './hooks/useLogout';
 export { useSignup } from './hooks/useSignup';
 export { useSignupForm } from './hooks/useSignupForm';
 
