@@ -8,7 +8,8 @@ import type {
     MemberResponseDTO,
 } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const DEFAULT_API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
 /**
  * httpClient의 body 타입 주의사항
