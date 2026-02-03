@@ -9,11 +9,11 @@ export function useLogout() {
     const queryClient = useQueryClient();
 
     const logout = useCallback(async () => {
-        const token = localStorage.getItem('auth_token');
+        const hasToken = !!localStorage.getItem('auth_token');
 
-        if (token) {
+        if (hasToken) {
             try {
-                await logoutApi(token);
+                await logoutApi();
             } catch (error) {
                 console.warn('Logout API error:', error);
             }

@@ -29,6 +29,10 @@ export async function httpClient<T>(url: string, options: RequestInit = {}): Pro
         throw new Error(data.detail, { cause: response.status });
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text) {
+        return undefined as T;
+    }
+    const data = JSON.parse(text);
     return snakeToCamel(data) as T;
 } 

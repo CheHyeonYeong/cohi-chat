@@ -42,17 +42,10 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
     return response;
 }
 
-export async function logoutApi(token: string): Promise<void> {
-    const response = await fetch(`${MEMBER_API}/logout`, {
+export async function logoutApi(): Promise<void> {
+    await httpClient<void>(`${MEMBER_API}/logout`, {
         method: 'DELETE',
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
     });
-
-    if (!response.ok) {
-        throw new Error(`Logout failed: ${response.status}`);
-    }
 }
 
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {
