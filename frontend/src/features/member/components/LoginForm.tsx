@@ -29,6 +29,7 @@ export function LoginForm({
                         id="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        disabled={isPending}
                         required
                     />
                 </div>
@@ -39,6 +40,7 @@ export function LoginForm({
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        disabled={isPending}
                         required
                     />
                 </div>
