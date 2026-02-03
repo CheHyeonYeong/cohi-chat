@@ -8,7 +8,8 @@ import type {
     MemberResponseDTO,
 } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const DEFAULT_API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
 /**
  * httpClient의 body 타입 주의사항
@@ -55,6 +56,8 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
  * - httpClient는 response.json()을 호출하여 JSON 응답을 기대함
  * - logout API는 응답 body가 없거나 빈 응답을 반환할 수 있음
  * - 또한 token을 명시적으로 전달받아 사용 (localStorage 의존 제거)
+ *
+ * @throws {Error} 로그아웃 API 호출 실패 시 에러를 throw
  */
 export async function logoutApi(token: string): Promise<void> {
     const response = await fetch(`${API_URL}/members/v1/logout`, {
@@ -65,7 +68,7 @@ export async function logoutApi(token: string): Promise<void> {
     });
 
     if (!response.ok) {
-        console.warn(`로그아웃 API 실패: ${response.status}`);
+        throw new Error(`로그아웃 API 실패: ${response.status}`);
     }
 }
 
