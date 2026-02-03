@@ -65,7 +65,7 @@ export async function logoutApi(token: string): Promise<void> {
     });
 
     if (!response.ok) {
-        console.warn(`로그아웃 API 실패: ${response.status}`);
+        throw new Error(`로그아웃 API 실패: ${response.status}`);
     }
 }
 
