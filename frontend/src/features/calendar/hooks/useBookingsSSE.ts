@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { snakeToCamel } from '~/libs/utils';
-import { IBooking, ICalendarEvent } from '~/types/booking';
+import type { IBooking, ICalendarEvent } from '../types';
 
-export function useBookingsStreamQuery({
+export function useBookingsSSEQuery({
     endpoint,
     onMessage,
 }: {
@@ -18,7 +18,7 @@ export function useBookingsStreamQuery({
                 withCredentials: true
             },
         );
-        
+
         eventSource.onmessage = (event) => {
             try {
                 const newData = snakeToCamel(JSON.parse(event.data)) as IBooking | ICalendarEvent;

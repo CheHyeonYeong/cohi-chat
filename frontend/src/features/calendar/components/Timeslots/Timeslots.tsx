@@ -4,9 +4,8 @@ import clsx from "clsx";
 
 import { Button } from "~/components/button";
 import { useAuth } from "~/hooks/useAuth";
-import { checkAvailableBookingDate } from "~/libs/utils";
-import { IBooking, ICalendarEvent } from "~/types/booking";
-import { ITimeSlot } from "~/types/timeslot";
+import { checkAvailableBookingDate } from "../../utils";
+import type { IBooking, ICalendarEvent, ITimeSlot } from "../../types";
 
 interface TimeslotsProps {
     baseDate: Date | null;
