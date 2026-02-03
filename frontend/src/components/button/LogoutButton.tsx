@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from './Button';
-import { useLogout } from '~/hooks/useLogout';
+import { useLogout } from '~/features/member';
 
 export function LogoutButton() {
     const { logout } = useLogout();      // hook 호출

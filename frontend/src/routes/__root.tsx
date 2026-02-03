@@ -6,8 +6,7 @@ import {
     createRoute,
 } from '@tanstack/react-router'
 import Calendar from '../pages/calendar/Calendar'
-import Login from '../pages/account/Login'
-import Signup from '../pages/account/Signup'
+import { LoginForm, SignupForm } from '~/features/member'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
@@ -66,13 +65,13 @@ const bookingRoute = createRoute({
 const loginRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/app/login',
-    component: Login,
+    component: LoginForm,
 })
 
 const signupRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/app/signup',
-    component: Signup,
+    component: SignupForm,
 })
 
 
