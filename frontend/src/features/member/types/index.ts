@@ -27,8 +27,10 @@ export interface LoginCredentials {
     password: string;
 }
 
+export type AuthProvider = 'LOCAL' | 'GOOGLE';
+
 export interface LoginRequest extends LoginCredentials {
-    provider: string;
+    provider: AuthProvider;
 }
 
 export interface LoginResponse {

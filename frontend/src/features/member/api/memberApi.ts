@@ -19,7 +19,7 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
 
     const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
-        body: request as unknown as BodyInit,
+        body: request,
     });
 
     if (!response?.accessToken) {
@@ -32,7 +32,7 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
 export async function signupApi(payload: SignupPayload): Promise<SignupResponse> {
     const response = await httpClient<SignupResponse>(`${MEMBER_API}/signup`, {
         method: 'POST',
-        body: payload as unknown as BodyInit,
+        body: payload,
     });
 
     if (!response) {

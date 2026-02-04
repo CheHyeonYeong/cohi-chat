@@ -11,10 +11,12 @@ export { SignupForm } from './components/SignupForm';
 // types
 export type {
     Role,
+    AuthProvider,
     MemberResponseDTO,
     IUserSimple,
     AuthUser,
     LoginCredentials,
+    LoginRequest,
     LoginResponse,
     SignupPayload,
     SignupResponse,
