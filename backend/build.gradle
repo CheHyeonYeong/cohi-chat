@@ -8,6 +8,11 @@ group = 'com.coDevs'
 version = '0.0.1-SNAPSHOT'
 description = 'Demo project for Spring Boot'
 
+bootRun {
+    // 애플리케이션 실행 시 JVM 인코딩을 UTF-8로 설정
+    jvmArgs "-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
