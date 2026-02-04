@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.timeslot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalTime;
@@ -75,7 +76,7 @@ class TimeSlotServiceTest {
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
         givenCalendarExists();
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
             .willReturn(List.of());
         given(timeSlotRepository.save(any(TimeSlot.class))).willAnswer(inv -> inv.getArgument(0));
     }
@@ -91,8 +92,9 @@ class TimeSlotServiceTest {
 
         // then
         assertThat(response)
-            .extracting("startTime", "endTime", "weekdays")
-            .containsExactly(TEST_START_TIME, TEST_END_TIME, TEST_WEEKDAYS);
+            .extracting("startTime", "endTime")
+            .containsExactly(TEST_START_TIME, TEST_END_TIME);
+        assertThat(response.getWeekdays()).containsExactlyInAnyOrderElementsOf(TEST_WEEKDAYS);
     }
 
     @Test
@@ -133,7 +135,7 @@ class TimeSlotServiceTest {
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
         );
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
             .willReturn(List.of(existingTimeSlot));
 
         // when & then
@@ -149,15 +151,9 @@ class TimeSlotServiceTest {
         givenHostMember();
         givenCalendarExists();
 
-        // 기존 타임슬롯: 월,화,수 10:00-11:00
-        TimeSlot existingTimeSlot = TimeSlot.create(
-            TEST_USER_ID,
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(0, 1, 2)
-        );
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any()))
-            .willReturn(List.of(existingTimeSlot));
+        // DB 쿼리에서 요일이 다르면 빈 리스트 반환
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+            .willReturn(List.of());
 
         // 새 타임슬롯: 목,금 10:00-11:00 (요일이 다름)
         TimeSlotCreateRequestDTO differentWeekdaysRequest = TimeSlotCreateRequestDTO.builder()
@@ -172,7 +168,7 @@ class TimeSlotServiceTest {
         TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, differentWeekdaysRequest);
 
         // then
-        assertThat(response.getWeekdays()).containsExactly(3, 4);
+        assertThat(response.getWeekdays()).containsExactlyInAnyOrder(3, 4);
     }
 
     @Test

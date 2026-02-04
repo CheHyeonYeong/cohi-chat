@@ -10,13 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class TimeSlotRepositoryTest {
 
     @Autowired
@@ -48,7 +48,7 @@ class TimeSlotRepositoryTest {
         assertThat(found.get().getUserId()).isEqualTo(userId);
         assertThat(found.get().getStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(found.get().getEndTime()).isEqualTo(LocalTime.of(11, 0));
-        assertThat(found.get().getWeekdays()).containsExactly(0, 1, 2);
+        assertThat(found.get().getWeekdays()).containsExactlyInAnyOrder(0, 1, 2);
     }
 
     @Test
@@ -81,13 +81,14 @@ class TimeSlotRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: 겹치는 시간대 조회 - 겹치는 타임슬롯 존재")
-    void findOverlappingTimeSlotsExists() {
-        // when - 10:30-11:30은 기존 10:00-11:00과 겹침
+    @DisplayName("성공: 시간과 요일이 모두 겹치는 타임슬롯 조회")
+    void findOverlappingTimeSlotsWithTimeAndWeekday() {
+        // when - 10:30-11:30은 기존 10:00-11:00과 시간이 겹치고, 요일 0도 겹침
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
             LocalTime.of(10, 30),
-            LocalTime.of(11, 30)
+            LocalTime.of(11, 30),
+            List.of(0)
         );
 
         // then
@@ -96,13 +97,14 @@ class TimeSlotRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: 겹치는 시간대 조회 - 겹치지 않음")
-    void findOverlappingTimeSlotsNotExists() {
-        // when - 11:00-12:00은 기존 10:00-11:00과 겹치지 않음 (경계)
+    @DisplayName("성공: 시간이 겹치지만 요일이 다르면 겹치지 않음")
+    void findOverlappingTimeSlotsNoWeekdayOverlap() {
+        // when - 시간은 겹치지만 요일 3,4 (목,금)은 기존 0,1,2 (월,화,수)와 겹치지 않음
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
+            LocalTime.of(10, 0),
             LocalTime.of(11, 0),
-            LocalTime.of(12, 0)
+            List.of(3, 4)
         );
 
         // then
@@ -110,13 +112,29 @@ class TimeSlotRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: 겹치는 시간대 조회 - 다른 사용자는 무시")
+    @DisplayName("성공: 시간이 겹치지 않으면 겹치지 않음")
+    void findOverlappingTimeSlotsNoTimeOverlap() {
+        // when - 11:00-12:00은 기존 10:00-11:00과 시간이 겹치지 않음 (경계)
+        List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
+            userId,
+            LocalTime.of(11, 0),
+            LocalTime.of(12, 0),
+            List.of(0, 1, 2)
+        );
+
+        // then
+        assertThat(overlapping).isEmpty();
+    }
+
+    @Test
+    @DisplayName("성공: 다른 사용자의 타임슬롯은 무시")
     void findOverlappingTimeSlotsIgnoresOtherUser() {
         // when - 다른 사용자 ID로 조회
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             UUID.randomUUID(),
             LocalTime.of(10, 0),
-            LocalTime.of(11, 0)
+            LocalTime.of(11, 0),
+            List.of(0, 1, 2)
         );
 
         // then

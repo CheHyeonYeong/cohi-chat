@@ -84,7 +84,7 @@ class TimeSlotIntegrationTest {
         assertThat(savedTimeSlot.getUserId()).isEqualTo(hostId);
         assertThat(savedTimeSlot.getStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(savedTimeSlot.getEndTime()).isEqualTo(LocalTime.of(11, 0));
-        assertThat(savedTimeSlot.getWeekdays()).containsExactly(0, 1, 2);
+        assertThat(savedTimeSlot.getWeekdays()).containsExactlyInAnyOrder(0, 1, 2);
         assertThat(savedTimeSlot.getCreatedAt()).isNotNull();
     }
 
@@ -124,9 +124,9 @@ class TimeSlotIntegrationTest {
     }
 
     @Test
-    @DisplayName("통합 테스트: 시간대 중복 검증 쿼리")
+    @DisplayName("통합 테스트: 시간과 요일 모두 중복되는 타임슬롯 검증 쿼리")
     void overlappingTimeSlotQuery() {
-        // given - 기존 타임슬롯: 10:00-11:00
+        // given - 기존 타임슬롯: 10:00-11:00, 월화수(0,1,2)
         TimeSlot existingTimeSlot = TimeSlot.create(
             hostId,
             LocalTime.of(10, 0),
@@ -135,16 +135,41 @@ class TimeSlotIntegrationTest {
         );
         timeSlotRepository.save(existingTimeSlot);
 
-        // when - 겹치는 시간대 조회 (10:30-11:30)
+        // when - 겹치는 시간대 + 요일 조회 (10:30-11:30, 월요일)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
             LocalTime.of(10, 30),
-            LocalTime.of(11, 30)
+            LocalTime.of(11, 30),
+            List.of(0)
         );
 
         // then
         assertThat(overlapping).hasSize(1);
         assertThat(overlapping.get(0).getId()).isEqualTo(existingTimeSlot.getId());
+    }
+
+    @Test
+    @DisplayName("통합 테스트: 시간이 겹쳐도 요일이 다르면 조회되지 않음")
+    void noOverlapWhenDifferentWeekdays() {
+        // given - 기존 타임슬롯: 10:00-11:00, 월화수(0,1,2)
+        TimeSlot existingTimeSlot = TimeSlot.create(
+            hostId,
+            LocalTime.of(10, 0),
+            LocalTime.of(11, 0),
+            List.of(0, 1, 2)
+        );
+        timeSlotRepository.save(existingTimeSlot);
+
+        // when - 같은 시간대지만 다른 요일 (목,금)
+        List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
+            hostId,
+            LocalTime.of(10, 0),
+            LocalTime.of(11, 0),
+            List.of(3, 4)
+        );
+
+        // then
+        assertThat(overlapping).isEmpty();
     }
 
     @Test
@@ -163,7 +188,8 @@ class TimeSlotIntegrationTest {
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
             LocalTime.of(11, 0),
-            LocalTime.of(12, 0)
+            LocalTime.of(12, 0),
+            List.of(0, 1, 2)
         );
 
         // then
