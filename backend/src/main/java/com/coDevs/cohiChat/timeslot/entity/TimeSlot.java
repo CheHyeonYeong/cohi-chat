@@ -69,9 +69,9 @@ public class TimeSlot {
             throw new IllegalArgumentException("weekdays must not be null or empty");
         }
 
-        for (Integer weekday : weekdays) {
-            timeSlot.weekdayEntities.add(TimeSlotWeekday.create(timeSlot, weekday));
-        }
+        weekdays.stream()
+            .distinct()
+            .forEach(weekday -> timeSlot.weekdayEntities.add(TimeSlotWeekday.create(timeSlot, weekday)));
 
         return timeSlot;
     }

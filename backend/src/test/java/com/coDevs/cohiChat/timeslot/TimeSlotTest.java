@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -73,5 +74,58 @@ class TimeSlotTest {
         assertThat(timeSlot.getWeekdayEntities()).hasSize(3);
         assertThat(timeSlot.getWeekdayEntities())
             .allMatch(w -> w.getTimeSlot() == timeSlot);
+    }
+
+    @Test
+    @DisplayName("성공: 중복된 weekdays는 제거됨")
+    void duplicateWeekdaysRemoved() {
+        // given
+        List<Integer> weekdaysWithDuplicates = List.of(0, 1, 1, 2, 2, 2);
+
+        // when
+        TimeSlot timeSlot = TimeSlot.create(
+            TEST_USER_ID,
+            TEST_START_TIME,
+            TEST_END_TIME,
+            weekdaysWithDuplicates
+        );
+
+        // then
+        assertThat(timeSlot.getWeekdays()).hasSize(3);
+        assertThat(timeSlot.getWeekdays()).containsExactlyInAnyOrder(0, 1, 2);
+    }
+
+    @Test
+    @DisplayName("실패: weekday가 7 이상이면 예외 발생")
+    void failWhenWeekdayGreaterThan6() {
+        // given
+        List<Integer> invalidWeekdays = List.of(0, 7);
+
+        // when & then
+        assertThatThrownBy(() -> TimeSlot.create(
+            TEST_USER_ID,
+            TEST_START_TIME,
+            TEST_END_TIME,
+            invalidWeekdays
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("weekday must be between 0 and 6");
+    }
+
+    @Test
+    @DisplayName("실패: weekday가 음수이면 예외 발생")
+    void failWhenWeekdayNegative() {
+        // given
+        List<Integer> invalidWeekdays = List.of(-1, 0);
+
+        // when & then
+        assertThatThrownBy(() -> TimeSlot.create(
+            TEST_USER_ID,
+            TEST_START_TIME,
+            TEST_END_TIME,
+            invalidWeekdays
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("weekday must be between 0 and 6");
     }
 }
