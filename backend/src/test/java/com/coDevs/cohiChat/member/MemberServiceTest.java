@@ -23,11 +23,13 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,9 @@ class MemberServiceTest {
 
 	@Mock
 	private MemberRepository memberRepository;
+
+	@Mock
+	private RefreshTokenRepository refreshTokenRepository;
 
 	@Mock
 	private PasswordEncoder passwordEncoder;
@@ -140,7 +145,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그인 성공")
+	@DisplayName("성공: 로그인 성공 - Access Token과 Refresh Token 모두 발급")
 	void loginSuccess() {
 		LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)
@@ -150,9 +155,16 @@ class MemberServiceTest {
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
+		given(jwtTokenProvider.createRefreshToken(anyString())).willReturn("test-refresh-token");
 		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
+		given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
+
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
+		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
+		verify(refreshTokenRepository).deleteByUsername(TEST_USERNAME);
+		verify(refreshTokenRepository).save(any(RefreshToken.class));
 	}
 
 	@Test
@@ -290,5 +302,80 @@ class MemberServiceTest {
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
 		verify(memberRepository, never()).delete(any(Member.class));
+	}
+
+	@Test
+	@DisplayName("성공: 유효한 Refresh Token으로 Access Token 재발급")
+	void refreshAccessTokenSuccess() {
+		String validRefreshToken = "valid-refresh-token";
+		RefreshToken storedToken = RefreshToken.create(
+			validRefreshToken,
+			TEST_USERNAME,
+			java.time.LocalDateTime.now().plusDays(7)
+		);
+
+		given(jwtTokenProvider.validateToken(validRefreshToken)).willReturn(true);
+		given(refreshTokenRepository.findByToken(validRefreshToken)).willReturn(Optional.of(storedToken));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
+		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
+
+		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
+
+		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
+	}
+
+	@Test
+	@DisplayName("실패: 유효하지 않은 JWT Refresh Token")
+	void refreshAccessTokenFailInvalidJwt() {
+		String invalidToken = "invalid-token";
+
+		given(jwtTokenProvider.validateToken(invalidToken)).willReturn(false);
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(invalidToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("실패: DB에 존재하지 않는 Refresh Token")
+	void refreshAccessTokenFailNotInDb() {
+		String tokenNotInDb = "not-in-db-token";
+
+		given(jwtTokenProvider.validateToken(tokenNotInDb)).willReturn(true);
+		given(refreshTokenRepository.findByToken(tokenNotInDb)).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInDb))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("실패: 만료된 Refresh Token")
+	void refreshAccessTokenFailExpired() {
+		String expiredToken = "expired-token";
+		RefreshToken storedToken = RefreshToken.create(
+			expiredToken,
+			TEST_USERNAME,
+			java.time.LocalDateTime.now().minusDays(1) // 이미 만료됨
+		);
+
+		given(jwtTokenProvider.validateToken(expiredToken)).willReturn(true);
+		given(refreshTokenRepository.findByToken(expiredToken)).willReturn(Optional.of(storedToken));
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(expiredToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.EXPIRED_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제")
+	void logoutSuccess() {
+		// when
+		memberService.logout(TEST_USERNAME);
+
+		// then
+		verify(refreshTokenRepository).deleteByUsername(TEST_USERNAME);
 	}
 }
