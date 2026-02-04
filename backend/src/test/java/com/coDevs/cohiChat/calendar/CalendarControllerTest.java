@@ -26,6 +26,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.coDevs.cohiChat.booking.BookingService;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
@@ -50,6 +51,9 @@ class CalendarControllerTest {
 
     @MockitoBean
     private CalendarService calendarService;
+
+    @MockitoBean
+    private BookingService bookingService;
 
     @MockitoBean
     private MemberService memberService;

@@ -10,6 +10,7 @@ import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class CalendarService {
 
     private final CalendarRepository calendarRepository;
+    private final MemberService memberService;
 
     @Transactional
     public CalendarResponseDTO createCalendar(Member member, CalendarCreateRequestDTO request) {
@@ -63,6 +65,16 @@ public class CalendarService {
             request.getDescription(),
             request.getGoogleCalendarId()
         );
+
+        return CalendarResponseDTO.from(calendar);
+    }
+
+    @Transactional(readOnly = true)
+    public CalendarResponseDTO getCalendarBySlug(String slug) {
+        Member member = memberService.getMember(slug);
+
+        Calendar calendar = calendarRepository.findByUserId(member.getId())
+            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         return CalendarResponseDTO.from(calendar);
     }

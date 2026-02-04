@@ -15,6 +15,7 @@ import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
@@ -348,6 +349,17 @@ public class BookingService {
                 log.info("Google Calendar event updated for booking: {}", booking.getId());
             }
         });
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingPublicResponseDTO> getBookingsByHostAndDate(UUID hostId, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
+        return bookings.stream()
+            .map(BookingPublicResponseDTO::from)
+            .toList();
     }
 
     private void validateGuestAccess(Booking booking, UUID requesterId) {
