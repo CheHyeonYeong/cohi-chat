@@ -65,6 +65,10 @@ public class TimeSlot {
         timeSlot.startTime = startTime;
         timeSlot.endTime = endTime;
 
+        if (weekdays == null || weekdays.isEmpty()) {
+            throw new IllegalArgumentException("weekdays must not be null or empty");
+        }
+
         for (Integer weekday : weekdays) {
             timeSlot.weekdayEntities.add(TimeSlotWeekday.create(timeSlot, weekday));
         }
