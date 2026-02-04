@@ -54,13 +54,12 @@ public class TimeSlotWeekday {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TimeSlotWeekday that = (TimeSlotWeekday) o;
+        if (!(o instanceof TimeSlotWeekday that)) return false;
         return Objects.equals(timeSlot, that.timeSlot) && Objects.equals(weekday, that.weekday);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(weekday);
+        return Objects.hash(timeSlot, weekday);
     }
 }
