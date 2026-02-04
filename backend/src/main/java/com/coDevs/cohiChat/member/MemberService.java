@@ -29,8 +29,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemberService {
 
-	private static final long REFRESH_TOKEN_EXPIRATION_DAYS = 7;
-
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final PasswordEncoder passwordEncoder;
@@ -102,10 +100,11 @@ public class MemberService {
 		refreshTokenRepository.deleteByUsername(member.getUsername());
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
+		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
 		RefreshToken refreshToken = RefreshToken.create(
 			refreshTokenValue,
 			member.getUsername(),
-			LocalDateTime.now().plusDays(REFRESH_TOKEN_EXPIRATION_DAYS)
+			LocalDateTime.now().plusNanos(refreshTokenExpirationMs * 1_000_000)
 		);
 		refreshTokenRepository.save(refreshToken);
 
@@ -163,6 +162,7 @@ public class MemberService {
 		refreshTokenRepository.deleteByUsername(username);
 	}
 
+	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
 		// 1. JWT 토큰 자체 유효성 검증
 		if (!jwtTokenProvider.validateToken(refreshTokenValue)) {

@@ -25,6 +25,7 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
+import java.security.Principal;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -64,7 +65,7 @@ public class MemberController {
 
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<LogoutResponseDTO> logout(java.security.Principal principal) {
+	public ResponseEntity<LogoutResponseDTO> logout(Principal principal) {
 		memberService.logout(principal.getName());
 		return ResponseEntity.ok(LogoutResponseDTO.success());
 	}

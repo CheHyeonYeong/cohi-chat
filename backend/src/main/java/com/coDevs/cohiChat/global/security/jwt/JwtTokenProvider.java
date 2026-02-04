@@ -114,4 +114,8 @@ public class JwtTokenProvider {
 
 		return (expiration.getTime() - now) / 1000;
 	}
+
+	public long getRefreshTokenExpirationMs() {
+		return refreshTokenExpirationMs;
+	}
 }
