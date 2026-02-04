@@ -22,8 +22,11 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
         body: request,
     });
 
-    if (!response?.accessToken) {
-        throw new Error('Login failed');
+    if (!response) {
+        throw new Error('Login failed: Empty response from server');
+    }
+    if (!response.accessToken) {
+        throw new Error('Login failed: Missing access token');
     }
 
     return response;
