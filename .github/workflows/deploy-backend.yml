@@ -25,13 +25,13 @@ jobs:
             set -e
 
             # Clone or pull repository
-            if [ -d "/home/ec2-user/cohi-chat" ]; then
-              cd /home/ec2-user/cohi-chat
+            if [ -d ~/cohi-chat ]; then
+              cd ~/cohi-chat
               git fetch origin main
               git reset --hard origin/main
             else
-              git clone https://github.com/CheHyeonYeong/cohi-chat.git /home/ec2-user/cohi-chat
-              cd /home/ec2-user/cohi-chat
+              git clone https://github.com/CheHyeonYeong/cohi-chat.git ~/cohi-chat
+              cd ~/cohi-chat
             fi
 
             # Build and run backend
@@ -50,7 +50,7 @@ jobs:
             docker run -d \
               --name cohi-chat-backend \
               -p 8080:8080 \
-              -v /home/ec2-user/cohi-chat-data:/app/data \
+              -v ~/cohi-chat-data:/app/data \
               --restart unless-stopped \
               cohi-chat-backend:$IMAGE_TAG
 
