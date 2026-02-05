@@ -51,8 +51,11 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             }
 
             localStorage.setItem('auth_token', response.accessToken);
-            localStorage.setItem('refresh_token', response.refreshToken);
+            if (response.refreshToken) {
+                localStorage.setItem('refresh_token', response.refreshToken);
+            }
             localStorage.setItem('username', response.username);
+            dispatchAuthChange();
             return response;
         },
         onSuccess: () => {

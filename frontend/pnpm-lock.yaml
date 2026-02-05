@@ -117,9 +117,6 @@ importers:
       globals:
         specifier: ^15.11.0
         version: 15.14.0
-      happy-dom:
-        specifier: ^20.3.7
-        version: 20.3.7
       less:
         specifier: ^4.2.0
         version: 4.2.1
@@ -4414,11 +4411,13 @@ snapshots:
 
   '@types/tough-cookie@4.0.5': {}
 
-  '@types/whatwg-mimetype@3.0.2': {}
+  '@types/whatwg-mimetype@3.0.2':
+    optional: true
 
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 22.10.2
+    optional: true
 
   '@typescript-eslint/eslint-plugin@8.18.2(@typescript-eslint/parser@8.18.2(eslint@9.17.0(jiti@1.21.7))(typescript@5.6.3))(eslint@9.17.0(jiti@1.21.7))(typescript@5.6.3)':
     dependencies:
@@ -4935,7 +4934,8 @@ snapshots:
 
   emoji-regex@9.2.2: {}
 
-  entities@4.5.0: {}
+  entities@4.5.0:
+    optional: true
 
   errno@0.1.8:
     dependencies:
@@ -5345,6 +5345,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   has-bigints@1.1.0: {}
 
@@ -6685,7 +6686,8 @@ snapshots:
 
   webpack-virtual-modules@0.6.2: {}
 
-  whatwg-mimetype@3.0.0: {}
+  whatwg-mimetype@3.0.0:
+    optional: true
 
   which-boxed-primitive@1.1.1:
     dependencies:
@@ -6758,7 +6760,8 @@ snapshots:
 
   ws@8.18.0: {}
 
-  ws@8.19.0: {}
+  ws@8.19.0:
+    optional: true
 
   y18n@5.0.8: {}
 

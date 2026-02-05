@@ -10,13 +10,9 @@ import { useCalendarNavigation } from '~/hooks/useCalendarNavigation';
 import { useCalendarDateSelection } from '~/hooks/useCalendarDateSelection';
 import { useTimeslots } from '~/hooks/useTimeslots';
 import { ITimeSlot } from '~/types/timeslot';
-import { useBookings } from '~/hooks/useBookings';
 
 import './calendar.less';
 import { useAuth } from '~/hooks/useAuth';
-import { useBookingsStreamQuery } from '~/hooks/useBookings';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });
@@ -28,13 +24,6 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     const auth = useAuth();
     const calendar = useCalendarEvent(slug);
     const { data: timeslots = [] } = useTimeslots(slug);
-    const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
-    const bookingsStream = useBookingsStreamQuery({
-        endpoint: `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`,
-        onMessage: (data) => {
-            console.log('onMessage', data);
-        },
-    });
     const { handlePrevious, handleNext } = useCalendarNavigation();
     const { handleSelectDay } = useCalendarDateSelection();
 
@@ -53,7 +42,6 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
 
     const handleBookingCreated = () => {
         setSelectedTimeslot(null);
-        refetchBookings();
     };
 
     useEffect(() => {
@@ -102,12 +90,12 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                         days={getCalendarDays(new Date(year, month - 1))}
                         baseDate={baseDate}
                         timeslots={timeslots}
-                        bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
+                        bookings={[]}
                         onSelectDay={handleDaySelect}
                     />
                     <Timeslots
                         timeslots={timeslots}
-                        bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
+                        bookings={[]}
                         baseDate={selectedDate}
                         onSelectTimeslot={handleSelectTimeslot}
                     />
@@ -127,4 +115,3 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     );
 }
 export default Calendar;
-

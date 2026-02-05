@@ -1,14 +1,18 @@
 import {useQuery} from '@tanstack/react-query';
 import {httpClient} from '~/libs/httpClient';
-import {MemberResponseDTO} from '~/types/user';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
+export interface HostDTO {
+    username: string;
+    displayName: string;
+}
+
 export function useHosts() {
-    return useQuery<MemberResponseDTO[]>({
+    return useQuery<HostDTO[]>({
         queryKey: ['hosts'],
         queryFn: async () => {
-            const response = await httpClient<MemberResponseDTO[]>(`${API_URL}/members/v1/hosts`);
+            const response = await httpClient<HostDTO[]>(`${API_URL}/members/v1/hosts`);
             if (!response) {
                 throw new Error('Failed to fetch hosts');
             }
