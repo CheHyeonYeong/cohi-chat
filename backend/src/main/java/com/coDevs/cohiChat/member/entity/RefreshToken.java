@@ -1,58 +1,43 @@
 package com.coDevs.cohiChat.member.entity;
 
-import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
+import org.springframework.data.redis.core.index.Indexed;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
-@EntityListeners(AuditingEntityListener.class)
-@Table(name = "refresh_token", indexes = {
-    @Index(name = "idx_refresh_token_token", columnList = "token"),
-    @Index(name = "idx_refresh_token_username", columnList = "username")
-})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@RedisHash(value = "refreshToken")
 public class RefreshToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true, length = 500)
-    private String token;
-
-    @Column(nullable = false, length = 50)
     private String username;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    @Indexed
+    private String token;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @TimeToLive(unit = TimeUnit.MILLISECONDS)
+    private Long expiration;
 
-    public static RefreshToken create(String token, String username, LocalDateTime expiresAt) {
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.token = token;
-        refreshToken.username = username;
-        refreshToken.expiresAt = expiresAt;
-        return refreshToken;
+    @Builder
+    private RefreshToken(String username, String token, Long expiration) {
+        this.username = username;
+        this.token = token;
+        this.expiration = expiration;
     }
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+    public static RefreshToken create(String token, String username, Long expirationMs) {
+        return RefreshToken.builder()
+            .username(username)
+            .token(token)
+            .expiration(expirationMs)
+            .build();
     }
 }

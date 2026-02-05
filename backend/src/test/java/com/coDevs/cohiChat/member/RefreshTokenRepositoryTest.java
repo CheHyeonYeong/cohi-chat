@@ -2,28 +2,28 @@ package com.coDevs.cohiChat.member;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 
-@DataJpaTest
+@SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(EmbeddedRedisConfig.class)
 class RefreshTokenRepositoryTest {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
-    private RefreshToken savedToken;
     private final String testUsername = "testuser";
     private final String testToken = "test-refresh-token-value";
 
@@ -32,22 +32,26 @@ class RefreshTokenRepositoryTest {
         RefreshToken refreshToken = RefreshToken.create(
             testToken,
             testUsername,
-            LocalDateTime.now().plusDays(7)
+            604800000L // 7 days
         );
-        savedToken = refreshTokenRepository.save(refreshToken);
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    @AfterEach
+    void tearDown() {
+        refreshTokenRepository.deleteAll();
     }
 
     @Test
-    @DisplayName("성공: RefreshToken 저장 및 조회")
-    void saveAndFindRefreshToken() {
+    @DisplayName("성공: RefreshToken 저장 및 ID(username)로 조회")
+    void saveAndFindById() {
         // when
-        Optional<RefreshToken> found = refreshTokenRepository.findById(savedToken.getId());
+        Optional<RefreshToken> found = refreshTokenRepository.findById(testUsername);
 
         // then
         assertThat(found).isPresent();
         assertThat(found.get().getToken()).isEqualTo(testToken);
         assertThat(found.get().getUsername()).isEqualTo(testUsername);
-        assertThat(found.get().getExpiresAt()).isAfter(LocalDateTime.now());
     }
 
     @Test
@@ -72,24 +76,13 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
-    @DisplayName("성공: username으로 토큰 삭제")
-    void deleteByUsername() {
+    @DisplayName("성공: ID(username)로 토큰 삭제")
+    void deleteById() {
         // when
-        refreshTokenRepository.deleteByUsername(testUsername);
+        refreshTokenRepository.deleteById(testUsername);
 
         // then
-        Optional<RefreshToken> found = refreshTokenRepository.findByToken(testToken);
+        Optional<RefreshToken> found = refreshTokenRepository.findById(testUsername);
         assertThat(found).isEmpty();
-    }
-
-    @Test
-    @DisplayName("성공: username으로 토큰 조회")
-    void findByUsername() {
-        // when
-        Optional<RefreshToken> found = refreshTokenRepository.findByUsername(testUsername);
-
-        // then
-        assertThat(found).isPresent();
-        assertThat(found.get().getToken()).isEqualTo(testToken);
     }
 }

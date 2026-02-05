@@ -75,6 +75,10 @@ public class JwtTokenProvider {
 		}
 	}
 
+	public void validateTokenOrThrow(String token) {
+		parseClaims(token);
+	}
+
 	public String getUsernameFromToken(String token) {
 		return parseClaims(token).getSubject();
 	}

@@ -12,8 +12,15 @@ import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 
-import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -82,7 +89,7 @@ public class MemberService {
 			.generate(8);
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public LoginResponseDTO login(LoginRequestDTO request){
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -96,15 +103,16 @@ public class MemberService {
 			member.getRole().name()
 		);
 
-		// 기존 refresh token 삭제 후 새로 발급
-		refreshTokenRepository.deleteByUsername(member.getUsername());
+		// 기존 refresh token 삭제 후 새로 발급 (Redis key = username)
+		refreshTokenRepository.deleteById(member.getUsername());
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
+		String refreshTokenHash = hashToken(refreshTokenValue);
 		RefreshToken refreshToken = RefreshToken.create(
-			refreshTokenValue,
+			refreshTokenHash,
 			member.getUsername(),
-			LocalDateTime.now().plusNanos(refreshTokenExpirationMs * 1_000_000)
+			refreshTokenExpirationMs
 		);
 		refreshTokenRepository.save(refreshToken);
 
@@ -157,28 +165,26 @@ public class MemberService {
 			.toList();
 	}
 
-	@Transactional
 	public void logout(String username) {
-		refreshTokenRepository.deleteByUsername(username);
+		refreshTokenRepository.deleteById(username);
 	}
 
-	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
-		// 1. JWT 토큰 자체 유효성 검증
-		if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
+		// 1. JWT 토큰 자체 유효성 검증 (만료 vs 위조 구분)
+		try {
+			jwtTokenProvider.validateTokenOrThrow(refreshTokenValue);
+		} catch (ExpiredJwtException e) {
+			throw new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN);
+		} catch (JwtException | IllegalArgumentException e) {
 			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 		}
 
-		// 2. DB에서 토큰 존재 확인
-		RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+		// 2. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
+		String tokenHash = hashToken(refreshTokenValue);
+		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-		// 3. DB 저장 만료시간 확인
-		if (refreshToken.isExpired()) {
-			throw new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN);
-		}
-
-		// 4. 사용자 정보 조회 및 새 Access Token 발급
+		// 3. 사용자 정보 조회 및 새 Access Token 발급
 		String username = refreshToken.getUsername();
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -194,5 +200,15 @@ public class MemberService {
 			.accessToken(newAccessToken)
 			.expiredInMinutes(expiredInSeconds / 60)
 			.build();
+	}
+
+	private String hashToken(String token) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 algorithm not available", e);
+		}
 	}
 }
