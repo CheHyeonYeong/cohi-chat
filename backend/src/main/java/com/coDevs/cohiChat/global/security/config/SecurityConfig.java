@@ -47,6 +47,9 @@ public class SecurityConfig {
 
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/swagger-ui/**", "/hello", "/api/hello", "/account/hosts", "/members/v1/signup", "/members/v1/login", "/members/v1/hosts", "/timeslot/v1/hosts/**").permitAll()
+				// /calendar/v1 엔드포인트는 인증 필수 (permitAll 규칙보다 먼저 적용)
+				.requestMatchers("/calendar/v1").authenticated()
+				// 공개 캘린더 엔드포인트 (slug 기반)
 				.requestMatchers(HttpMethod.GET, "/calendar/*").permitAll()
 				.requestMatchers(HttpMethod.GET, "/calendar/*/bookings").permitAll()
 				.requestMatchers(HttpMethod.GET, "/calendar/*/bookings/stream").permitAll()

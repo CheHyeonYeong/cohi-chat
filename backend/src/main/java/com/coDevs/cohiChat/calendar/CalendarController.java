@@ -28,11 +28,15 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequestMapping("/calendar")
 @RequiredArgsConstructor
+@Validated
 public class CalendarController {
 
     private final CalendarService calendarService;
@@ -78,8 +82,8 @@ public class CalendarController {
     @GetMapping("/{slug}/bookings")
     public ResponseEntity<List<BookingPublicResponseDTO>> getBookingsBySlug(
             @PathVariable String slug,
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam @Min(1900) @Max(2100) int year,
+            @RequestParam @Min(1) @Max(12) int month
     ) {
         Member member = memberService.getMember(slug);
         List<BookingPublicResponseDTO> response = bookingService.getBookingsByHostAndDate(member.getId(), year, month);
@@ -89,8 +93,8 @@ public class CalendarController {
     @GetMapping("/{slug}/bookings/stream")
     public ResponseEntity<StreamingResponseBody> getBookingsStream(
             @PathVariable String slug,
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam @Min(1900) @Max(2100) int year,
+            @RequestParam @Min(1) @Max(12) int month
     ) {
         Member member = memberService.getMember(slug);
         List<BookingPublicResponseDTO> bookings = bookingService.getBookingsByHostAndDate(member.getId(), year, month);

@@ -353,6 +353,8 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingPublicResponseDTO> getBookingsByHostAndDate(UUID hostId, int year, int month) {
+        validateYearMonth(year, month);
+
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.plusMonths(1);
 
@@ -360,6 +362,15 @@ public class BookingService {
         return bookings.stream()
             .map(BookingPublicResponseDTO::from)
             .toList();
+    }
+
+    private void validateYearMonth(int year, int month) {
+        if (month < 1 || month > 12) {
+            throw new CustomException(ErrorCode.INVALID_YEAR_MONTH);
+        }
+        if (year < 1900 || year > 2100) {
+            throw new CustomException(ErrorCode.INVALID_YEAR_MONTH);
+        }
     }
 
     private void validateGuestAccess(Booking booking, UUID requesterId) {
