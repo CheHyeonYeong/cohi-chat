@@ -111,10 +111,12 @@ class BookingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.timeSlotId").value(TIME_SLOT_ID))
-            .andExpect(jsonPath("$.topic").value("프로젝트 상담"))
-            .andExpect(jsonPath("$.attendanceStatus").value("SCHEDULED"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.timeSlotId").value(TIME_SLOT_ID))
+            .andExpect(jsonPath("$.data.topic").value("프로젝트 상담"))
+            .andExpect(jsonPath("$.data.attendanceStatus").value("SCHEDULED"))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -233,10 +235,12 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(get("/bookings/{bookingId}", bookingId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId))
-            .andExpect(jsonPath("$.timeSlotId").value(TIME_SLOT_ID))
-            .andExpect(jsonPath("$.topic").value("프로젝트 상담"))
-            .andExpect(jsonPath("$.attendanceStatus").value("SCHEDULED"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(bookingId))
+            .andExpect(jsonPath("$.data.timeSlotId").value(TIME_SLOT_ID))
+            .andExpect(jsonPath("$.data.topic").value("프로젝트 상담"))
+            .andExpect(jsonPath("$.data.attendanceStatus").value("SCHEDULED"))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -287,9 +291,11 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].timeSlotId").value(TIME_SLOT_ID))
-            .andExpect(jsonPath("$[0].topic").value("프로젝트 상담"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[0].timeSlotId").value(TIME_SLOT_ID))
+            .andExpect(jsonPath("$.data[0].topic").value("프로젝트 상담"))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -314,8 +320,10 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(get("/bookings/host/me"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(2))
-            .andExpect(jsonPath("$[0].topic").value("기술 면접"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(2))
+            .andExpect(jsonPath("$.data[0].topic").value("기술 면접"))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -328,7 +336,8 @@ class BookingControllerTest {
         // when
         mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray());
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray());
 
         // then - 인증된 사용자의 ID로 서비스가 호출되었는지 검증
         verify(bookingService).getBookingsByGuestId(GUEST_ID);
@@ -372,9 +381,11 @@ class BookingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId))
-            .andExpect(jsonPath("$.timeSlotId").value(newTimeSlotId))
-            .andExpect(jsonPath("$.when").value(newDate.toString()));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(bookingId))
+            .andExpect(jsonPath("$.data.timeSlotId").value(newTimeSlotId))
+            .andExpect(jsonPath("$.data.when").value(newDate.toString()))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -477,8 +488,10 @@ class BookingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(bookingId))
-            .andExpect(jsonPath("$.attendanceStatus").value("ATTENDED"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(bookingId))
+            .andExpect(jsonPath("$.data.attendanceStatus").value("ATTENDED"))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test

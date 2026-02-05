@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -36,44 +37,44 @@ public class MemberController {
 	private final MemberService memberService;
 
 	@PostMapping("/v1/signup")
-	public ResponseEntity<SignupResponseDTO> signupLocal(
+	public ResponseEntity<ApiResponseDTO<SignupResponseDTO>> signupLocal(
 		@Valid @RequestBody SignupRequestDTO request) {
 
 		SignupResponseDTO response = memberService.signup(request);
 
-		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
 	}
 
 	@PostMapping("/v1/login")
-	public ResponseEntity<LoginResponseDTO> login(
+	public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(
 		@Valid @RequestBody LoginRequestDTO request) {
 
 		LoginResponseDTO response = memberService.login(request);
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<LogoutResponseDTO> logout() {
-		return ResponseEntity.ok(LogoutResponseDTO.success());
+	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout() {
+		return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
 	}
 
 	@GetMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<MemberResponseDTO> getMember(@PathVariable(name = "username") String username) {
+	public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getMember(@PathVariable(name = "username") String username) {
 		Member member = memberService.getMember(username);
 		MemberResponseDTO response = MemberResponseDTO.from(member);
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
 	@PatchMapping("/v1/{username}")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<MemberResponseDTO> updateMember(
+	public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> updateMember(
 		@PathVariable(name = "username") String username,
 		@Valid @RequestBody UpdateMemberRequestDTO request) {
 
 		MemberResponseDTO response = memberService.updateMember(username, request);
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
 	@DeleteMapping("/v1/{username}")
@@ -84,7 +85,7 @@ public class MemberController {
 	}
 
 	@GetMapping("/v1/hosts")
-	public ResponseEntity<List<HostResponseDTO>> getHosts() {
-		return ResponseEntity.ok(memberService.getActiveHosts());
+	public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> getHosts() {
+		return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
 	}
 }

@@ -100,10 +100,12 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.startTime").value("10:00:00"))
-            .andExpect(jsonPath("$.endTime").value("11:00:00"))
-            .andExpect(jsonPath("$.weekdays[0]").value(0));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.startTime").value("10:00:00"))
+            .andExpect(jsonPath("$.data.endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data.weekdays[0]").value(0))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -279,8 +281,10 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1")
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[1].id").value(2));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[1].id").value(2))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -315,11 +319,13 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].startTime").value("10:00:00"))
-            .andExpect(jsonPath("$[0].endTime").value("11:00:00"))
-            .andExpect(jsonPath("$[0].weekdays[0]").value(0))
-            .andExpect(jsonPath("$[1].id").value(2));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[0].startTime").value("10:00:00"))
+            .andExpect(jsonPath("$.data[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data[0].weekdays[0]").value(0))
+            .andExpect(jsonPath("$.data[1].id").value(2))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -335,8 +341,10 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$").isEmpty());
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.data").isEmpty())
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
