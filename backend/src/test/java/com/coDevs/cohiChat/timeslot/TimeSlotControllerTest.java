@@ -124,6 +124,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -143,6 +144,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -162,6 +164,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -181,6 +184,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -203,6 +207,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.TIMESLOT_OVERLAP.toString()));
     }
 
@@ -225,6 +230,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -247,6 +253,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -360,6 +367,7 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.HOST_NOT_FOUND.toString()));
     }
 
@@ -376,6 +384,7 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 }

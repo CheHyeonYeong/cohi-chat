@@ -140,7 +140,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isUnprocessableEntity());
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -161,7 +163,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.message").exists());
     }
 
     @Test
@@ -185,7 +189,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isConflict());
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -209,7 +215,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -253,7 +261,9 @@ class BookingControllerTest {
 
         // when & then
         mockMvc.perform(get("/bookings/{bookingId}", bookingId))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -266,7 +276,9 @@ class BookingControllerTest {
 
         // when & then
         mockMvc.perform(get("/bookings/{bookingId}", bookingId))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -408,7 +420,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -431,7 +445,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -451,7 +467,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.message").exists());
     }
 
     // ===== 예약 상태 변경 테스트 (Issue #61) =====
@@ -513,7 +531,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -535,7 +555,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -557,7 +579,9 @@ class BookingControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isUnprocessableEntity());
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     // ===== 예약 취소 테스트 (Issue #61) =====
@@ -586,7 +610,9 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -600,7 +626,9 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
     @Test
@@ -614,7 +642,9 @@ class BookingControllerTest {
         // when & then
         mockMvc.perform(delete("/bookings/{bookingId}", bookingId)
                 .with(csrf()))
-            .andExpect(status().isUnprocessableEntity());
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
     }
 
 }

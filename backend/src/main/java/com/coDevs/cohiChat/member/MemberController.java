@@ -68,7 +68,7 @@ public class MemberController {
 	}
 
 	@PatchMapping("/v1/{username}")
-	@PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated() and #username == authentication.name")
 	public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> updateMember(
 		@PathVariable(name = "username") String username,
 		@Valid @RequestBody UpdateMemberRequestDTO request) {

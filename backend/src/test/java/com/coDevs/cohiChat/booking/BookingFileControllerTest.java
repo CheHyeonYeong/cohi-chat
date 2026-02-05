@@ -118,7 +118,9 @@ class BookingFileControllerTest {
             mockMvc.perform(multipart("/bookings/{bookingId}/files", BOOKING_ID)
                     .file(file)
                     .with(csrf()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
         }
 
         @Test
@@ -136,7 +138,9 @@ class BookingFileControllerTest {
             mockMvc.perform(multipart("/bookings/{bookingId}/files", BOOKING_ID)
                     .file(file)
                     .with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
         }
     }
 
@@ -175,7 +179,9 @@ class BookingFileControllerTest {
 
             // when & then
             mockMvc.perform(get("/bookings/{bookingId}/files", BOOKING_ID))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
         }
     }
 
@@ -205,7 +211,9 @@ class BookingFileControllerTest {
             // when & then
             mockMvc.perform(delete("/bookings/{bookingId}/files/{fileId}", BOOKING_ID, FILE_ID)
                     .with(csrf()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
         }
     }
 
@@ -238,7 +246,9 @@ class BookingFileControllerTest {
 
             // when & then
             mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
         }
     }
 }

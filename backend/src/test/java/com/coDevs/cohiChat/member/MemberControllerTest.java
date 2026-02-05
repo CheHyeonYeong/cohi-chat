@@ -41,6 +41,7 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(MemberController.class)
+// Security 필터를 비활성화하여 @PreAuthorize 없이 순수 응답 형식만 테스트
 @AutoConfigureMockMvc(addFilters = false)
 class MemberControllerTest {
 
