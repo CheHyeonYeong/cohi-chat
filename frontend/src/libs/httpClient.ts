@@ -23,7 +23,7 @@ export async function httpClient<T>(url: string, options: RequestInit = {}): Pro
         let data;
         try {
             data = await response.json();
-        } catch (err) {
+        } catch {
             throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
         }
         throw new Error(data.detail, { cause: response.status });

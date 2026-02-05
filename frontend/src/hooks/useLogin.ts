@@ -23,14 +23,6 @@ interface LoginResponse {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-/**
- * 인증 상태 변경을 알리는 이벤트를 발생시킵니다.
- * useAuth에서 이 이벤트를 구독하여 상태를 갱신합니다.
- */
-function dispatchAuthChange() {
-    window.dispatchEvent(new Event('auth-change'));
-}
-
 export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredentials> {
     const navigate = useNavigate();
 

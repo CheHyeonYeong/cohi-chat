@@ -8,9 +8,9 @@ export function LogoutButton() {
     return (
         <Button
             variant="secondary"
-    onClick={logout}
+            onClick={logout}
         >
         로그아웃
         </Button>
-);
+    );
 }
