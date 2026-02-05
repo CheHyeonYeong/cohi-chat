@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -37,8 +38,8 @@ class TimeSlotTest {
     }
 
     @Test
-    @DisplayName("성공: weekdays가 JSON 리스트로 저장됨")
-    void weekdaysAsJsonList() {
+    @DisplayName("성공: weekdays가 리스트로 저장됨")
+    void weekdaysAsList() {
         // given
         List<Integer> weekdays = List.of(0, 3, 5); // 월, 목, 토
 
@@ -52,72 +53,79 @@ class TimeSlotTest {
 
         // then
         assertThat(timeSlot.getWeekdays()).hasSize(3);
-        assertThat(timeSlot.getWeekdays()).containsExactly(0, 3, 5);
+        assertThat(timeSlot.getWeekdays()).containsExactlyInAnyOrder(0, 3, 5);
     }
 
     @Test
-    @DisplayName("성공: 시간대 겹침 여부 확인 - 겹침")
-    void isOverlappingTrue() {
+    @DisplayName("성공: weekdayEntities가 생성됨")
+    void weekdayEntitiesCreated() {
         // given
-        TimeSlot existingSlot = TimeSlot.create(
+        List<Integer> weekdays = List.of(0, 1, 2);
+
+        // when
+        TimeSlot timeSlot = TimeSlot.create(
             TEST_USER_ID,
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(0, 1, 2)
+            TEST_START_TIME,
+            TEST_END_TIME,
+            weekdays
         );
 
-        // when & then - 시간이 겹치고 요일도 겹침
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(10, 30),
-            LocalTime.of(11, 30),
-            List.of(0)
-        )).isTrue();
-
-        // 시간이 겹치고 요일도 겹침 (왼쪽 경계)
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(9, 30),
-            LocalTime.of(10, 30),
-            List.of(1)
-        )).isTrue();
-
-        // 요일이 일부만 겹침 (월,화,수 vs 수,목,금 - 수요일 겹침)
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(2, 3, 4)
-        )).isTrue();
-
-        // 시간이 부분적으로 겹침 (10:00-11:00 vs 10:30-11:30)
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(10, 30),
-            LocalTime.of(11, 30),
-            List.of(0, 1, 2)
-        )).isTrue();
+        // then
+        assertThat(timeSlot.getWeekdayEntities()).hasSize(3);
+        assertThat(timeSlot.getWeekdayEntities())
+            .allMatch(w -> w.getTimeSlot() == timeSlot);
     }
 
     @Test
-    @DisplayName("성공: 시간대 겹침 여부 확인 - 겹치지 않음")
-    void isOverlappingFalse() {
+    @DisplayName("성공: 중복된 weekdays는 제거됨")
+    void duplicateWeekdaysRemoved() {
         // given
-        TimeSlot existingSlot = TimeSlot.create(
+        List<Integer> weekdaysWithDuplicates = List.of(0, 1, 1, 2, 2, 2);
+
+        // when
+        TimeSlot timeSlot = TimeSlot.create(
             TEST_USER_ID,
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(0, 1, 2)
+            TEST_START_TIME,
+            TEST_END_TIME,
+            weekdaysWithDuplicates
         );
 
-        // when & then - 시간이 겹치지 않음
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(11, 0),
-            LocalTime.of(12, 0),
-            List.of(0)
-        )).isFalse();
+        // then
+        assertThat(timeSlot.getWeekdays()).hasSize(3);
+        assertThat(timeSlot.getWeekdays()).containsExactlyInAnyOrder(0, 1, 2);
+    }
 
-        // 시간이 겹치지만 요일이 다름
-        assertThat(existingSlot.isOverlapping(
-            LocalTime.of(10, 0),
-            LocalTime.of(11, 0),
-            List.of(3, 4) // 목, 금
-        )).isFalse();
+    @Test
+    @DisplayName("실패: weekday가 7 이상이면 예외 발생")
+    void failWhenWeekdayGreaterThan6() {
+        // given
+        List<Integer> invalidWeekdays = List.of(0, 7);
+
+        // when & then
+        assertThatThrownBy(() -> TimeSlot.create(
+            TEST_USER_ID,
+            TEST_START_TIME,
+            TEST_END_TIME,
+            invalidWeekdays
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("weekday must be between 0 and 6");
+    }
+
+    @Test
+    @DisplayName("실패: weekday가 음수이면 예외 발생")
+    void failWhenWeekdayNegative() {
+        // given
+        List<Integer> invalidWeekdays = List.of(-1, 0);
+
+        // when & then
+        assertThatThrownBy(() -> TimeSlot.create(
+            TEST_USER_ID,
+            TEST_START_TIME,
+            TEST_END_TIME,
+            invalidWeekdays
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("weekday must be between 0 and 6");
     }
 }

@@ -20,18 +20,18 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
     List<TimeSlot> findByUserIdOrderByStartTimeAsc(UUID userId);
 
-    @Query("SELECT t FROM TimeSlot t WHERE t.userId = :userId " +
-           "AND t.startTime < :endTime AND t.endTime > :startTime")
+    @Query("SELECT DISTINCT t FROM TimeSlot t " +
+           "JOIN t.weekdayEntities w " +
+           "WHERE t.userId = :userId " +
+           "AND t.startTime < :endTime AND t.endTime > :startTime " +
+           "AND w.weekday IN :weekdays")
     List<TimeSlot> findOverlappingTimeSlots(
         @Param("userId") UUID userId,
         @Param("startTime") LocalTime startTime,
-        @Param("endTime") LocalTime endTime
+        @Param("endTime") LocalTime endTime,
+        @Param("weekdays") List<Integer> weekdays
     );
 
-    /**
-     * Pessimistic Lock을 적용하여 타임슬롯 조회
-     * 동시 예약 요청 시 race condition 방지
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM TimeSlot t WHERE t.id = :id")
     Optional<TimeSlot> findByIdWithLock(@Param("id") Long id);
