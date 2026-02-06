@@ -1,7 +1,6 @@
 import clsx from "clsx";
-import { checkAvailableBookingDate } from "~/libs/utils";
-import { IBooking, ICalendarEvent } from "~/types/booking";
-import { ITimeSlot } from "~/types/timeslot";
+import { checkAvailableBookingDate } from "../../utils";
+import type { IBooking, ICalendarEvent, ITimeSlot } from "../../types";
 
 interface BodyProps {
     year: number;
@@ -14,7 +13,6 @@ interface BodyProps {
 }
 
 export default function Body({ year, month, days, baseDate, timeslots, bookings, onSelectDay }: BodyProps) {
-    // 7일씩 나누어 2차원 배열로 변환
     const weeks = days.reduce<number[][]>((acc, day, i) => {
         const weekIndex = Math.floor(i / 7);
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { useCreateBooking } from '~/hooks/useCreateBooking';
-import { ICalendar } from '~/types/event';
-import { Button } from '../button';
+import { useCreateBooking } from '../../hooks';
+import { Button } from '~/components/button';
+import type { ICalendar } from '../../types';
 
 interface BookingFormProps {
     calendar: ICalendar;
