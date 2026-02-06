@@ -1,7 +1,11 @@
 package com.coDevs.cohiChat.global.security.config;
 
+import com.coDevs.cohiChat.global.config.RateLimitProperties;
+import com.coDevs.cohiChat.global.security.filter.RateLimitFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +32,9 @@ import java.util.List;
 public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final LettuceBasedProxyManager<String> lettuceProxyManager;
+	private final RateLimitProperties rateLimitProperties;
+	private final ObjectMapper objectMapper;
 
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
@@ -49,7 +56,8 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 
-			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(new RateLimitFilter(lettuceProxyManager, rateLimitProperties, objectMapper), JwtAuthenticationFilter.class);
 
 		return http.build();
 	}

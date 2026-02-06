@@ -40,6 +40,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // Bucket4j Rate Limiting
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-redis-common:8.14.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-lettuce:8.14.0'
+
     runtimeOnly 'org.xerial:sqlite-jdbc:3.45.2.0'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
 
