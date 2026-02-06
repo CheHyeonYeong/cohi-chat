@@ -9,7 +9,7 @@ const mockUseLogout = vi.hoisted(() => vi.fn(() => ({
     logout: mockLogoutFn,
 })));
 
-vi.mock('~/hooks/useLogout', () => ({
+vi.mock('~/features/member', () => ({
     useLogout: mockUseLogout,
 }));
 

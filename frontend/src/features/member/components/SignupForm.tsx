@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
-import { useSignup } from '~/hooks/useSignup';
+import { useSignup } from '../hooks/useSignup';
 
-export default function Signup() {
+const REDIRECT_DELAY_MS = 1500;
+
+export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const navigate = useNavigate();
     const signupMutation = useSignup();
+    const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-    const handleSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
+    useEffect(() => {
+        return () => {
+            if (redirectTimerRef.current) {
+                clearTimeout(redirectTimerRef.current);
+            }
+        };
+    }, []);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
 
         if (password !== passwordAgain) {
             setPasswordError('비밀번호가 일치하지 않습니다.');
@@ -21,13 +33,24 @@ export default function Signup() {
         }
         setPasswordError('');
 
-        signupMutation.mutate({
-            username,
-            email,
-            displayName: displayName || undefined,
-            password,
-        });
+        signupMutation.mutate(
+            {
+                username: username.trim(),
+                email: email.trim(),
+                displayName: displayName.trim() || undefined,
+                password,
+            },
+            {
+                onSuccess: () => {
+                    redirectTimerRef.current = setTimeout(() => {
+                        navigate({ to: '/app/login' });
+                    }, REDIRECT_DELAY_MS);
+                },
+            }
+        );
     };
+
+    const isPending = signupMutation.isPending;
 
     return (
         <div className="space-y-4 px-8">
@@ -41,6 +64,7 @@ export default function Signup() {
                         id="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        disabled={isPending}
                         required
                         minLength={4}
                         maxLength={40}
@@ -55,6 +79,7 @@ export default function Signup() {
                         id="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        disabled={isPending}
                         required
                         maxLength={128}
                         className="border px-3 py-2 rounded"
@@ -68,6 +93,7 @@ export default function Signup() {
                         id="displayName"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
+                        disabled={isPending}
                         minLength={4}
                         maxLength={40}
                         className="border px-3 py-2 rounded"
@@ -82,6 +108,7 @@ export default function Signup() {
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        disabled={isPending}
                         required
                         minLength={8}
                         maxLength={128}
@@ -96,6 +123,7 @@ export default function Signup() {
                         id="passwordAgain"
                         value={passwordAgain}
                         onChange={(e) => setPasswordAgain(e.target.value)}
+                        disabled={isPending}
                         required
                         minLength={8}
                         maxLength={128}
@@ -104,18 +132,16 @@ export default function Signup() {
                 </div>
 
                 {passwordError && (
-                    <div className="text-red-600 text-sm">
-                        {passwordError}
-                    </div>
+                    <div className="text-red-600 text-sm">{passwordError}</div>
                 )}
 
                 <Button
-                    variant='primary'
+                    variant="primary"
                     type="submit"
-                    disabled={signupMutation.isPending}
+                    disabled={isPending}
                     className="w-full py-3 px-5"
                 >
-                    {signupMutation.isPending ? '가입 중...' : '회원가입'}
+                    {isPending ? '가입 중...' : '회원가입'}
                 </Button>
             </form>
 
