@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -171,11 +172,12 @@ class MemberControllerTest {
 		@Test
 		@DisplayName("로그아웃 성공 응답 형식 검증")
 		void logoutSuccess() throws Exception {
-			mockMvc.perform(delete("/members/v1/logout"))
+			mockMvc.perform(delete("/members/v1/logout")
+					.principal(() -> TEST_USERNAME))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.message").value("로그아웃 되었습니다."))
-				.andExpect(jsonPath("$.error").isEmpty());
+				.andExpect(jsonPath("$.error").value(nullValue()));
 		}
 	}
 
@@ -319,13 +321,4 @@ class MemberControllerTest {
 		);
 	}
 
-	@Test
-	@DisplayName("로그아웃 성공 테스트")
-	void logoutSuccess() throws Exception {
-		mockMvc.perform(delete("/members/v1/logout")
-				.principal(() -> TEST_USERNAME))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.success").value(true))
-			.andExpect(jsonPath("$.data.message").value("로그아웃 되었습니다."));
-	}
 }
