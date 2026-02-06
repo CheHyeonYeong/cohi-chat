@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createRouter, createRootRoute, createMemoryHistory } from '@tanstack/react-router';
 import { createElement } from 'react';
 import { useLogout } from './useLogout';
+import { logoutApi } from '../api/memberApi';
+
+vi.mock('../api/memberApi', () => ({
+    logoutApi: vi.fn(),
+}));
 
 const mockNavigate = vi.fn();
 
@@ -36,7 +40,7 @@ describe('useLogout', () => {
         localStorage.setItem('username', 'testuser');
 
         vi.clearAllMocks();
-        global.fetch = vi.fn().mockResolvedValue({ ok: true });
+        vi.mocked(logoutApi).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
@@ -44,20 +48,14 @@ describe('useLogout', () => {
         vi.restoreAllMocks();
     });
 
-    it('should call logout API with auth token', async () => {
+    it('should call logout API when auth token exists', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
         await result.current.logout();
 
-        expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('/members/v1/logout'),
-            expect.objectContaining({
-                method: 'DELETE',
-                headers: { Authorization: 'Bearer test-token' },
-            })
-        );
+        expect(logoutApi).toHaveBeenCalledTimes(1);
     });
 
     it('should clear localStorage on logout', async () => {
@@ -83,7 +81,7 @@ describe('useLogout', () => {
     });
 
     it('should clear localStorage even if API call fails', async () => {
-        global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+        vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
@@ -105,6 +103,6 @@ describe('useLogout', () => {
 
         await result.current.logout();
 
-        expect(global.fetch).not.toHaveBeenCalled();
+        expect(logoutApi).not.toHaveBeenCalled();
     });
 });

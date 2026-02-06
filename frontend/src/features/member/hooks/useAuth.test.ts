@@ -1,11 +1,11 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-import {httpClient} from '~/libs/httpClient';
-import {getCurrentUsername, getValidToken} from '~/libs/jwt';
-import {useAuth} from './useAuth';
+import { httpClient } from '~/libs/httpClient';
+import { getCurrentUsername, getValidToken } from '~/libs/jwt';
+import { useAuth } from './useAuth';
 
 vi.mock('~/libs/httpClient', () => ({
     httpClient: vi.fn(),
@@ -19,12 +19,12 @@ vi.mock('~/libs/jwt', () => ({
 const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: {
-            queries: {retry: false},
+            queries: { retry: false },
         },
     });
 
-    return ({children}: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, {client: queryClient}, children);
+    return ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: queryClient }, children);
 };
 
 describe('useAuth', () => {
@@ -34,7 +34,7 @@ describe('useAuth', () => {
     });
 
     describe('endpoint', () => {
-        it('calls/members/v1/{username}UsingUsernameFromJWT', async () => {
+        it('calls /members/v1/{username} using username from JWT', async () => {
             vi.mocked(getValidToken).mockReturnValue('valid-token');
             vi.mocked(getCurrentUsername).mockReturnValue('testuser');
 
@@ -50,7 +50,7 @@ describe('useAuth', () => {
 
             vi.mocked(httpClient).mockResolvedValue(mockMemberResponse);
 
-            const {result} = renderHook(() => useAuth(), {
+            const { result } = renderHook(() => useAuth(), {
                 wrapper: createWrapper(),
             });
 
@@ -63,11 +63,11 @@ describe('useAuth', () => {
             );
         });
 
-        it('doesNotRunQueryWhenTokenIsMissing', () => {
+        it('does not run query when token is missing', () => {
             vi.mocked(getValidToken).mockReturnValue(null);
             vi.mocked(getCurrentUsername).mockReturnValue(null);
 
-            const {result} = renderHook(() => useAuth(), {
+            const { result } = renderHook(() => useAuth(), {
                 wrapper: createWrapper(),
             });
 
@@ -77,7 +77,7 @@ describe('useAuth', () => {
     });
 
     describe('role mapping', () => {
-        it('setsIsHostToTrueWhenRoleIsHOST', async () => {
+        it('sets isHost to true when role is HOST', async () => {
             vi.mocked(getValidToken).mockReturnValue('valid-token');
             vi.mocked(getCurrentUsername).mockReturnValue('testuser');
 
@@ -93,7 +93,7 @@ describe('useAuth', () => {
 
             vi.mocked(httpClient).mockResolvedValue(mockMemberResponse);
 
-            const {result} = renderHook(() => useAuth(), {
+            const { result } = renderHook(() => useAuth(), {
                 wrapper: createWrapper(),
             });
 

@@ -15,15 +15,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
+import com.coDevs.cohiChat.member.request.RefreshTokenRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
+import java.security.Principal;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -51,6 +54,14 @@ public class MemberController {
 
 		LoginResponseDTO response = memberService.login(request);
 		return ResponseEntity.ok(ApiResponseDTO.success(response));
+	}
+
+	@PostMapping("/v1/refresh")
+	public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
+		@Valid @RequestBody RefreshTokenRequestDTO request) {
+
+		RefreshTokenResponseDTO response = memberService.refreshAccessToken(request.getRefreshToken());
+		return ResponseEntity.ok(response);
 	}
 
 	@DeleteMapping("/v1/logout")

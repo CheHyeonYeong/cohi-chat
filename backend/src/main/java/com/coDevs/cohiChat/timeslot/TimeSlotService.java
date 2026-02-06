@@ -79,13 +79,12 @@ public class TimeSlotService {
         List<TimeSlot> overlappingTimeSlots = timeSlotRepository.findOverlappingTimeSlots(
             userId,
             request.getStartTime(),
-            request.getEndTime()
+            request.getEndTime(),
+            request.getWeekdays()
         );
 
-        for (TimeSlot existingSlot : overlappingTimeSlots) {
-            if (existingSlot.isOverlapping(request.getStartTime(), request.getEndTime(), request.getWeekdays())) {
-                throw new CustomException(ErrorCode.TIMESLOT_OVERLAP);
-            }
+        if (!overlappingTimeSlots.isEmpty()) {
+            throw new CustomException(ErrorCode.TIMESLOT_OVERLAP);
         }
     }
 }

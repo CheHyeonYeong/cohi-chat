@@ -318,4 +318,15 @@ class MemberControllerTest {
 			Arguments.of("a".repeat(21), false)
 		);
 	}
+
+	@Test
+	@DisplayName("로그아웃 성공 테스트")
+	void logoutSuccess() throws Exception {
+		doNothing().when(memberService).logout(anyString());
+
+		mockMvc.perform(delete("/members/v1/logout")
+				.principal(() -> TEST_USERNAME))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));
+	}
 }

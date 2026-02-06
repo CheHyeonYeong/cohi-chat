@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
-import { useLogin } from '~/hooks/useLogin';
+import { useLogin } from '../hooks/useLogin';
 
-export default function Login() {
+export function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
     const loginMutation = useLogin();
 
-    const handleSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        loginMutation.mutate({ username, password });
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        loginMutation.mutate(
+            { username: username.trim(), password },
+            {
+                onSuccess: () => navigate({ to: '/app' }),
+            }
+        );
     };
+
+    const isPending = loginMutation.isPending;
 
     return (
         <div className="space-y-4 px-8">
@@ -25,6 +33,7 @@ export default function Login() {
                         id="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        disabled={isPending}
                         required
                     />
                 </div>
@@ -35,15 +44,24 @@ export default function Login() {
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        disabled={isPending}
                         required
                     />
                 </div>
-                <Button variant='primary' type="submit" disabled={loginMutation.isPending} className="w-full py-3 px-5">
-                    {loginMutation.isPending ? '로그인 중...' : '로그인'}
+                <Button
+                    variant="primary"
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full py-3 px-5"
+                >
+                    {isPending ? '로그인 중...' : '로그인'}
                 </Button>
             </form>
+
             {loginMutation.isError && (
-                <div className="error-message">로그인에 실패했습니다. 다시 시도해주세요.</div>
+                <div className="text-red-600 text-sm">
+                    로그인에 실패했습니다. 다시 시도해주세요.
+                </div>
             )}
 
             <div className="text-center text-sm">
