@@ -2,22 +2,22 @@ package com.coDevs.cohiChat.timeslot.entity;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,9 +43,8 @@ public class TimeSlot {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "weekdays", nullable = false, columnDefinition = "TEXT")
-    private List<Integer> weekdays;
+    @OneToMany(mappedBy = "timeSlot", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TimeSlotWeekday> weekdayEntities = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -65,13 +64,21 @@ public class TimeSlot {
         timeSlot.userId = userId;
         timeSlot.startTime = startTime;
         timeSlot.endTime = endTime;
-        timeSlot.weekdays = weekdays;
+
+        if (weekdays == null || weekdays.isEmpty()) {
+            throw new IllegalArgumentException("weekdays must not be null or empty");
+        }
+
+        weekdays.stream()
+            .distinct()
+            .forEach(weekday -> timeSlot.weekdayEntities.add(TimeSlotWeekday.create(timeSlot, weekday)));
+
         return timeSlot;
     }
 
-    public boolean isOverlapping(LocalTime newStartTime, LocalTime newEndTime, List<Integer> newWeekdays) {
-        boolean timeOverlaps = this.startTime.isBefore(newEndTime) && this.endTime.isAfter(newStartTime);
-        boolean weekdayOverlaps = !Collections.disjoint(this.weekdays, newWeekdays);
-        return timeOverlaps && weekdayOverlaps;
+    public List<Integer> getWeekdays() {
+        return weekdayEntities.stream()
+            .map(TimeSlotWeekday::getWeekday)
+            .toList();
     }
 }

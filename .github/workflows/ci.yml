@@ -2,44 +2,68 @@ name: CI
 
 on:
   pull_request:
-    branches: [ main, QA ]
-  push:
-    branches: [ main, QA ]
+    branches: [main]
 
 jobs:
-  build-and-test:
+  backend:
+    name: Backend Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: 코드 체크아웃
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Java 21 설정
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'gradle'
 
-      - name: Gradle 실행 권한 부여
+      - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
 
-      - name: Gradle 빌드
+      - name: Build and test backend
         run: |
           cd backend
           ./gradlew build --no-daemon
 
-      - name: 테스트 결과 업로드
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: backend-test-results
           path: backend/build/reports/tests/
 
-      - name: 빌드 성공 알림
-        if: success()
-        run: echo "✅ 빌드 및 테스트 성공!"
+  frontend:
+    name: Frontend Build & Lint
+    runs-on: ubuntu-latest
 
-      - name: 빌드 실패 알림
-        if: failure()
-        run: echo "❌ 빌드 또는 테스트 실패!"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: |
+          cd frontend
+          pnpm lint
+
+      - name: Build
+        run: |
+          cd frontend
+          pnpm build

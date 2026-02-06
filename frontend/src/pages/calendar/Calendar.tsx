@@ -13,7 +13,7 @@ import { ITimeSlot } from '~/types/timeslot';
 import { useBookings } from '~/hooks/useBookings';
 
 import './calendar.less';
-import { useAuth } from '~/hooks/useAuth';
+import { useAuth } from '~/features/member';
 import { useBookingsStreamQuery } from '~/hooks/useBookings';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
