@@ -89,7 +89,7 @@ public class MemberService {
 			.generate(8);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public LoginResponseDTO login(LoginRequestDTO request){
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -169,6 +169,7 @@ public class MemberService {
 		refreshTokenRepository.deleteById(username);
 	}
 
+	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
 		// 1. JWT 토큰 자체 유효성 검증 (만료 vs 위조 구분)
 		try {
