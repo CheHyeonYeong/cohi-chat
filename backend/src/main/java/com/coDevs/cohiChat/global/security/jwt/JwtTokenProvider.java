@@ -75,6 +75,10 @@ public class JwtTokenProvider {
 		}
 	}
 
+	public void validateTokenOrThrow(String token) {
+		parseClaims(token);
+	}
+
 	public String getUsernameFromToken(String token) {
 		return parseClaims(token).getSubject();
 	}
@@ -113,5 +117,9 @@ public class JwtTokenProvider {
 		long now = new Date().getTime();
 
 		return (expiration.getTime() - now) / 1000;
+	}
+
+	public long getRefreshTokenExpirationMs() {
+		return refreshTokenExpirationMs;
 	}
 }

@@ -1,6 +1,8 @@
 package com.coDevs.cohiChat.member;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -164,7 +166,10 @@ class MemberControllerTest {
 	@Test
 	@DisplayName("로그아웃 성공 테스트")
 	void logoutSuccess() throws Exception {
-		mockMvc.perform(delete("/members/v1/logout"))
+		doNothing().when(memberService).logout(anyString());
+
+		mockMvc.perform(delete("/members/v1/logout")
+				.principal(() -> TEST_USERNAME))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));
 	}
