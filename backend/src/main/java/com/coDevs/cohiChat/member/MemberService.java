@@ -11,6 +11,7 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 
 import java.util.List;
+import java.util.Optional;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -105,6 +106,14 @@ public class MemberService {
 
 		return memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+	}
+
+	/**
+	 * 사용자 조회 (Optional 반환).
+	 * 공개 API에서 사용자 열거 방지가 필요한 경우 사용.
+	 */
+	public Optional<Member> findMember(String username) {
+		return memberRepository.findByUsernameAndIsDeletedFalse(username);
 	}
 
 	@Transactional

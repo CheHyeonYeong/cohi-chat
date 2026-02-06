@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.coDevs.cohiChat.booking.BookingService;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
+import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,7 +41,6 @@ import org.springframework.validation.annotation.Validated;
 public class CalendarController {
 
     private final CalendarService calendarService;
-    private final BookingService bookingService;
     private final MemberService memberService;
     private final ObjectMapper objectMapper;
 
@@ -74,30 +74,30 @@ public class CalendarController {
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<CalendarResponseDTO> getCalendarBySlug(@PathVariable String slug) {
-        CalendarResponseDTO response = calendarService.getCalendarBySlug(slug);
+    public ResponseEntity<CalendarPublicResponseDTO> getCalendarBySlug(
+            @PathVariable @Pattern(regexp = "^[a-zA-Z0-9_-]{1,50}$", message = "유효하지 않은 slug 형식입니다.") String slug
+    ) {
+        CalendarPublicResponseDTO response = calendarService.getCalendarBySlugPublic(slug);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{slug}/bookings")
     public ResponseEntity<List<BookingPublicResponseDTO>> getBookingsBySlug(
-            @PathVariable String slug,
+            @PathVariable @Pattern(regexp = "^[a-zA-Z0-9_-]{1,50}$", message = "유효하지 않은 slug 형식입니다.") String slug,
             @RequestParam @Min(1900) @Max(2100) int year,
             @RequestParam @Min(1) @Max(12) int month
     ) {
-        Member member = memberService.getMember(slug);
-        List<BookingPublicResponseDTO> response = bookingService.getBookingsByHostAndDate(member.getId(), year, month);
+        List<BookingPublicResponseDTO> response = calendarService.getBookingsBySlug(slug, year, month);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{slug}/bookings/stream")
     public ResponseEntity<StreamingResponseBody> getBookingsStream(
-            @PathVariable String slug,
+            @PathVariable @Pattern(regexp = "^[a-zA-Z0-9_-]{1,50}$", message = "유효하지 않은 slug 형식입니다.") String slug,
             @RequestParam @Min(1900) @Max(2100) int year,
             @RequestParam @Min(1) @Max(12) int month
     ) {
-        Member member = memberService.getMember(slug);
-        List<BookingPublicResponseDTO> bookings = bookingService.getBookingsByHostAndDate(member.getId(), year, month);
+        List<BookingPublicResponseDTO> bookings = calendarService.getBookingsBySlug(slug, year, month);
 
         StreamingResponseBody stream = (OutputStream outputStream) -> {
             for (BookingPublicResponseDTO booking : bookings) {
