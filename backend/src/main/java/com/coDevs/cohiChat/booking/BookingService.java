@@ -343,7 +343,8 @@ public class BookingService {
     }
 
     private Instant toInstant(LocalDate date, LocalTime time) {
-        ZoneId zoneId = ZoneId.of(googleCalendarProperties.getTimezone());
+        String timezone = googleCalendarProperties.getTimezone();
+        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
         return date.atTime(time).atZone(zoneId).toInstant();
     }
 }

@@ -67,7 +67,6 @@ public class Calendar {
         this.topics = topics;
         this.description = description;
         this.googleCalendarId = googleCalendarId;
-        this.updatedAt = Instant.now();
     }
 
 }
