@@ -44,8 +44,8 @@ describe('useAuth', () => {
                 displayName: 'Test User',
                 email: 'test@example.com',
                 role: 'HOST',
-                createdAt: '2024-01-01T00:00:00',
-                updatedAt: '2024-01-01T00:00:00',
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: '2024-01-01T00:00:00Z',
             };
 
             vi.mocked(httpClient).mockResolvedValue(mockMemberResponse);
@@ -87,8 +87,8 @@ describe('useAuth', () => {
                 displayName: 'Test User',
                 email: 'test@example.com',
                 role: 'HOST',
-                createdAt: '2024-01-01T00:00:00',
-                updatedAt: '2024-01-01T00:00:00',
+                createdAt: '2024-01-01T00:00:00Z',
+                updatedAt: '2024-01-01T00:00:00Z',
             };
 
             vi.mocked(httpClient).mockResolvedValue(mockMemberResponse);
