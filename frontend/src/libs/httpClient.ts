@@ -39,7 +39,7 @@ export async function httpClient<T>(url: string, options: HttpClientOptions = {}
         } catch {
             throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
         }
-        const message = data?.error?.message ?? data?.detail ?? `HTTP error! status: ${response.status}`;
+        const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
         throw new Error(message, { cause: response.status });
     }
 
