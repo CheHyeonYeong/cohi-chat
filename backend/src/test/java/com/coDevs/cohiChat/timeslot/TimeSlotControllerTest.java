@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.timeslot;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -105,7 +106,7 @@ class TimeSlotControllerTest {
             .andExpect(jsonPath("$.data.startTime").value("10:00:00"))
             .andExpect(jsonPath("$.data.endTime").value("11:00:00"))
             .andExpect(jsonPath("$.data.weekdays[0]").value(0))
-            .andExpect(jsonPath("$.error").isEmpty());
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -291,7 +292,7 @@ class TimeSlotControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].id").value(1))
             .andExpect(jsonPath("$.data[1].id").value(2))
-            .andExpect(jsonPath("$.error").isEmpty());
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -332,7 +333,7 @@ class TimeSlotControllerTest {
             .andExpect(jsonPath("$.data[0].endTime").value("11:00:00"))
             .andExpect(jsonPath("$.data[0].weekdays[0]").value(0))
             .andExpect(jsonPath("$.data[1].id").value(2))
-            .andExpect(jsonPath("$.error").isEmpty());
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -351,7 +352,7 @@ class TimeSlotControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data").isArray())
             .andExpect(jsonPath("$.data").isEmpty())
-            .andExpect(jsonPath("$.error").isEmpty());
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
