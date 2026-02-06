@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.calendar.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,11 +42,11 @@ public class Calendar {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     public static Calendar create(
         UUID userId,
@@ -67,7 +67,7 @@ public class Calendar {
         this.topics = topics;
         this.description = description;
         this.googleCalendarId = googleCalendarId;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 
 }

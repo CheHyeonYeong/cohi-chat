@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -87,8 +88,8 @@ class CalendarControllerTest {
             .topics(TEST_TOPICS)
             .description(TEST_DESCRIPTION)
             .googleCalendarId(TEST_GOOGLE_CALENDAR_ID)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.createCalendar(any(Member.class), any(CalendarCreateRequestDTO.class)))
@@ -195,8 +196,8 @@ class CalendarControllerTest {
             .topics(TEST_TOPICS)
             .description(TEST_DESCRIPTION)
             .googleCalendarId(TEST_GOOGLE_CALENDAR_ID)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.getCalendar(any(Member.class))).thenReturn(response);
@@ -256,8 +257,8 @@ class CalendarControllerTest {
             .topics(updatedTopics)
             .description(updatedDescription)
             .googleCalendarId(updatedGoogleCalendarId)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.updateCalendar(any(Member.class), any(CalendarUpdateRequestDTO.class)))

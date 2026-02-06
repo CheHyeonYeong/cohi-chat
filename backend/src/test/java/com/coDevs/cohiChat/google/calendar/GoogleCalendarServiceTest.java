@@ -7,7 +7,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,8 +52,8 @@ class GoogleCalendarServiceTest {
         @DisplayName("이벤트 생성 성공 시 이벤트 ID를 반환한다")
         void createEvent_success() throws Exception {
             // given
-            LocalDateTime startDateTime = LocalDateTime.of(2025, 1, 20, 10, 0);
-            LocalDateTime endDateTime = LocalDateTime.of(2025, 1, 20, 11, 0);
+            Instant startDateTime = toInstant(2025, 1, 20, 10, 0);
+            Instant endDateTime = toInstant(2025, 1, 20, 11, 0);
             String summary = "테스트 미팅";
             String description = "테스트 설명";
 
@@ -81,8 +85,8 @@ class GoogleCalendarServiceTest {
         void createEvent_withSpecificCalendarId() throws Exception {
             // given
             String specificCalendarId = "specific-calendar-id";
-            LocalDateTime startDateTime = LocalDateTime.of(2025, 1, 20, 10, 0);
-            LocalDateTime endDateTime = LocalDateTime.of(2025, 1, 20, 11, 0);
+            Instant startDateTime = toInstant(2025, 1, 20, 10, 0);
+            Instant endDateTime = toInstant(2025, 1, 20, 11, 0);
 
             Event createdEvent = new Event();
             createdEvent.setId("event-id");
@@ -116,8 +120,8 @@ class GoogleCalendarServiceTest {
         void updateEvent_success() throws Exception {
             // given
             String eventId = "event-id";
-            LocalDateTime startDateTime = LocalDateTime.of(2025, 1, 21, 14, 0);
-            LocalDateTime endDateTime = LocalDateTime.of(2025, 1, 21, 15, 0);
+            Instant startDateTime = toInstant(2025, 1, 21, 14, 0);
+            Instant endDateTime = toInstant(2025, 1, 21, 15, 0);
 
             Event updatedEvent = new Event();
             updatedEvent.setId(eventId);
@@ -206,8 +210,8 @@ class GoogleCalendarServiceTest {
             String result = disabledService.createEvent(
                 "테스트",
                 "설명",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusHours(1),
+                Instant.now(),
+                Instant.now().plus(Duration.ofHours(1)),
                 null
             );
 
@@ -227,8 +231,8 @@ class GoogleCalendarServiceTest {
                 "event-id",
                 "테스트",
                 "설명",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusHours(1),
+                Instant.now(),
+                Instant.now().plus(Duration.ofHours(1)),
                 null
             );
 
@@ -263,5 +267,12 @@ class GoogleCalendarServiceTest {
             // then
             assertThat(result).isNull();
         }
+    }
+
+    private static Instant toInstant(int year, int month, int day, int hour, int minute) {
+        return LocalDate.of(year, month, day)
+            .atTime(LocalTime.of(hour, minute))
+            .atZone(ZoneId.of("Asia/Seoul"))
+            .toInstant();
     }
 }
