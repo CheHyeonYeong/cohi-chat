@@ -82,17 +82,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	}
 
 	private String resolveClientIp(HttpServletRequest request) {
-		String xForwardedFor = request.getHeader("X-Forwarded-For");
-		if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-			return xForwardedFor.split(",")[0].trim();
+		String remoteAddr = request.getRemoteAddr();
+
+		if (properties.getTrustedProxies().contains(remoteAddr)) {
+			String xForwardedFor = request.getHeader("X-Forwarded-For");
+			if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+				return xForwardedFor.split(",")[0].trim();
+			}
+
+			String xRealIp = request.getHeader("X-Real-IP");
+			if (xRealIp != null && !xRealIp.isBlank()) {
+				return xRealIp.trim();
+			}
 		}
 
-		String xRealIp = request.getHeader("X-Real-IP");
-		if (xRealIp != null && !xRealIp.isBlank()) {
-			return xRealIp.trim();
-		}
-
-		return request.getRemoteAddr();
+		return remoteAddr;
 	}
 
 	private BucketConfiguration createBucketConfiguration() {

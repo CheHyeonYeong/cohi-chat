@@ -35,7 +35,12 @@ class RateLimitFilterTest {
 
 	@BeforeEach
 	void setUp() {
-		redisConnectionFactory.getConnection().serverCommands().flushDb();
+		var connection = redisConnectionFactory.getConnection();
+		try {
+			connection.serverCommands().flushDb();
+		} finally {
+			connection.close();
+		}
 	}
 
 	@Test
