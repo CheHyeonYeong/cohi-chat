@@ -12,8 +12,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
 
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
@@ -27,6 +30,7 @@ import com.coDevs.cohiChat.timeslot.response.TimeSlotResponseDTO;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(EmbeddedRedisConfig.class)
 @Transactional
 class TimeSlotIntegrationTest {
 

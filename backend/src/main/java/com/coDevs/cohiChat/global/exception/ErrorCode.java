@@ -40,6 +40,7 @@ public enum ErrorCode {
 	 * 시스템 관련.
 	 * 500: 서버 내부 오류
 	 */
+	RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "요청 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요."),
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
 
 	/**
