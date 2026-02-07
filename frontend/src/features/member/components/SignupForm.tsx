@@ -11,7 +11,7 @@ export function SignupForm() {
     const [displayName, setDisplayName] = useState('');
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
-    const [passwordError, setPasswordError] = useState('');
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const navigate = useNavigate();
     const signupMutation = useSignup();
     const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -24,14 +24,38 @@ export function SignupForm() {
         };
     }, []);
 
+    const validate = (): boolean => {
+        const errors: string[] = [];
+
+        const usernamePattern = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
+        if (!usernamePattern.test(username.trim())) {
+            errors.push('아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능하며, 예약어는 사용할 수 없습니다.');
+        }
+
+        const passwordPattern = /^[a-zA-Z0-9._-]{4,20}$/;
+        if (!passwordPattern.test(password)) {
+            errors.push('비밀번호는 4~20자의 영문, 숫자, 특수문자(._-)만 가능합니다.');
+        }
+
+        if (password !== passwordAgain) {
+            errors.push('비밀번호가 일치하지 않습니다.');
+        }
+
+        const trimmedDisplayName = displayName.trim();
+        if (trimmedDisplayName && (trimmedDisplayName.length < 2 || trimmedDisplayName.length > 20)) {
+            errors.push('표시 이름은 2~20자여야 합니다.');
+        }
+
+        setValidationErrors(errors);
+        return errors.length === 0;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (password !== passwordAgain) {
-            setPasswordError('비밀번호가 일치하지 않습니다.');
+        if (!validate()) {
             return;
         }
-        setPasswordError('');
 
         signupMutation.mutate(
             {
@@ -131,8 +155,12 @@ export function SignupForm() {
                     />
                 </div>
 
-                {passwordError && (
-                    <div className="text-red-600 text-sm">{passwordError}</div>
+                {validationErrors.length > 0 && (
+                    <ul className="text-red-600 text-sm list-disc pl-5">
+                        {validationErrors.map((error) => (
+                            <li key={error}>{error}</li>
+                        ))}
+                    </ul>
                 )}
 
                 <Button
@@ -147,7 +175,7 @@ export function SignupForm() {
 
             {signupMutation.isError && (
                 <div className="text-red-600 text-sm">
-                    회원가입에 실패했습니다. 다시 시도해주세요.
+                    {signupMutation.error?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'}
                 </div>
             )}
 
