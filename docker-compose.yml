@@ -10,18 +10,39 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       # Add your environment variables here
       # - DB_URL=jdbc:postgresql://db:5432/cohichat
       # - DB_USERNAME=cohichat
       # - DB_PASSWORD=your_password
     networks:
       - cohi-chat-network
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 40s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: cohi-chat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cohi-chat-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # Uncomment if you need a database
@@ -49,6 +70,8 @@ networks:
   cohi-chat-network:
     driver: bridge
 
-# Uncomment if you need persistent volumes
-# volumes:
-#   postgres-data:
+volumes:
+  redis-data:
+    driver: local
+  # Uncomment if you need persistent volumes
+  # postgres-data:

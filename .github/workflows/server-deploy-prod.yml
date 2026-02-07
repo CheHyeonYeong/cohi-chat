@@ -76,7 +76,7 @@ jobs:
               --filter "label=com.docker.compose.project=cohi-chat" || true
 
             docker-compose -f docker-compose.prod.yml build backend
-            docker-compose -f docker-compose.prod.yml up -d backend
+            docker-compose -f docker-compose.prod.yml up -d redis backend
 
             echo "Waiting for backend to start..."
             sleep 30
