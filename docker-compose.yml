@@ -12,6 +12,7 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-devpassword}
       # Add your environment variables here
       # - DB_URL=jdbc:postgresql://db:5432/cohichat
       # - DB_USERNAME=cohichat
@@ -37,9 +38,9 @@ services:
       - redis-data:/data
     networks:
       - cohi-chat-network
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devpassword}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpassword}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
