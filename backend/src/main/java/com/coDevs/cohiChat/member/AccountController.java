@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
@@ -21,11 +22,11 @@ public class AccountController {
 	private final MemberRepository memberRepository;
 
 	@GetMapping("/hosts")
-	public ResponseEntity<List<MemberResponseDTO>> getHosts() {
+	public ResponseEntity<ApiResponseDTO<List<MemberResponseDTO>>> getHosts() {
 		List<Member> hosts = memberRepository.findByRoleAndIsDeletedFalse(Role.HOST);
 		List<MemberResponseDTO> response = hosts.stream()
 			.map(MemberResponseDTO::from)
 			.toList();
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 }

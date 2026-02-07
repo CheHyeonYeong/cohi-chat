@@ -104,8 +104,10 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.topics[0]").value("커리어 상담"))
-            .andExpect(jsonPath("$.description").value(TEST_DESCRIPTION));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("커리어 상담"))
+            .andExpect(jsonPath("$.data.description").value(TEST_DESCRIPTION))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -124,6 +126,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -143,6 +146,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -165,6 +169,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -187,6 +192,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_ALREADY_EXISTS.toString()));
     }
 
@@ -209,8 +215,10 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.topics[0]").value("커리어 상담"))
-            .andExpect(jsonPath("$.description").value(TEST_DESCRIPTION));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("커리어 상담"))
+            .andExpect(jsonPath("$.data.description").value(TEST_DESCRIPTION))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -224,6 +232,7 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -238,6 +247,7 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -273,8 +283,10 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.topics[0]").value("새로운 주제"))
-            .andExpect(jsonPath("$.description").value(updatedDescription));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("새로운 주제"))
+            .andExpect(jsonPath("$.data.description").value(updatedDescription))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -296,6 +308,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -318,6 +331,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -337,6 +351,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -356,6 +371,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 

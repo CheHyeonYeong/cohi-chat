@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.coDevs.cohiChat.booking.BookingFileService;
 import com.coDevs.cohiChat.booking.FileDownloadResult;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 
@@ -49,14 +50,14 @@ public class BookingFileController {
         @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BookingFileResponseDTO> uploadFile(
+    public ResponseEntity<ApiResponseDTO<BookingFileResponseDTO>> uploadFile(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long bookingId,
             @RequestParam("file") MultipartFile file
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         BookingFileResponseDTO response = bookingFileService.uploadFile(bookingId, member.getId(), file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "파일 목록 조회", description = "예약에 첨부된 파일 목록을 조회합니다. 게스트 또는 호스트만 조회 가능합니다.")
@@ -67,13 +68,13 @@ public class BookingFileController {
         @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
     })
     @GetMapping
-    public ResponseEntity<List<BookingFileResponseDTO>> getFiles(
+    public ResponseEntity<ApiResponseDTO<List<BookingFileResponseDTO>>> getFiles(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long bookingId
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         List<BookingFileResponseDTO> responses = bookingFileService.getFiles(bookingId, member.getId());
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.ok(ApiResponseDTO.success(responses));
     }
 
     @Operation(summary = "파일 삭제", description = "예약에 첨부된 파일을 삭제합니다. 게스트 또는 호스트만 삭제 가능합니다.")
