@@ -91,9 +91,10 @@ export function SignupForm() {
                         disabled={isPending}
                         required
                         minLength={4}
-                        maxLength={40}
+                        maxLength={12}
                         className="border px-3 py-2 rounded"
                     />
+                    <p className="text-gray-500 text-xs">4~12자의 영문, 숫자, 특수문자(._-)만 가능</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -118,11 +119,11 @@ export function SignupForm() {
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         disabled={isPending}
-                        minLength={4}
-                        maxLength={40}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
                         placeholder="비워두면 자동 생성됩니다"
                     />
+                    <p className="text-gray-500 text-xs">2~20자 (비워두면 자동 생성)</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -134,10 +135,11 @@ export function SignupForm() {
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isPending}
                         required
-                        minLength={8}
-                        maxLength={128}
+                        minLength={4}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
+                    <p className="text-gray-500 text-xs">4~20자의 영문, 숫자, 특수문자(._-)만 가능</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
