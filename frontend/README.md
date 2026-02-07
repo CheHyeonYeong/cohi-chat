@@ -1,74 +1,41 @@
-# 테스트 코드를 작성하며 구현하는 푸딩캠프 캘린더
+# cohi-chat Frontend
 
-- https://github.com/realworldpudding/hands-on/tree/fe-testing-calendar
-- https://www.puddingcamp.com/topics/getting-started-with-react
+1:1 미팅 예약 서비스의 프론트엔드 애플리케이션입니다.
 
+## 기술 스택
 
-## 개발 모드
+- React 18, TypeScript
+- Vite
+- TanStack Router / Query
+- Tailwind CSS
+- pnpm
 
-- 구동 : `pnpm dev`
-- 빌드 : `pnpm build`
+## 개발 명령어
 
+```bash
+# 의존성 설치
+pnpm install
 
-## 정적 파일로 구동
+# 개발 서버 실행 (port 3000)
+pnpm dev
 
-1. [https://pudding.camp/~/fastapi-book1-54](https://pudding.camp/~/fastapi-book1-54) URL에 접속해
-파일을 내려받습니다.
-2. 다음 과정을 터미널에서 진행합니다.
-3. 압축 해제
-4. 압축 해제한 파일 있는 경로로 진입
-5. `python3 -m http.server 5173`
+# 프로덕션 빌드
+pnpm build
 
-이제 Front-end에는 `http://localhost:5173`으로 접속합니다. 해당 Front-end는 `http://localhost:8000`을 개발 서버로 접근합니다.
+# 테스트 실행
+pnpm test
 
-
----
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+# 린트 검사
+pnpm lint
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## 프로젝트 구조
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```
+src/
+├── components/   # 재사용 컴포넌트
+├── pages/        # 페이지 컴포넌트
+├── hooks/        # Custom Hooks
+├── routes/       # 라우트 정의
+└── libs/         # 유틸리티
 ```
