@@ -20,7 +20,8 @@ services:
     networks:
       - cohi-chat-network
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -33,12 +34,12 @@ services:
     image: redis:7-alpine
     container_name: cohi-chat-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     networks:
       - cohi-chat-network
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devpassword}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devpassword} --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpassword}", "ping"]
       interval: 10s
