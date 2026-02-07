@@ -5,6 +5,10 @@ import { useSignup } from '../hooks/useSignup';
 
 const REDIRECT_DELAY_MS = 1500;
 
+// BE @Pattern과 동일한 검증 규칙
+const USERNAME_PATTERN = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
+const PASSWORD_PATTERN = /^[a-zA-Z0-9!@#$%^&*._-]{8,20}$/;
+
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -27,14 +31,12 @@ export function SignupForm() {
     const validate = (): boolean => {
         const errors: string[] = [];
 
-        const usernamePattern = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
-        if (!usernamePattern.test(username.trim())) {
+        if (!USERNAME_PATTERN.test(username.trim())) {
             errors.push('아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능하며, 예약어는 사용할 수 없습니다.');
         }
 
-        const passwordPattern = /^[a-zA-Z0-9._-]{4,20}$/;
-        if (!passwordPattern.test(password)) {
-            errors.push('비밀번호는 4~20자의 영문, 숫자, 특수문자(._-)만 가능합니다.');
+        if (!PASSWORD_PATTERN.test(password)) {
+            errors.push('비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.');
         }
 
         if (password !== passwordAgain) {
@@ -134,11 +136,11 @@ export function SignupForm() {
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isPending}
                         required
-                        minLength={4}
+                        minLength={8}
                         maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
-                    <p className="text-gray-500 text-xs">4~20자의 영문, 숫자, 특수문자(._-)만 가능</p>
+                    <p className="text-gray-500 text-xs">8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -150,7 +152,7 @@ export function SignupForm() {
                         onChange={(e) => setPasswordAgain(e.target.value)}
                         disabled={isPending}
                         required
-                        minLength={4}
+                        minLength={8}
                         maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
