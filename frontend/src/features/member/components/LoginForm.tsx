@@ -60,7 +60,7 @@ export function LoginForm() {
 
             {loginMutation.isError && (
                 <div className="text-red-600 text-sm">
-                    로그인에 실패했습니다. 다시 시도해주세요.
+                    {loginMutation.error?.message || '로그인에 실패했습니다. 다시 시도해주세요.'}
                 </div>
             )}
 
