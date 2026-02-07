@@ -121,7 +121,6 @@ export function SignupForm() {
                         disabled={isPending}
                         maxLength={20}
                         className="border px-3 py-2 rounded"
-                        placeholder="비워두면 자동 생성됩니다"
                     />
                     <p className="text-gray-500 text-xs">2~20자 (비워두면 자동 생성)</p>
                 </div>
@@ -151,8 +150,8 @@ export function SignupForm() {
                         onChange={(e) => setPasswordAgain(e.target.value)}
                         disabled={isPending}
                         required
-                        minLength={8}
-                        maxLength={128}
+                        minLength={4}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
                 </div>
