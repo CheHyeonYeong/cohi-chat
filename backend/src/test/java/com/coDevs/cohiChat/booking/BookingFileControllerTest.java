@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,7 +86,7 @@ class BookingFileControllerTest {
 
             BookingFileResponseDTO response = new BookingFileResponseDTO(
                 FILE_ID, BOOKING_ID, "uuid-file.pdf", "resume.pdf",
-                7L, "application/pdf", LocalDateTime.now()
+                7L, "application/pdf", Instant.now()
             );
 
             given(bookingFileService.uploadFile(eq(BOOKING_ID), eq(USER_ID), any(MultipartFile.class)))
@@ -149,7 +149,7 @@ class BookingFileControllerTest {
             List<BookingFileResponseDTO> responses = List.of(
                 new BookingFileResponseDTO(
                     FILE_ID, BOOKING_ID, "uuid-file.pdf", "resume.pdf",
-                    1024L, "application/pdf", LocalDateTime.now()
+                    1024L, "application/pdf", Instant.now()
                 )
             );
 

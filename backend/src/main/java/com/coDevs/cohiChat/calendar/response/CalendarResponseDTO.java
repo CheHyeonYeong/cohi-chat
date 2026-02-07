@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.calendar.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,8 +19,8 @@ public class CalendarResponseDTO {
     private List<String> topics;
     private String description;
     private String googleCalendarId;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public static CalendarResponseDTO from(Calendar calendar) {
         return CalendarResponseDTO.builder()

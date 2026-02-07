@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.booking.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.coDevs.cohiChat.booking.entity.BookingFile;
 
@@ -11,7 +11,7 @@ public record BookingFileResponseDTO(
     String originalFileName,
     Long fileSize,
     String contentType,
-    LocalDateTime createdAt
+    Instant createdAt
 ) {
     public static BookingFileResponseDTO from(BookingFile bookingFile) {
         return new BookingFileResponseDTO(

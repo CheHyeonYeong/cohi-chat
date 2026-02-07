@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.member.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -61,17 +61,17 @@ public class Member {
 
 	@CreatedDate
 	@Column(name = "created_at", updatable = false)
-	private LocalDateTime createdAt;
+	private Instant createdAt;
 
 	@LastModifiedDate
 	@Column(name = "updated_at", updatable = true)
-	private LocalDateTime updatedAt;
+	private Instant updatedAt;
 
 	@Column(name = "is_deleted", nullable = false)
 	private boolean isDeleted = false;
 
 	@Column(name = "deleted_at")
-	private LocalDateTime deletedAt;
+	private Instant deletedAt;
 
 	public static Member create(
 
@@ -115,7 +115,7 @@ public class Member {
 
 	public void softDelete() {
 		this.isDeleted = true;
-		this.deletedAt = LocalDateTime.now();
+		this.deletedAt = Instant.now();
 	}
 
 	public boolean isActive() {

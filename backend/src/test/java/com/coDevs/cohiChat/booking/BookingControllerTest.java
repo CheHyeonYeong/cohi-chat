@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -91,7 +92,7 @@ class BookingControllerTest {
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.createBooking(any(Member.class), any())).willReturn(response);
@@ -225,7 +226,7 @@ class BookingControllerTest {
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.getBookingById(eq(bookingId), eq(GUEST_ID))).willReturn(response);
@@ -279,7 +280,7 @@ class BookingControllerTest {
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of(response));
@@ -306,7 +307,7 @@ class BookingControllerTest {
             .topic("기술 면접")
             .description("백엔드 개발자 면접")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.getBookingsByHostId(GUEST_ID)).willReturn(List.of(response));
@@ -354,7 +355,7 @@ class BookingControllerTest {
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.updateBookingSchedule(eq(bookingId), eq(GUEST_ID), any())).willReturn(response);
@@ -460,7 +461,7 @@ class BookingControllerTest {
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.ATTENDED)
-            .createdAt(LocalDateTime.now())
+            .createdAt(Instant.now())
             .build();
 
         given(bookingService.updateBookingStatus(eq(bookingId), eq(GUEST_ID), any())).willReturn(response);

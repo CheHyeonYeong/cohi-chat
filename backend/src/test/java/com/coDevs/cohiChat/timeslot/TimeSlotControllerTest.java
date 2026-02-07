@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -87,8 +88,8 @@ class TimeSlotControllerTest {
             .startTime(TEST_START_TIME)
             .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(timeSlotService.createTimeSlot(any(Member.class), any(TimeSlotCreateRequestDTO.class)))
@@ -258,8 +259,8 @@ class TimeSlotControllerTest {
             .startTime(LocalTime.of(10, 0))
             .endTime(LocalTime.of(11, 0))
             .weekdays(List.of(0))
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
@@ -268,8 +269,8 @@ class TimeSlotControllerTest {
             .startTime(LocalTime.of(14, 0))
             .endTime(LocalTime.of(15, 0))
             .weekdays(List.of(1))
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(timeSlotService.getTimeSlotsByHost(any(Member.class)))
@@ -294,8 +295,8 @@ class TimeSlotControllerTest {
             .startTime(LocalTime.of(10, 0))
             .endTime(LocalTime.of(11, 0))
             .weekdays(List.of(0, 1, 2))
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
@@ -304,8 +305,8 @@ class TimeSlotControllerTest {
             .startTime(LocalTime.of(14, 0))
             .endTime(LocalTime.of(15, 0))
             .weekdays(List.of(3, 4))
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(timeSlotService.getTimeSlotsByHostId(hostId))
