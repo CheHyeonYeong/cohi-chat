@@ -72,7 +72,8 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     if (!calendar) return null;
 
     return (
-        <div className={clsx("flex flex-col w-full px-8 space-y-4")}>
+        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+            <div className={clsx("flex flex-col w-full max-w-4xl mx-auto px-8 space-y-4")}>
 
             <div className='flex flex-row justify-between'>
                 <div className='flex flex-row gap-4'>
@@ -122,8 +123,8 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                 onBack={handleBack}
                 onCreated={handleBookingCreated}
             />}
+            </div>
         </div>
-
     );
 }
 export default Calendar;
