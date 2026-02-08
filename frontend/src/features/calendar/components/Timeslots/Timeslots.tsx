@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import clsx from "clsx";
 
 import { Button } from "~/components/button";
-import { useAuth } from "~/hooks/useAuth";
+import { useAuth } from "~/features/member";
 import { checkAvailableBookingDate } from "../../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../../types";
 

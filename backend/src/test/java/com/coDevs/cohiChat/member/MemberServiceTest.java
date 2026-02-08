@@ -5,10 +5,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+
 import java.util.Optional;
+
+import org.mockito.ArgumentCaptor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,11 +29,13 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +60,9 @@ class MemberServiceTest {
 
 	@Mock
 	private MemberRepository memberRepository;
+
+	@Mock
+	private RefreshTokenRepository refreshTokenRepository;
 
 	@Mock
 	private PasswordEncoder passwordEncoder;
@@ -140,7 +151,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그인 성공")
+	@DisplayName("성공: 로그인 성공 - Access Token과 Refresh Token 모두 발급, 토큰은 해시되어 저장")
 	void loginSuccess() {
 		LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)
@@ -150,9 +161,23 @@ class MemberServiceTest {
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
 		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
+		given(jwtTokenProvider.createRefreshToken(anyString())).willReturn("test-refresh-token");
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
+		given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
+
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
+		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		// 저장된 RefreshToken의 token 필드가 원문이 아닌 해시값인지 검증
+		ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+		verify(refreshTokenRepository).save(captor.capture());
+		RefreshToken savedToken = captor.getValue();
+		assertThat(savedToken.getToken()).isNotEqualTo("test-refresh-token");
+		assertThat(savedToken.getUsername()).isEqualTo(TEST_USERNAME);
 	}
 
 	@Test
@@ -290,5 +315,76 @@ class MemberServiceTest {
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
 		verify(memberRepository, never()).delete(any(Member.class));
+	}
+
+	@Test
+	@DisplayName("성공: 유효한 Refresh Token으로 Access Token 재발급 (해시로 조회)")
+	void refreshAccessTokenSuccess() {
+		String validRefreshToken = "valid-refresh-token";
+		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
+		RefreshToken storedToken = RefreshToken.create(
+			expectedHash,
+			TEST_USERNAME,
+			604800000L // 7 days in ms
+		);
+
+		// validateTokenOrThrow는 void 메서드 - 예외 없으면 통과
+		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
+		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
+
+		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
+
+		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
+	}
+
+	@Test
+	@DisplayName("실패: 유효하지 않은 JWT Refresh Token")
+	void refreshAccessTokenFailInvalidJwt() {
+		String invalidToken = "invalid-token";
+
+		willThrow(new JwtException("invalid")).given(jwtTokenProvider).validateTokenOrThrow(invalidToken);
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(invalidToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("실패: 만료된 JWT Refresh Token은 EXPIRED_REFRESH_TOKEN 반환")
+	void refreshAccessTokenFailExpiredJwt() {
+		String expiredToken = "expired-token";
+
+		willThrow(new ExpiredJwtException(null, null, "expired"))
+			.given(jwtTokenProvider).validateTokenOrThrow(expiredToken);
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(expiredToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.EXPIRED_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("실패: Redis에 존재하지 않는 Refresh Token (만료되어 삭제됨)")
+	void refreshAccessTokenFailNotInRedis() {
+		String tokenNotInRedis = "not-in-redis-token";
+
+		// 해시된 값으로 조회되므로 anyString() 사용
+		given(refreshTokenRepository.findByToken(anyString())).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제")
+	void logoutSuccess() {
+		// when
+		memberService.logout(TEST_USERNAME);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 	}
 }

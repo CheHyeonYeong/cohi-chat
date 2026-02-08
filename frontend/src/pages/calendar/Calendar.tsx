@@ -19,7 +19,7 @@ import {
 import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
-import { useAuth } from '~/hooks/useAuth';
+import { useAuth } from '~/features/member';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
