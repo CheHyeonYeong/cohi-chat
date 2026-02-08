@@ -64,8 +64,8 @@ export interface ICalendar {
 export interface ICalendarDetail {
     topics: string[];
     description: string;
-    host_id: number;
-    google_calendar_id: string;
-    created_at: string;
-    updated_at: string;
+    hostId: number;
+    googleCalendarId: string;
+    createdAt: string;
+    updatedAt: string;
 }
