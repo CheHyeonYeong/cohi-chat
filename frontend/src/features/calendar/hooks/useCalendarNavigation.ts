@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { getBookingsByDate } from '../api';
+import { calendarKeys } from './queryKeys';
 
 export function useCalendarNavigation() {
     const navigate = useNavigate();
@@ -8,7 +9,7 @@ export function useCalendarNavigation() {
 
     const handlePrevious = async (slug: string, date: { year: number; month: number }) => {
         await queryClient.prefetchQuery({
-            queryKey: ['bookings', date.year, date.month],
+            queryKey: calendarKeys.bookings(date.year, date.month),
             queryFn: () => getBookingsByDate(slug, { year: date.year, month: date.month }),
         });
 
@@ -26,7 +27,7 @@ export function useCalendarNavigation() {
 
     const handleNext = async (slug: string, date: { year: number; month: number }) => {
         await queryClient.prefetchQuery({
-            queryKey: ['bookings', date.year, date.month],
+            queryKey: calendarKeys.bookings(date.year, date.month),
             queryFn: () => getBookingsByDate(slug, { year: date.year, month: date.month }),
         });
 

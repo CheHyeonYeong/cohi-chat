@@ -1,16 +1,11 @@
 import { useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { getTimeslots } from '../api';
 
 export function useCalendarDateSelection() {
-    const queryClient = useQueryClient();
-
-    const handleSelectDay = useCallback(async (slug: string, date: Date) => {
-        await queryClient.prefetchQuery({
-            queryKey: ['timeslots', slug, date.toISOString()],
-            queryFn: () => getTimeslots(slug, date),
-        });
-    }, [queryClient]);
+    // Note: timeslots prefetch 제거 - useTimeslots는 hostId 기반으로 조회하므로
+    // 날짜 기반 prefetch는 캐시 히트가 발생하지 않음
+    const handleSelectDay = useCallback((_slug: string, _date: Date) => {
+        // 날짜 선택 시 추가 로직이 필요하면 여기에 구현
+    }, []);
 
     return { handleSelectDay };
 }

@@ -1,4 +1,5 @@
 import type { DateString, ISO8601String, StringTime } from '~/types/base';
+import type { IUserSimple } from '~/types/user';
 
 export interface ITimeSlot {
     id: number;
@@ -28,15 +29,10 @@ export interface IBookingDetail {
     topic: string;
     description: string;
     timeSlot: ITimeSlot;
-    host: IUserSimple;
+    host: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
-}
-
-interface IUserSimple {
-    username: string;
-    displayName: string;
 }
 
 export interface IBookingPayload {
