@@ -74,58 +74,56 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className={clsx("flex flex-col w-full max-w-4xl mx-auto px-8 space-y-4")}>
+                <div className='flex flex-row justify-between'>
+                    <div className='flex flex-row gap-4'>
+                        <Link to='/app' className='bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>첫 화면으로</Link>
+                        <Link to='/app/my-bookings' className='border border-gray-500 hover:border-gray-300 hover:text-gray-500 px-4 py-2 rounded-md'>내 예약 목록</Link>
+                    </div>
 
-            <div className='flex flex-row justify-between'>
-                <div className='flex flex-row gap-4'>
-                    <Link to='/app' className='bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>첫 화면으로</Link>
-                    <Link to='/app/my-bookings' className='border border-gray-500 hover:border-gray-300 hover:text-gray-500 px-4 py-2 rounded-md'>내 예약 목록</Link>
+                    <h2 className="text-primary text-2xl">
+                        <span className="font-bold">{slug}</span>님과 약속잡기
+                    </h2>
                 </div>
 
-                <h2 className="text-primary text-2xl">
-                    <span className="font-bold">{slug}</span>님과 약속잡기
-                </h2>
-            </div>
-
-            {!selectedTimeslot && <div className={clsx("flex flex-col gap-4")}>
-                <Navigator
-                    slug={slug}
-                    year={year}
-                    month={month}
-                    baseDate={baseDate}
-                    onPrevious={handlePrevious}
-                    onNext={handleNext}
-                />
-
-                <div className={clsx("flex flex-row gap-8 w-full")}>
-                    <Body
+                {!selectedTimeslot && <div className={clsx("flex flex-col gap-4")}>
+                    <Navigator
+                        slug={slug}
                         year={year}
                         month={month}
-                        days={getCalendarDays(new Date(year, month - 1))}
                         baseDate={baseDate}
-                        timeslots={timeslots}
-                        bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
-                        onSelectDay={handleDaySelect}
+                        onPrevious={handlePrevious}
+                        onNext={handleNext}
                     />
-                    <Timeslots
-                        timeslots={timeslots}
-                        bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
-                        baseDate={selectedDate}
-                        onSelectTimeslot={handleSelectTimeslot}
-                    />
-                </div>
-            </div>}
 
-            {!!selectedDate && !!selectedTimeslot && <BookingForm
-                slug={slug}
-                calendar={calendar}
-                timeSlotId={selectedTimeslot.id}
-                when={selectedDate}
-                onBack={handleBack}
-                onCreated={handleBookingCreated}
-            />}
+                    <div className={clsx("flex flex-row gap-8 w-full")}>
+                        <Body
+                            year={year}
+                            month={month}
+                            days={getCalendarDays(new Date(year, month - 1))}
+                            baseDate={baseDate}
+                            timeslots={timeslots}
+                            bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
+                            onSelectDay={handleDaySelect}
+                        />
+                        <Timeslots
+                            timeslots={timeslots}
+                            bookings={month % 2 === 0 ? bookingsApi : bookingsStream}
+                            baseDate={selectedDate}
+                            onSelectTimeslot={handleSelectTimeslot}
+                        />
+                    </div>
+                </div>}
+
+                {!!selectedDate && !!selectedTimeslot && <BookingForm
+                    slug={slug}
+                    calendar={calendar}
+                    timeSlotId={selectedTimeslot.id}
+                    when={selectedDate}
+                    onBack={handleBack}
+                    onCreated={handleBookingCreated}
+                />}
             </div>
         </div>
     );
 }
 export default Calendar;
-
