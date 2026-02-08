@@ -1,26 +1,38 @@
-# Logs
-logs
+# ===========================
+# Frontend (React + Vite)
+# ===========================
+
+# 의존성
+node_modules/
+
+# 빌드 출력
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# 로그
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# 로컬 설정
 *.local
 
-# Editor directories and files
+# 테스트
+coverage/
+__screenshots__/
+
+# 에디터
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-__screenshots__/
+# OS
+.DS_Store
