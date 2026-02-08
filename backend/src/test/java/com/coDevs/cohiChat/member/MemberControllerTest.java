@@ -136,21 +136,21 @@ class MemberControllerTest {
 	static Stream<Arguments> passwordTestProvider() {
 		return Stream.of(
 			Arguments.of(null, false),
-			Arguments.of("aaa", false),
-			Arguments.of("aaaa", true),
+			Arguments.of("abcdefg", false),
+			Arguments.of("abcdefgh", true),
 			Arguments.of("a".repeat(20), true),
 			Arguments.of("a".repeat(21), false),
 
-			Arguments.of("pass_word", true),
-			Arguments.of("pass.word", true),
-			Arguments.of("pass-word", true),
-			Arguments.of("Pass123", true),
-			Arguments.of("PASS", true),
-			Arguments.of("pass@word", false),
-			Arguments.of("pass word", false),
-			Arguments.of("pass#word", false),
-			Arguments.of("비밀번호", false),
-			Arguments.of("pass!word", false)
+			Arguments.of("pass_wrd", true),
+			Arguments.of("pass.wrd", true),
+			Arguments.of("pass-wrd", true),
+			Arguments.of("Pass1234", true),
+			Arguments.of("PASSWORD", true),
+			Arguments.of("pass@wrd", true),
+			Arguments.of("pass wrd", false),
+			Arguments.of("pass#wrd", true),
+			Arguments.of("비밀번호입니다abc", false),
+			Arguments.of("pass!wrd", true)
 		);
 	}
 

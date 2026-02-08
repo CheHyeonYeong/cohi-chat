@@ -23,7 +23,7 @@ public class SignupRequestDTO {
 	private String username;
 
 	@NotBlank(message = "비밀번호는 필수입니다.")
-	@Pattern(regexp = "^[a-zA-Z0-9._-]{4,20}$", message = "비밀번호는 4~20자의 영문, 숫자, 특수문자(._-)만 가능합니다.")
+	@Pattern(regexp = "^[a-zA-Z0-9!@#$%^&*._-]{8,20}$", message = "비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.")
 	private String password;
 
 	@NotBlank(message = "이메일은 필수입니다.")

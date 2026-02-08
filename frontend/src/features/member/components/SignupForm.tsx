@@ -5,13 +5,17 @@ import { useSignup } from '../hooks/useSignup';
 
 const REDIRECT_DELAY_MS = 1500;
 
+// BE @Pattern과 동일한 검증 규칙
+const USERNAME_PATTERN = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
+const PASSWORD_PATTERN = /^[a-zA-Z0-9!@#$%^&*._-]{8,20}$/;
+
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
-    const [passwordError, setPasswordError] = useState('');
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const navigate = useNavigate();
     const signupMutation = useSignup();
     const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -24,14 +28,36 @@ export function SignupForm() {
         };
     }, []);
 
+    const validate = (): boolean => {
+        const errors: string[] = [];
+
+        if (!USERNAME_PATTERN.test(username.trim())) {
+            errors.push('아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능하며, 예약어는 사용할 수 없습니다.');
+        }
+
+        if (!PASSWORD_PATTERN.test(password)) {
+            errors.push('비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.');
+        }
+
+        if (password !== passwordAgain) {
+            errors.push('비밀번호가 일치하지 않습니다.');
+        }
+
+        const trimmedDisplayName = displayName.trim();
+        if (trimmedDisplayName && (trimmedDisplayName.length < 2 || trimmedDisplayName.length > 20)) {
+            errors.push('표시 이름은 2~20자여야 합니다.');
+        }
+
+        setValidationErrors(errors);
+        return errors.length === 0;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (password !== passwordAgain) {
-            setPasswordError('비밀번호가 일치하지 않습니다.');
+        if (!validate()) {
             return;
         }
-        setPasswordError('');
 
         signupMutation.mutate(
             {
@@ -67,9 +93,10 @@ export function SignupForm() {
                         disabled={isPending}
                         required
                         minLength={4}
-                        maxLength={40}
+                        maxLength={12}
                         className="border px-3 py-2 rounded"
                     />
+                    <p className="text-gray-500 text-xs">4~12자의 영문, 숫자, 특수문자(._-)만 가능</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -94,11 +121,10 @@ export function SignupForm() {
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         disabled={isPending}
-                        minLength={4}
-                        maxLength={40}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
-                        placeholder="비워두면 자동 생성됩니다"
                     />
+                    <p className="text-gray-500 text-xs">2~20자 (비워두면 자동 생성)</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -111,9 +137,10 @@ export function SignupForm() {
                         disabled={isPending}
                         required
                         minLength={8}
-                        maxLength={128}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
+                    <p className="text-gray-500 text-xs">8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -126,13 +153,17 @@ export function SignupForm() {
                         disabled={isPending}
                         required
                         minLength={8}
-                        maxLength={128}
+                        maxLength={20}
                         className="border px-3 py-2 rounded"
                     />
                 </div>
 
-                {passwordError && (
-                    <div className="text-red-600 text-sm">{passwordError}</div>
+                {validationErrors.length > 0 && (
+                    <ul className="text-red-600 text-sm list-disc pl-5">
+                        {validationErrors.map((error) => (
+                            <li key={error}>{error}</li>
+                        ))}
+                    </ul>
                 )}
 
                 <Button
@@ -147,7 +178,7 @@ export function SignupForm() {
 
             {signupMutation.isError && (
                 <div className="text-red-600 text-sm">
-                    회원가입에 실패했습니다. 다시 시도해주세요.
+                    {signupMutation.error?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'}
                 </div>
             )}
 

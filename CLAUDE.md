@@ -4,16 +4,12 @@
 
 ## 기술 스택
 
-### Backend (Spring Boot) - `/backend`
+### Backend - `/backend`
 - Spring Boot 3.5, Java 21
 - Spring Data JPA, Spring Security
 - SQLite, JWT (jjwt)
 - Lombok, ModelMapper
 - SpringDoc OpenAPI
-
-### Backend (Python) - `/backend-python`
-- FastAPI, SQLModel, Alembic
-- Poetry 의존성 관리
 - Google Calendar API
 
 ### Frontend - `/frontend`
@@ -25,20 +21,12 @@
 
 ## 개발 명령어
 
-### Backend (Spring Boot)
+### Backend
 ```bash
 cd backend
 ./gradlew build      # 빌드
 ./gradlew bootRun    # 실행 (port 8080)
 ./gradlew test       # 테스트
-```
-
-### Backend (Python)
-```bash
-cd backend-python
-poetry install                              # 의존성 설치
-python -m alembic upgrade head              # DB 마이그레이션
-python -m uvicorn appserver.app:app --reload --port 8000
 ```
 
 ### Frontend
@@ -63,12 +51,6 @@ coheChat/
 ├── .claude/
 │   └── issue/            # 이슈별 실행 계획 ({number}.md)
 ├── backend/              # Spring Boot 백엔드 (Java 21)
-├── backend-python/       # FastAPI 백엔드 (마이그레이션 원본)
-│   └── appserver/
-│       ├── apps/
-│       │   ├── account/  # 사용자 인증
-│       │   └── calendar/ # 캘린더/예약
-│       └── libs/         # 유틸리티
 ├── frontend/             # React 프론트엔드
 │   └── src/
 │       ├── components/   # 재사용 컴포넌트
@@ -105,9 +87,8 @@ coheChat/
 ## 주의사항
 
 ### 환경 요구사항
-- Python: 3.11-3.13 (3.14 미지원)
-- Node.js: 18 이상
 - Java: 21
+- Node.js: 18 이상
 
 ### 보안 - 커밋 금지 파일
 - `.env` - 환경 변수
@@ -115,12 +96,10 @@ coheChat/
 - `*credentials*.json` - Google API 인증 정보
 
 ### 주요 API 엔드포인트
-- API 문서: http://localhost:8000/docs (FastAPI)
-- API 문서: http://localhost:8080/swagger-ui.html (Spring Boot)
+- API 문서: http://localhost:8080/swagger-ui.html
 
 ## 참고 링크
 
 - [TanStack Router 문서](https://tanstack.com/router)
 - [TanStack Query 문서](https://tanstack.com/query)
 - [Spring Boot 문서](https://spring.io/projects/spring-boot)
-- [FastAPI 문서](https://fastapi.tiangolo.com)
