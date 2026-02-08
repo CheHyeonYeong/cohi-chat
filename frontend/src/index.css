@@ -11,6 +11,18 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* coheChat Theme Colors - Coffee Shop Warm Tones */
+  --cohe-primary: #8B6914;
+  --cohe-primary-dark: #6B5010;
+  --cohe-secondary: #A67C52;
+  --cohe-bg-light: #F5F0E8;
+  --cohe-bg-warm: #E8DFD0;
+  --cohe-bg-hero: #D4C4A8;
+  --cohe-text-dark: #3D3D3D;
+  --cohe-text-light: #FFFFFF;
+  --cohe-card-bg: #FFFFFF;
+  --cohe-card-shadow: rgba(139, 105, 20, 0.1);
 }
 
 a {
@@ -24,9 +36,13 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
   min-height: 100vh;
 }
 
@@ -65,4 +81,31 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* coheChat Global Styles */
+.cohe-bg-gradient {
+  background: linear-gradient(135deg, var(--cohe-bg-warm) 0%, var(--cohe-bg-hero) 100%);
+}
+
+.cohe-btn-primary {
+  background-color: var(--cohe-primary);
+  color: var(--cohe-text-light);
+  transition: background-color 0.2s ease;
+}
+
+.cohe-btn-primary:hover {
+  background-color: var(--cohe-primary-dark);
+}
+
+.cohe-btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--cohe-primary);
+  color: var(--cohe-primary);
+  transition: all 0.2s ease;
+}
+
+.cohe-btn-outline:hover {
+  background-color: var(--cohe-primary);
+  color: var(--cohe-text-light);
 }
