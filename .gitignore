@@ -6,7 +6,10 @@
 ### dotenv ###
 .env
 ./issues
-.claude/
+
+# Claude Code - 로컬 설정만 무시, commands/skills는 추적
+.claude/settings.local.json
+.claude/issue/
 
 .envrc
 
