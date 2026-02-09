@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.request.TimeSlotCreateRequestDTO;
@@ -45,13 +46,13 @@ public class TimeSlotController {
         @ApiResponse(responseCode = "409", description = "시간대 중복")
     })
     @PostMapping("/v1")
-    public ResponseEntity<TimeSlotResponseDTO> createTimeSlot(
+    public ResponseEntity<ApiResponseDTO<TimeSlotResponseDTO>> createTimeSlot(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody TimeSlotCreateRequestDTO request
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         TimeSlotResponseDTO response = timeSlotService.createTimeSlot(member, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "내 타임슬롯 조회", description = "호스트가 자신의 타임슬롯 목록을 조회합니다.")
@@ -62,12 +63,12 @@ public class TimeSlotController {
         @ApiResponse(responseCode = "404", description = "캘린더를 찾을 수 없음")
     })
     @GetMapping("/v1")
-    public ResponseEntity<List<TimeSlotResponseDTO>> getTimeSlots(
+    public ResponseEntity<ApiResponseDTO<List<TimeSlotResponseDTO>>> getTimeSlots(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         List<TimeSlotResponseDTO> response = timeSlotService.getTimeSlotsByHost(member);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "호스트 타임슬롯 조회", description = "게스트가 특정 호스트의 타임슬롯 목록을 조회합니다. 인증 없이 접근 가능합니다.")
@@ -76,11 +77,11 @@ public class TimeSlotController {
         @ApiResponse(responseCode = "404", description = "호스트 또는 캘린더를 찾을 수 없음")
     })
     @GetMapping("/v1/hosts/{hostId}")
-    public ResponseEntity<List<TimeSlotResponseDTO>> getTimeSlotsByHostId(
+    public ResponseEntity<ApiResponseDTO<List<TimeSlotResponseDTO>>> getTimeSlotsByHostId(
             @Parameter(description = "호스트 ID (UUID)", required = true)
             @PathVariable UUID hostId
     ) {
         List<TimeSlotResponseDTO> response = timeSlotService.getTimeSlotsByHostId(hostId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 }

@@ -1,7 +1,7 @@
 package com.coDevs.cohiChat.google.calendar;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +32,8 @@ public class GoogleCalendarService {
     public String createEvent(
         String summary,
         String description,
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime,
+        Instant startDateTime,
+        Instant endDateTime,
         String googleCalendarId
     ) {
         if (calendar == null) {
@@ -62,8 +62,8 @@ public class GoogleCalendarService {
         String eventId,
         String summary,
         String description,
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime,
+        Instant startDateTime,
+        Instant endDateTime,
         String googleCalendarId
     ) {
         if (calendar == null) {
@@ -133,25 +133,24 @@ public class GoogleCalendarService {
     private Event buildEvent(
         String summary,
         String description,
-        LocalDateTime startDateTime,
-        LocalDateTime endDateTime
+        Instant startDateTime,
+        Instant endDateTime
     ) {
         Event event = new Event();
         event.setSummary(summary);
         event.setDescription(description);
 
         String timezone = properties.getTimezone();
-        ZoneId zoneId = ZoneId.of(timezone);
+        String resolvedTimezone = (timezone != null) ? timezone : ZoneId.systemDefault().getId();
 
-        event.setStart(toEventDateTime(startDateTime, zoneId, timezone));
-        event.setEnd(toEventDateTime(endDateTime, zoneId, timezone));
+        event.setStart(toEventDateTime(startDateTime, resolvedTimezone));
+        event.setEnd(toEventDateTime(endDateTime, resolvedTimezone));
 
         return event;
     }
 
-    private EventDateTime toEventDateTime(LocalDateTime localDateTime, ZoneId zoneId, String timezone) {
-        long epochMilli = localDateTime.atZone(zoneId).toInstant().toEpochMilli();
-        DateTime dateTime = new DateTime(epochMilli);
+    private EventDateTime toEventDateTime(Instant instant, String timezone) {
+        DateTime dateTime = new DateTime(instant.toEpochMilli());
 
         EventDateTime eventDateTime = new EventDateTime();
         eventDateTime.setDateTime(dateTime);

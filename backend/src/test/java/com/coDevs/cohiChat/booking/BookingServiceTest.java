@@ -37,6 +37,7 @@ import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
@@ -67,6 +68,9 @@ class BookingServiceTest {
     private GoogleCalendarService googleCalendarService;
 
     @Mock
+    private GoogleCalendarProperties googleCalendarProperties;
+
+    @Mock
     private Member guestMember;
 
     @Mock
@@ -79,6 +83,8 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
+        given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
             .bookingDate(FUTURE_DATE)

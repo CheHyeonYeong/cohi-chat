@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.timeslot.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
@@ -21,8 +21,8 @@ public class TimeSlotResponseDTO {
     private LocalTime startTime;
     private LocalTime endTime;
     private List<Integer> weekdays;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public static TimeSlotResponseDTO from(TimeSlot timeSlot) {
         return TimeSlotResponseDTO.builder()
