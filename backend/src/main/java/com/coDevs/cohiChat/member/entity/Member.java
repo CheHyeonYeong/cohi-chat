@@ -116,6 +116,13 @@ public class Member {
 		}
 	}
 
+	public void updateDisplayName(String displayName) {
+		if (displayName == null || displayName.isBlank()) {
+			throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
+		}
+		this.displayName = displayName;
+	}
+
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();

@@ -42,7 +42,9 @@ class HostServiceTest {
 	}
 
 	private Member createHostMember() {
-		return Member.create(TEST_USERNAME, "TestUser", "test@test.com", "hashedPw123", Role.HOST);
+		Member member = Member.create(TEST_USERNAME, "TestUser", "test@test.com", "hashedPw123", Role.GUEST);
+		member.promoteToHost();
+		return member;
 	}
 
 	@Nested
@@ -130,6 +132,7 @@ class HostServiceTest {
 			HostProfileResponseDTO result = hostService.updateHostProfile(TEST_USERNAME, "NewDisplayName");
 
 			assertEquals("NewDisplayName", result.getDisplayName());
+			assertEquals("NewDisplayName", host.getDisplayName());
 		}
 
 		@Test

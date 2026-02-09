@@ -2,9 +2,11 @@
 
 **이슈 번호**: $ARGUMENTS
 
+> `$ARGUMENTS`는 이 명령어 실행 시 전달된 이슈 번호입니다. (예: `/issue 184` → `$ARGUMENTS`=`184`)
+
 ### 작업 순서
 
-1. **브랜치 생성**: `$ARGUMENTS` 형식으로 브랜치 생성 (예: `khs_82`, `chy_82`)
+1. **브랜치 생성**: `{작성자이니셜}_$ARGUMENTS` 형식으로 브랜치 생성 (예: `khs_82`, `chy_82`)
 2. **이슈 확인**: GitHub 이슈 조회 → `https://github.com/CheHyeonYeong/cohi-chat/issues/{number}`
 3. **실행 계획 작성**: `.claude/issue/{number}.md`에 checkpoint 단위로 계획 작성
 4. **순차 작업**: 작성된 계획 파일을 보면서 checkpoint 순서대로 진행

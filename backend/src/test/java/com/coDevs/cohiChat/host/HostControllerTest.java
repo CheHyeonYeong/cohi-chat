@@ -143,6 +143,29 @@ class HostControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.displayName").value("NewName"));
 		}
+
+		@Test
+		@DisplayName("displayName이 빈 값이면 400 반환")
+		void updateProfileBlankDisplayName() throws Exception {
+			mockMvc.perform(put("/hosts/v1/me")
+					.principal(() -> "testuser")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"displayName\": \"\"}"))
+				.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		@DisplayName("GUEST가 프로필 수정 시 403 반환")
+		void guestCannotUpdateProfile() throws Exception {
+			when(hostService.updateHostProfile(anyString(), anyString()))
+				.thenThrow(new CustomException(ErrorCode.GUEST_ACCESS_DENIED));
+
+			mockMvc.perform(put("/hosts/v1/me")
+					.principal(() -> "testuser")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"displayName\": \"NewName\"}"))
+				.andExpect(status().isForbidden());
+		}
 	}
 
 	@Nested

@@ -39,7 +39,7 @@ public class HostService {
 	public HostProfileResponseDTO updateHostProfile(String username, String displayName) {
 		Member member = memberService.getMember(username);
 		validateHostRole(member);
-		member.updateInfo(displayName, null);
+		member.updateDisplayName(displayName);
 		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
 		return HostProfileResponseDTO.from(member, calendarConnected);
 	}
