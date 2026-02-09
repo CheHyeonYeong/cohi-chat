@@ -182,17 +182,20 @@ public class MemberService {
 
 	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
-		// 1. JWT 토큰 자체 유효성 검증 (만료 vs 위조 구분)
+		// 1. JWT 검증 + username 추출 (만료 vs 위조 구분)
+		String verifiedUsername;
 		try {
-			jwtTokenProvider.validateTokenOrThrow(refreshTokenValue);
+			verifiedUsername = jwtTokenProvider.getUsernameFromToken(refreshTokenValue);
 		} catch (ExpiredJwtException e) {
 			throw new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN);
 		} catch (JwtException | IllegalArgumentException e) {
 			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 		}
 
-		// 2. 서버 검증된 username으로 Rate Limit 체크
-		String verifiedUsername = jwtTokenProvider.getUsernameFromToken(refreshTokenValue);
+		// 2. username 유효성 확인 후 Rate Limit 체크
+		if (verifiedUsername == null || verifiedUsername.isBlank()) {
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)

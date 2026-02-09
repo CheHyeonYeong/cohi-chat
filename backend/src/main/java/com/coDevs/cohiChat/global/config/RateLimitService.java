@@ -13,7 +13,9 @@ import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.distributed.BucketProxy;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RateLimitService {
@@ -37,6 +39,7 @@ public class RateLimitService {
 			return probe.getRemainingTokens();
 		}
 
+		log.warn("Rate limit 초과 - key: {}", key);
 		throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED);
 	}
 

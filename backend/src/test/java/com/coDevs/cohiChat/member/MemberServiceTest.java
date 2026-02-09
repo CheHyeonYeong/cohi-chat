@@ -332,7 +332,7 @@ class MemberServiceTest {
 			604800000L // 7 days in ms
 		);
 
-		// validateTokenOrThrow는 void 메서드 - 예외 없으면 통과
+		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
@@ -349,7 +349,7 @@ class MemberServiceTest {
 	void refreshAccessTokenFailInvalidJwt() {
 		String invalidToken = "invalid-token";
 
-		willThrow(new JwtException("invalid")).given(jwtTokenProvider).validateTokenOrThrow(invalidToken);
+		given(jwtTokenProvider.getUsernameFromToken(invalidToken)).willThrow(new JwtException("invalid"));
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(invalidToken))
 			.isInstanceOf(CustomException.class)
@@ -361,8 +361,8 @@ class MemberServiceTest {
 	void refreshAccessTokenFailExpiredJwt() {
 		String expiredToken = "expired-token";
 
-		willThrow(new ExpiredJwtException(null, null, "expired"))
-			.given(jwtTokenProvider).validateTokenOrThrow(expiredToken);
+		given(jwtTokenProvider.getUsernameFromToken(expiredToken))
+			.willThrow(new ExpiredJwtException(null, null, "expired"));
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(expiredToken))
 			.isInstanceOf(CustomException.class)
@@ -374,7 +374,7 @@ class MemberServiceTest {
 	void refreshAccessTokenFailNotInRedis() {
 		String tokenNotInRedis = "not-in-redis-token";
 
-		// 해시된 값으로 조회되므로 anyString() 사용
+		given(jwtTokenProvider.getUsernameFromToken(tokenNotInRedis)).willReturn(TEST_USERNAME);
 		given(refreshTokenRepository.findByToken(anyString())).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
@@ -412,6 +412,20 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.refreshAccessToken(validRefreshToken))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.RATE_LIMIT_EXCEEDED);
+	}
+
+	@Test
+	@DisplayName("실패: JWT subject가 null이면 INVALID_REFRESH_TOKEN 예외")
+	void refreshAccessToken_failWhenUsernameNull() {
+		String tokenWithNoSubject = "token-without-subject";
+
+		given(jwtTokenProvider.getUsernameFromToken(tokenWithNoSubject)).willReturn(null);
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenWithNoSubject))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+
+		verify(rateLimitService, never()).checkRateLimit(anyString());
 	}
 
 	@Test
