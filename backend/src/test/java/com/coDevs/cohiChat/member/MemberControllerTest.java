@@ -172,6 +172,8 @@ class MemberControllerTest {
 		@Test
 		@DisplayName("로그아웃 성공 응답 형식 검증")
 		void logoutSuccess() throws Exception {
+			doNothing().when(memberService).logout(anyString());
+
 			mockMvc.perform(delete("/members/v1/logout")
 					.principal(() -> TEST_USERNAME))
 				.andExpect(status().isOk())

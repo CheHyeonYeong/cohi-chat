@@ -57,16 +57,17 @@ public class MemberController {
 	}
 
 	@PostMapping("/v1/refresh")
-	public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
+	public ResponseEntity<ApiResponseDTO<RefreshTokenResponseDTO>> refreshToken(
 		@Valid @RequestBody RefreshTokenRequestDTO request) {
 
 		RefreshTokenResponseDTO response = memberService.refreshAccessToken(request.getRefreshToken());
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout() {
+	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal) {
+		memberService.logout(principal.getName());
 		return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
 	}
 
