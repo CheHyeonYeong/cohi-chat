@@ -272,7 +272,7 @@ class GoogleCalendarServiceTest {
     private static Instant toInstant(int year, int month, int day, int hour, int minute) {
         return LocalDate.of(year, month, day)
             .atTime(LocalTime.of(hour, minute))
-            .atZone(ZoneId.of("Asia/Seoul"))
+            .atZone(ZoneId.of(TEST_TIMEZONE))
             .toInstant();
     }
 }

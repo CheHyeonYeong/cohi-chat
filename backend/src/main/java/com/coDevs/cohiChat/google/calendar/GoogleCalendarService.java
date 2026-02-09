@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.google.calendar;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -140,9 +141,10 @@ public class GoogleCalendarService {
         event.setDescription(description);
 
         String timezone = properties.getTimezone();
+        String resolvedTimezone = (timezone != null) ? timezone : ZoneId.systemDefault().getId();
 
-        event.setStart(toEventDateTime(startDateTime, timezone));
-        event.setEnd(toEventDateTime(endDateTime, timezone));
+        event.setStart(toEventDateTime(startDateTime, resolvedTimezone));
+        event.setEnd(toEventDateTime(endDateTime, resolvedTimezone));
 
         return event;
     }
