@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.timeslot;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -100,10 +101,12 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.startTime").value("10:00:00"))
-            .andExpect(jsonPath("$.endTime").value("11:00:00"))
-            .andExpect(jsonPath("$.weekdays[0]").value(0));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.startTime").value("10:00:00"))
+            .andExpect(jsonPath("$.data.endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data.weekdays[0]").value(0))
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -122,6 +125,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -141,6 +145,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -160,6 +165,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -179,6 +185,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -201,6 +208,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.TIMESLOT_OVERLAP.toString()));
     }
 
@@ -223,6 +231,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -245,6 +254,7 @@ class TimeSlotControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -279,8 +289,10 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1")
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[1].id").value(2));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[1].id").value(2))
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -315,11 +327,13 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].startTime").value("10:00:00"))
-            .andExpect(jsonPath("$[0].endTime").value("11:00:00"))
-            .andExpect(jsonPath("$[0].weekdays[0]").value(0))
-            .andExpect(jsonPath("$[1].id").value(2));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[0].startTime").value("10:00:00"))
+            .andExpect(jsonPath("$.data[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data[0].weekdays[0]").value(0))
+            .andExpect(jsonPath("$.data[1].id").value(2))
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -335,8 +349,10 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$").isEmpty());
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.data").isEmpty())
+            .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -352,6 +368,7 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.HOST_NOT_FOUND.toString()));
     }
 
@@ -368,6 +385,7 @@ class TimeSlotControllerTest {
         mockMvc.perform(get("/timeslot/v1/hosts/{hostId}", hostId)
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 }

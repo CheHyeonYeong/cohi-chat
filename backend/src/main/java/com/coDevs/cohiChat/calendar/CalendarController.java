@@ -23,6 +23,7 @@ import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,32 +46,32 @@ public class CalendarController {
     private final ObjectMapper objectMapper;
 
     @PostMapping("/v1")
-    public ResponseEntity<CalendarResponseDTO> createCalendar(
+    public ResponseEntity<ApiResponseDTO<CalendarResponseDTO>> createCalendar(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody CalendarCreateRequestDTO request
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         CalendarResponseDTO response = calendarService.createCalendar(member, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
     }
 
     @GetMapping("/v1")
-    public ResponseEntity<CalendarResponseDTO> getCalendar(
+    public ResponseEntity<ApiResponseDTO<CalendarResponseDTO>> getCalendar(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         CalendarResponseDTO response = calendarService.getCalendar(member);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
     @PutMapping("/v1")
-    public ResponseEntity<CalendarResponseDTO> updateCalendar(
+    public ResponseEntity<ApiResponseDTO<CalendarResponseDTO>> updateCalendar(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody CalendarUpdateRequestDTO request
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         CalendarResponseDTO response = calendarService.updateCalendar(member, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
     @GetMapping("/{slug}")
