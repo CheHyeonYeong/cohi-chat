@@ -1,5 +1,5 @@
+import { lazy, Suspense } from 'react'
 import { createRouter, createRootRoute, Outlet, redirect } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { z } from 'zod'
 
 import {
@@ -11,6 +11,14 @@ import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 
+const TanStackRouterDevtools = import.meta.env.DEV
+    ? lazy(() =>
+        import('@tanstack/router-devtools').then((mod) => ({
+            default: mod.TanStackRouterDevtools,
+        }))
+    )
+    : () => null
+
 const RootRoute = createRootRoute({
     component: () => {
         return (
@@ -18,7 +26,9 @@ const RootRoute = createRootRoute({
                 <div className="w-full min-h-screen">
                     <Outlet />
                 </div>
-                <TanStackRouterDevtools />
+                <Suspense fallback={null}>
+                    <TanStackRouterDevtools />
+                </Suspense>
             </>
         )
     },
