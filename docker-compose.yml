@@ -13,10 +13,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-devpassword}
-      # Add your environment variables here
-      # - DB_URL=jdbc:postgresql://db:5432/cohichat
-      # - DB_USERNAME=cohichat
-      # - DB_PASSWORD=your_password
+      - SQLITE_DB_PATH=/app/data/cohi-chat.db
+    volumes:
+      - sqlite-data:/app/data
     networks:
       - cohi-chat-network
     depends_on:
@@ -74,6 +73,8 @@ networks:
 
 volumes:
   redis-data:
+    driver: local
+  sqlite-data:
     driver: local
   # Uncomment if you need persistent volumes
   # postgres-data:
