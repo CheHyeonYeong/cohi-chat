@@ -48,6 +48,7 @@ class RateLimitFilterTest {
 	void rateLimitExceeded() throws Exception {
 		for (int i = 0; i < 10; i++) {
 			mockMvc.perform(post("/members/v1/refresh")
+					.header("X-Username", "testuser")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"dummy-token\"}"))
 				.andExpect(result ->
@@ -55,6 +56,7 @@ class RateLimitFilterTest {
 		}
 
 		mockMvc.perform(post("/members/v1/refresh")
+				.header("X-Username", "testuser")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"refreshToken\": \"dummy-token\"}"))
 			.andExpect(status().isTooManyRequests())
@@ -67,11 +69,13 @@ class RateLimitFilterTest {
 	@DisplayName("X-Rate-Limit-Remaining 헤더 값 검증")
 	void rateLimitRemainingHeader() throws Exception {
 		mockMvc.perform(post("/members/v1/refresh")
+				.header("X-Username", "testuser")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"refreshToken\": \"dummy-token\"}"))
 			.andExpect(header().string("X-Rate-Limit-Remaining", "9"));
 
 		mockMvc.perform(post("/members/v1/refresh")
+				.header("X-Username", "testuser")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"refreshToken\": \"dummy-token\"}"))
 			.andExpect(header().string("X-Rate-Limit-Remaining", "8"));
@@ -81,35 +85,48 @@ class RateLimitFilterTest {
 	@DisplayName("POST 외 요청은 rate limit 미적용")
 	void nonPostRequestNotRateLimited() throws Exception {
 		for (int i = 0; i < 15; i++) {
-			mockMvc.perform(get("/members/v1/refresh"))
+			mockMvc.perform(get("/members/v1/refresh")
+					.header("X-Username", "testuser"))
 				.andExpect(result ->
 					assertNotEquals(429, result.getResponse().getStatus()));
 		}
 	}
 
 	@Test
-	@DisplayName("다른 IP(X-Forwarded-For)는 별도 버킷 사용")
-	void differentIpUsesSeparateBucket() throws Exception {
-		// IP 1: 10회 소진
+	@DisplayName("X-Username 헤더 없으면 rate limit 미적용")
+	void noUsernameHeaderBypassesRateLimit() throws Exception {
+		for (int i = 0; i < 15; i++) {
+			mockMvc.perform(post("/members/v1/refresh")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"dummy-token\"}"))
+				.andExpect(result ->
+					assertNotEquals(429, result.getResponse().getStatus()));
+		}
+	}
+
+	@Test
+	@DisplayName("다른 username은 별도 버킷 사용")
+	void differentUsernameUsesSeparateBucket() throws Exception {
+		// user1: 10회 소진
 		for (int i = 0; i < 10; i++) {
 			mockMvc.perform(post("/members/v1/refresh")
-					.header("X-Forwarded-For", "192.168.1.100")
+					.header("X-Username", "user1")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"dummy-token\"}"))
 				.andExpect(result ->
 					assertNotEquals(429, result.getResponse().getStatus()));
 		}
 
-		// IP 1: 11번째 → 429
+		// user1: 11번째 → 429
 		mockMvc.perform(post("/members/v1/refresh")
-				.header("X-Forwarded-For", "192.168.1.100")
+				.header("X-Username", "user1")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"refreshToken\": \"dummy-token\"}"))
 			.andExpect(status().isTooManyRequests());
 
-		// IP 2: 여전히 허용
+		// user2: 여전히 허용
 		mockMvc.perform(post("/members/v1/refresh")
-				.header("X-Forwarded-For", "192.168.1.200")
+				.header("X-Username", "user2")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"refreshToken\": \"dummy-token\"}"))
 			.andExpect(result ->

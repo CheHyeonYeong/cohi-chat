@@ -32,6 +32,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 	private static final String REFRESH_PATH = "/members/v1/refresh";
 	private static final String RATE_LIMIT_KEY_PREFIX = "rate-limit:refresh:";
+	private static final String USERNAME_HEADER = "X-Username";
 
 	private final LettuceBasedProxyManager<String> proxyManager;
 	private final RateLimitProperties properties;
@@ -46,8 +47,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		String clientIp = resolveClientIp(request);
-		String bucketKey = RATE_LIMIT_KEY_PREFIX + clientIp;
+		String username = request.getHeader(USERNAME_HEADER);
+		if (username == null || username.isBlank()) {
+			filterChain.doFilter(request, response);
+			return;
+		}
+		String bucketKey = RATE_LIMIT_KEY_PREFIX + username;
 
 		try {
 			BucketProxy bucket = proxyManager.builder()
@@ -79,24 +84,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
 			uri = uri.substring(contextPath.length());
 		}
 		return REFRESH_PATH.equals(uri);
-	}
-
-	private String resolveClientIp(HttpServletRequest request) {
-		String remoteAddr = request.getRemoteAddr();
-
-		if (properties.getTrustedProxies().contains(remoteAddr)) {
-			String xForwardedFor = request.getHeader("X-Forwarded-For");
-			if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-				return xForwardedFor.split(",")[0].trim();
-			}
-
-			String xRealIp = request.getHeader("X-Real-IP");
-			if (xRealIp != null && !xRealIp.isBlank()) {
-				return xRealIp.trim();
-			}
-		}
-
-		return remoteAddr;
 	}
 
 	private BucketConfiguration createBucketConfiguration() {
