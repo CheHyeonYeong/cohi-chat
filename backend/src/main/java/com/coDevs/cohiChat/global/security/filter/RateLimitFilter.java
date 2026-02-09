@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.global.security.filter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -33,10 +34,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	private static final String REFRESH_PATH = "/members/v1/refresh";
 	private static final String RATE_LIMIT_KEY_PREFIX = "rate-limit:refresh:";
 	private static final String USERNAME_HEADER = "X-Username";
+	private static final int MAX_USERNAME_LENGTH = 50;
+	private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._@-]+$");
 
 	private final LettuceBasedProxyManager<String> proxyManager;
 	private final RateLimitProperties properties;
 	private final ObjectMapper objectMapper;
+
+	private volatile BucketConfiguration cachedConfiguration;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -47,16 +52,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		String username = request.getHeader(USERNAME_HEADER);
-		if (username == null || username.isBlank()) {
-			filterChain.doFilter(request, response);
-			return;
-		}
-		String bucketKey = RATE_LIMIT_KEY_PREFIX + username;
+		String clientKey = resolveClientKey(request);
+		String bucketKey = RATE_LIMIT_KEY_PREFIX + clientKey;
 
 		try {
 			BucketProxy bucket = proxyManager.builder()
-				.build(bucketKey, this::createBucketConfiguration);
+				.build(bucketKey, this::getOrCreateBucketConfiguration);
 
 			ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -69,9 +70,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
 				writeRateLimitResponse(response, retryAfterSeconds);
 			}
 		} catch (Exception e) {
-			log.warn("Rate limiting 처리 중 오류 발생 (fail-open): {}", e.getMessage());
+			log.warn("Rate limiting 처리 중 오류 발생 (fail-open) - key: {}, 원인: {}", clientKey, e.getMessage());
 			filterChain.doFilter(request, response);
 		}
+	}
+
+	private String resolveClientKey(HttpServletRequest request) {
+		String username = request.getHeader(USERNAME_HEADER);
+		if (username != null && !username.isBlank() && isValidUsername(username)) {
+			return username;
+		}
+		return request.getRemoteAddr();
+	}
+
+	private boolean isValidUsername(String username) {
+		return username.length() <= MAX_USERNAME_LENGTH && USERNAME_PATTERN.matcher(username).matches();
 	}
 
 	private boolean isRefreshRequest(HttpServletRequest request) {
@@ -84,6 +97,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 			uri = uri.substring(contextPath.length());
 		}
 		return REFRESH_PATH.equals(uri);
+	}
+
+	private BucketConfiguration getOrCreateBucketConfiguration() {
+		if (cachedConfiguration == null) {
+			cachedConfiguration = createBucketConfiguration();
+		}
+		return cachedConfiguration;
 	}
 
 	private BucketConfiguration createBucketConfiguration() {

@@ -93,15 +93,39 @@ class RateLimitFilterTest {
 	}
 
 	@Test
-	@DisplayName("X-Username 헤더 없으면 rate limit 미적용")
-	void noUsernameHeaderBypassesRateLimit() throws Exception {
-		for (int i = 0; i < 15; i++) {
+	@DisplayName("X-Username 헤더 없으면 IP 기반으로 rate limit 적용")
+	void noUsernameHeaderFallsBackToIp() throws Exception {
+		for (int i = 0; i < 10; i++) {
 			mockMvc.perform(post("/members/v1/refresh")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"dummy-token\"}"))
 				.andExpect(result ->
 					assertNotEquals(429, result.getResponse().getStatus()));
 		}
+
+		mockMvc.perform(post("/members/v1/refresh")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"refreshToken\": \"dummy-token\"}"))
+			.andExpect(status().isTooManyRequests());
+	}
+
+	@Test
+	@DisplayName("유효하지 않은 X-Username 헤더는 IP 기반으로 fallback")
+	void invalidUsernameHeaderFallsBackToIp() throws Exception {
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(post("/members/v1/refresh")
+					.header("X-Username", "invalid username with spaces!")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"dummy-token\"}"))
+				.andExpect(result ->
+					assertNotEquals(429, result.getResponse().getStatus()));
+		}
+
+		mockMvc.perform(post("/members/v1/refresh")
+				.header("X-Username", "invalid username with spaces!")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"refreshToken\": \"dummy-token\"}"))
+			.andExpect(status().isTooManyRequests());
 	}
 
 	@Test
