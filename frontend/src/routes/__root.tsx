@@ -10,13 +10,17 @@ import { LoginForm, SignupForm } from '~/features/member'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
+import Footer from '~/components/Footer'
 
 const RootRoute = createRootRoute({
     component: () => {
         return (
             <>
-                <div className="w-full min-h-screen">
-                    <Outlet />
+                <div className="w-full min-h-screen flex flex-col">
+                    <div className="flex-1">
+                        <Outlet />
+                    </div>
+                    <Footer />
                 </div>
                 <TanStackRouterDevtools />
             </>
