@@ -8,7 +8,6 @@ export { default as BookingForm } from './components/BookingForm';
 export {
     useCreateBooking,
     useCalendarNavigation,
-    useCalendarDateSelection,
     useCalendarEvent,
     useTimeslots,
     useBookings,
@@ -37,6 +36,7 @@ export type {
 
 // API
 export {
+    API_URL,
     getBookingsByDate,
     getMyBookings,
     getBooking,

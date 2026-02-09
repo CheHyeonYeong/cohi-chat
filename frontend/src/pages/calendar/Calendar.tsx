@@ -4,6 +4,7 @@ import { useSearch, useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, useCallback } from 'react';
 
 import {
+    API_URL,
     Body,
     Navigator,
     Timeslots,
@@ -11,7 +12,6 @@ import {
     getCalendarDays,
     useCalendarEvent,
     useCalendarNavigation,
-    useCalendarDateSelection,
     useTimeslots,
     useBookings,
     useBookingsStreamQuery,
@@ -20,8 +20,6 @@ import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
 import { useAuth } from '~/features/member';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });
@@ -41,12 +39,10 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
         },
     });
     const { handlePrevious, handleNext } = useCalendarNavigation();
-    const { handleSelectDay } = useCalendarDateSelection();
 
     const handleDaySelect = useCallback((date: Date) => {
         setSelectedDate(date);
-        handleSelectDay(slug, date);
-    }, [slug, handleSelectDay]);
+    }, []);
 
     const handleSelectTimeslot = (timeslot: ITimeSlot) => {
         setSelectedTimeslot(timeslot);
