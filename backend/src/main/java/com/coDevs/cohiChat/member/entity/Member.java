@@ -67,6 +67,9 @@ public class Member {
 	@Column(name = "updated_at", updatable = true)
 	private Instant updatedAt;
 
+	@Column(name = "host_registered_at")
+	private Instant hostRegisteredAt;
+
 	@Column(name = "is_deleted", nullable = false)
 	private boolean isDeleted = false;
 
@@ -116,6 +119,14 @@ public class Member {
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();
+	}
+
+	public void promoteToHost() {
+		if (this.role == Role.HOST) {
+			throw new CustomException(ErrorCode.ALREADY_HOST);
+		}
+		this.role = Role.HOST;
+		this.hostRegisteredAt = Instant.now();
 	}
 
 	public boolean isActive() {

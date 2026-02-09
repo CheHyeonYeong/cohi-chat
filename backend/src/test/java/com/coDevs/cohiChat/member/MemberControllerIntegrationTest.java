@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -101,8 +101,8 @@ class MemberControllerIntegrationTest {
 				.displayName("NewNick")
 				.email("test@test.com")
 				.role(Role.GUEST)
-				.createdAt(LocalDateTime.now())
-				.updatedAt(LocalDateTime.now())
+				.createdAt(Instant.now())
+				.updatedAt(Instant.now())
 				.build();
 
 			when(memberService.updateMember(anyString(), any())).thenReturn(responseDTO);

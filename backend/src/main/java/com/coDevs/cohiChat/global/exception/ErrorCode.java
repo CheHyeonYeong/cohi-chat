@@ -33,6 +33,8 @@ public enum ErrorCode {
 	EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 리프레시 토큰입니다."),
 	AUTH_NOT_PROVIDED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
 
+	ALREADY_HOST(HttpStatus.CONFLICT, "이미 호스트로 등록되어 있습니다."),
+
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
     GUEST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
 
