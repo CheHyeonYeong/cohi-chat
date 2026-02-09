@@ -1,12 +1,11 @@
 package com.coDevs.cohiChat.host;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
-
-import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +19,7 @@ import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.host.response.HostProfileResponseDTO;
-import com.coDevs.cohiChat.member.MemberRepository;
+import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
@@ -31,7 +30,7 @@ class HostServiceTest {
 	private HostService hostService;
 
 	@Mock
-	private MemberRepository memberRepository;
+	private MemberService memberService;
 
 	@Mock
 	private CalendarRepository calendarRepository;
@@ -54,22 +53,21 @@ class HostServiceTest {
 		@DisplayName("GUEST가 HOST로 승격된다")
 		void registerGuestAsHost() {
 			Member guest = createGuestMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(guest));
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
 
 			HostProfileResponseDTO result = hostService.registerAsHost(TEST_USERNAME);
 
 			assertEquals(Role.HOST, guest.getRole());
 			assertNotNull(guest.getHostRegisteredAt());
 			assertEquals(TEST_USERNAME, result.getUsername());
+			assertFalse(result.isCalendarConnected());
 		}
 
 		@Test
 		@DisplayName("이미 HOST인 사용자는 예외 발생")
 		void alreadyHostThrowsException() {
 			Member host = createHostMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(host));
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
 
 			CustomException ex = assertThrows(CustomException.class,
 				() -> hostService.registerAsHost(TEST_USERNAME));
@@ -79,8 +77,8 @@ class HostServiceTest {
 		@Test
 		@DisplayName("존재하지 않는 사용자는 예외 발생")
 		void userNotFoundThrowsException() {
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.empty());
+			when(memberService.getMember(TEST_USERNAME))
+				.thenThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			CustomException ex = assertThrows(CustomException.class,
 				() -> hostService.registerAsHost(TEST_USERNAME));
@@ -96,10 +94,8 @@ class HostServiceTest {
 		@DisplayName("HOST의 프로필을 조회한다")
 		void getHostProfileSuccess() {
 			Member host = createHostMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(host));
-			when(calendarRepository.existsByUserId(host.getId()))
-				.thenReturn(true);
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
+			when(calendarRepository.existsByUserId(host.getId())).thenReturn(true);
 
 			HostProfileResponseDTO result = hostService.getHostProfile(TEST_USERNAME);
 
@@ -112,8 +108,7 @@ class HostServiceTest {
 		@DisplayName("GUEST가 호스트 프로필 조회 시 예외 발생")
 		void guestAccessDenied() {
 			Member guest = createGuestMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(guest));
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
 
 			CustomException ex = assertThrows(CustomException.class,
 				() -> hostService.getHostProfile(TEST_USERNAME));
@@ -129,10 +124,8 @@ class HostServiceTest {
 		@DisplayName("HOST의 displayName을 수정한다")
 		void updateHostProfileSuccess() {
 			Member host = createHostMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(host));
-			when(calendarRepository.existsByUserId(host.getId()))
-				.thenReturn(false);
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
+			when(calendarRepository.existsByUserId(host.getId())).thenReturn(false);
 
 			HostProfileResponseDTO result = hostService.updateHostProfile(TEST_USERNAME, "NewDisplayName");
 
@@ -143,8 +136,7 @@ class HostServiceTest {
 		@DisplayName("GUEST가 호스트 프로필 수정 시 예외 발생")
 		void guestCannotUpdateHostProfile() {
 			Member guest = createGuestMember();
-			when(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
-				.thenReturn(Optional.of(guest));
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
 
 			CustomException ex = assertThrows(CustomException.class,
 				() -> hostService.updateHostProfile(TEST_USERNAME, "NewName"));

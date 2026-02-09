@@ -44,5 +44,14 @@ class MemberTest {
 			CustomException ex = assertThrows(CustomException.class, member::promoteToHost);
 			assertEquals(ErrorCode.ALREADY_HOST, ex.getErrorCode());
 		}
+
+		@Test
+		@DisplayName("ADMIN은 HOST로 승격할 수 없다")
+		void adminCannotPromoteToHost() {
+			Member admin = Member.create("admin", "Admin", "admin@test.com", "hashedPw123", Role.ADMIN);
+
+			CustomException ex = assertThrows(CustomException.class, admin::promoteToHost);
+			assertEquals(ErrorCode.ACCESS_DENIED, ex.getErrorCode());
+		}
 	}
 }

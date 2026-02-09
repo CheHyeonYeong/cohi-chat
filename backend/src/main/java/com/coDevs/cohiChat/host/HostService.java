@@ -7,7 +7,7 @@ import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.host.response.HostProfileResponseDTO;
-import com.coDevs.cohiChat.member.MemberRepository;
+import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
@@ -17,20 +17,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class HostService {
 
-	private final MemberRepository memberRepository;
+	private final MemberService memberService;
 	private final CalendarRepository calendarRepository;
 
 	@Transactional
 	public HostProfileResponseDTO registerAsHost(String username) {
-		Member member = findMember(username);
+		Member member = memberService.getMember(username);
 		member.promoteToHost();
-		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
-		return HostProfileResponseDTO.from(member, calendarConnected);
+		return HostProfileResponseDTO.from(member, false);
 	}
 
 	@Transactional(readOnly = true)
 	public HostProfileResponseDTO getHostProfile(String username) {
-		Member member = findMember(username);
+		Member member = memberService.getMember(username);
 		validateHostRole(member);
 		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
 		return HostProfileResponseDTO.from(member, calendarConnected);
@@ -38,16 +37,11 @@ public class HostService {
 
 	@Transactional
 	public HostProfileResponseDTO updateHostProfile(String username, String displayName) {
-		Member member = findMember(username);
+		Member member = memberService.getMember(username);
 		validateHostRole(member);
 		member.updateInfo(displayName, null);
 		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
 		return HostProfileResponseDTO.from(member, calendarConnected);
-	}
-
-	private Member findMember(String username) {
-		return memberRepository.findByUsernameAndIsDeletedFalse(username)
-			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
 
 	private void validateHostRole(Member member) {

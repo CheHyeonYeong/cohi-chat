@@ -24,6 +24,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.calendar.CalendarService;
+import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -162,16 +163,16 @@ class HostControllerTest {
 
 			when(calendarService.createCalendar(any(), any())).thenReturn(calendarResponse);
 
+			CalendarCreateRequestDTO request = CalendarCreateRequestDTO.builder()
+				.topics(List.of("면접", "상담"))
+				.description("1:1 미팅 캘린더입니다.")
+				.googleCalendarId("test@group.calendar.google.com")
+				.build();
+
 			mockMvc.perform(post("/hosts/v1/me/calendar/connect")
 					.principal(() -> "testuser")
 					.contentType(MediaType.APPLICATION_JSON)
-					.content(objectMapper.writeValueAsString(
-						new java.util.HashMap<>() {{
-							put("topics", List.of("면접", "상담"));
-							put("description", "1:1 미팅 캘린더입니다.");
-							put("googleCalendarId", "test@group.calendar.google.com");
-						}}
-					)))
+					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.googleCalendarId").value("test@group.calendar.google.com"));
@@ -183,16 +184,16 @@ class HostControllerTest {
 			when(calendarService.createCalendar(any(), any()))
 				.thenThrow(new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS));
 
+			CalendarCreateRequestDTO request = CalendarCreateRequestDTO.builder()
+				.topics(List.of("면접"))
+				.description("1:1 미팅 캘린더입니다.")
+				.googleCalendarId("test@group.calendar.google.com")
+				.build();
+
 			mockMvc.perform(post("/hosts/v1/me/calendar/connect")
 					.principal(() -> "testuser")
 					.contentType(MediaType.APPLICATION_JSON)
-					.content(objectMapper.writeValueAsString(
-						new java.util.HashMap<>() {{
-							put("topics", List.of("면접"));
-							put("description", "1:1 미팅 캘린더입니다.");
-							put("googleCalendarId", "test@group.calendar.google.com");
-						}}
-					)))
+					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isConflict());
 		}
 	}

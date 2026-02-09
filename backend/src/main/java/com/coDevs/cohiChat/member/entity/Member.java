@@ -125,6 +125,9 @@ public class Member {
 		if (this.role == Role.HOST) {
 			throw new CustomException(ErrorCode.ALREADY_HOST);
 		}
+		if (this.role != Role.GUEST) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
 		this.role = Role.HOST;
 		this.hostRegisteredAt = Instant.now();
 	}
