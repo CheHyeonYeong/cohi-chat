@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -72,6 +73,9 @@ class MemberServiceTest {
 
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
+
+	@Mock
+	private RateLimitService rateLimitService;
 
 
 	@BeforeEach
@@ -376,6 +380,38 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+	}
+
+	@Test
+	@DisplayName("성공: Refresh Token 재발급 시 rate limit 체크 호출")
+	void refreshAccessToken_callsRateLimitCheck() {
+		String validRefreshToken = "valid-refresh-token";
+		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
+		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
+
+		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
+		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
+
+		memberService.refreshAccessToken(validRefreshToken);
+
+		verify(rateLimitService).checkRateLimit("refresh:" + TEST_USERNAME);
+	}
+
+	@Test
+	@DisplayName("실패: Rate Limit 초과 시 RATE_LIMIT_EXCEEDED 예외")
+	void refreshAccessToken_failWhenRateLimitExceeded() {
+		String validRefreshToken = "valid-refresh-token";
+
+		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		willThrow(new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED))
+			.given(rateLimitService).checkRateLimit("refresh:" + TEST_USERNAME);
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(validRefreshToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.RATE_LIMIT_EXCEEDED);
 	}
 
 	@Test
