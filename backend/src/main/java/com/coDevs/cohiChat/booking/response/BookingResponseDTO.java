@@ -1,7 +1,7 @@
 package com.coDevs.cohiChat.booking.response;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -30,7 +30,7 @@ public class BookingResponseDTO {
     private String description;
     private AttendanceStatus attendanceStatus;
     private String googleEventId;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static BookingResponseDTO from(Booking booking) {
         return BookingResponseDTO.builder()
