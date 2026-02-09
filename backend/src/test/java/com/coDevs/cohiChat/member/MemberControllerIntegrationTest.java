@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -19,10 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.member.entity.Member;
@@ -33,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(EmbeddedRedisConfig.class)
 class MemberControllerIntegrationTest {
 
 	@Autowired
@@ -101,8 +105,8 @@ class MemberControllerIntegrationTest {
 				.displayName("NewNick")
 				.email("test@test.com")
 				.role(Role.GUEST)
-				.createdAt(LocalDateTime.now())
-				.updatedAt(LocalDateTime.now())
+				.createdAt(Instant.now())
+				.updatedAt(Instant.now())
 				.build();
 
 			when(memberService.updateMember(anyString(), any())).thenReturn(responseDTO);
