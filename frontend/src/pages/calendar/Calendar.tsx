@@ -3,18 +3,23 @@ import clsx from 'clsx';
 import { useSearch, useParams, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, useCallback } from 'react';
 
-import { Body, Navigator, Timeslots, BookingForm } from '~/components/calendar'
-import { getCalendarDays } from '~/libs/utils';
-import { useCalendarEvent } from '~/hooks/useCalendarEvent';
-import { useCalendarNavigation } from '~/hooks/useCalendarNavigation';
-import { useCalendarDateSelection } from '~/hooks/useCalendarDateSelection';
-import { useTimeslots } from '~/hooks/useTimeslots';
-import { ITimeSlot } from '~/types/timeslot';
-import { useBookings } from '~/hooks/useBookings';
+import {
+    Body,
+    Navigator,
+    Timeslots,
+    BookingForm,
+    getCalendarDays,
+    useCalendarEvent,
+    useCalendarNavigation,
+    useCalendarDateSelection,
+    useTimeslots,
+    useBookings,
+    useBookingsStreamQuery,
+} from '~/features/calendar';
+import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
 import { useAuth } from '~/features/member';
-import { useBookingsStreamQuery } from '~/hooks/useBookings';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 

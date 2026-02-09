@@ -1,7 +1,7 @@
 import { Link, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import Pagination from '~/components/Pagination';
-import { useMyBookings } from '~/hooks/useBookings';
+import { useMyBookings } from '~/features/calendar';
 
 export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/app/my-bookings' });
