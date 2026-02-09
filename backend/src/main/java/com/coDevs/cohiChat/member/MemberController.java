@@ -23,6 +23,7 @@ import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 
@@ -94,6 +95,13 @@ public class MemberController {
 	public ResponseEntity<Void> deleteMember(@PathVariable(name = "username") String username) {
 		memberService.deleteMember(username);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/v1/me/withdrawal-check")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<WithdrawalCheckResponseDTO> checkWithdrawal(Principal principal) {
+		WithdrawalCheckResponseDTO response = memberService.checkWithdrawal(principal.getName());
+		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/v1/hosts")

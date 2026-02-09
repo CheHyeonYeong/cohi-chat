@@ -1,6 +1,11 @@
 package com.coDevs.cohiChat.member;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
+import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -11,10 +16,14 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +36,8 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,15 +45,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final BookingRepository bookingRepository;
+	private final CalendarRepository calendarRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
+	private final GoogleCalendarService googleCalendarService;
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
@@ -165,7 +180,86 @@ public class MemberService {
 	@Transactional
 	public void deleteMember(String username) {
 		Member member = getMember(username);
+		cancelAffectedBookings(member);
 		member.softDelete();
+		refreshTokenRepository.deleteById(username);
+	}
+
+	/**
+	 * 회원 탈퇴 시 영향받는 예약 조회
+	 * @param username 사용자명
+	 * @return 탈퇴 가능 여부 및 영향받는 예약 목록
+	 */
+	@Transactional(readOnly = true)
+	public WithdrawalCheckResponseDTO checkWithdrawal(String username) {
+		Member member = getMember(username);
+		LocalDate today = LocalDate.now();
+		List<AffectedBookingDTO> affectedBookings = new ArrayList<>();
+
+		// 호스트인 경우: 호스트로서의 미래 예약 조회
+		if (member.getRole() == Role.HOST) {
+			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
+				member.getId(), today, AttendanceStatus.SCHEDULED);
+			hostBookings.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));
+		}
+
+		// 모든 사용자: 게스트로서의 미래 예약 조회
+		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
+		guestBookings.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));
+
+		return WithdrawalCheckResponseDTO.of(affectedBookings);
+	}
+
+	private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
+		return AffectedBookingDTO.builder()
+			.bookingId(booking.getId())
+			.bookingDate(booking.getBookingDate())
+			.startTime(booking.getTimeSlot().getStartTime())
+			.endTime(booking.getTimeSlot().getEndTime())
+			.topic(booking.getTopic())
+			.role(role)
+			.build();
+	}
+
+	private void cancelAffectedBookings(Member member) {
+		LocalDate today = LocalDate.now();
+		String cancellationReason = "회원 탈퇴로 인한 취소";
+
+		// 호스트인 경우: 호스트로서의 미래 예약 취소
+		if (member.getRole() == Role.HOST) {
+			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
+				member.getId(), today, AttendanceStatus.SCHEDULED);
+			for (Booking booking : hostBookings) {
+				deleteGoogleCalendarEvent(booking, member.getId());
+				booking.forceCancel(cancellationReason);
+			}
+		}
+
+		// 모든 사용자: 게스트로서의 미래 예약 취소
+		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
+		for (Booking booking : guestBookings) {
+			deleteGoogleCalendarEvent(booking, booking.getTimeSlot().getUserId());
+			booking.forceCancel(cancellationReason);
+		}
+	}
+
+	private void deleteGoogleCalendarEvent(Booking booking, java.util.UUID hostId) {
+		if (booking.getGoogleEventId() == null) {
+			return;
+		}
+
+		calendarRepository.findById(hostId).ifPresent(calendar -> {
+			boolean deleted = googleCalendarService.deleteEvent(
+				booking.getGoogleEventId(),
+				calendar.getGoogleCalendarId()
+			);
+
+			if (deleted) {
+				log.info("Google Calendar event deleted for booking: {}", booking.getId());
+			}
+		});
 	}
 
 	@Transactional(readOnly = true)
