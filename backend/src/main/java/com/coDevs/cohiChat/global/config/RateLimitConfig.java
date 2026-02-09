@@ -6,6 +6,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
@@ -24,9 +25,14 @@ public class RateLimitConfig implements DisposableBean {
 
 	@Bean
 	public LettuceBasedProxyManager<String> lettuceProxyManager(
-		LettuceConnectionFactory connectionFactory, RateLimitProperties properties) {
+		RedisConnectionFactory connectionFactory, RateLimitProperties properties) {
 
-		Object nativeClient = connectionFactory.getNativeClient();
+		if (!(connectionFactory instanceof LettuceConnectionFactory lettuceFactory)) {
+			throw new IllegalStateException(
+				"LettuceConnectionFactory가 필요합니다. 현재: " + connectionFactory.getClass().getName());
+		}
+
+		Object nativeClient = lettuceFactory.getNativeClient();
 		if (!(nativeClient instanceof RedisClient redisClient)) {
 			throw new IllegalStateException(
 				"Standalone RedisClient가 필요합니다. 현재: " + nativeClient.getClass().getName());
