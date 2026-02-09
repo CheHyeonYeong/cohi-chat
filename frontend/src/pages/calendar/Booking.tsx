@@ -1,18 +1,33 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "~/components/button";
 import { useBooking, useUploadBookingFile } from "~/features/calendar";
+import {
+    validateFiles,
+    getAcceptedFileTypes,
+    formatFileSize,
+    FILE_UPLOAD_LIMITS,
+    type FileValidationError,
+} from "~/libs/fileValidation";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export default function Booking() {
     const { id } = useParams({ from: '/app/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
-    const { mutate: uploadFile, isSuccess: isUploadSuccess } = useUploadBookingFile(id);
+    const { mutate: uploadFile, isSuccess: isUploadSuccess, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isUploadSuccess) {
             refetch();
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     }, [isUploadSuccess, refetch]);
 
@@ -33,11 +48,36 @@ export default function Booking() {
     );
 
     const when = new Date(booking.when);
+    const existingFilesCount = booking.files.length;
+    const existingTotalSize = booking.files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
+    const canUploadMore = existingFilesCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) {
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            return;
+        }
+
+        const result = validateFiles(files, existingFilesCount, existingTotalSize);
+        setValidationErrors(result.errors);
+        setSelectedFiles(Array.from(files));
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const formData = new FormData(e.target as HTMLFormElement);
-        uploadFile(formData);
-    }
+        if (validationErrors.length > 0 || selectedFiles.length === 0) {
+            return;
+        }
+
+        // 파일을 하나씩 업로드 (API가 단일 파일을 받으므로)
+        for (const file of selectedFiles) {
+            const formData = new FormData();
+            formData.append('file', file);
+            uploadFile(formData);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
@@ -60,20 +100,88 @@ export default function Booking() {
 
                 <hr className="w-full" />
 
-                <form className="flex flex-col space-y-2 items-start" onSubmit={handleSubmit}>
-                    <input type="file" name="files" multiple />
-                    <Button type="submit" variant="primary" className="w-full py-2">첨부</Button>
-                </form>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                    <h2 className="text-lg font-semibold mb-2">파일 첨부</h2>
+                    <p className="text-sm text-gray-600 mb-4">
+                        허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')} |
+                        최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)} |
+                        최대 개수: {FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개
+                    </p>
+                    <p className="text-sm text-gray-600 mb-4">
+                        현재 첨부 파일: {existingFilesCount}개 / {FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개,
+                        총 용량: {formatFileSize(existingTotalSize)} / {formatFileSize(FILE_UPLOAD_LIMITS.MAX_TOTAL_SIZE_PER_BOOKING)}
+                    </p>
+
+                    {!canUploadMore && (
+                        <p className="text-red-600 text-sm mb-4">
+                            최대 파일 개수에 도달했습니다. 새 파일을 첨부하려면 기존 파일을 삭제해주세요.
+                        </p>
+                    )}
+
+                    {canUploadMore && (
+                        <form className="flex flex-col space-y-2 items-start" onSubmit={handleSubmit}>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                name="files"
+                                multiple
+                                accept={getAcceptedFileTypes()}
+                                onChange={handleFileChange}
+                                className="w-full"
+                            />
+
+                            {validationErrors.length > 0 && (
+                                <div className="w-full bg-red-50 border border-red-200 rounded p-3">
+                                    <p className="text-red-700 font-medium text-sm">파일 업로드 오류:</p>
+                                    <ul className="list-disc pl-4 text-red-600 text-sm mt-1">
+                                        {validationErrors.map((err, idx) => (
+                                            <li key={idx}>{err.message}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {uploadError && (
+                                <div className="w-full bg-red-50 border border-red-200 rounded p-3">
+                                    <p className="text-red-600 text-sm">
+                                        업로드 실패: {uploadError.message}
+                                    </p>
+                                </div>
+                            )}
+
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                className="w-full py-2"
+                                disabled={validationErrors.length > 0 || selectedFiles.length === 0 || isUploading}
+                            >
+                                {isUploading ? '업로드 중...' : '첨부'}
+                            </Button>
+                        </form>
+                    )}
+                </div>
 
                 {booking.files.length > 0 && (
-                    <ul className="list-disc pl-4 space-y-2">
-                        {booking.files.map((file) => {
-                            const filename = file.file.split('/').pop();
-                            return <li key={file.id} className="">
-                                <a href={`${API_URL}/${file.file}`} target="_blank" rel="noopener noreferrer">{filename}</a>
-                            </li>
-                        })}
-                    </ul>
+                    <div className="bg-white border rounded-lg p-4">
+                        <h3 className="font-medium mb-3">첨부된 파일</h3>
+                        <ul className="space-y-2">
+                            {booking.files.map((file) => (
+                                <li key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                    <a
+                                        href={`${API_URL}/bookings/${booking.id}/files/${file.id}/download`}
+                                        className="text-blue-600 hover:underline flex-1 truncate"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {file.originalFileName || file.file.split('/').pop()}
+                                    </a>
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        {file.fileSize ? formatFileSize(file.fileSize) : ''}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
                 {booking.files.length === 0 && (
                     <div>첨부 파일이 없습니다.</div>
