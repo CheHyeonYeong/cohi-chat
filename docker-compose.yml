@@ -67,6 +67,85 @@ services:
   #     retries: 5
   #   restart: unless-stopped
 
+  # ===== ELK Stack =====
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: cohi-chat-elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=cohi-chat-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9300"
+    networks:
+      - cohi-chat-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.17.0
+    container_name: cohi-chat-logstash
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "127.0.0.1:5044:5044"
+      - "127.0.0.1:5000:5000/tcp"
+      - "127.0.0.1:5000:5000/udp"
+      - "127.0.0.1:9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    networks:
+      - cohi-chat-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9600/_node/stats | grep -q '\"status\":\"green\"' || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: cohi-chat-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "127.0.0.1:5601:5601"
+    networks:
+      - cohi-chat-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q '\"level\":\"available\"' || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped
+
 networks:
   cohi-chat-network:
     driver: bridge
@@ -75,6 +154,8 @@ volumes:
   redis-data:
     driver: local
   sqlite-data:
+    driver: local
+  elasticsearch-data:
     driver: local
   # Uncomment if you need persistent volumes
   # postgres-data:
