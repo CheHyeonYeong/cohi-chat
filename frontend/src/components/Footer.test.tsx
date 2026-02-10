@@ -23,9 +23,9 @@ describe('Footer', () => {
         const currentYear = new Date().getFullYear();
 
         const copyrightText = container.textContent;
-        expect(copyrightText).toContain('Copyright');
         expect(copyrightText).toContain(`${currentYear}`);
         expect(copyrightText).toContain('coheChat');
+        expect(copyrightText).toContain('All rights reserved');
     });
 
     it('should render terms of service link', () => {
@@ -34,7 +34,7 @@ describe('Footer', () => {
         const termsLink = Array.from(container.querySelectorAll('a')).find(
             (link) => link.textContent === '이용약관'
         );
-        expect(termsLink).toBeDefined();
+        expect(termsLink).toBeTruthy();
     });
 
     it('should render privacy policy link', () => {
@@ -43,13 +43,13 @@ describe('Footer', () => {
         const privacyLink = Array.from(container.querySelectorAll('a')).find(
             (link) => link.textContent === '개인정보처리방침'
         );
-        expect(privacyLink).toBeDefined();
+        expect(privacyLink).toBeTruthy();
     });
 
     it('should have footer element', () => {
         const { container } = render(<Footer />);
 
         const footer = container.querySelector('footer');
-        expect(footer).toBeDefined();
+        expect(footer).toBeTruthy();
     });
 });
