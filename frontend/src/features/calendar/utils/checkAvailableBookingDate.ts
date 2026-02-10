@@ -10,7 +10,6 @@ export function checkAvailableBookingDate(
     weekday: number
 ): boolean {
     const isUnavailable =
-        (weekday === 5 || weekday === 6) ||
         (year < baseDate.getFullYear() ||
             (year === baseDate.getFullYear() && month < baseDate.getMonth() + 1)) ||
         (year === baseDate.getFullYear() &&

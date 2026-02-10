@@ -47,7 +47,7 @@ export default function Body({ year, month, days, baseDate, timeslots, bookings,
                     {weeks.map((week, weekIndex) => (
                         <tr key={weekIndex} className="grid grid-cols-7 gap-4">
                             {week.map((day, dayIndex) => {
-                                const weekday = dayIndex === 0 ? 6 : dayIndex - 1;
+                                const weekday = dayIndex; // 0=일, 1=월, ..., 6=토 (Date.getDay() 규칙)
                                 const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, year, month, day, weekday);
 
                                 return (
