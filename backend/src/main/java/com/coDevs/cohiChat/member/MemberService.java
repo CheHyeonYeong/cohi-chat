@@ -177,10 +177,17 @@ public class MemberService {
 		refreshTokenRepository.deleteById(username);
 
 		if (accessToken != null) {
-			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
-			String tokenHash = TokenHashUtil.hash(accessToken);
-			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
-			accessTokenBlacklistRepository.save(blacklist);
+			try {
+				long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+				if (remainingSeconds <= 0) {
+					return;
+				}
+				String tokenHash = TokenHashUtil.hash(accessToken);
+				AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+				accessTokenBlacklistRepository.save(blacklist);
+			} catch (ExpiredJwtException e) {
+				// 이미 만료된 토큰은 블랙리스트 등록 불필요
+			}
 		}
 	}
 

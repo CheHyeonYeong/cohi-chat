@@ -416,4 +416,46 @@ class MemberServiceTest {
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 		verify(accessTokenBlacklistRepository).save(any(AccessTokenBlacklist.class));
 	}
+
+	@Test
+	@DisplayName("성공: accessToken이 null이면 블랙리스트 등록 없이 Refresh Token만 삭제")
+	void logoutWithNullAccessToken() {
+		// when
+		memberService.logout(TEST_USERNAME, null);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+	}
+
+	@Test
+	@DisplayName("성공: 이미 만료된 토큰으로 로그아웃 시 블랙리스트 등록 건너뜀")
+	void logoutWithExpiredToken() {
+		// given
+		String accessToken = "expired-token";
+		willThrow(new ExpiredJwtException(null, null, "expired"))
+			.given(jwtTokenProvider).getExpirationSeconds(accessToken);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+	}
+
+	@Test
+	@DisplayName("성공: TTL이 0 이하인 토큰은 블랙리스트 등록 건너뜀")
+	void logoutWithZeroTtlToken() {
+		// given
+		String accessToken = "zero-ttl-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(0L);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+	}
 }

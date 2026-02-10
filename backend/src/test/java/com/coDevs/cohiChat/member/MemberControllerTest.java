@@ -3,7 +3,9 @@ package com.coDevs.cohiChat.member;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -181,6 +183,8 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.message").value("로그아웃 되었습니다."))
 				.andExpect(jsonPath("$.error").value(nullValue()));
+
+			verify(memberService).logout(eq(TEST_USERNAME), eq("test-access-token"));
 		}
 	}
 

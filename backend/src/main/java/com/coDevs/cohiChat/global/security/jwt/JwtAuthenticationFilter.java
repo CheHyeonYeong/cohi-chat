@@ -15,7 +15,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -32,15 +34,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String token = resolveToken(request);
 
 		if (token != null && jwtTokenProvider.validateToken(token)) {
-			if (isBlacklisted(token)) {
-				SecurityContextHolder.clearContext();
-			} else {
-				try {
+			try {
+				if (isBlacklisted(token)) {
+					SecurityContextHolder.clearContext();
+				} else {
 					Authentication auth = jwtTokenProvider.getAuthentication(token);
 					SecurityContextHolder.getContext().setAuthentication(auth);
-				} catch (Exception e) {
-					SecurityContextHolder.clearContext();
 				}
+			} catch (Exception e) {
+				log.warn("토큰 검증 중 오류 발생: {}", e.getMessage());
+				SecurityContextHolder.clearContext();
 			}
 		}
 
