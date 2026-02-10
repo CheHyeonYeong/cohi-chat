@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import StepIndicator from '~/features/host/components/register/StepIndicator';
 import RegisterStep1, { type Step1Data } from '~/features/host/components/register/RegisterStep1';
@@ -27,6 +28,7 @@ export default function HostRegister() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const createCalendarMutation = useCreateCalendar();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const validateStep1 = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -81,10 +83,12 @@ export default function HostRegister() {
                         const response = await refreshTokenApi();
                         localStorage.setItem('auth_token', response.accessToken);
                         localStorage.setItem('refresh_token', response.refreshToken);
-                        dispatchAuthChange();
                     } catch {
                         // 토큰 갱신 실패해도 등록은 완료된 상태
                     }
+                    // auth 캐시를 무효화하여 HostGuard가 새 역할(HOST)을 인식하도록 함
+                    await queryClient.invalidateQueries({ queryKey: ['auth'] });
+                    dispatchAuthChange();
                 },
             },
         );

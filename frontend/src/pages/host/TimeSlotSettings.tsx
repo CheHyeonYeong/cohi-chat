@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -46,7 +47,7 @@ export default function TimeSlotSettings() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const syncedRef = useRef(false);
 
-    const { data: existingTimeslots, isLoading, refetch } = useMyTimeslots();
+    const { data: existingTimeslots, isLoading, error: loadError, refetch } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
@@ -98,9 +99,11 @@ export default function TimeSlotSettings() {
                 })
             )
         );
-        const failures = results.filter((r) => r.status === 'rejected');
+        const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (failures.length > 0) {
-            setErrors({ save: `${failures.length}개 시간대 저장에 실패했습니다.` });
+            const reasons = failures.map((f) => f.reason instanceof Error ? f.reason.message : '알 수 없는 오류');
+            const uniqueReasons = [...new Set(reasons)];
+            setErrors({ save: uniqueReasons.join(', ') });
         } else {
             setErrors({});
         }
@@ -127,10 +130,28 @@ export default function TimeSlotSettings() {
         .map((e) => `${formatWeekdaySummary(e.weekdays)}, ${e.startTime} - ${e.endTime}`)
         .join(' / ');
 
+    const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
+
     if (isLoading) {
         return (
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">불러오는 중...</p>
+            </div>
+        );
+    }
+
+    if (isCalendarMissing) {
+        return (
+            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
+                    <Link
+                        to="/app/host/register"
+                        className="inline-block px-6 py-2.5 rounded-lg font-medium cohe-btn-primary"
+                    >
+                        캘린더 연동하기
+                    </Link>
+                </div>
             </div>
         );
     }
