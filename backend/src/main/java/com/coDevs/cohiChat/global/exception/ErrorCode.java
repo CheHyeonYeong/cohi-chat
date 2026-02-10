@@ -34,6 +34,9 @@ public enum ErrorCode {
 	AUTH_NOT_PROVIDED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
 
 	ALREADY_HOST(HttpStatus.CONFLICT, "이미 호스트로 등록되어 있습니다."),
+	HOST_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "호스트 승격 신청을 찾을 수 없습니다."),
+	HOST_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 호스트 승격 신청이 존재합니다."),
+	HOST_REQUEST_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 호스트 승격 신청입니다."),
 
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
     GUEST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
