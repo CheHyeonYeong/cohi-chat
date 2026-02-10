@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +26,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.coDevs.cohiChat.booking.BookingService;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
@@ -50,6 +51,9 @@ class CalendarControllerTest {
 
     @MockitoBean
     private CalendarService calendarService;
+
+    @MockitoBean
+    private BookingService bookingService;
 
     @MockitoBean
     private MemberService memberService;
@@ -87,8 +91,8 @@ class CalendarControllerTest {
             .topics(TEST_TOPICS)
             .description(TEST_DESCRIPTION)
             .googleCalendarId(TEST_GOOGLE_CALENDAR_ID)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.createCalendar(any(Member.class), any(CalendarCreateRequestDTO.class)))
@@ -100,8 +104,10 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.topics[0]").value("커리어 상담"))
-            .andExpect(jsonPath("$.description").value(TEST_DESCRIPTION));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("커리어 상담"))
+            .andExpect(jsonPath("$.data.description").value(TEST_DESCRIPTION))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -120,6 +126,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -139,6 +146,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -161,6 +169,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -183,6 +192,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_ALREADY_EXISTS.toString()));
     }
 
@@ -195,8 +205,8 @@ class CalendarControllerTest {
             .topics(TEST_TOPICS)
             .description(TEST_DESCRIPTION)
             .googleCalendarId(TEST_GOOGLE_CALENDAR_ID)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.getCalendar(any(Member.class))).thenReturn(response);
@@ -205,8 +215,10 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.topics[0]").value("커리어 상담"))
-            .andExpect(jsonPath("$.description").value(TEST_DESCRIPTION));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("커리어 상담"))
+            .andExpect(jsonPath("$.data.description").value(TEST_DESCRIPTION))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -220,6 +232,7 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -234,6 +247,7 @@ class CalendarControllerTest {
         mockMvc.perform(get("/calendar/v1")
                 .with(csrf()))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -256,8 +270,8 @@ class CalendarControllerTest {
             .topics(updatedTopics)
             .description(updatedDescription)
             .googleCalendarId(updatedGoogleCalendarId)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
             .build();
 
         when(calendarService.updateCalendar(any(Member.class), any(CalendarUpdateRequestDTO.class)))
@@ -269,8 +283,10 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.topics[0]").value("새로운 주제"))
-            .andExpect(jsonPath("$.description").value(updatedDescription));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.topics[0]").value("새로운 주제"))
+            .andExpect(jsonPath("$.data.description").value(updatedDescription))
+            .andExpect(jsonPath("$.error").isEmpty());
     }
 
     @Test
@@ -292,6 +308,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.GUEST_ACCESS_DENIED.toString()));
     }
 
@@ -314,6 +331,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
     }
 
@@ -333,6 +351,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 
@@ -352,6 +371,7 @@ class CalendarControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.message").exists());
     }
 

@@ -1,39 +1,59 @@
-HELP.md
-.gradle
+# ===========================
+# Backend (Spring Boot + Gradle)
+# ===========================
+
+# Gradle
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### STS ###
+# 빌드 출력
+bin/
+out/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ===========================
+# IDE
+# ===========================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# VS Code
 .vscode/
 
+# ===========================
+# 기타
+# ===========================
+
+# Spring Boot
+HELP.md
+
+# SQLite 데이터베이스
+*.db
+*.db-journal
 cohi-chat.db

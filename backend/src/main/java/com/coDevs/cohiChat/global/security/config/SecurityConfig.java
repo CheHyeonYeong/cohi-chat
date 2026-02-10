@@ -1,11 +1,16 @@
 package com.coDevs.cohiChat.global.security.config;
 
+import com.coDevs.cohiChat.global.config.RateLimitProperties;
+import com.coDevs.cohiChat.global.security.filter.RateLimitFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,6 +35,9 @@ public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private final LettuceBasedProxyManager<String> lettuceProxyManager;
+	private final RateLimitProperties rateLimitProperties;
+	private final ObjectMapper objectMapper;
 
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
@@ -48,10 +56,17 @@ public class SecurityConfig {
 
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/swagger-ui/**", "/hello", "/api/hello", "/account/hosts", "/members/v1/signup", "/members/v1/login", "/members/v1/refresh", "/members/v1/hosts", "/timeslot/v1/hosts/**").permitAll()
+				// /calendar/v1 엔드포인트는 인증 필수 (permitAll 규칙보다 먼저 적용)
+				.requestMatchers("/calendar/v1", "/calendar/v1/**").authenticated()
+				// 공개 캘린더 엔드포인트 (slug 기반)
+				.requestMatchers(HttpMethod.GET, "/calendar/*").permitAll()
+				.requestMatchers(HttpMethod.GET, "/calendar/*/bookings").permitAll()
+				.requestMatchers(HttpMethod.GET, "/calendar/*/bookings/stream").permitAll()
 				.anyRequest().authenticated()
 			)
 
-			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository), UsernamePasswordAuthenticationFilter.class);
+			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(new RateLimitFilter(lettuceProxyManager, rateLimitProperties, objectMapper), JwtAuthenticationFilter.class);
 
 		return http.build();
 	}

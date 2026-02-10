@@ -1,8 +1,10 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,11 +17,13 @@ import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
@@ -37,6 +41,7 @@ public class BookingService {
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
     private final GoogleCalendarService googleCalendarService;
+    private final GoogleCalendarProperties googleCalendarProperties;
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
@@ -67,14 +72,8 @@ public class BookingService {
     private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot) {
         UUID hostId = timeSlot.getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            LocalDateTime startDateTime = LocalDateTime.of(
-                booking.getBookingDate(),
-                timeSlot.getStartTime()
-            );
-            LocalDateTime endDateTime = LocalDateTime.of(
-                booking.getBookingDate(),
-                timeSlot.getEndTime()
-            );
+            Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
+            Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
 
             String eventId = googleCalendarService.createEvent(
                 booking.getTopic(),
@@ -209,14 +208,8 @@ public class BookingService {
 
         UUID hostId = timeSlot.getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            LocalDateTime startDateTime = LocalDateTime.of(
-                bookingDate,
-                timeSlot.getStartTime()
-            );
-            LocalDateTime endDateTime = LocalDateTime.of(
-                bookingDate,
-                timeSlot.getEndTime()
-            );
+            Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
+            Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
 
             boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
@@ -326,14 +319,8 @@ public class BookingService {
 
         UUID hostId = timeSlot.getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            LocalDateTime startDateTime = LocalDateTime.of(
-                request.getBookingDate(),
-                timeSlot.getStartTime()
-            );
-            LocalDateTime endDateTime = LocalDateTime.of(
-                request.getBookingDate(),
-                timeSlot.getEndTime()
-            );
+            Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
+            Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
 
             boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
@@ -350,9 +337,37 @@ public class BookingService {
         });
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingPublicResponseDTO> getBookingsByHostAndDate(UUID hostId, int year, int month) {
+        validateYearMonth(year, month);
+
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
+        return bookings.stream()
+            .map(BookingPublicResponseDTO::from)
+            .toList();
+    }
+
+    private void validateYearMonth(int year, int month) {
+        if (month < 1 || month > 12) {
+            throw new CustomException(ErrorCode.INVALID_YEAR_MONTH);
+        }
+        if (year < 1900 || year > 2100) {
+            throw new CustomException(ErrorCode.INVALID_YEAR_MONTH);
+        }
+    }
+
     private void validateGuestAccess(Booking booking, UUID requesterId) {
         if (!booking.getGuestId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    private Instant toInstant(LocalDate date, LocalTime time) {
+        String timezone = googleCalendarProperties.getTimezone();
+        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+        return date.atTime(time).atZone(zoneId).toInstant();
     }
 }

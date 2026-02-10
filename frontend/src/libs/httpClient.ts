@@ -39,13 +39,18 @@ export async function httpClient<T>(url: string, options: HttpClientOptions = {}
         } catch {
             throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
         }
-        throw new Error(data.detail, { cause: response.status });
+        const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
+        throw new Error(message, { cause: response.status });
     }
 
     const text = await response.text();
     if (!text) {
         return undefined as T;
     }
-    const data = JSON.parse(text);
-    return snakeToCamel(data) as T;
+    const data = snakeToCamel(JSON.parse(text));
+
+    if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        return (data as { success: boolean; data: T }).data;
+    }
+    return data as T;
 } 

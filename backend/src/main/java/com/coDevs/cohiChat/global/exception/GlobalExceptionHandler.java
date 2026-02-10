@@ -10,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolationException;
+
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 
 import com.coDevs.cohiChat.global.response.ErrorResponseDTO;
@@ -35,6 +37,16 @@ public class GlobalExceptionHandler {
 			.getFieldErrors()
 			.stream()
 			.map(error -> error.getDefaultMessage())
+			.collect(Collectors.joining(", "));
+
+		return createErrorResponse(ErrorCode.INVALID_INPUT, errorMessage);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ApiResponseDTO<Void>> handleConstraintViolationException(ConstraintViolationException e) {
+		String errorMessage = e.getConstraintViolations()
+			.stream()
+			.map(violation -> violation.getMessage())
 			.collect(Collectors.joining(", "));
 
 		return createErrorResponse(ErrorCode.INVALID_INPUT, errorMessage);

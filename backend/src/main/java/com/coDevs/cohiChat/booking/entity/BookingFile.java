@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.booking.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -52,7 +52,7 @@ public class BookingFile {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static BookingFile create(
         Booking booking,

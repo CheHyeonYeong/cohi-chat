@@ -15,10 +15,8 @@ const RootRoute = createRootRoute({
     component: () => {
         return (
             <>
-                <div className="w-screen h-full flex flex-col items-center justify-center">
-                    <div className="w-full h-fit md:w-[800px] md:mx-auto border border-gray-200 rounded-lg px-4 py-8">
-                        <Outlet />
-                    </div>
+                <div className="w-full min-h-screen">
+                    <Outlet />
                 </div>
                 <TanStackRouterDevtools />
             </>

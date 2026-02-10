@@ -46,4 +46,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,
         @Param("excludedId") Long excludedId
     );
+
+    /**
+     * 호스트의 월별 예약 목록 조회 (날짜 범위 필터링)
+     * FETCH JOIN으로 N+1 문제 방지
+     */
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId AND b.bookingDate >= :startDate AND b.bookingDate < :endDate ORDER BY b.bookingDate")
+    List<Booking> findByHostIdAndDateRange(
+        @Param("hostId") UUID hostId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+    );
 }

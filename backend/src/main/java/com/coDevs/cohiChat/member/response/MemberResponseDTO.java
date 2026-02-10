@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.member.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.member.entity.Member;
@@ -22,8 +22,8 @@ public class MemberResponseDTO {
 	private String displayName;
 	private String email;
 	private Role role;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
+	private Instant createdAt;
+	private Instant updatedAt;
 
 	public static MemberResponseDTO from(Member member) {
 		return MemberResponseDTO.builder()

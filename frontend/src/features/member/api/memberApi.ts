@@ -23,10 +23,10 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     });
 
     if (!response) {
-        throw new Error('Login failed: Empty response from server');
+        throw new Error('서버로부터 응답을 받지 못했습니다.');
     }
     if (!response.accessToken) {
-        throw new Error('Login failed: Missing access token');
+        throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
     return response;
