@@ -15,6 +15,8 @@ import redis.embedded.RedisServer;
 @TestConfiguration
 public class EmbeddedRedisConfig {
 
+    private static final String TEST_PASSWORD = "testpassword";
+
     private RedisServer redisServer;
     private int port;
 
@@ -24,6 +26,7 @@ public class EmbeddedRedisConfig {
         redisServer = RedisServer.newRedisServer()
             .port(port)
             .setting("maxmemory 128M")
+            .setting("requirepass " + TEST_PASSWORD)
             .build();
         redisServer.start();
     }
@@ -36,8 +39,9 @@ public class EmbeddedRedisConfig {
     }
 
     @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
+    public LettuceConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration("localhost", port);
+        config.setPassword(TEST_PASSWORD);
         return new LettuceConnectionFactory(config);
     }
 
