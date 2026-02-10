@@ -1,12 +1,61 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useSignup } from '../hooks/useSignup';
-
-const REDIRECT_DELAY_MS = 1500;
+import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 
 // BE @Pattern과 동일한 검증 규칙
 const USERNAME_PATTERN = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
 const PASSWORD_PATTERN = /^[a-zA-Z0-9!@#$%^&*._-]{8,20}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface SignupFormValues {
+    username: string;
+    email: string;
+    displayName: string;
+    password: string;
+    passwordAgain: string;
+}
+
+// passwordAgain validation에서 password 값 참조를 위한 클로저
+const createValidationRules = (
+    getPassword: () => string
+): Record<keyof SignupFormValues, ValidationRule<string>> => ({
+    username: (value: string) => {
+        if (!value.trim()) return '아이디를 입력해주세요.';
+        if (!USERNAME_PATTERN.test(value.trim())) {
+            return '아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능합니다.';
+        }
+        return null;
+    },
+    email: (value: string) => {
+        if (!value.trim()) return '이메일을 입력해주세요.';
+        if (!EMAIL_PATTERN.test(value.trim())) {
+            return '올바른 이메일 형식이 아닙니다.';
+        }
+        return null;
+    },
+    displayName: (value: string) => {
+        const trimmed = value.trim();
+        if (trimmed && (trimmed.length < 2 || trimmed.length > 20)) {
+            return '표시 이름은 2~20자여야 합니다.';
+        }
+        return null;
+    },
+    password: (value: string) => {
+        if (!value) return '비밀번호를 입력해주세요.';
+        if (!PASSWORD_PATTERN.test(value)) {
+            return '비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.';
+        }
+        return null;
+    },
+    passwordAgain: (value: string) => {
+        if (!value) return '비밀번호 확인을 입력해주세요.';
+        if (value !== getPassword()) {
+            return '비밀번호가 일치하지 않습니다.';
+        }
+        return null;
+    },
+});
 
 export function SignupForm() {
     const [username, setUsername] = useState('');
@@ -14,47 +63,32 @@ export function SignupForm() {
     const [displayName, setDisplayName] = useState('');
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
-    const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const navigate = useNavigate();
     const signupMutation = useSignup();
-    const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-    useEffect(() => {
-        return () => {
-            if (redirectTimerRef.current) {
-                clearTimeout(redirectTimerRef.current);
-            }
-        };
-    }, []);
+    const validationRules = createValidationRules(() => password);
+    const { fields, handleBlur, validateAll, getInputClassName } =
+        useFormValidation<SignupFormValues>(validationRules);
 
-    const validate = (): boolean => {
-        const errors: string[] = [];
-
-        if (!USERNAME_PATTERN.test(username.trim())) {
-            errors.push('아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능하며, 예약어는 사용할 수 없습니다.');
-        }
-
-        if (!PASSWORD_PATTERN.test(password)) {
-            errors.push('비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.');
-        }
-
-        if (password !== passwordAgain) {
-            errors.push('비밀번호가 일치하지 않습니다.');
-        }
-
-        const trimmedDisplayName = displayName.trim();
-        if (trimmedDisplayName && (trimmedDisplayName.length < 2 || trimmedDisplayName.length > 20)) {
-            errors.push('표시 이름은 2~20자여야 합니다.');
-        }
-
-        setValidationErrors(errors);
-        return errors.length === 0;
-    };
+    const onBlur = useCallback(
+        (name: keyof SignupFormValues, value: string) => {
+            handleBlur(name, value);
+        },
+        [handleBlur]
+    );
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validate()) {
+        const values: SignupFormValues = {
+            username: username.trim(),
+            email: email.trim(),
+            displayName: displayName.trim(),
+            password,
+            passwordAgain,
+        };
+
+        if (!validateAll(values)) {
             return;
         }
 
@@ -67,15 +101,15 @@ export function SignupForm() {
             },
             {
                 onSuccess: () => {
-                    redirectTimerRef.current = setTimeout(() => {
-                        navigate({ to: '/app/login' });
-                    }, REDIRECT_DELAY_MS);
+                    navigate({ to: '/app/login' });
                 },
             }
         );
     };
 
     const isPending = signupMutation.isPending;
+    const baseInputClass =
+        'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)] py-8">
@@ -93,13 +127,17 @@ export function SignupForm() {
                             id="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            onBlur={() => onBlur('username', username)}
                             disabled={isPending}
                             required
                             minLength={4}
                             maxLength={12}
                             placeholder="(4-12자)"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('username', baseInputClass)}
                         />
+                        {fields.username?.touched && fields.username.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -111,12 +149,16 @@ export function SignupForm() {
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            onBlur={() => onBlur('email', email)}
                             disabled={isPending}
                             required
                             maxLength={128}
                             placeholder="(최대 128자)"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('email', baseInputClass)}
                         />
+                        {fields.email?.touched && fields.email.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.email.error}</span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -128,11 +170,15 @@ export function SignupForm() {
                             id="displayName"
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
+                            onBlur={() => onBlur('displayName', displayName)}
                             disabled={isPending}
                             maxLength={20}
                             placeholder="(2-20자)"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('displayName', baseInputClass)}
                         />
+                        {fields.displayName?.touched && fields.displayName.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -144,13 +190,17 @@ export function SignupForm() {
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            onBlur={() => onBlur('password', password)}
                             disabled={isPending}
                             required
                             minLength={8}
                             maxLength={20}
                             placeholder="(8-20자)"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('password', baseInputClass)}
                         />
+                        {fields.password?.touched && fields.password.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -162,32 +212,22 @@ export function SignupForm() {
                             id="passwordAgain"
                             value={passwordAgain}
                             onChange={(e) => setPasswordAgain(e.target.value)}
+                            onBlur={() => onBlur('passwordAgain', passwordAgain)}
                             disabled={isPending}
                             required
                             minLength={8}
                             maxLength={20}
-                            placeholder="비밀번호"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            placeholder="비밀번호 확인"
+                            className={getInputClassName('passwordAgain', baseInputClass)}
                         />
+                        {fields.passwordAgain?.touched && fields.passwordAgain.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.passwordAgain.error}</span>
+                        )}
                     </div>
-
-                    {validationErrors.length > 0 && (
-                        <ul className="text-red-600 text-sm list-disc pl-5">
-                            {validationErrors.map((error) => (
-                                <li key={error}>{error}</li>
-                            ))}
-                        </ul>
-                    )}
 
                     {signupMutation.isError && (
                         <div className="text-red-600 text-sm">
                             {signupMutation.error?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'}
-                        </div>
-                    )}
-
-                    {signupMutation.isSuccess && (
-                        <div className="text-green-600 text-sm">
-                            회원가입 성공! 로그인 페이지로 이동합니다...
                         </div>
                     )}
 
