@@ -47,6 +47,20 @@ public class TimeSlotService {
         return TimeSlotResponseDTO.from(savedTimeSlot);
     }
 
+    @Transactional
+    public void deleteTimeSlot(Member member, Long timeSlotId) {
+        validateHostPermission(member);
+
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        if (!timeSlot.getUserId().equals(member.getId())) {
+            throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);
+        }
+
+        timeSlotRepository.delete(timeSlot);
+    }
+
     @Transactional(readOnly = true)
     public List<TimeSlotResponseDTO> getTimeSlotsByHost(Member member) {
         validateHostPermission(member);

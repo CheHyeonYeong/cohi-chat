@@ -51,6 +51,21 @@ export async function logoutApi(): Promise<void> {
     });
 }
 
+export async function refreshTokenApi(): Promise<LoginResponse> {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+        throw new Error('Refresh token이 없습니다.');
+    }
+    const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
+        method: 'POST',
+        body: { refreshToken },
+    });
+    if (!response || !response.accessToken) {
+        throw new Error('토큰 갱신에 실패했습니다.');
+    }
+    return response;
+}
+
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {
     return httpClient<MemberResponseDTO>(
         `${MEMBER_API}/${encodeURIComponent(username)}`
