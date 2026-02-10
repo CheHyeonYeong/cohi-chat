@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +16,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
-import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 
 @ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
@@ -44,7 +41,7 @@ class JwtAuthenticationFilterTest {
 		request.addHeader("Authorization", "Bearer valid-token");
 
 		given(jwtTokenProvider.validateToken("valid-token")).willReturn(true);
-		given(accessTokenBlacklistRepository.findById(anyString())).willReturn(Optional.empty());
+		given(accessTokenBlacklistRepository.existsById(anyString())).willReturn(false);
 		given(jwtTokenProvider.getAuthentication("valid-token"))
 			.willReturn(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("user", null, java.util.Collections.emptyList()));
 
@@ -61,8 +58,7 @@ class JwtAuthenticationFilterTest {
 		request.addHeader("Authorization", "Bearer blacklisted-token");
 
 		given(jwtTokenProvider.validateToken("blacklisted-token")).willReturn(true);
-		given(accessTokenBlacklistRepository.findById(anyString()))
-			.willReturn(Optional.of(AccessTokenBlacklist.create("hash", 3600L)));
+		given(accessTokenBlacklistRepository.existsById(anyString())).willReturn(true);
 
 		filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
 

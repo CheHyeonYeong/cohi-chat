@@ -13,10 +13,6 @@ import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -24,6 +20,7 @@ import io.jsonwebtoken.JwtException;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.Member;
 
 import org.apache.commons.text.RandomStringGenerator;
@@ -110,7 +107,7 @@ public class MemberService {
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		String refreshTokenHash = hashToken(refreshTokenValue);
+		String refreshTokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = RefreshToken.create(
 			refreshTokenHash,
 			member.getUsername(),
@@ -170,10 +167,12 @@ public class MemberService {
 	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
 
-		long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
-		String tokenHash = hashToken(accessToken);
-		AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
-		accessTokenBlacklistRepository.save(blacklist);
+		if (accessToken != null) {
+			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+			String tokenHash = TokenHashUtil.hash(accessToken);
+			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+			accessTokenBlacklistRepository.save(blacklist);
+		}
 	}
 
 	@Transactional(readOnly = true)
@@ -188,7 +187,7 @@ public class MemberService {
 		}
 
 		// 2. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
-		String tokenHash = hashToken(refreshTokenValue);
+		String tokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
@@ -210,13 +209,4 @@ public class MemberService {
 			.build();
 	}
 
-	private String hashToken(String token) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(hash);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException("SHA-256 algorithm not available", e);
-		}
-	}
 }
