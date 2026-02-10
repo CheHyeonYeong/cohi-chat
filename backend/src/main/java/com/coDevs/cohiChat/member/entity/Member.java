@@ -67,6 +67,9 @@ public class Member {
 	@Column(name = "updated_at", updatable = true)
 	private Instant updatedAt;
 
+	@Column(name = "host_registered_at")
+	private Instant hostRegisteredAt;
+
 	@Column(name = "is_deleted", nullable = false)
 	private boolean isDeleted = false;
 
@@ -113,9 +116,27 @@ public class Member {
 		}
 	}
 
+	public void updateDisplayName(String displayName) {
+		if (displayName == null || displayName.isBlank()) {
+			throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
+		}
+		this.displayName = displayName;
+	}
+
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();
+	}
+
+	public void promoteToHost() {
+		if (this.role == Role.HOST) {
+			throw new CustomException(ErrorCode.ALREADY_HOST);
+		}
+		if (this.role != Role.GUEST) {
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
+		}
+		this.role = Role.HOST;
+		this.hostRegisteredAt = Instant.now();
 	}
 
 	public boolean isActive() {
