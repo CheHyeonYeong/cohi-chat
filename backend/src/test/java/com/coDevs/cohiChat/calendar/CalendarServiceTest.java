@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,7 @@ import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
@@ -37,6 +39,9 @@ class CalendarServiceTest {
 
     @Mock
     private CalendarRepository calendarRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
 
     @Mock
     private Member hostMember;
@@ -82,22 +87,28 @@ class CalendarServiceTest {
     }
 
     @Test
-    @DisplayName("실패: 게스트가 캘린더 생성 시도 시 GUEST_PERMISSION 예외")
-    void createCalendarFailWhenGuest() {
+    @DisplayName("성공: 게스트가 캘린더 생성 시 GUEST→HOST 자동 승격")
+    void createCalendarAutoPromoteGuest() {
         // given
+        given(hostMember.getId()).willReturn(TEST_USER_ID);
         given(hostMember.getRole()).willReturn(Role.GUEST);
+        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(false);
+        given(calendarRepository.save(any(Calendar.class))).willAnswer(inv -> inv.getArgument(0));
 
-        // when & then
-        assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))
-            .isInstanceOf(CustomException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GUEST_ACCESS_DENIED );
+        // when
+        CalendarResponseDTO response = calendarService.createCalendar(hostMember, requestDTO);
+
+        // then
+        verify(hostMember).promoteToHost();
+        verify(memberRepository).save(hostMember);
+        assertThat(response.getTopics()).isEqualTo(TEST_TOPICS);
     }
 
     @Test
     @DisplayName("실패: 이미 캘린더가 존재하면 CALENDAR_ALREADY_EXISTS 예외")
     void createCalendarFailWhenAlreadyExists() {
         // given
-        givenHostMember();
+        given(hostMember.getId()).willReturn(TEST_USER_ID);
         given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(true);
 
         // when & then
