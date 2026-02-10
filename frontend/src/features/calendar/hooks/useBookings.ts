@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { snakeToCamel } from '~/libs/utils';
-import { getBooking, getBookingsByDate, getMyBookings, uploadBookingFile } from '../api';
+import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFile } from '../api';
 import type { IBooking, IBookingDetail, ICalendarEvent, IPaginatedBookingDetail } from '../types';
 import { calendarKeys } from './queryKeys';
 
@@ -34,16 +34,21 @@ export function useUploadBookingFile(id: number) {
 }
 
 export function useBookingsStreamQuery({
-    endpoint,
+    slug,
+    year,
+    month,
     onMessage,
 }: {
-    endpoint: string;
+    slug: string;
+    year: number;
+    month: number;
     onMessage?: (data: IBooking | ICalendarEvent) => void;
 }) {
     const [items, setItems] = useState<Array<IBooking | ICalendarEvent>>([]);
 
     useEffect(() => {
         let isCancelled = false;
+        const endpoint = `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`;
 
         const fetchStream = async () => {
             try {
@@ -90,7 +95,7 @@ export function useBookingsStreamQuery({
         return () => {
             isCancelled = true;
         };
-    }, [endpoint]);
+    }, [slug, year, month]);
 
     return items;
 }

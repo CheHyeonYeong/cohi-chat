@@ -4,7 +4,6 @@ import { useSearch, useParams, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, useCallback } from 'react';
 
 import {
-    API_URL,
     Body,
     Navigator,
     Timeslots,
@@ -33,7 +32,9 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
     const bookingsStream = useBookingsStreamQuery({
-        endpoint: `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`,
+        slug,
+        year,
+        month,
         onMessage: (data) => {
             console.log('onMessage', data);
         },

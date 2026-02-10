@@ -36,7 +36,6 @@ export type {
 
 // API
 export {
-    API_URL,
     getBookingsByDate,
     getMyBookings,
     getBooking,
