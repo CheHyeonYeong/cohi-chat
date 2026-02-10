@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -38,6 +39,7 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 
@@ -165,8 +167,13 @@ public class MemberService {
 			.toList();
 	}
 
-	public void logout(String username) {
+	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
+
+		long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+		String tokenHash = hashToken(accessToken);
+		AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+		accessTokenBlacklistRepository.save(blacklist);
 	}
 
 	@Transactional(readOnly = true)

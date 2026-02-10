@@ -28,6 +28,7 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import java.security.Principal;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -65,9 +66,18 @@ public class MemberController {
 
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<LogoutResponseDTO> logout(Principal principal) {
-		memberService.logout(principal.getName());
+	public ResponseEntity<LogoutResponseDTO> logout(Principal principal, HttpServletRequest request) {
+		String accessToken = resolveToken(request);
+		memberService.logout(principal.getName(), accessToken);
 		return ResponseEntity.ok(LogoutResponseDTO.success());
+	}
+
+	private String resolveToken(HttpServletRequest request) {
+		String bearerToken = request.getHeader("Authorization");
+		if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+			return bearerToken.substring(7);
+		}
+		return null;
 	}
 
 	@GetMapping("/v1/{username}")

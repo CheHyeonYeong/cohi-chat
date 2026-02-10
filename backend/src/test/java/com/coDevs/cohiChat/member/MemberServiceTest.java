@@ -28,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -63,6 +64,9 @@ class MemberServiceTest {
 
 	@Mock
 	private RefreshTokenRepository refreshTokenRepository;
+
+	@Mock
+	private AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
 	@Mock
 	private PasswordEncoder passwordEncoder;
@@ -379,12 +383,37 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제")
+	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제 및 Access Token 블랙리스트 등록")
 	void logoutSuccess() {
+		// given
+		String accessToken = "test-access-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1800L);
+
 		// when
-		memberService.logout(TEST_USERNAME);
+		memberService.logout(TEST_USERNAME, accessToken);
 
 		// then
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
+		verify(accessTokenBlacklistRepository).save(captor.capture());
+		AccessTokenBlacklist saved = captor.getValue();
+		assertThat(saved.getTokenHash()).isNotEqualTo(accessToken); // 해시되어 저장
+		assertThat(saved.getExpirationSeconds()).isEqualTo(1800L);
+	}
+
+	@Test
+	@DisplayName("성공: 로그아웃 시 만료 임박 토큰도 블랙리스트 등록")
+	void logoutWithNearExpiredToken() {
+		// given
+		String accessToken = "near-expired-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1L);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository).save(any(AccessTokenBlacklist.class));
 	}
 }

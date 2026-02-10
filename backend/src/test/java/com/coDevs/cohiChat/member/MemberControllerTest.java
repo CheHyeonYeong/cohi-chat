@@ -166,9 +166,10 @@ class MemberControllerTest {
 	@Test
 	@DisplayName("로그아웃 성공 테스트")
 	void logoutSuccess() throws Exception {
-		doNothing().when(memberService).logout(anyString());
+		doNothing().when(memberService).logout(anyString(), anyString());
 
 		mockMvc.perform(delete("/members/v1/logout")
+				.header("Authorization", "Bearer test-access-token")
 				.principal(() -> TEST_USERNAME))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."));

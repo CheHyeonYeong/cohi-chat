@@ -1,11 +1,17 @@
 package com.coDevs.cohiChat.global.security.jwt;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
 	private static final String AUTH_HEADER = "Authorization";
 	private static final String TOKEN_PREFIX = "Bearer ";
@@ -28,15 +35,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String token = resolveToken(request);
 
 		if (token != null && jwtTokenProvider.validateToken(token)) {
-			try {
-				Authentication auth = jwtTokenProvider.getAuthentication(token);
-				SecurityContextHolder.getContext().setAuthentication(auth);
-			} catch (Exception e) {
+			if (isBlacklisted(token)) {
 				SecurityContextHolder.clearContext();
+			} else {
+				try {
+					Authentication auth = jwtTokenProvider.getAuthentication(token);
+					SecurityContextHolder.getContext().setAuthentication(auth);
+				} catch (Exception e) {
+					SecurityContextHolder.clearContext();
+				}
 			}
 		}
 
 		chain.doFilter(request, response);
+	}
+
+	private boolean isBlacklisted(String token) {
+		String tokenHash = hashToken(token);
+		return accessTokenBlacklistRepository.findById(tokenHash).isPresent();
+	}
+
+	private String hashToken(String token) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 algorithm not available", e);
+		}
 	}
 
 	private String resolveToken(HttpServletRequest request) {
