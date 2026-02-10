@@ -34,7 +34,7 @@ export default function Home() {
     const { isAuthenticated, data: user } = useAuth();
     const navigate = useNavigate();
     const isHost = isAuthenticated && user?.isHost;
-    const { data: myCalendar } = useMyCalendar(!!isHost);
+    const { data: myCalendar, isLoading: isCalendarLoading } = useMyCalendar(!!isHost);
 
     const handleFindHosts = () => {
         if (isAuthenticated) {
@@ -53,7 +53,7 @@ export default function Home() {
                     <span className='text-xl font-bold text-[var(--cohe-text-dark)]'>coheChat</span>
                 </div>
                 <div className='flex items-center gap-3'>
-                    {isAuthenticated && (
+                    {isAuthenticated && !isCalendarLoading && (
                         isHost && myCalendar ? (
                             <Link
                                 to='/app/host/timeslots'

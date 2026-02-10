@@ -1,5 +1,3 @@
-import { snakeToCamel } from "./utils";
-
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
 }
@@ -47,7 +45,7 @@ export async function httpClient<T>(url: string, options: HttpClientOptions = {}
     if (!text) {
         return undefined as T;
     }
-    const data = snakeToCamel(JSON.parse(text));
+    const data = JSON.parse(text);
 
     if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
         return (data as { success: boolean; data: T }).data;

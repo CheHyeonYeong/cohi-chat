@@ -14,7 +14,7 @@ interface TimeSlotFormProps {
     onSave: () => void;
     onDelete?: (existingId: number) => void;
     isPending: boolean;
-    isDeleting?: boolean;
+    deletingId?: number | null;
     errors: Record<string, string>;
 }
 
@@ -35,7 +35,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     return `${String(h).padStart(2, '0')}:${m}`;
 });
 
-export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPending, isDeleting, errors }: TimeSlotFormProps) {
+export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPending, deletingId, errors }: TimeSlotFormProps) {
     const [expandedIndex, setExpandedIndex] = useState(0);
 
     const updateEntry = (index: number, patch: Partial<TimeSlotEntry>) => {
@@ -93,10 +93,10 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onDelete(entry.existingId!); }}
-                                    disabled={isDeleting}
+                                    disabled={deletingId != null}
                                     className="text-sm text-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
                                 >
-                                    {isDeleting ? '삭제 중...' : '삭제'}
+                                    {deletingId === entry.existingId ? '삭제 중...' : '삭제'}
                                 </button>
                             ) : entries.length > 1 && !entry.existingId ? (
                                 <button

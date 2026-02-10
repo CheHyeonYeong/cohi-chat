@@ -174,7 +174,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                 type="text"
                                 value={data.googleCalendarId}
                                 onChange={(e) => { setConfirmed(false); onChange({ googleCalendarId: e.target.value.trim() }); }}
-                                placeholder="your-calendar-id@gmail.com"
+                                placeholder="your-id@group.calendar.google.com"
                                 className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-[var(--cohe-text-dark)] placeholder-gray-400 focus:outline-none focus:ring-1 ${
                                     hasInput && isValid
                                         ? 'border-green-400 focus:border-green-400 focus:ring-green-400'

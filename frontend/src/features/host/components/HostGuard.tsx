@@ -12,11 +12,11 @@ export default function HostGuard({ children }: HostGuardProps) {
 
     useEffect(() => {
         if (isLoading) return;
-        if (!isAuthenticated) {
+        if (!isAuthenticated || !user) {
             navigate({ to: '/app/login' });
             return;
         }
-        if (user && !user.isHost) {
+        if (!user.isHost) {
             navigate({ to: '/app' });
         }
     }, [isAuthenticated, user, isLoading, navigate]);

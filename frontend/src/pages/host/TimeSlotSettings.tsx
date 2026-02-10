@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -8,12 +8,14 @@ import type { TimeSlotResponse } from '~/features/host';
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 
 function formatWeekdaySummary(weekdays: number[]): string {
-    const sorted = [...weekdays].sort();
-    if (sorted.length >= 2) {
-        const names = sorted.map((d) => DAY_NAMES[d]);
+    const sorted = [...weekdays].sort((a, b) => a - b);
+    if (sorted.length === 0) return '';
+    const names = sorted.map((d) => DAY_NAMES[d]);
+    const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
+    if (isConsecutive && sorted.length >= 2) {
         return `${names[0]}~${names[names.length - 1]}`;
     }
-    return sorted.map((d) => DAY_NAMES[d]).join(', ');
+    return names.join(', ');
 }
 
 /** "HH:mm:ss" | "HH:mm" → "HH:mm" */
@@ -41,26 +43,26 @@ export default function TimeSlotSettings() {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([{ ...defaultEntry }]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [initialized, setInitialized] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const syncedRef = useRef(false);
 
-    const { data: existingTimeslots, isLoading } = useMyTimeslots();
+    const { data: existingTimeslots, isLoading, refetch } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
-    // 기존 타임슬롯을 폼에 반영
+    // 서버 데이터를 폼에 반영 (초기 로드 및 mutation 후 재동기화)
     useEffect(() => {
-        if (initialized || !existingTimeslots) return;
+        if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
         if (loaded.length > 0) {
             setEntries(loaded);
-            // 마지막 저장 시간 = 가장 최근 updatedAt
             const latestUpdate = existingTimeslots
                 .map((ts) => new Date(ts.updatedAt))
                 .sort((a, b) => b.getTime() - a.getTime())[0];
             if (latestUpdate) setLastSaved(latestUpdate);
         }
-        setInitialized(true);
-    }, [existingTimeslots, initialized]);
+        syncedRef.current = true;
+    }, [existingTimeslots]);
 
     const newEntries = entries.filter((e) => e.existingId == null);
     const hasNewEntries = newEntries.length > 0;
@@ -87,29 +89,37 @@ export default function TimeSlotSettings() {
     const handleSave = async () => {
         if (!validate()) return;
 
-        try {
-            for (const entry of newEntries) {
-                await createTimeslotMutation.mutateAsync({
+        const results = await Promise.allSettled(
+            newEntries.map((entry) =>
+                createTimeslotMutation.mutateAsync({
                     startTime: `${entry.startTime}:00`,
                     endTime: `${entry.endTime}:00`,
                     weekdays: entry.weekdays,
-                });
-            }
-            setLastSaved(new Date());
-            setInitialized(false); // 재로드하여 새 타임슬롯에 existingId 부여
-        } catch (err) {
-            const message = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
-            setErrors({ save: message });
+                })
+            )
+        );
+        const failures = results.filter((r) => r.status === 'rejected');
+        if (failures.length > 0) {
+            setErrors({ save: `${failures.length}개 시간대 저장에 실패했습니다.` });
+        } else {
+            setErrors({});
         }
+        setLastSaved(new Date());
+        syncedRef.current = false;
+        refetch();
     };
 
     const handleDelete = async (existingId: number) => {
         try {
+            setDeletingId(existingId);
             await deleteTimeslotMutation.mutateAsync(existingId);
-            setInitialized(false);
+            syncedRef.current = false;
+            refetch();
         } catch (err) {
             const message = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
             setErrors({ delete: message });
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -155,7 +165,7 @@ export default function TimeSlotSettings() {
                             onSave={handleSave}
                             onDelete={handleDelete}
                             isPending={createTimeslotMutation.isPending}
-                            isDeleting={deleteTimeslotMutation.isPending}
+                            deletingId={deletingId}
                             errors={errors}
                         />
                     </div>

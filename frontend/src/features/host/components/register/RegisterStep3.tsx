@@ -49,9 +49,9 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
                 <div className="bg-white rounded-2xl p-5 shadow-sm">
                     <h3 className="text-sm font-semibold text-gray-500 mb-2">미팅 주제</h3>
                     <div className="flex flex-wrap gap-2">
-                        {step1.topics.map((topic, i) => (
+                        {step1.topics.map((topic) => (
                             <span
-                                key={i}
+                                key={topic}
                                 className="px-3 py-1.5 bg-[var(--cohe-primary)]/10 text-[var(--cohe-primary)] rounded-full text-sm font-medium"
                             >
                                 {topic}
