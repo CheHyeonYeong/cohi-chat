@@ -138,7 +138,9 @@ public class BookingFileController {
         @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     @GetMapping("/limits")
-    public ResponseEntity<FileUploadLimits> getUploadLimits() {
-        return ResponseEntity.ok(fileUploadValidator.getLimits());
+    public ResponseEntity<ApiResponseDTO<FileUploadLimits>> getUploadLimits(
+            @PathVariable Long bookingId
+    ) {
+        return ResponseEntity.ok(ApiResponseDTO.success(fileUploadValidator.getLimits()));
     }
 }

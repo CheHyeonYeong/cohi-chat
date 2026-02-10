@@ -276,7 +276,7 @@ class FileUploadValidatorTest {
             assertThat(limits.maxFileSize()).isEqualTo(10 * 1024 * 1024L);
             assertThat(limits.maxTotalSizePerBooking()).isEqualTo(50 * 1024 * 1024L);
             assertThat(limits.maxFilesPerBooking()).isEqualTo(5);
-            assertThat(limits.allowedExtensions()).contains("pdf", "doc", "docx", "txt", "jpg", "png", "gif");
+            assertThat(limits.allowedExtensions()).contains("pdf", "doc", "docx", "txt", "jpg", "jpeg", "png", "gif");
             assertThat(limits.blockedExtensions()).contains("exe", "bat", "sh", "js", "php");
         }
     }

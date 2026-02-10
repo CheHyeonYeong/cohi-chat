@@ -63,8 +63,11 @@ public class FileUploadValidator {
         validateFileSize(file);
         validateExtension(file);
         validateMimeType(file);
-        validateFileCount(bookingId);
-        validateTotalSize(bookingId, file);
+
+        // DB 조회를 한 번만 수행하여 재사용
+        List<BookingFile> existingFiles = bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(bookingId);
+        validateFileCount(existingFiles);
+        validateTotalSize(existingFiles, file);
     }
 
     /**
@@ -120,8 +123,7 @@ public class FileUploadValidator {
     /**
      * 예약당 파일 개수 제한을 검증합니다.
      */
-    private void validateFileCount(Long bookingId) {
-        List<BookingFile> existingFiles = bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(bookingId);
+    private void validateFileCount(List<BookingFile> existingFiles) {
         if (existingFiles.size() >= MAX_FILES_PER_BOOKING) {
             throw new CustomException(ErrorCode.FILE_COUNT_EXCEEDED);
         }
@@ -130,8 +132,7 @@ public class FileUploadValidator {
     /**
      * 예약당 총 파일 용량 제한을 검증합니다.
      */
-    private void validateTotalSize(Long bookingId, MultipartFile file) {
-        List<BookingFile> existingFiles = bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(bookingId);
+    private void validateTotalSize(List<BookingFile> existingFiles, MultipartFile file) {
         long totalSize = existingFiles.stream()
             .mapToLong(BookingFile::getFileSize)
             .sum();

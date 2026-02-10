@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "~/components/button";
 import { useBooking, useUploadBookingFile } from "~/features/calendar";
 import {
@@ -9,27 +9,18 @@ import {
     FILE_UPLOAD_LIMITS,
     type FileValidationError,
 } from "~/libs/fileValidation";
+import { getValidToken } from "~/libs/jwt";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export default function Booking() {
     const { id } = useParams({ from: '/app/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
-    const { mutate: uploadFile, isSuccess: isUploadSuccess, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [uploadProgress, setUploadProgress] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (isUploadSuccess) {
-            refetch();
-            setSelectedFiles([]);
-            setValidationErrors([]);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    }, [isUploadSuccess, refetch]);
 
 
     if (!booking || isLoading) return (
@@ -65,17 +56,56 @@ export default function Booking() {
         setSelectedFiles(Array.from(files));
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (validationErrors.length > 0 || selectedFiles.length === 0) {
             return;
         }
 
-        // 파일을 하나씩 업로드 (API가 단일 파일을 받으므로)
-        for (const file of selectedFiles) {
+        // mutateAsync를 사용하여 순차 업로드
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
             const formData = new FormData();
             formData.append('file', file);
-            uploadFile(formData);
+            await uploadFileAsync(formData);
+        }
+
+        // 모든 업로드 완료 후 정리
+        setUploadProgress('');
+        setSelectedFiles([]);
+        setValidationErrors([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        refetch();
+    };
+
+    const handleDownload = async (fileId: number, fileName: string) => {
+        try {
+            const token = getValidToken();
+            const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('다운로드에 실패했습니다.');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Download error:', err);
+            alert('파일 다운로드에 실패했습니다.');
         }
     };
 
@@ -155,7 +185,7 @@ export default function Booking() {
                                 className="w-full py-2"
                                 disabled={validationErrors.length > 0 || selectedFiles.length === 0 || isUploading}
                             >
-                                {isUploading ? '업로드 중...' : '첨부'}
+                                {isUploading ? (uploadProgress || '업로드 중...') : '첨부'}
                             </Button>
                         </form>
                     )}
@@ -167,14 +197,13 @@ export default function Booking() {
                         <ul className="space-y-2">
                             {booking.files.map((file) => (
                                 <li key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                    <a
-                                        href={`${API_URL}/bookings/${booking.id}/files/${file.id}/download`}
-                                        className="text-blue-600 hover:underline flex-1 truncate"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDownload(file.id, file.originalFileName || file.file.split('/').pop() || 'download')}
+                                        className="text-blue-600 hover:underline flex-1 truncate text-left"
                                     >
                                         {file.originalFileName || file.file.split('/').pop()}
-                                    </a>
+                                    </button>
                                     <span className="text-sm text-gray-500 ml-2">
                                         {file.fileSize ? formatFileSize(file.fileSize) : ''}
                                     </span>
