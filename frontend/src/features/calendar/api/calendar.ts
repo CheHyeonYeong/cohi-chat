@@ -1,8 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
-import type { ICalendar } from '../types';
-import type { ITimeSlot } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import type { ICalendar, ITimeSlot } from '../types';
+import { API_URL } from './constants';
 
 export async function getCalendarEvent(slug: string): Promise<ICalendar> {
     const url = `${API_URL}/calendar/${slug}`;
