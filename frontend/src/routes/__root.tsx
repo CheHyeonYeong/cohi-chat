@@ -12,13 +12,19 @@ import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
+import Footer from '~/components/Footer'
+import Terms from '~/pages/legal/Terms'
+import Privacy from '~/pages/legal/Privacy'
 
 const RootRoute = createRootRoute({
     component: () => {
         return (
             <>
-                <div className="w-full min-h-screen">
-                    <Outlet />
+                <div className="w-full min-h-screen flex flex-col">
+                    <div className="flex-1">
+                        <Outlet />
+                    </div>
+                    <Footer />
                 </div>
                 <TanStackRouterDevtools />
             </>
@@ -100,6 +106,18 @@ const calendarRoute = createRoute({
     }),
 })
 
+const termsRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/terms',
+    component: Terms,
+})
+
+const privacyRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/privacy',
+    component: Privacy,
+})
+
 export const routeTree = RootRoute.addChildren([
     indexRoute,
     homeRoute,
@@ -110,6 +128,8 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
+    termsRoute,
+    privacyRoute,
 ])
 
 export const router = createRouter({ routeTree })

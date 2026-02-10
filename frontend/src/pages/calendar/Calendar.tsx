@@ -11,7 +11,6 @@ import {
     getCalendarDays,
     useCalendarEvent,
     useCalendarNavigation,
-    useCalendarDateSelection,
     useTimeslots,
     useBookings,
     useBookingsStreamQuery,
@@ -20,8 +19,6 @@ import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
 import { useAuth } from '~/features/member';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });
@@ -35,18 +32,18 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
     const bookingsStream = useBookingsStreamQuery({
-        endpoint: `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`,
+        slug,
+        year,
+        month,
         onMessage: (data) => {
             console.log('onMessage', data);
         },
     });
     const { handlePrevious, handleNext } = useCalendarNavigation();
-    const { handleSelectDay } = useCalendarDateSelection();
 
     const handleDaySelect = useCallback((date: Date) => {
         setSelectedDate(date);
-        handleSelectDay(slug, date);
-    }, [slug, handleSelectDay]);
+    }, []);
 
     const handleSelectTimeslot = (timeslot: ITimeSlot) => {
         setSelectedTimeslot(timeslot);
