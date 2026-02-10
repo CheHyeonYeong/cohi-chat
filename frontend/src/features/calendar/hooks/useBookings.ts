@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { snakeToCamel } from '~/libs/utils';
 import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFile } from '../api';
 import type { IBooking, IBookingDetail, ICalendarEvent, IPaginatedBookingDetail } from '../types';
@@ -45,8 +45,14 @@ export function useBookingsStreamQuery({
     onMessage?: (data: IBooking | ICalendarEvent) => void;
 }) {
     const [items, setItems] = useState<Array<IBooking | ICalendarEvent>>([]);
+    const onMessageRef = useRef(onMessage);
 
     useEffect(() => {
+        onMessageRef.current = onMessage;
+    });
+
+    useEffect(() => {
+        setItems([]);
         let isCancelled = false;
         const endpoint = `${API_URL}/calendar/${slug}/bookings/stream?year=${year}&month=${month}`;
 
@@ -80,7 +86,7 @@ export function useBookingsStreamQuery({
                             }
                             return prevData;
                         });
-                        onMessage?.(data);
+                        onMessageRef.current?.(data);
                     });
                 }
             } catch (error) {
