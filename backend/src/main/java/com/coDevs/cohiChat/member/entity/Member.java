@@ -113,6 +113,10 @@ public class Member {
 		}
 	}
 
+	public void promoteToHost() {
+		this.role = Role.HOST;
+	}
+
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();

@@ -1,16 +1,9 @@
 import { Link, useNavigate } from '@tanstack/react-router';
+import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import { useHosts } from '~/hooks/useHost';
 import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
-
-function CoffeeCupIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 21V19H20V21H2ZM4 18C3.45 18 2.979 17.804 2.587 17.412C2.195 17.02 1.99933 16.5493 2 16V5H18V9H20C20.55 9 21.021 9.196 21.413 9.588C21.805 9.98 22.0007 10.4507 22 11V14C22 14.55 21.804 15.021 21.412 15.413C21.02 15.805 20.5493 16.0007 20 16H18V18H4ZM18 14H20V11H18V14ZM4 16H16V7H4V16Z"/>
-            <path d="M7 4C7 3.5 7.5 2 9 2C10.5 2 11 3.5 11 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        </svg>
-    );
-}
+import { useMyCalendar } from '~/features/host';
 
 function HostCard({ displayName, username, role }: { displayName: string; username: string; role: string }) {
     const now = new Date();
@@ -38,8 +31,10 @@ function HostCard({ displayName, username, role }: { displayName: string; userna
 
 export default function Home() {
     const hosts = useHosts();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, data: user } = useAuth();
     const navigate = useNavigate();
+    const isHost = isAuthenticated && user?.isHost;
+    const { data: myCalendar } = useMyCalendar(!!isHost);
 
     const handleFindHosts = () => {
         if (isAuthenticated) {
@@ -57,7 +52,24 @@ export default function Home() {
                     <CoffeeCupIcon className='w-8 h-8 text-[var(--cohe-primary)]' />
                     <span className='text-xl font-bold text-[var(--cohe-text-dark)]'>coheChat</span>
                 </div>
-                <div>
+                <div className='flex items-center gap-3'>
+                    {isAuthenticated && (
+                        isHost && myCalendar ? (
+                            <Link
+                                to='/app/host/timeslots'
+                                className='cohe-btn-primary px-4 py-2 rounded-lg font-medium text-sm'
+                            >
+                                호스트 대시보드
+                            </Link>
+                        ) : (
+                            <Link
+                                to='/app/host/register'
+                                className='cohe-btn-outline px-4 py-2 rounded-lg font-medium text-sm'
+                            >
+                                호스트 등록하기
+                            </Link>
+                        )
+                    )}
                     {isAuthenticated
                         ? <LogoutButton />
                         : <Link

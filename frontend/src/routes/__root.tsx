@@ -10,6 +10,8 @@ import { LoginForm, SignupForm } from '~/features/member'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
+import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
+import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
 
 const RootRoute = createRootRoute({
     component: () => {
@@ -73,6 +75,18 @@ const signupRoute = createRoute({
 })
 
 
+const hostRegisterRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/app/host/register',
+    component: HostRegisterGuarded,
+})
+
+const hostTimeslotsRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/app/host/timeslots',
+    component: TimeSlotSettingsGuarded,
+})
+
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/app/calendar/$slug',
@@ -94,6 +108,8 @@ export const routeTree = RootRoute.addChildren([
     signupRoute,
     myBookingsRoute,
     bookingRoute,
+    hostRegisterRoute,
+    hostTimeslotsRoute,
 ])
 
 export const router = createRouter({ routeTree })

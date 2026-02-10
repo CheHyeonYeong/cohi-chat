@@ -1,4 +1,4 @@
-import { camelToSnake, snakeToCamel } from "./utils";
+import { snakeToCamel } from "./utils";
 
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
@@ -17,7 +17,7 @@ export async function httpClient<T>(url: string, options: HttpClientOptions = {}
         if (options.body instanceof FormData) {
             body = options.body;
         } else if (typeof options.body === 'object') {
-            body = JSON.stringify(camelToSnake(options.body as object));
+            body = JSON.stringify(options.body);
             headers['Content-Type'] = 'application/json';
         } else {
             body = options.body;
