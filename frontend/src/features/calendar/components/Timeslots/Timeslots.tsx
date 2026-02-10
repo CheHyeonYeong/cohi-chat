@@ -18,7 +18,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
     const { data: user } = useAuth();
 
     const now = baseDate ?? new Date();
-    const weekday = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    const weekday = now.getDay(); // 0=일, 1=월, ..., 6=토
     const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday);
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
