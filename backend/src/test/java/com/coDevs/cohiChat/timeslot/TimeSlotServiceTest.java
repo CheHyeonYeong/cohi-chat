@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -192,5 +193,44 @@ class TimeSlotServiceTest {
 
         // then
         assertThat(response).hasSize(2);
+    }
+
+    // ===== 날짜 범위 지정 테스트 =====
+
+    @Test
+    @DisplayName("성공: 날짜 범위가 지정된 타임슬롯 생성")
+    void createTimeSlotWithDateRangeSuccess() {
+        // given
+        givenSuccessfulCreateMocks();
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(30);
+        TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
+            .weekdays(TEST_WEEKDAYS)
+            .startDate(startDate)
+            .endDate(endDate)
+            .build();
+
+        // when
+        TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, request);
+
+        // then
+        assertThat(response.getStartDate()).isEqualTo(startDate);
+        assertThat(response.getEndDate()).isEqualTo(endDate);
+    }
+
+    @Test
+    @DisplayName("성공: 날짜 범위 없이(무기한) 타임슬롯 생성")
+    void createTimeSlotWithoutDateRangeSuccess() {
+        // given
+        givenSuccessfulCreateMocks();
+
+        // when
+        TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, requestDTO);
+
+        // then
+        assertThat(response.getStartDate()).isNull();
+        assertThat(response.getEndDate()).isNull();
     }
 }
