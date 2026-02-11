@@ -8,10 +8,47 @@ export async function getBookingsByDate(slug: string, date: { year: number; mont
     return data;
 }
 
+interface BookingFlatResponse {
+    id: number;
+    timeSlotId: number;
+    guestId: string;
+    when: string;
+    startTime: string;
+    endTime: string;
+    topic: string;
+    description: string;
+    attendanceStatus: string;
+    createdAt: string;
+}
+
 export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
-    const url = `${API_URL}/guest-calendar/bookings?page=${page}&page_size=${pageSize}`;
-    const data: IPaginatedBookingDetail = await httpClient<IPaginatedBookingDetail>(url);
-    return data;
+    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
+
+    const bookings: IBookingDetail[] = list.map((b) => ({
+        id: b.id,
+        when: new Date(b.when),
+        topic: b.topic,
+        description: b.description,
+        timeSlot: {
+            id: b.timeSlotId,
+            userId: '',
+            startTime: b.startTime,
+            endTime: b.endTime,
+            weekdays: [],
+            createdAt: b.createdAt,
+            updatedAt: b.createdAt,
+        },
+        host: { username: '', displayName: '' },
+        files: [],
+        createdAt: b.createdAt,
+        updatedAt: b.createdAt,
+    }));
+
+    const start = (page - 1) * pageSize;
+    return {
+        bookings: bookings.slice(start, start + pageSize),
+        totalCount: bookings.length,
+    };
 }
 
 export async function getBooking(id: number): Promise<IBookingDetail> {
