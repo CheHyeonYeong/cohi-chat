@@ -8,7 +8,6 @@ export { default as BookingForm } from './components/BookingForm';
 export {
     useCreateBooking,
     useCalendarNavigation,
-    useCalendarDateSelection,
     useCalendarEvent,
     useTimeslots,
     useBookings,

@@ -19,6 +19,7 @@ import java.util.Optional;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
+import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
@@ -40,6 +41,7 @@ public class MemberService {
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final RateLimitService rateLimitService;
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
@@ -193,21 +195,28 @@ public class MemberService {
 
 	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
-		// 1. JWT 토큰 자체 유효성 검증 (만료 vs 위조 구분)
+		// 1. JWT 검증 + username 추출 (만료 vs 위조 구분)
+		String verifiedUsername;
 		try {
-			jwtTokenProvider.validateTokenOrThrow(refreshTokenValue);
+			verifiedUsername = jwtTokenProvider.getUsernameFromToken(refreshTokenValue);
 		} catch (ExpiredJwtException e) {
 			throw new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN);
 		} catch (JwtException | IllegalArgumentException e) {
 			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 		}
 
-		// 2. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
+		// 2. username 유효성 확인 후 Rate Limit 체크
+		if (verifiedUsername == null || verifiedUsername.isBlank()) {
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
+
+		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
 		String tokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-		// 3. 사용자 정보 조회 및 새 Access Token 발급
+		// 4. 사용자 정보 조회 및 새 Access Token 발급
 		String username = refreshToken.getUsername();
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

@@ -4,7 +4,9 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,10 +54,26 @@ public class GlobalExceptionHandler {
 		return createErrorResponse(ErrorCode.INVALID_INPUT, errorMessage);
 	}
 
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiResponseDTO<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+		log.error("Request body parsing failed: {}", e.getMessage());
+		return createErrorResponse(ErrorCode.INVALID_INPUT, "요청 데이터 형식이 올바르지 않습니다.");
+	}
+
+	@ExceptionHandler(DataAccessException.class)
+	public ResponseEntity<ApiResponseDTO<Void>> handleDataAccessException(DataAccessException e) {
+		log.error("Database error occurred: {}", e.getMessage(), e);
+		String rootMessage = e.getMostSpecificCause().getMessage();
+		return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR,
+			"데이터베이스 오류: " + rootMessage);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponseDTO<Void>> handleAllException(Exception e) {
 		log.error("Unhandled exception occurred: {}", e.getMessage(), e);
-		return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);
+		String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+		return createErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR,
+			"서버 내부 오류가 발생했습니다: " + detail);
 	}
 
 	private ResponseEntity<ApiResponseDTO<Void>> createErrorResponse(ErrorCode code) {

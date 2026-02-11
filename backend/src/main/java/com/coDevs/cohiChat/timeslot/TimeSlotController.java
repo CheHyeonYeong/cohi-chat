@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,6 +70,24 @@ public class TimeSlotController {
         Member member = memberService.getMember(userDetails.getUsername());
         List<TimeSlotResponseDTO> response = timeSlotService.getTimeSlotsByHost(member);
         return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "타임슬롯 삭제", description = "호스트가 자신의 타임슬롯을 삭제합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "삭제 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "호스트 권한 필요 또는 본인의 타임슬롯이 아님"),
+        @ApiResponse(responseCode = "404", description = "타임슬롯을 찾을 수 없음")
+    })
+    @DeleteMapping("/v1/{timeSlotId}")
+    public ResponseEntity<ApiResponseDTO<Void>> deleteTimeSlot(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "타임슬롯 ID", required = true)
+            @PathVariable Long timeSlotId
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        timeSlotService.deleteTimeSlot(member, timeSlotId);
+        return ResponseEntity.ok(ApiResponseDTO.success(null));
     }
 
     @Operation(summary = "호스트 타임슬롯 조회", description = "게스트가 특정 호스트의 타임슬롯 목록을 조회합니다. 인증 없이 접근 가능합니다.")

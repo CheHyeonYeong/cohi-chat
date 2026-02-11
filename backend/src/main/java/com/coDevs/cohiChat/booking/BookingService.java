@@ -6,7 +6,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -40,6 +43,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
+    private final MemberRepository memberRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
 
@@ -66,7 +70,7 @@ public class BookingService {
 
         createGoogleCalendarEvent(savedBooking, timeSlot);
 
-        return BookingResponseDTO.from(savedBooking);
+        return toBookingResponseDTO(savedBooking);
     }
 
     private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot) {
@@ -146,7 +150,7 @@ public class BookingService {
 
         validateBookingAccess(booking, requesterId);
 
-        return BookingResponseDTO.from(booking);
+        return toBookingResponseDTO(booking);
     }
 
     private void validateBookingAccess(Booking booking, UUID requesterId) {
@@ -170,9 +174,28 @@ public class BookingService {
         return toBookingResponseDTOs(bookings);
     }
 
+    private BookingResponseDTO toBookingResponseDTO(Booking booking) {
+        Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
+        String username = host != null ? host.getUsername() : null;
+        String displayName = host != null ? host.getDisplayName() : null;
+        return BookingResponseDTO.from(booking, username, displayName);
+    }
+
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
+        List<UUID> hostIds = bookings.stream()
+            .map(b -> b.getTimeSlot().getUserId())
+            .distinct()
+            .toList();
+        Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
+            .collect(Collectors.toMap(Member::getId, m -> m));
+
         return bookings.stream()
-            .map(BookingResponseDTO::from)
+            .map(b -> {
+                Member host = hostMap.get(b.getTimeSlot().getUserId());
+                String username = host != null ? host.getUsername() : null;
+                String displayName = host != null ? host.getDisplayName() : null;
+                return BookingResponseDTO.from(b, username, displayName);
+            })
             .toList();
     }
 
@@ -198,7 +221,7 @@ public class BookingService {
 
         updateGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate());
 
-        return BookingResponseDTO.from(booking);
+        return toBookingResponseDTO(booking);
     }
 
     private void updateGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate) {
@@ -249,7 +272,7 @@ public class BookingService {
 
         booking.updateStatus(request.getStatus());
 
-        return BookingResponseDTO.from(booking);
+        return toBookingResponseDTO(booking);
     }
 
     @Transactional
@@ -309,7 +332,7 @@ public class BookingService {
 
         updateGoogleCalendarEventForGuestUpdate(booking, newTimeSlot, request);
 
-        return BookingResponseDTO.from(booking);
+        return toBookingResponseDTO(booking);
     }
 
     private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {

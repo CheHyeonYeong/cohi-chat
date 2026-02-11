@@ -1,7 +1,7 @@
 import { httpClient } from '~/libs/httpClient';
+import type { StringTime, ISO8601String } from '~/types/base';
 import type { IBooking, IBookingDetail, IPaginatedBookingDetail } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
     const url = `${API_URL}/calendar/${slug}/bookings?year=${date.year}&month=${date.month}`;
@@ -9,16 +9,60 @@ export async function getBookingsByDate(slug: string, date: { year: number; mont
     return data;
 }
 
+interface BookingFlatResponse {
+    id: number;
+    timeSlotId: number;
+    guestId: string;
+    when: string;
+    startTime: StringTime;
+    endTime: StringTime;
+    topic: string;
+    description: string;
+    attendanceStatus: string;
+    createdAt: ISO8601String;
+    hostUsername: string | null;
+    hostDisplayName: string | null;
+}
+
+function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
+    return {
+        id: b.id,
+        when: new Date(b.when),
+        topic: b.topic,
+        description: b.description,
+        timeSlot: {
+            id: b.timeSlotId,
+            userId: '',
+            startTime: b.startTime,
+            endTime: b.endTime,
+            weekdays: [],
+            createdAt: b.createdAt,
+            updatedAt: b.createdAt,
+        },
+        host: {
+            username: b.hostUsername ?? '',
+            displayName: b.hostDisplayName ?? '',
+        },
+        files: [],
+        createdAt: b.createdAt,
+        updatedAt: b.createdAt,
+    };
+}
+
 export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
-    const url = `${API_URL}/guest-calendar/bookings?page=${page}&page_size=${pageSize}`;
-    const data: IPaginatedBookingDetail = await httpClient<IPaginatedBookingDetail>(url);
-    return data;
+    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
+    const bookings = list.map(toBookingDetail);
+
+    const start = (page - 1) * pageSize;
+    return {
+        bookings: bookings.slice(start, start + pageSize),
+        totalCount: bookings.length,
+    };
 }
 
 export async function getBooking(id: number): Promise<IBookingDetail> {
-    const url = `${API_URL}/bookings/${id}`;
-    const data: IBookingDetail = await httpClient<IBookingDetail>(url);
-    return data;
+    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`);
+    return toBookingDetail(b);
 }
 
 export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingDetail> {

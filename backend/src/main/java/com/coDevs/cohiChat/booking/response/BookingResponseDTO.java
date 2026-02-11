@@ -32,7 +32,14 @@ public class BookingResponseDTO {
     private String googleEventId;
     private Instant createdAt;
 
+    private String hostUsername;
+    private String hostDisplayName;
+
     public static BookingResponseDTO from(Booking booking) {
+        return from(booking, null, null);
+    }
+
+    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
         return BookingResponseDTO.builder()
             .id(booking.getId())
             .timeSlotId(booking.getTimeSlot().getId())
@@ -45,6 +52,8 @@ public class BookingResponseDTO {
             .attendanceStatus(booking.getAttendanceStatus())
             .googleEventId(booking.getGoogleEventId())
             .createdAt(booking.getCreatedAt())
+            .hostUsername(hostUsername)
+            .hostDisplayName(hostDisplayName)
             .build();
     }
 }

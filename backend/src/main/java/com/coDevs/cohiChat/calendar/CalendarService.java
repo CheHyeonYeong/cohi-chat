@@ -16,6 +16,7 @@ import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -27,13 +28,24 @@ import lombok.RequiredArgsConstructor;
 public class CalendarService {
 
     private final CalendarRepository calendarRepository;
+    private final MemberRepository memberRepository;
     private final MemberService memberService;
     private final BookingService bookingService;
 
+    /**
+     * 캘린더를 생성한다.
+     * <p>GUEST 역할의 member가 호출하면 HOST로 자동 승격되며,
+     * member 엔티티가 변경·저장되는 사이드 이펙트가 있다.</p>
+     */
     @Transactional
     public CalendarResponseDTO createCalendar(Member member, CalendarCreateRequestDTO request) {
-        validateHostPermission(member);
         validateCalendarNotExists(member);
+
+        // GUEST → HOST 자동 승격
+        if (member.getRole() == Role.GUEST) {
+            member.promoteToHost();
+            memberRepository.save(member);
+        }
 
         Calendar calendar = Calendar.create(
             member.getId(),

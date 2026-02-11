@@ -1,6 +1,23 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useLogin } from '../hooks/useLogin';
+import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
+
+interface LoginFormValues {
+    username: string;
+    password: string;
+}
+
+const validationRules: Record<keyof LoginFormValues, ValidationRule<string>> = {
+    username: (value: string) => {
+        if (!value.trim()) return '아이디를 입력해주세요.';
+        return null;
+    },
+    password: (value: string) => {
+        if (!value) return '비밀번호를 입력해주세요.';
+        return null;
+    },
+};
 
 function CoffeeCupIcon({ className = '' }: { className?: string }) {
     return (
@@ -16,9 +33,22 @@ export function LoginForm() {
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
     const loginMutation = useLogin();
+    const { fields, handleBlur, validateAll, getInputClassName } =
+        useFormValidation<LoginFormValues>(validationRules);
+
+    const onBlur = useCallback(
+        (name: keyof LoginFormValues, value: string) => {
+            handleBlur(name, value);
+        },
+        [handleBlur]
+    );
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const values: LoginFormValues = { username: username.trim(), password };
+        if (!validateAll(values)) {
+            return;
+        }
         loginMutation.mutate(
             { username: username.trim(), password },
             {
@@ -28,6 +58,8 @@ export function LoginForm() {
     };
 
     const isPending = loginMutation.isPending;
+    const baseInputClass =
+        'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
@@ -49,11 +81,15 @@ export function LoginForm() {
                             id="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            onBlur={() => onBlur('username', username)}
                             disabled={isPending}
                             required
                             placeholder="아이디"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('username', baseInputClass)}
                         />
+                        {fields.username?.touched && fields.username.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1">
                         <label htmlFor="password" className="text-sm text-[var(--cohe-text-dark)]">비밀번호</label>
@@ -62,11 +98,15 @@ export function LoginForm() {
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            onBlur={() => onBlur('password', password)}
                             disabled={isPending}
                             required
                             placeholder="비밀번호"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
+                            className={getInputClassName('password', baseInputClass)}
                         />
+                        {fields.password?.touched && fields.password.error && (
+                            <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
+                        )}
                     </div>
 
                     {loginMutation.isError && (
