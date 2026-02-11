@@ -20,12 +20,12 @@ interface BookingFlatResponse {
     description: string;
     attendanceStatus: string;
     createdAt: ISO8601String;
+    hostUsername: string | null;
+    hostDisplayName: string | null;
 }
 
-export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
-    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
-
-    const bookings: IBookingDetail[] = list.map((b) => ({
+function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
+    return {
         id: b.id,
         when: new Date(b.when),
         topic: b.topic,
@@ -39,11 +39,19 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
             createdAt: b.createdAt,
             updatedAt: b.createdAt,
         },
-        host: { username: '', displayName: '' },
+        host: {
+            username: b.hostUsername ?? '',
+            displayName: b.hostDisplayName ?? '',
+        },
         files: [],
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
-    }));
+    };
+}
+
+export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
+    const bookings = list.map(toBookingDetail);
 
     const start = (page - 1) * pageSize;
     return {
@@ -53,9 +61,8 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
 }
 
 export async function getBooking(id: number): Promise<IBookingDetail> {
-    const url = `${API_URL}/bookings/${id}`;
-    const data: IBookingDetail = await httpClient<IBookingDetail>(url);
-    return data;
+    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`);
+    return toBookingDetail(b);
 }
 
 export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingDetail> {
