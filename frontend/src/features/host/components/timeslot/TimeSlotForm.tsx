@@ -25,6 +25,13 @@ interface TimeSlotFormProps {
     errors: Record<string, string>;
 }
 
+const toLocalDateString = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
 const DAYS = [
     { label: '일', value: 0 },
     { label: '월', value: 1 },
@@ -194,8 +201,11 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             checked={!!entry.startDate}
                                             onChange={(e) => {
                                                 if (e.target.checked) {
-                                                    const today = new Date().toISOString().slice(0, 10);
-                                                    const monthLater = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+                                                    const now = new Date();
+                                                    const today = toLocalDateString(now);
+                                                    const later = new Date(now);
+                                                    later.setDate(later.getDate() + 30);
+                                                    const monthLater = toLocalDateString(later);
                                                     updateEntry(index, { startDate: today, endDate: monthLater });
                                                 } else {
                                                     updateEntry(index, { startDate: undefined, endDate: undefined });
@@ -215,6 +225,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     value={entry.startDate}
                                                     onChange={(e) => updateEntry(index, { startDate: e.target.value })}
                                                     disabled={entry.existingId != null}
+                                                    min={toLocalDateString(new Date())}
                                                     className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
@@ -225,6 +236,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     value={entry.endDate}
                                                     onChange={(e) => updateEntry(index, { endDate: e.target.value })}
                                                     disabled={entry.existingId != null}
+                                                    min={entry.startDate}
                                                     className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
