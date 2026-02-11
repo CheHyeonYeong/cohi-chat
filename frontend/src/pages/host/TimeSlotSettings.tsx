@@ -30,6 +30,8 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
         weekdays: ts.weekdays,
         startTime: normalizeTime(ts.startTime),
         endTime: normalizeTime(ts.endTime),
+        startDate: ts.startDate ?? undefined,
+        endDate: ts.endDate ?? undefined,
         existingId: ts.id,
     }));
 }
@@ -96,6 +98,7 @@ export default function TimeSlotSettings() {
                     startTime: `${entry.startTime}:00`,
                     endTime: `${entry.endTime}:00`,
                     weekdays: entry.weekdays,
+                    ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
                 })
             )
         );

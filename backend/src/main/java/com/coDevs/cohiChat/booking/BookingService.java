@@ -56,6 +56,7 @@ public class BookingService {
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
+        validateDateInRange(timeSlot, request.getBookingDate());
         validateNotDuplicateBooking(timeSlot, request.getBookingDate(), null);
         validateTopic(timeSlot.getUserId(), request.getTopic());
 
@@ -80,8 +81,10 @@ public class BookingService {
             Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
 
+            String summary = buildEventSummary(booking.getGuestId());
+
             String eventId = googleCalendarService.createEvent(
-                booking.getTopic(),
+                summary,
                 booking.getDescription(),
                 startDateTime,
                 endDateTime,
@@ -93,6 +96,12 @@ public class BookingService {
                 log.info("Google Calendar event created for booking: {}", booking.getId());
             }
         });
+    }
+
+    private String buildEventSummary(UUID guestId) {
+        return memberRepository.findById(guestId)
+            .map(guest -> guest.getDisplayName() + "님과의 미팅")
+            .orElse("미팅");
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -130,6 +139,17 @@ public class BookingService {
      */
     private int convertToSundayBasedWeekday(DayOfWeek dayOfWeek) {
         return dayOfWeek.getValue() % 7;
+    }
+
+    private void validateDateInRange(TimeSlot timeSlot, LocalDate bookingDate) {
+        LocalDate start = timeSlot.getStartDate();
+        LocalDate end = timeSlot.getEndDate();
+        if (start == null && end == null) {
+            return;
+        }
+        if ((start != null && bookingDate.isBefore(start)) || (end != null && bookingDate.isAfter(end))) {
+            throw new CustomException(ErrorCode.BOOKING_DATE_OUT_OF_RANGE);
+        }
     }
 
     private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
@@ -230,6 +250,7 @@ public class BookingService {
         }
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateDateInRange(newTimeSlot, request.getBookingDate());
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
 
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
@@ -249,9 +270,11 @@ public class BookingService {
             Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
             Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
 
+            String summary = buildEventSummary(booking.getGuestId());
+
             boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
-                booking.getTopic(),
+                summary,
                 booking.getDescription(),
                 startDateTime,
                 endDateTime,
@@ -341,6 +364,7 @@ public class BookingService {
         }
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateDateInRange(newTimeSlot, request.getBookingDate());
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
         validateTopic(newTimeSlot.getUserId(), request.getTopic());
 
@@ -361,9 +385,11 @@ public class BookingService {
             Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
 
+            String summary = buildEventSummary(booking.getGuestId());
+
             boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
-                request.getTopic(),
+                summary,
                 request.getDescription(),
                 startDateTime,
                 endDateTime,

@@ -5,6 +5,8 @@ export interface TimeSlotEntry {
     weekdays: number[];
     startTime: string;
     endTime: string;
+    startDate?: string;
+    endDate?: string;
     /** 서버에서 불러온 기존 타임슬롯의 ID. undefined면 신규. */
     existingId?: number;
 }
@@ -182,6 +184,52 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             ))}
                                         </select>
                                     </div>
+                                </div>
+
+                                {/* Date range */}
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm text-gray-500 mb-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!entry.startDate}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    const today = new Date().toISOString().slice(0, 10);
+                                                    const monthLater = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+                                                    updateEntry(index, { startDate: today, endDate: monthLater });
+                                                } else {
+                                                    updateEntry(index, { startDate: undefined, endDate: undefined });
+                                                }
+                                            }}
+                                            disabled={entry.existingId != null}
+                                            className="rounded border-gray-300"
+                                        />
+                                        기간 지정
+                                    </label>
+                                    {entry.startDate && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm text-gray-500 mb-1">시작일</label>
+                                                <input
+                                                    type="date"
+                                                    value={entry.startDate}
+                                                    onChange={(e) => updateEntry(index, { startDate: e.target.value })}
+                                                    disabled={entry.existingId != null}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm text-gray-500 mb-1">종료일</label>
+                                                <input
+                                                    type="date"
+                                                    value={entry.endDate}
+                                                    onChange={(e) => updateEntry(index, { endDate: e.target.value })}
+                                                    disabled={entry.existingId != null}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Inline time validation error */}
