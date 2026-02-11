@@ -53,12 +53,13 @@ export default function Home() {
                     <span className='text-xl font-bold text-[var(--cohe-text-dark)]'>coheChat</span>
                 </div>
                 <div className='flex items-center gap-3'>
-                    {isAuthenticated && !isCalendarLoading && (
-                        isHost && myCalendar && user ? (
+                    {isAuthenticated && !isCalendarLoading && (() => {
+                        const now = new Date();
+                        return isHost && myCalendar && user ? (
                             <Link
                                 to='/app/calendar/$slug'
                                 params={{ slug: user.username }}
-                                search={{ year: new Date().getFullYear(), month: new Date().getMonth() + 1 }}
+                                search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
                                 className='cohe-btn-primary px-4 py-2 rounded-lg font-medium text-sm'
                             >
                                 예약 생성하기
@@ -70,8 +71,8 @@ export default function Home() {
                             >
                                 호스트 등록하기
                             </Link>
-                        )
-                    )}
+                        );
+                    })()}
                     {isAuthenticated
                         ? <LogoutButton />
                         : <Link

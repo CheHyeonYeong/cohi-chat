@@ -32,9 +32,11 @@ public class TimeSlotCreateRequestDTO {
     @NotEmpty(message = "요일은 최소 1개 이상 선택해야 합니다.")
     private List<Integer> weekdays;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Schema(example = "2025-03-01", type = "string")
     private LocalDate startDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Schema(example = "2025-06-30", type = "string")
     private LocalDate endDate;
 

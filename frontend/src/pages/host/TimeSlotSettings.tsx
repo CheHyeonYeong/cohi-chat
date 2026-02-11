@@ -84,6 +84,9 @@ export default function TimeSlotSettings() {
             if (entry.startTime >= entry.endTime) {
                 newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
             }
+            if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
+                newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
+            }
         });
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;

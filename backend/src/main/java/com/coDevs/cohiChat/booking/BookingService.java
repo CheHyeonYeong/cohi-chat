@@ -69,18 +69,19 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        createGoogleCalendarEvent(savedBooking, timeSlot);
+        String summary = guest.getDisplayName() != null
+            ? guest.getDisplayName() + "님과의 미팅"
+            : "미팅";
+        createGoogleCalendarEvent(savedBooking, timeSlot, summary);
 
         return toBookingResponseDTO(savedBooking);
     }
 
-    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot) {
+    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, String summary) {
         UUID hostId = timeSlot.getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
             Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
-
-            String summary = buildEventSummary(booking.getGuestId());
 
             String eventId = googleCalendarService.createEvent(
                 summary,

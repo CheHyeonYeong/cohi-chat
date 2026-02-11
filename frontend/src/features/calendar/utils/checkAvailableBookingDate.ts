@@ -8,9 +8,11 @@ export function isTimeslotAvailableOnDate(
     weekday: number
 ): boolean {
     if (!timeslot.weekdays.includes(weekday)) return false;
-    if (timeslot.startDate && timeslot.endDate) {
+    const { startDate, endDate } = timeslot;
+    if (startDate || endDate) {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        return dateStr >= timeslot.startDate && dateStr <= timeslot.endDate;
+        if (startDate && dateStr < startDate) return false;
+        if (endDate && dateStr > endDate) return false;
     }
     return true;
 }
