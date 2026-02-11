@@ -1,4 +1,5 @@
 import { httpClient } from '~/libs/httpClient';
+import type { StringTime, ISO8601String } from '~/types/base';
 import type { IBooking, IBookingDetail, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
@@ -13,12 +14,12 @@ interface BookingFlatResponse {
     timeSlotId: number;
     guestId: string;
     when: string;
-    startTime: string;
-    endTime: string;
+    startTime: StringTime;
+    endTime: StringTime;
     topic: string;
     description: string;
     attendanceStatus: string;
-    createdAt: string;
+    createdAt: ISO8601String;
 }
 
 export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
