@@ -216,6 +216,9 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                         />
                                         기간 지정
                                     </label>
+                                    {entry.existingId != null && entry.startDate && (
+                                        <p className="text-xs text-gray-400 mb-2">기존 타임슬롯의 기간은 수정할 수 없습니다.</p>
+                                    )}
                                     {entry.startDate && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
