@@ -96,7 +96,9 @@ public class TimeSlotService {
             userId,
             request.getStartTime(),
             request.getEndTime(),
-            request.getWeekdays()
+            request.getWeekdays(),
+            request.getStartDate(),
+            request.getEndDate()
         );
 
         if (!overlappingTimeSlots.isEmpty()) {
