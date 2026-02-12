@@ -1,5 +1,5 @@
+import { lazy, Suspense } from 'react'
 import { createRouter, createRootRoute, Outlet, redirect } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { z } from 'zod'
 
 import {
@@ -16,6 +16,17 @@ import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
 
+// DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
+// - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
+// - 프로덕션 번들에서 router-devtools 코드 미포함 확인됨 (빌드 후 grep 검증 완료)
+const TanStackRouterDevtools = import.meta.env.DEV
+    ? lazy(() =>
+        import('@tanstack/router-devtools').then((mod) => ({
+            default: mod.TanStackRouterDevtools,
+        }))
+    )
+    : () => null
+
 const RootRoute = createRootRoute({
     component: () => {
         return (
@@ -26,7 +37,10 @@ const RootRoute = createRootRoute({
                     </div>
                     <Footer />
                 </div>
-                <TanStackRouterDevtools />
+                {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
+                <Suspense fallback={null}>
+                    <TanStackRouterDevtools />
+                </Suspense>
             </>
         )
     },
