@@ -38,7 +38,7 @@ class TimeSlotServiceTest {
     private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
-    private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 월, 화, 수
+    private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 일, 월, 화
 
     @Mock
     private TimeSlotRepository timeSlotRepository;
@@ -79,7 +79,7 @@ class TimeSlotServiceTest {
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
         givenCalendarExists();
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of());
         given(timeSlotRepository.save(any(TimeSlot.class))).willAnswer(inv -> inv.getArgument(0));
     }
@@ -138,7 +138,7 @@ class TimeSlotServiceTest {
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
         );
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of(existingTimeSlot));
 
         // when & then
@@ -161,7 +161,7 @@ class TimeSlotServiceTest {
             .weekdays(requestWeekdays)
             .build();
 
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of());
         given(timeSlotRepository.save(any(TimeSlot.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -173,7 +173,9 @@ class TimeSlotServiceTest {
             eq(TEST_USER_ID),
             eq(TEST_START_TIME),
             eq(TEST_END_TIME),
-            eq(requestWeekdays)
+            eq(requestWeekdays),
+            any(),
+            any()
         );
     }
 
