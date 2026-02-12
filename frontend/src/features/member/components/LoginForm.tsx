@@ -115,6 +115,12 @@ export function LoginForm() {
                         </div>
                     )}
 
+                    <div className="text-right">
+                        <Link to="/app/password-reset" className="text-sm text-[var(--cohe-primary)] hover:underline">
+                            비밀번호를 잊으셨나요?
+                        </Link>
+                    </div>
+
                     <button
                         type="submit"
                         disabled={isPending}

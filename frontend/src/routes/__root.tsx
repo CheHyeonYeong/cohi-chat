@@ -6,7 +6,7 @@ import {
     createRoute,
 } from '@tanstack/react-router'
 import Calendar from '../pages/calendar/Calendar'
-import { LoginForm, SignupForm } from '~/features/member'
+import { LoginForm, SignupForm, PasswordResetRequestForm, PasswordResetConfirmForm } from '~/features/member'
 import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
@@ -80,6 +80,21 @@ const signupRoute = createRoute({
     component: SignupForm,
 })
 
+const passwordResetRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/app/password-reset',
+    component: PasswordResetRequestForm,
+})
+
+const passwordResetConfirmRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/app/password-reset/confirm',
+    component: PasswordResetConfirmForm,
+    validateSearch: z.object({
+        token: z.string().optional(),
+    }),
+})
+
 
 const hostRegisterRoute = createRoute({
     getParentRoute: () => RootRoute,
@@ -124,6 +139,8 @@ export const routeTree = RootRoute.addChildren([
     calendarRoute,
     loginRoute,
     signupRoute,
+    passwordResetRoute,
+    passwordResetConfirmRoute,
     myBookingsRoute,
     bookingRoute,
     hostRegisterRoute,

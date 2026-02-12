@@ -6,6 +6,9 @@ import type {
     SignupPayload,
     SignupResponse,
     MemberResponseDTO,
+    PasswordResetRequestPayload,
+    PasswordResetConfirmPayload,
+    PasswordResetResponse,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -70,4 +73,40 @@ export async function getUserApi(username: string): Promise<MemberResponseDTO> {
     return httpClient<MemberResponseDTO>(
         `${MEMBER_API}/${encodeURIComponent(username)}`
     );
+}
+
+export async function requestPasswordResetApi(
+    payload: PasswordResetRequestPayload
+): Promise<PasswordResetResponse> {
+    const response = await httpClient<PasswordResetResponse>(
+        `${MEMBER_API}/password-reset/request`,
+        {
+            method: 'POST',
+            body: payload,
+        }
+    );
+
+    if (!response) {
+        throw new Error('서버로부터 응답을 받지 못했습니다.');
+    }
+
+    return response;
+}
+
+export async function confirmPasswordResetApi(
+    payload: PasswordResetConfirmPayload
+): Promise<PasswordResetResponse> {
+    const response = await httpClient<PasswordResetResponse>(
+        `${MEMBER_API}/password-reset/confirm`,
+        {
+            method: 'POST',
+            body: payload,
+        }
+    );
+
+    if (!response) {
+        throw new Error('서버로부터 응답을 받지 못했습니다.');
+    }
+
+    return response;
 }
