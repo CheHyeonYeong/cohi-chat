@@ -182,7 +182,7 @@ export default function Booking() {
                             <Button
                                 type="submit"
                                 variant="primary"
-                                className="w-full py-2"
+                                className="w-full"
                                 disabled={validationErrors.length > 0 || selectedFiles.length === 0 || isUploading}
                             >
                                 {isUploading ? (uploadProgress || '업로드 중...') : '첨부'}

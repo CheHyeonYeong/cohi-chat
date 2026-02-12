@@ -36,7 +36,7 @@ export default function BookingForm({ calendar, slug, timeSlotId, when, onBack, 
     return (
         <div className='flex flex-col items-center justify-center space-y-4'>
             <div className="w-full">
-                <Button variant="secondary" className="inline-block py-2 px-4" onClick={onBack}>달력으로 돌아가기</Button>
+                <Button variant="secondary" onClick={onBack}>달력으로 돌아가기</Button>
             </div>
             <form onSubmit={handleSubmit} className="w-full">
                 <div className="space-y-4 w-full">
@@ -58,7 +58,7 @@ export default function BookingForm({ calendar, slug, timeSlotId, when, onBack, 
                             className="w-full border border-gray-300 rounded-md p-2"
                         />
                     </div>
-                    <Button variant='primary' type="submit" disabled={createBookingMutation.isPending} className='w-full py-3 font-semibold'>
+                    <Button variant='primary' type="submit" disabled={createBookingMutation.isPending} size="lg" className='w-full'>
                         {createBookingMutation.isPending ? '예약 신청 중...' : '예약 신청하기'}
                     </Button>
                     {createBookingMutation.isError && (

@@ -98,6 +98,18 @@ button:focus-visible {
   background-color: var(--cohe-primary-dark);
 }
 
+.cohe-btn-secondary {
+  background-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.cohe-btn-secondary:hover {
+  background-color: #d1d5db;
+  border-color: #d1d5db;
+}
+
 .cohe-btn-outline {
   background-color: transparent;
   border: 1px solid var(--cohe-primary);

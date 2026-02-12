@@ -7,7 +7,7 @@ export function LogoutButton() {
 
     return (
         <Button
-            variant="secondary"
+            variant="outline"
             onClick={logout}
         >
         로그아웃

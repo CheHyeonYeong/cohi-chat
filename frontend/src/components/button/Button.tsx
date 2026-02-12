@@ -2,22 +2,30 @@ import { forwardRef } from "react";
 import clsx from "clsx";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant: "primary" | "secondary";
+    variant: "primary" | "secondary" | "outline";
+    size?: "sm" | "md" | "lg";
     className?: string;
     children: React.ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ variant, className, children, ...props }, ref) => {
-        const variantStyles = {
-            primary: "bg-blue-500 text-white",
-            secondary: "bg-gray-200 text-gray-800",
-        }[variant];
+const sizeStyles = {
+    sm: "px-4 py-2 text-sm font-medium",
+    md: "px-4 py-2 font-medium",
+    lg: "px-6 py-3 font-semibold",
+};
 
+const variantStyles = {
+    primary: "cohe-btn-primary",
+    secondary: "cohe-btn-secondary",
+    outline: "cohe-btn-outline",
+};
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+    ({ variant, size = "md", className, children, ...props }, ref) => {
         return (
             <button
                 ref={ref}
-                className={clsx("rounded-md border border-gray-200", variantStyles, className)}
+                className={clsx("rounded-lg", variantStyles[variant], sizeStyles[size], className)}
                 {...props}
             >
                 {children}
