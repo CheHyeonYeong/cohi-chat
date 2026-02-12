@@ -26,6 +26,7 @@ export default function HostRegister() {
     const [currentStep, setCurrentStep] = useState(1);
     const [data, setData] = useState<WizardData>(initialData);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [tokenRefreshFailed, setTokenRefreshFailed] = useState(false);
     const createCalendarMutation = useCreateCalendar();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -59,6 +60,7 @@ export default function HostRegister() {
         if (currentStep === 2 && !validateStep2()) return;
         if (currentStep < TOTAL_STEPS) {
             setErrors({});
+            createCalendarMutation.reset();
             setCurrentStep(currentStep + 1);
         }
     };
@@ -66,6 +68,7 @@ export default function HostRegister() {
     const handlePrev = () => {
         if (currentStep > 1) {
             setErrors({});
+            createCalendarMutation.reset();
             setCurrentStep(currentStep - 1);
         }
     };
@@ -84,7 +87,8 @@ export default function HostRegister() {
                         localStorage.setItem('auth_token', response.accessToken);
                         localStorage.setItem('refresh_token', response.refreshToken);
                     } catch {
-                        // 토큰 갱신 실패해도 등록은 완료된 상태
+                        // 토큰 갱신 실패 - 사용자에게 재로그인 필요 알림
+                        setTokenRefreshFailed(true);
                     }
                     // auth 캐시를 무효화하여 HostGuard가 새 역할(HOST)을 인식하도록 함
                     await queryClient.invalidateQueries({ queryKey: ['auth'] });
@@ -139,6 +143,7 @@ export default function HostRegister() {
                         isPending={createCalendarMutation.isPending}
                         error={createCalendarMutation.error}
                         isSuccess={createCalendarMutation.isSuccess}
+                        tokenRefreshFailed={tokenRefreshFailed}
                         onSubmit={handleSubmit}
                     />
                 )}
