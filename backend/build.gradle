@@ -39,6 +39,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     runtimeOnly 'org.xerial:sqlite-jdbc:3.45.2.0'
     implementation 'org.hibernate.orm:hibernate-community-dialects'

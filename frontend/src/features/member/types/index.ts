@@ -53,3 +53,16 @@ export interface SignupResponse {
     username: string;
     displayName: string;
 }
+
+export interface PasswordResetRequestPayload {
+    email: string;
+}
+
+export interface PasswordResetConfirmPayload {
+    token: string;
+    newPassword: string;
+}
+
+export interface PasswordResetResponse {
+    message: string;
+}
