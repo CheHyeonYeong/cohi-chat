@@ -31,7 +31,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -189,6 +191,8 @@ public class MemberService {
 				accessTokenBlacklistRepository.save(blacklist);
 			} catch (ExpiredJwtException e) {
 				// 이미 만료된 토큰은 블랙리스트 등록 불필요
+			} catch (Exception e) {
+				log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
 			}
 		}
 	}
