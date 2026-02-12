@@ -37,26 +37,6 @@ describe('HostRegister', () => {
         vi.clearAllMocks();
     });
 
-    describe('refreshTokenApi 실패 시 사용자 알림', () => {
-        it('토큰 갱신 실패 시 재로그인 안내 메시지가 표시된다', async () => {
-            // Given: isSuccess=true, tokenRefreshFailed=true 상태를 시뮬레이션
-            // RegisterStep3 컴포넌트가 tokenRefreshFailed prop을 받으면 알림 표시
-            vi.spyOn(hostHooks, 'useCreateCalendar').mockReturnValue({
-                mutate: vi.fn(),
-                isPending: false,
-                isSuccess: true,
-                error: null,
-                reset: vi.fn(),
-            } as unknown as ReturnType<typeof hostHooks.useCreateCalendar>);
-
-            // 실제로 tokenRefreshFailed가 true인 상태를 테스트하려면
-            // HostRegister 컴포넌트 내부 상태를 직접 제어해야 하므로
-            // RegisterStep3를 직접 테스트하는 것이 더 적합합니다.
-            // 여기서는 통합 테스트 대신 RegisterStep3 단위 테스트로 변경합니다.
-            expect(true).toBe(true); // Placeholder - RegisterStep3 테스트에서 검증
-        });
-    });
-
     describe('스텝 이동 시 mutation 상태 초기화', () => {
         it('이전 단계로 이동 시 reset이 호출된다', async () => {
             const resetMock = vi.fn();

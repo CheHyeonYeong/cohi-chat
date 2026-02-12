@@ -65,13 +65,13 @@
     <logger name="org.springframework" level="INFO"/>
     <logger name="org.springframework.security" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
     <logger name="com.zaxxer.hikari" level="WARN"/>
 
     <!-- Profile-specific configurations -->
 
     <!-- Default profile (local development) -->
     <springProfile name="default">
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
@@ -80,6 +80,7 @@
 
     <!-- Development profile -->
     <springProfile name="dev">
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
         <root level="DEBUG">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>

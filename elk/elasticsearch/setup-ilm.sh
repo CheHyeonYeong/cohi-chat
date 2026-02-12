@@ -16,11 +16,6 @@ curl -X PUT "http://localhost:9200/_ilm/policy/cohi-chat-logs-policy" -H "Conten
       "hot": {
         "min_age": "0ms",
         "actions": {
-          "rollover": {
-            "max_age": "1d",
-            "max_size": "5gb",
-            "max_docs": 1000000
-          },
           "set_priority": {
             "priority": 100
           }
@@ -65,8 +60,7 @@ curl -X PUT "http://localhost:9200/_index_template/cohi-chat-logs-template" -H "
     "settings": {
       "number_of_shards": 1,
       "number_of_replicas": 0,
-      "index.lifecycle.name": "cohi-chat-logs-policy",
-      "index.lifecycle.rollover_alias": "cohi-chat-logs"
+      "index.lifecycle.name": "cohi-chat-logs-policy"
     },
     "mappings": {
       "properties": {
@@ -127,7 +121,7 @@ echo "Index template created!"
 echo ""
 echo "=== ELK Setup Complete ==="
 echo "ILM Policy: cohi-chat-logs-policy"
-echo "  - Hot phase: 0-7 days (rollover at 1 day, 5GB, or 1M docs)"
+echo "  - Hot phase: 0-7 days"
 echo "  - Warm phase: 7-30 days (readonly)"
 echo "  - Cold phase: 30-90 days"
 echo "  - Delete: after 90 days"
