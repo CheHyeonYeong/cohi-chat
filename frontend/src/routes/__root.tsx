@@ -11,6 +11,9 @@ import Home from '~/pages/main/Home'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 
+// DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
+// - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
+// - 프로덕션 번들에서 router-devtools 코드 미포함 확인됨 (빌드 후 grep 검증 완료)
 const TanStackRouterDevtools = import.meta.env.DEV
     ? lazy(() =>
         import('@tanstack/router-devtools').then((mod) => ({
@@ -26,6 +29,7 @@ const RootRoute = createRootRoute({
                 <div className="w-full min-h-screen">
                     <Outlet />
                 </div>
+                {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
                 <Suspense fallback={null}>
                     <TanStackRouterDevtools />
                 </Suspense>
