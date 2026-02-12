@@ -177,9 +177,42 @@ public class MemberService {
 		return MemberResponseDTO.from(member);
 	}
 
-	@Transactional
+	/**
+	 * 회원 탈퇴 처리.
+	 * 외부 API 호출(Google Calendar)과 DB 트랜잭션을 분리하여 처리.
+	 */
 	public void deleteMember(String username) {
 		Member member = getMember(username);
+
+		// 1. 외부 API 호출 (트랜잭션 외부에서 실행)
+		deleteGoogleCalendarEventsForMember(member);
+
+		// 2. DB 트랜잭션 처리
+		deleteMemberTransaction(member, username);
+	}
+
+	private void deleteGoogleCalendarEventsForMember(Member member) {
+		LocalDate today = LocalDate.now();
+
+		// 호스트인 경우: 호스트로서의 미래 예약의 GCal 이벤트 삭제
+		if (member.getRole() == Role.HOST) {
+			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
+				member.getId(), today, AttendanceStatus.SCHEDULED);
+			for (Booking booking : hostBookings) {
+				deleteGoogleCalendarEvent(booking, member.getId());
+			}
+		}
+
+		// 모든 사용자: 게스트로서의 미래 예약의 GCal 이벤트 삭제
+		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
+		for (Booking booking : guestBookings) {
+			deleteGoogleCalendarEvent(booking, booking.getTimeSlot().getUserId());
+		}
+	}
+
+	@Transactional
+	protected void deleteMemberTransaction(Member member, String username) {
 		cancelAffectedBookings(member);
 		member.softDelete();
 		refreshTokenRepository.deleteById(username);
@@ -231,7 +264,6 @@ public class MemberService {
 			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
 				member.getId(), today, AttendanceStatus.SCHEDULED);
 			for (Booking booking : hostBookings) {
-				deleteGoogleCalendarEvent(booking, member.getId());
 				booking.forceCancel(cancellationReason);
 			}
 		}
@@ -240,7 +272,6 @@ public class MemberService {
 		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
 			member.getId(), today, AttendanceStatus.SCHEDULED);
 		for (Booking booking : guestBookings) {
-			deleteGoogleCalendarEvent(booking, booking.getTimeSlot().getUserId());
 			booking.forceCancel(cancellationReason);
 		}
 	}
@@ -258,6 +289,9 @@ public class MemberService {
 
 			if (deleted) {
 				log.info("Google Calendar event deleted for booking: {}", booking.getId());
+			} else {
+				log.warn("Failed to delete Google Calendar event for booking: {}, eventId: {}",
+					booking.getId(), booking.getGoogleEventId());
 			}
 		});
 	}

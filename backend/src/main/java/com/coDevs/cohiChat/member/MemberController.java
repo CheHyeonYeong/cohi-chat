@@ -99,9 +99,9 @@ public class MemberController {
 
 	@GetMapping("/v1/me/withdrawal-check")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<WithdrawalCheckResponseDTO> checkWithdrawal(Principal principal) {
+	public ResponseEntity<ApiResponseDTO<WithdrawalCheckResponseDTO>> checkWithdrawal(Principal principal) {
 		WithdrawalCheckResponseDTO response = memberService.checkWithdrawal(principal.getName());
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
 	@GetMapping("/v1/hosts")

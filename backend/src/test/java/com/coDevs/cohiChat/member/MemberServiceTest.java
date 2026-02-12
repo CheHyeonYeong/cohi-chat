@@ -531,8 +531,8 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 회원 탈퇴 시 미래 예약 취소 및 Refresh Token 삭제")
-	void deleteMemberCancelsBookingsAndDeletesRefreshToken() {
+	@DisplayName("성공: 예약이 없는 회원 탈퇴 시 Soft Delete 및 Refresh Token 삭제")
+	void deleteMemberWithNoBookingsSuccess() {
 		// given
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
@@ -544,6 +544,59 @@ class MemberServiceTest {
 		// then
 		assertThat(member.isDeleted()).isTrue();
 		assertThat(member.getDeletedAt()).isNotNull();
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+	}
+
+	@Test
+	@DisplayName("성공: 게스트 탈퇴 시 미래 예약이 강제 취소됨")
+	void deleteMemberCancelsGuestBookings() {
+		// given
+		UUID guestId = UUID.randomUUID();
+		UUID hostId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(mockBooking));
+
+		// when
+		memberService.deleteMember(TEST_USERNAME);
+
+		// then
+		assertThat(member.isDeleted()).isTrue();
+		assertThat(mockBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+		assertThat(mockBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+	}
+
+	@Test
+	@DisplayName("성공: 호스트 탈퇴 시 호스트로서의 미래 예약도 강제 취소됨")
+	void deleteMemberCancelsHostBookings() {
+		// given
+		Member hostMember = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.HOST);
+		UUID hostId = UUID.randomUUID();
+		UUID guestId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking hostBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
+		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(hostBooking));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(Collections.emptyList());
+
+		// when
+		memberService.deleteMember(TEST_USERNAME);
+
+		// then
+		assertThat(hostMember.isDeleted()).isTrue();
+		assertThat(hostBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+		assertThat(hostBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 	}
 
