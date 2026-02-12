@@ -69,10 +69,7 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        String summary = guest.getDisplayName() != null
-            ? guest.getDisplayName() + "님과의 미팅"
-            : "미팅";
-        createGoogleCalendarEvent(savedBooking, timeSlot, summary);
+        createGoogleCalendarEvent(savedBooking, timeSlot, buildEventSummary(guest));
 
         return toBookingResponseDTO(savedBooking);
     }
@@ -98,9 +95,15 @@ public class BookingService {
         });
     }
 
+    private String buildEventSummary(Member guest) {
+        return guest != null && guest.getDisplayName() != null
+            ? guest.getDisplayName() + "님과의 미팅"
+            : "미팅";
+    }
+
     private String buildEventSummary(UUID guestId) {
         return memberRepository.findById(guestId)
-            .map(guest -> guest.getDisplayName() + "님과의 미팅")
+            .map(this::buildEventSummary)
             .orElse("미팅");
     }
 
