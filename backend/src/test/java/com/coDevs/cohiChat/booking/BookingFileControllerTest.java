@@ -58,6 +58,9 @@ class BookingFileControllerTest {
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
 
+    @MockitoBean
+    private FileUploadValidator fileUploadValidator;
+
     private Member mockMember;
 
     private static final UUID USER_ID = UUID.randomUUID();

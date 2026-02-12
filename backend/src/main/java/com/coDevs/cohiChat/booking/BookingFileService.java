@@ -24,6 +24,7 @@ public class BookingFileService {
     private final BookingRepository bookingRepository;
     private final BookingFileRepository bookingFileRepository;
     private final FileStorageService fileStorageService;
+    private final FileUploadValidator fileUploadValidator;
 
     @Transactional
     public BookingFileResponseDTO uploadFile(Long bookingId, UUID requesterId, MultipartFile file) {
@@ -31,6 +32,9 @@ public class BookingFileService {
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
+
+        // 파일 업로드 제한 검증
+        fileUploadValidator.validate(bookingId, file);
 
         FileStorageResult storageResult = fileStorageService.store(file);
 

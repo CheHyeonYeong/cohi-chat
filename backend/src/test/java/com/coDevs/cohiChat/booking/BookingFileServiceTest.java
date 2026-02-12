@@ -3,7 +3,9 @@ package com.coDevs.cohiChat.booking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
@@ -46,6 +48,9 @@ class BookingFileServiceTest {
 
     @Mock
     private FileStorageService fileStorageService;
+
+    @Mock
+    private FileUploadValidator fileUploadValidator;
 
     private static final Long BOOKING_ID = 1L;
     private static final Long FILE_ID = 1L;
@@ -92,6 +97,7 @@ class BookingFileServiceTest {
             );
 
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
             given(fileStorageService.store(file)).willReturn(storageResult);
             given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
 
@@ -101,6 +107,7 @@ class BookingFileServiceTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.originalFileName()).isEqualTo("resume.pdf");
+            verify(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
             verify(fileStorageService).store(file);
             verify(bookingFileRepository).save(any(BookingFile.class));
         }
@@ -117,6 +124,7 @@ class BookingFileServiceTest {
             );
 
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
             given(fileStorageService.store(file)).willReturn(storageResult);
             given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
 
@@ -125,6 +133,7 @@ class BookingFileServiceTest {
 
             // then
             assertThat(response).isNotNull();
+            verify(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
         }
 
         @Test
