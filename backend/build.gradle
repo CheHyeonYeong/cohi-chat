@@ -75,6 +75,9 @@ dependencies {
     implementation 'com.google.auth:google-auth-library-oauth2-http:1.29.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
+
+    // Logstash Logback Encoder for ELK Stack
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
 }
 
 tasks.named('test') {
