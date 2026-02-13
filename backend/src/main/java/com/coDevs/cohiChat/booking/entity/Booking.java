@@ -59,11 +59,14 @@ public class Booking {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "attendance_status", nullable = false, length = 20)
+    @Column(name = "attendance_status", nullable = false, length = 30)
     private AttendanceStatus attendanceStatus;
 
     @Column(name = "google_event_id", length = 64)
     private String googleEventId;
+
+    @Column(name = "noshow_reported_at")
+    private Instant noshowReportedAt;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -146,5 +149,15 @@ public class Booking {
 
     public void setGoogleEventId(String googleEventId) {
         this.googleEventId = googleEventId;
+    }
+
+    /**
+     * 게스트가 호스트 노쇼를 신고
+     * 상태 검증은 서비스 레이어에서 CustomException으로 수행
+     * 이 메서드는 서비스에서 검증 완료 후 호출됨
+     */
+    public void reportHostNoShow() {
+        this.attendanceStatus = AttendanceStatus.HOST_NO_SHOW;
+        this.noshowReportedAt = Instant.now();
     }
 }

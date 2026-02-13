@@ -6,7 +6,8 @@ import java.util.List;
  * 예약 참석 상태
  * - SCHEDULED: 예정
  * - ATTENDED: 참석
- * - NO_SHOW: 노쇼
+ * - NO_SHOW: 게스트 노쇼
+ * - HOST_NO_SHOW: 호스트 노쇼
  * - CANCELLED: 취소
  * - SAME_DAY_CANCEL: 당일 취소
  * - LATE: 지각
@@ -15,16 +16,24 @@ public enum AttendanceStatus {
     SCHEDULED,
     ATTENDED,
     NO_SHOW,
+    HOST_NO_SHOW,
     CANCELLED,
     SAME_DAY_CANCEL,
     LATE;
 
     /**
      * 취소된 상태 목록 반환
-     * 취소된 예약은 중복 예약 체크에서 제외됨
      */
     public static List<AttendanceStatus> getCancelledStatuses() {
         return List.of(CANCELLED, SAME_DAY_CANCEL);
+    }
+
+    /**
+     * 중복 예약 체크에서 제외할 상태 목록 반환
+     * 취소/호스트노쇼 상태의 예약은 해당 슬롯에 새 예약을 허용
+     */
+    public static List<AttendanceStatus> getExcludedFromDuplicateCheck() {
+        return List.of(CANCELLED, SAME_DAY_CANCEL, HOST_NO_SHOW);
     }
 
     /**
@@ -48,6 +57,14 @@ public enum AttendanceStatus {
      * 예정(SCHEDULED) 상태만 변경 가능
      */
     public boolean isModifiable() {
+        return this == SCHEDULED;
+    }
+
+    /**
+     * 게스트가 호스트 노쇼 신고 가능한 상태인지 확인
+     * 예정(SCHEDULED) 상태만 신고 가능
+     */
+    public boolean isGuestReportable() {
         return this == SCHEDULED;
     }
 }
