@@ -18,6 +18,8 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	boolean existsByEmail(String email);
 
+	Optional<Member> findByEmailAndIsDeletedFalse(String email);
+
 	Optional<Member> findByIdAndRoleAndIsDeletedFalse(UUID id, Role role);
 
 	java.util.List<Member> findByRoleAndIsDeletedFalse(Role role);
