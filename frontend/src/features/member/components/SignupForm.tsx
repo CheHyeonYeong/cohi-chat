@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
+import { getErrorMessage } from '~/libs/errorUtils';
 
 // BE @Pattern과 동일한 검증 규칙
 const USERNAME_PATTERN = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
@@ -227,7 +228,7 @@ export function SignupForm() {
 
                     {signupMutation.isError && (
                         <div className="text-red-600 text-sm">
-                            {signupMutation.error?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'}
+                            {getErrorMessage(signupMutation.error, '회원가입에 실패했습니다.')}
                         </div>
                     )}
 
