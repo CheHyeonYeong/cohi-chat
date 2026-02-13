@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.global.security.config;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,7 @@ import java.util.List;
 public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
@@ -56,7 +58,7 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 
-			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository), UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -12,10 +13,6 @@ import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +22,7 @@ import io.jsonwebtoken.JwtException;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.Member;
 
 import org.apache.commons.text.RandomStringGenerator;
@@ -33,13 +31,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
@@ -111,7 +112,7 @@ public class MemberService {
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		String refreshTokenHash = hashToken(refreshTokenValue);
+		String refreshTokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = RefreshToken.create(
 			refreshTokenHash,
 			member.getUsername(),
@@ -176,8 +177,24 @@ public class MemberService {
 			.toList();
 	}
 
-	public void logout(String username) {
+	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
+
+		if (accessToken != null) {
+			try {
+				long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+				if (remainingSeconds <= 0) {
+					return;
+				}
+				String tokenHash = TokenHashUtil.hash(accessToken);
+				AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+				accessTokenBlacklistRepository.save(blacklist);
+			} catch (ExpiredJwtException e) {
+				// 이미 만료된 토큰은 블랙리스트 등록 불필요
+			} catch (Exception e) {
+				log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
+			}
+		}
 	}
 
 	@Transactional(readOnly = true)
@@ -199,11 +216,11 @@ public class MemberService {
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
-		String tokenHash = hashToken(refreshTokenValue);
+		String tokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-		// 3. 사용자 정보 조회 및 새 Access Token 발급
+		// 4. 사용자 정보 조회 및 새 Access Token 발급
 		String username = refreshToken.getUsername();
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -221,13 +238,4 @@ public class MemberService {
 			.build();
 	}
 
-	private String hashToken(String token) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(hash);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException("SHA-256 algorithm not available", e);
-		}
-	}
 }
