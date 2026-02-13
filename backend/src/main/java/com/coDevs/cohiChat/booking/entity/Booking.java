@@ -73,6 +73,9 @@ public class Booking {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "cancelled_reason", length = 100)
+    private String cancelledReason;
+
     public static Booking create(
         TimeSlot timeSlot,
         UUID guestId,
@@ -101,6 +104,15 @@ public class Booking {
      * 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED
      */
     public void cancel() {
+        cancel(null);
+    }
+
+    /**
+     * 예약 취소 (사유 포함)
+     * 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED
+     * @param reason 취소 사유 (nullable)
+     */
+    public void cancel(String reason) {
         if (!this.attendanceStatus.isCancellable()) {
             throw new IllegalStateException("취소할 수 없는 예약 상태입니다: " + this.attendanceStatus);
         }
@@ -109,6 +121,17 @@ public class Booking {
         } else {
             this.attendanceStatus = AttendanceStatus.CANCELLED;
         }
+        this.cancelledReason = reason;
+    }
+
+    /**
+     * 시스템에 의한 예약 강제 취소 (회원 탈퇴 시 사용)
+     * 상태에 관계없이 취소 처리
+     * @param reason 취소 사유
+     */
+    public void forceCancel(String reason) {
+        this.attendanceStatus = AttendanceStatus.CANCELLED;
+        this.cancelledReason = reason;
     }
 
     /**
