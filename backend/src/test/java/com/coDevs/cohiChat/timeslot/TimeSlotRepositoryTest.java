@@ -34,7 +34,7 @@ class TimeSlotRepositoryTest {
             userId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
-            List.of(0, 1, 2) // 월, 화, 수
+            List.of(0, 1, 2) // 일, 월, 화
         );
         savedTimeSlot = timeSlotRepository.save(timeSlot);
     }
@@ -90,7 +90,8 @@ class TimeSlotRepositoryTest {
             userId,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30),
-            List.of(0)
+            List.of(0),
+            null, null
         );
 
         // then
@@ -101,12 +102,13 @@ class TimeSlotRepositoryTest {
     @Test
     @DisplayName("성공: 시간이 겹치지만 요일이 다르면 겹치지 않음")
     void findOverlappingTimeSlotsNoWeekdayOverlap() {
-        // when - 시간은 겹치지만 요일 3,4 (목,금)은 기존 0,1,2 (월,화,수)와 겹치지 않음
+        // when - 시간은 겹치지만 요일 3,4 (목,금)은 기존 0,1,2 (일,월,화)와 겹치지 않음
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
-            List.of(3, 4)
+            List.of(3, 4),
+            null, null
         );
 
         // then
@@ -121,7 +123,8 @@ class TimeSlotRepositoryTest {
             userId,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0),
-            List.of(0, 1, 2)
+            List.of(0, 1, 2),
+            null, null
         );
 
         // then
@@ -136,7 +139,8 @@ class TimeSlotRepositoryTest {
             UUID.randomUUID(),
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
-            List.of(0, 1, 2)
+            List.of(0, 1, 2),
+            null, null
         );
 
         // then

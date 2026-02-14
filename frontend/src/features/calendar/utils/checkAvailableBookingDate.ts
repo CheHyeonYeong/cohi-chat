@@ -1,5 +1,28 @@
 import type { IBooking, ICalendarEvent, ITimeSlot } from '../types';
 
+export function isTimeslotAvailableOnDate(
+    timeslot: ITimeSlot,
+    year: number,
+    month: number,
+    day: number,
+    weekday: number
+): boolean {
+    if (!timeslot.weekdays.includes(weekday)) return false;
+    const { startDate, endDate } = timeslot;
+    if (startDate || endDate) {
+        const date = new Date(year, month - 1, day);
+        if (startDate) {
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            if (date < new Date(sy, sm - 1, sd)) return false;
+        }
+        if (endDate) {
+            const [ey, em, ed] = endDate.split('-').map(Number);
+            if (date > new Date(ey, em - 1, ed)) return false;
+        }
+    }
+    return true;
+}
+
 export function checkAvailableBookingDate(
     baseDate: Date,
     timeslots: ITimeSlot[],
@@ -28,8 +51,8 @@ export function checkAvailableBookingDate(
         return false;
     }
 
-    const isTimeSlotWeekday = timeslots.some(timeslot => timeslot.weekdays.includes(weekday));
-    if (!isTimeSlotWeekday) return false;
+    const hasAvailableTimeslot = timeslots.some(timeslot => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
+    if (!hasAvailableTimeslot) return false;
 
     return !bookings.some((booking) => {
         const [bookingYear, bookingMonth, bookingDay] = booking.when.split("-");

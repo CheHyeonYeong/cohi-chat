@@ -139,12 +139,13 @@ class TimeSlotIntegrationTest {
         );
         timeSlotRepository.save(existingTimeSlot);
 
-        // when - 겹치는 시간대 + 요일 조회 (10:30-11:30, 월요일)
+        // when - 겹치는 시간대 + 요일 조회 (10:30-11:30, 일요일)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30),
-            List.of(0)
+            List.of(0),
+            null, null
         );
 
         // then
@@ -169,7 +170,8 @@ class TimeSlotIntegrationTest {
             hostId,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
-            List.of(3, 4)
+            List.of(3, 4),
+            null, null
         );
 
         // then
@@ -193,7 +195,8 @@ class TimeSlotIntegrationTest {
             hostId,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0),
-            List.of(0, 1, 2)
+            List.of(0, 1, 2),
+            null, null
         );
 
         // then

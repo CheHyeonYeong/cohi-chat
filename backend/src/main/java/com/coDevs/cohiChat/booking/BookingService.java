@@ -56,6 +56,7 @@ public class BookingService {
 
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
+        validateDateInRange(timeSlot, request.getBookingDate());
         validateNotDuplicateBooking(timeSlot, request.getBookingDate(), null);
 
         Booking booking = Booking.create(
@@ -68,30 +69,49 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        createGoogleCalendarEvent(savedBooking, timeSlot);
+        createGoogleCalendarEvent(savedBooking, timeSlot, buildEventSummary(guest));
 
         return toBookingResponseDTO(savedBooking);
     }
 
-    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot) {
+    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, String summary) {
         UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
-            Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
-            Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
+        var calendarOpt = calendarRepository.findById(hostId);
+        if (calendarOpt.isEmpty()) {
+            log.debug("No Google Calendar linked for host: {}", hostId);
+            return;
+        }
 
-            String eventId = googleCalendarService.createEvent(
-                booking.getTopic(),
-                booking.getDescription(),
-                startDateTime,
-                endDateTime,
-                calendar.getGoogleCalendarId()
-            );
+        Calendar calendar = calendarOpt.get();
+        Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
+        Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
 
-            if (eventId != null) {
-                booking.setGoogleEventId(eventId);
-                log.info("Google Calendar event created for booking: {}", booking.getId());
-            }
-        });
+        String eventId = googleCalendarService.createEvent(
+            summary,
+            booking.getDescription(),
+            startDateTime,
+            endDateTime,
+            calendar.getGoogleCalendarId()
+        );
+
+        if (eventId != null) {
+            booking.setGoogleEventId(eventId);
+            log.info("Google Calendar event created for booking: {}", booking.getId());
+        } else {
+            log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
+        }
+    }
+
+    private String buildEventSummary(Member guest) {
+        return guest != null && guest.getDisplayName() != null
+            ? guest.getDisplayName() + "님과의 미팅"
+            : "미팅";
+    }
+
+    private String buildEventSummary(UUID guestId) {
+        return memberRepository.findById(guestId)
+            .map(this::buildEventSummary)
+            .orElse("미팅");
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -129,6 +149,17 @@ public class BookingService {
      */
     private int convertToSundayBasedWeekday(DayOfWeek dayOfWeek) {
         return dayOfWeek.getValue() % 7;
+    }
+
+    private void validateDateInRange(TimeSlot timeSlot, LocalDate bookingDate) {
+        LocalDate start = timeSlot.getStartDate();
+        LocalDate end = timeSlot.getEndDate();
+        if (start == null && end == null) {
+            return;
+        }
+        if ((start != null && bookingDate.isBefore(start)) || (end != null && bookingDate.isAfter(end))) {
+            throw new CustomException(ErrorCode.BOOKING_DATE_OUT_OF_RANGE);
+        }
     }
 
     private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
@@ -215,38 +246,49 @@ public class BookingService {
         }
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateDateInRange(newTimeSlot, request.getBookingDate());
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
 
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
 
-        updateGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate());
+        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), booking.getDescription());
 
         return toBookingResponseDTO(booking);
     }
 
-    private void updateGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate) {
-        if (booking.getGoogleEventId() == null) {
+    private void upsertGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate, String description) {
+        UUID hostId = timeSlot.getUserId();
+        var calendarOpt = calendarRepository.findById(hostId);
+        if (calendarOpt.isEmpty()) {
+            log.debug("No Google Calendar linked for host: {}", hostId);
             return;
         }
 
-        UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
-            Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
-            Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
+        Calendar calendar = calendarOpt.get();
+        Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
+        Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
+        String summary = buildEventSummary(booking.getGuestId());
 
-            boolean updated = googleCalendarService.updateEvent(
-                booking.getGoogleEventId(),
-                booking.getTopic(),
-                booking.getDescription(),
-                startDateTime,
-                endDateTime,
-                calendar.getGoogleCalendarId()
+        if (booking.getGoogleEventId() == null) {
+            String eventId = googleCalendarService.createEvent(
+                summary, description, startDateTime, endDateTime, calendar.getGoogleCalendarId()
             );
-
-            if (updated) {
-                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            if (eventId != null) {
+                booking.setGoogleEventId(eventId);
+                log.info("Google Calendar event created for booking: {}", booking.getId());
+            } else {
+                log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
             }
-        });
+            return;
+        }
+
+        boolean updated = googleCalendarService.updateEvent(
+            booking.getGoogleEventId(), summary, description,
+            startDateTime, endDateTime, calendar.getGoogleCalendarId()
+        );
+        if (updated) {
+            log.info("Google Calendar event updated for booking: {}", booking.getId());
+        }
     }
 
     private void validateHostAccess(Booking booking, UUID requesterId) {
@@ -326,38 +368,14 @@ public class BookingService {
         }
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
+        validateDateInRange(newTimeSlot, request.getBookingDate());
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
 
         booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
 
-        updateGoogleCalendarEventForGuestUpdate(booking, newTimeSlot, request);
+        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription());
 
         return toBookingResponseDTO(booking);
-    }
-
-    private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {
-        if (booking.getGoogleEventId() == null) {
-            return;
-        }
-
-        UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
-            Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
-            Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
-
-            boolean updated = googleCalendarService.updateEvent(
-                booking.getGoogleEventId(),
-                request.getTopic(),
-                request.getDescription(),
-                startDateTime,
-                endDateTime,
-                calendar.getGoogleCalendarId()
-            );
-
-            if (updated) {
-                log.info("Google Calendar event updated for booking: {}", booking.getId());
-            }
-        });
     }
 
     @Transactional(readOnly = true)

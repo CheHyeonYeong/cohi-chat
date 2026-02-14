@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.timeslot.entity;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,12 @@ public class TimeSlot {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
     @OneToMany(mappedBy = "timeSlot", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TimeSlotWeekday> weekdayEntities = new ArrayList<>();
 
@@ -60,10 +67,23 @@ public class TimeSlot {
         LocalTime endTime,
         List<Integer> weekdays
     ) {
+        return create(userId, startTime, endTime, weekdays, null, null);
+    }
+
+    public static TimeSlot create(
+        UUID userId,
+        LocalTime startTime,
+        LocalTime endTime,
+        List<Integer> weekdays,
+        LocalDate startDate,
+        LocalDate endDate
+    ) {
         TimeSlot timeSlot = new TimeSlot();
         timeSlot.userId = userId;
         timeSlot.startTime = startTime;
         timeSlot.endTime = endTime;
+        timeSlot.startDate = startDate;
+        timeSlot.endDate = endDate;
 
         if (weekdays == null || weekdays.isEmpty()) {
             throw new IllegalArgumentException("weekdays must not be null or empty");
