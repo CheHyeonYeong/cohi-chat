@@ -11,8 +11,14 @@ export function isTimeslotAvailableOnDate(
     const { startDate, endDate } = timeslot;
     if (startDate || endDate) {
         const date = new Date(year, month - 1, day);
-        if (startDate && date < new Date(startDate)) return false;
-        if (endDate && date > new Date(endDate)) return false;
+        if (startDate) {
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            if (date < new Date(sy, sm - 1, sd)) return false;
+        }
+        if (endDate) {
+            const [ey, em, ed] = endDate.split('-').map(Number);
+            if (date > new Date(ey, em - 1, ed)) return false;
+        }
     }
     return true;
 }
