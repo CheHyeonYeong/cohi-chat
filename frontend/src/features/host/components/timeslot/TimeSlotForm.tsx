@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+export const DEFAULT_DATE_RANGE_DAYS = 30;
+
 export interface TimeSlotEntry {
     weekdays: number[];
     startTime: string;
@@ -189,7 +191,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     const now = new Date();
                                                     const today = toLocalDateString(now);
                                                     const later = new Date(now);
-                                                    later.setDate(later.getDate() + 30);
+                                                    later.setDate(later.getDate() + DEFAULT_DATE_RANGE_DAYS);
                                                     const monthLater = toLocalDateString(later);
                                                     updateEntry(index, { startDate: today, endDate: monthLater });
                                                 } else {
