@@ -113,7 +113,9 @@ export default function TimeSlotSettings() {
         } else {
             setErrors({});
         }
-        setLastSaved(new Date());
+        if (failures.length < results.length) {
+            setLastSaved(new Date());
+        }
         syncedRef.current = false;
         refetch();
     };
