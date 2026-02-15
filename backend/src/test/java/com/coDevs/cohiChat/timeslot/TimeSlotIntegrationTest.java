@@ -130,7 +130,7 @@ class TimeSlotIntegrationTest {
     @Test
     @DisplayName("통합 테스트: 시간과 요일 모두 중복되는 타임슬롯 검증 쿼리")
     void overlappingTimeSlotQuery() {
-        // given - 기존 타임슬롯: 10:00-11:00, 월화수(0,1,2)
+        // given - 기존 타임슬롯: 10:00-11:00, 일월화(0,1,2)
         TimeSlot existingTimeSlot = TimeSlot.create(
             hostId,
             LocalTime.of(10, 0),
@@ -156,7 +156,7 @@ class TimeSlotIntegrationTest {
     @Test
     @DisplayName("통합 테스트: 시간이 겹쳐도 요일이 다르면 조회되지 않음")
     void noOverlapWhenDifferentWeekdays() {
-        // given - 기존 타임슬롯: 10:00-11:00, 월화수(0,1,2)
+        // given - 기존 타임슬롯: 10:00-11:00, 일월화(0,1,2)
         TimeSlot existingTimeSlot = TimeSlot.create(
             hostId,
             LocalTime.of(10, 0),

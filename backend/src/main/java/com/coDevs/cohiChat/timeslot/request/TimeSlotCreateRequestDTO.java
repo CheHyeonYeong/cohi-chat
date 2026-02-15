@@ -56,7 +56,7 @@ public class TimeSlotCreateRequestDTO {
         return weekdays.stream().allMatch(day -> day != null && day >= 0 && day <= 6);
     }
 
-    @AssertTrue(message = "시작일과 종료일은 함께 입력하거나, 둘 다 비워야 합니다.")
+    @AssertTrue(message = "시작일과 종료일은 둘 다 입력하거나 둘 다 비워야 하며, 시작일은 종료일 이전이어야 합니다.")
     public boolean isValidDateRange() {
         if (startDate == null && endDate == null) {
             return true;
