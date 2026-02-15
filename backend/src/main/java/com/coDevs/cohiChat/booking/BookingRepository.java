@@ -71,7 +71,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /**
      * 게스트의 미래 예정된 예약 조회 (취소되지 않은 예약)
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot WHERE b.guestId = :guestId AND b.bookingDate >= :today AND b.attendanceStatus = :status ORDER BY b.bookingDate")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE b.guestId = :guestId AND b.bookingDate >= :today AND b.attendanceStatus = :status ORDER BY b.bookingDate")
     List<Booking> findFutureBookingsByGuestId(
         @Param("guestId") UUID guestId,
         @Param("today") LocalDate today,

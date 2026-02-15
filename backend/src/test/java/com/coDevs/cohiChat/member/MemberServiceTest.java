@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
@@ -13,10 +12,11 @@ import static org.mockito.Mockito.never;
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.calendar.CalendarRepository;
-import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
+import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+
+import org.springframework.context.ApplicationEventPublisher;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -83,9 +83,6 @@ class MemberServiceTest {
 	private BookingRepository bookingRepository;
 
 	@Mock
-	private CalendarRepository calendarRepository;
-
-	@Mock
 	private PasswordEncoder passwordEncoder;
 
 	@Mock
@@ -95,7 +92,7 @@ class MemberServiceTest {
 	private RateLimitService rateLimitService;
 
 	@Mock
-	private GoogleCalendarService googleCalendarService;
+	private ApplicationEventPublisher eventPublisher;
 
 	@InjectMocks
 	private MemberService memberService;
@@ -480,7 +477,6 @@ class MemberServiceTest {
 		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
 
 		// then
-		assertThat(result.isCanWithdraw()).isTrue();
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings()).hasSize(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("GUEST");
@@ -508,7 +504,6 @@ class MemberServiceTest {
 		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
 
 		// then
-		assertThat(result.isCanWithdraw()).isTrue();
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("HOST");
 	}
@@ -525,13 +520,12 @@ class MemberServiceTest {
 		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
 
 		// then
-		assertThat(result.isCanWithdraw()).isTrue();
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(0);
 		assertThat(result.getAffectedBookings()).isEmpty();
 	}
 
 	@Test
-	@DisplayName("성공: 예약이 없는 회원 탈퇴 시 Soft Delete 및 Refresh Token 삭제")
+	@DisplayName("성공: 예약이 없는 회원 탈퇴 시 Soft Delete, Refresh Token 삭제 및 이벤트 발행")
 	void deleteMemberWithNoBookingsSuccess() {
 		// given
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
@@ -545,10 +539,11 @@ class MemberServiceTest {
 		assertThat(member.isDeleted()).isTrue();
 		assertThat(member.getDeletedAt()).isNotNull();
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(eventPublisher).publishEvent(any(MemberWithdrawalEvent.class));
 	}
 
 	@Test
-	@DisplayName("성공: 게스트 탈퇴 시 미래 예약이 강제 취소됨")
+	@DisplayName("성공: 게스트 탈퇴 시 미래 예약이 강제 취소되고 GCal 삭제 이벤트 발행")
 	void deleteMemberCancelsGuestBookings() {
 		// given
 		UUID guestId = UUID.randomUUID();
@@ -570,10 +565,17 @@ class MemberServiceTest {
 		assertThat(mockBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
 		assertThat(mockBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		// GCal 삭제를 위한 이벤트 발행 검증
+		ArgumentCaptor<MemberWithdrawalEvent> eventCaptor = ArgumentCaptor.forClass(MemberWithdrawalEvent.class);
+		verify(eventPublisher).publishEvent(eventCaptor.capture());
+		MemberWithdrawalEvent publishedEvent = eventCaptor.getValue();
+		assertThat(publishedEvent.getGuestBookings()).hasSize(1);
+		assertThat(publishedEvent.getMemberRole()).isEqualTo(Role.GUEST);
 	}
 
 	@Test
-	@DisplayName("성공: 호스트 탈퇴 시 호스트로서의 미래 예약도 강제 취소됨")
+	@DisplayName("성공: 호스트 탈퇴 시 호스트로서의 미래 예약도 강제 취소되고 GCal 삭제 이벤트 발행")
 	void deleteMemberCancelsHostBookings() {
 		// given
 		Member hostMember = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.HOST);
@@ -598,6 +600,13 @@ class MemberServiceTest {
 		assertThat(hostBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
 		assertThat(hostBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		// GCal 삭제를 위한 이벤트 발행 검증
+		ArgumentCaptor<MemberWithdrawalEvent> eventCaptor = ArgumentCaptor.forClass(MemberWithdrawalEvent.class);
+		verify(eventPublisher).publishEvent(eventCaptor.capture());
+		MemberWithdrawalEvent publishedEvent = eventCaptor.getValue();
+		assertThat(publishedEvent.getHostBookings()).hasSize(1);
+		assertThat(publishedEvent.getMemberRole()).isEqualTo(Role.HOST);
 	}
 
 	private TimeSlot createMockTimeSlot(UUID userId) {

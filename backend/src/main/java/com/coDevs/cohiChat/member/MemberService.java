@@ -3,11 +3,10 @@ package com.coDevs.cohiChat.member;
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
-import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -24,6 +23,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +39,7 @@ import com.coDevs.cohiChat.member.entity.Member;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,11 +54,10 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final BookingRepository bookingRepository;
-	private final CalendarRepository calendarRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
-	private final GoogleCalendarService googleCalendarService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
@@ -179,49 +179,40 @@ public class MemberService {
 
 	/**
 	 * 회원 탈퇴 처리.
-	 * 외부 API 호출(Google Calendar)과 DB 트랜잭션을 분리하여 처리.
+	 * DB 트랜잭션 커밋 후 이벤트 리스너에서 Google Calendar 이벤트를 삭제하여 일관성 보장.
 	 */
+	@Transactional
 	public void deleteMember(String username) {
 		Member member = getMember(username);
-
-		// 1. 외부 API 호출 (트랜잭션 외부에서 실행)
-		deleteGoogleCalendarEventsForMember(member);
-
-		// 2. DB 트랜잭션 처리
-		deleteMemberTransaction(member, username);
-	}
-
-	private void deleteGoogleCalendarEventsForMember(Member member) {
 		LocalDate today = LocalDate.now();
 
-		// 호스트인 경우: 호스트로서의 미래 예약의 GCal 이벤트 삭제
-		if (member.getRole() == Role.HOST) {
-			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
-				member.getId(), today, AttendanceStatus.SCHEDULED);
-			for (Booking booking : hostBookings) {
-				deleteGoogleCalendarEvent(booking, member.getId());
-			}
-		}
+		// 1. 미래 예약 조회 (GCal 삭제 이벤트용)
+		List<Booking> hostBookings = findFutureHostBookings(member, today);
+		List<Booking> guestBookings = findFutureGuestBookings(member, today);
 
-		// 모든 사용자: 게스트로서의 미래 예약의 GCal 이벤트 삭제
-		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
-			member.getId(), today, AttendanceStatus.SCHEDULED);
-		for (Booking booking : guestBookings) {
-			deleteGoogleCalendarEvent(booking, booking.getTimeSlot().getUserId());
-		}
-	}
+		// 2. 예약 취소 처리
+		String cancellationReason = "회원 탈퇴로 인한 취소";
+		hostBookings.forEach(booking -> booking.forceCancel(cancellationReason));
+		guestBookings.forEach(booking -> booking.forceCancel(cancellationReason));
 
-	@Transactional
-	protected void deleteMemberTransaction(Member member, String username) {
-		cancelAffectedBookings(member);
+		// 3. 회원 soft delete 및 refresh token 삭제
 		member.softDelete();
 		refreshTokenRepository.deleteById(username);
+
+		// 4. 트랜잭션 커밋 후 GCal 이벤트 삭제를 위한 이벤트 발행
+		eventPublisher.publishEvent(new MemberWithdrawalEvent(
+			member.getId(),
+			member.getRole(),
+			hostBookings,
+			guestBookings,
+			today
+		));
 	}
 
 	/**
 	 * 회원 탈퇴 시 영향받는 예약 조회
 	 * @param username 사용자명
-	 * @return 탈퇴 가능 여부 및 영향받는 예약 목록
+	 * @return 영향받는 예약 목록
 	 */
 	@Transactional(readOnly = true)
 	public WithdrawalCheckResponseDTO checkWithdrawal(String username) {
@@ -230,16 +221,12 @@ public class MemberService {
 		List<AffectedBookingDTO> affectedBookings = new ArrayList<>();
 
 		// 호스트인 경우: 호스트로서의 미래 예약 조회
-		if (member.getRole() == Role.HOST) {
-			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
-				member.getId(), today, AttendanceStatus.SCHEDULED);
-			hostBookings.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));
-		}
+		findFutureHostBookings(member, today)
+			.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));
 
 		// 모든 사용자: 게스트로서의 미래 예약 조회
-		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
-			member.getId(), today, AttendanceStatus.SCHEDULED);
-		guestBookings.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));
+		findFutureGuestBookings(member, today)
+			.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));
 
 		return WithdrawalCheckResponseDTO.of(affectedBookings);
 	}
@@ -255,45 +242,17 @@ public class MemberService {
 			.build();
 	}
 
-	private void cancelAffectedBookings(Member member) {
-		LocalDate today = LocalDate.now();
-		String cancellationReason = "회원 탈퇴로 인한 취소";
-
-		// 호스트인 경우: 호스트로서의 미래 예약 취소
-		if (member.getRole() == Role.HOST) {
-			List<Booking> hostBookings = bookingRepository.findFutureBookingsByHostId(
-				member.getId(), today, AttendanceStatus.SCHEDULED);
-			for (Booking booking : hostBookings) {
-				booking.forceCancel(cancellationReason);
-			}
+	private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
+		if (member.getRole() != Role.HOST) {
+			return Collections.emptyList();
 		}
-
-		// 모든 사용자: 게스트로서의 미래 예약 취소
-		List<Booking> guestBookings = bookingRepository.findFutureBookingsByGuestId(
+		return bookingRepository.findFutureBookingsByHostId(
 			member.getId(), today, AttendanceStatus.SCHEDULED);
-		for (Booking booking : guestBookings) {
-			booking.forceCancel(cancellationReason);
-		}
 	}
 
-	private void deleteGoogleCalendarEvent(Booking booking, java.util.UUID hostId) {
-		if (booking.getGoogleEventId() == null) {
-			return;
-		}
-
-		calendarRepository.findById(hostId).ifPresent(calendar -> {
-			boolean deleted = googleCalendarService.deleteEvent(
-				booking.getGoogleEventId(),
-				calendar.getGoogleCalendarId()
-			);
-
-			if (deleted) {
-				log.info("Google Calendar event deleted for booking: {}", booking.getId());
-			} else {
-				log.warn("Failed to delete Google Calendar event for booking: {}, eventId: {}",
-					booking.getId(), booking.getGoogleEventId());
-			}
-		});
+	private List<Booking> findFutureGuestBookings(Member member, LocalDate today) {
+		return bookingRepository.findFutureBookingsByGuestId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
 	}
 
 	@Transactional(readOnly = true)

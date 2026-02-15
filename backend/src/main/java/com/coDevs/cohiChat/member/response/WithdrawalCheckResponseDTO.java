@@ -13,7 +13,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class WithdrawalCheckResponseDTO {
 
-    private boolean canWithdraw;
     private int affectedBookingsCount;
     private List<AffectedBookingDTO> affectedBookings;
 
@@ -31,7 +30,6 @@ public class WithdrawalCheckResponseDTO {
 
     public static WithdrawalCheckResponseDTO of(List<AffectedBookingDTO> affectedBookings) {
         return WithdrawalCheckResponseDTO.builder()
-            .canWithdraw(true)
             .affectedBookingsCount(affectedBookings.size())
             .affectedBookings(affectedBookings)
             .build();
