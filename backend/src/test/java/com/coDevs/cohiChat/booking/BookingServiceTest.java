@@ -88,6 +88,7 @@ class BookingServiceTest {
     @BeforeEach
     void setUp() {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+        bookingService.initZoneId();
 
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1347,6 +1348,7 @@ class BookingServiceTest {
             eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
         given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
@@ -1377,6 +1379,8 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getId()).willReturn(newTimeSlotId);

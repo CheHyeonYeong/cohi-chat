@@ -32,6 +32,7 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,6 +47,14 @@ public class BookingService {
     private final MemberRepository memberRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
+
+    private ZoneId calendarZoneId;
+
+    @PostConstruct
+    void initZoneId() {
+        String timezone = googleCalendarProperties.getTimezone();
+        calendarZoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+    }
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
@@ -69,48 +78,15 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        createGoogleCalendarEvent(savedBooking, timeSlot, buildEventSummary(guest));
+        upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription());
 
         return toBookingResponseDTO(savedBooking);
     }
 
-    private void createGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, String summary) {
-        UUID hostId = timeSlot.getUserId();
-        var calendarOpt = calendarRepository.findById(hostId);
-        if (calendarOpt.isEmpty()) {
-            log.debug("No Google Calendar linked for host: {}", hostId);
-            return;
-        }
-
-        Calendar calendar = calendarOpt.get();
-        Instant startDateTime = toInstant(booking.getBookingDate(), timeSlot.getStartTime());
-        Instant endDateTime = toInstant(booking.getBookingDate(), timeSlot.getEndTime());
-
-        String eventId = googleCalendarService.createEvent(
-            summary,
-            booking.getDescription(),
-            startDateTime,
-            endDateTime,
-            calendar.getGoogleCalendarId()
-        );
-
-        if (eventId != null) {
-            booking.setGoogleEventId(eventId);
-            log.info("Google Calendar event created for booking: {}", booking.getId());
-        } else {
-            log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
-        }
-    }
-
-    private String buildEventSummary(Member guest) {
-        return guest != null && guest.getDisplayName() != null
-            ? guest.getDisplayName() + "님과의 미팅"
-            : "미팅";
-    }
-
     private String buildEventSummary(UUID guestId) {
         return memberRepository.findById(guestId)
-            .map(this::buildEventSummary)
+            .filter(m -> m.getDisplayName() != null)
+            .map(m -> m.getDisplayName() + "님과의 미팅")
             .orElse("미팅");
     }
 
@@ -407,8 +383,6 @@ public class BookingService {
     }
 
     private Instant toInstant(LocalDate date, LocalTime time) {
-        String timezone = googleCalendarProperties.getTimezone();
-        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
-        return date.atTime(time).atZone(zoneId).toInstant();
+        return date.atTime(time).atZone(calendarZoneId).toInstant();
     }
 }

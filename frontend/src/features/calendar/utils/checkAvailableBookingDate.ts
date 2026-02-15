@@ -47,6 +47,7 @@ export function checkAvailableBookingDate(
         return false;
     }
 
+    // day === 0은 달력 그리드의 빈 셀 (getCalendarDays에서 패딩으로 채운 값)
     if (day === 0) {
         return false;
     }
@@ -71,10 +72,7 @@ export function checkAvailableBookingDate(
             const [endHour, endMinute] = timeslot.endTime.split(":");
             const endTime = Number(endHour) * 60 + Number(endMinute);
 
-            return (bookingEndTime >= startTime && bookingEndTime <= endTime)
-                || (bookingStartTime >= startTime && bookingStartTime <= endTime)
-                || (startTime <= bookingStartTime && bookingEndTime <= endTime)
-                || (bookingStartTime <= startTime && bookingEndTime >= endTime);
+            return bookingStartTime < endTime && bookingEndTime > startTime;
         });
     });
 }
