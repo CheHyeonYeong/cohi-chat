@@ -12,6 +12,12 @@ export interface MemberResponseDTO {
     updatedAt: ISO8601String;
 }
 
+export interface HostResponseDTO {
+    id: string;
+    username: string;
+    displayName: string;
+}
+
 export interface IUserSimple {
     username: string;
     displayName: string;

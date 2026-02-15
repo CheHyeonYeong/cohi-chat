@@ -7,7 +7,8 @@ export function LogoutButton() {
 
     return (
         <Button
-            variant="secondary"
+            variant="outline"
+            className="px-4 py-2 rounded-lg font-medium"
             onClick={logout}
         >
         로그아웃

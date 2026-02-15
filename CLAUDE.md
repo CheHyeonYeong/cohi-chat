@@ -49,11 +49,13 @@ docker-compose up -d    # 전체 서비스 실행
 ```
 coheChat/
 ├── .claude/
-│   └── issue/            # 이슈별 실행 계획 ({number}.md)
+│   ├── commands/         # 커스텀 슬래시 커맨드
+│   └── skills/           # 커스텀 스킬
 ├── backend/              # Spring Boot 백엔드 (Java 21)
 ├── frontend/             # React 프론트엔드
 │   └── src/
 │       ├── components/   # 재사용 컴포넌트
+│       ├── features/     # 도메인별 기능 모듈 (member, calendar, host)
 │       ├── pages/        # 페이지
 │       ├── hooks/        # Custom Hooks
 │       ├── routes/       # 라우트 정의

@@ -21,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.coDevs.cohiChat.booking.BookingFileService;
 import com.coDevs.cohiChat.booking.FileDownloadResult;
+import com.coDevs.cohiChat.booking.FileUploadValidator;
+import com.coDevs.cohiChat.booking.FileUploadValidator.FileUploadLimits;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
@@ -40,6 +42,7 @@ public class BookingFileController {
 
     private final BookingFileService bookingFileService;
     private final MemberService memberService;
+    private final FileUploadValidator fileUploadValidator;
 
     @Operation(summary = "파일 업로드", description = "예약에 파일을 업로드합니다. 게스트 또는 호스트만 업로드 가능합니다.")
     @ApiResponses({
@@ -128,5 +131,16 @@ public class BookingFileController {
         );
 
         return new ResponseEntity<>(result.content(), headers, HttpStatus.OK);
+    }
+
+    @Operation(summary = "파일 업로드 제한 정보 조회", description = "파일 업로드 제한 설정값을 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    @GetMapping("/limits")
+    public ResponseEntity<ApiResponseDTO<FileUploadLimits>> getUploadLimits(
+            @PathVariable Long bookingId
+    ) {
+        return ResponseEntity.ok(ApiResponseDTO.success(fileUploadValidator.getLimits()));
     }
 }

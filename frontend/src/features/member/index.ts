@@ -13,6 +13,7 @@ export type {
     Role,
     AuthProvider,
     MemberResponseDTO,
+    HostResponseDTO,
     IUserSimple,
     AuthUser,
     LoginCredentials,

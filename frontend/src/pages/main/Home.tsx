@@ -5,9 +5,8 @@ import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
 import { useMyCalendar } from '~/features/host';
 
-function HostCard({ displayName, username, role }: { displayName: string; username: string; role: string }) {
+function HostCard({ displayName, username }: { displayName: string; username: string }) {
     const now = new Date();
-    const roleLabel = role === 'HOST' ? 'Host' : role;
 
     return (
         <Link
@@ -23,7 +22,7 @@ function HostCard({ displayName, username, role }: { displayName: string; userna
             </div>
             <div className='flex flex-col'>
                 <span className='font-semibold text-[var(--cohe-text-dark)]'>{displayName}</span>
-                <span className='text-sm text-gray-500'>{roleLabel}</span>
+                <span className='text-sm text-gray-500'>Host</span>
             </div>
         </Link>
     );
@@ -169,7 +168,6 @@ export default function Home() {
                                     key={host.username}
                                     displayName={host.displayName}
                                     username={host.username}
-                                    role={host.role}
                                 />
                             ))}
                         </div>
