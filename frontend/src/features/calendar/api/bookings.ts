@@ -36,6 +36,8 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
             startTime: b.startTime,
             endTime: b.endTime,
             weekdays: [],
+            startDate: null,
+            endDate: null,
             createdAt: b.createdAt,
             updatedAt: b.createdAt,
         },
