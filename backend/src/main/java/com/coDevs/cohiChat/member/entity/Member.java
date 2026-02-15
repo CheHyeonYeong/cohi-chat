@@ -52,8 +52,12 @@ public class Member {
 	@Column(length = 255, nullable = false, unique = true)
 	private String email;
 
-	@Column(name = "hashed_password", nullable = false)
+	@Column(name = "hashed_password")
 	private String hashedPassword;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "provider", nullable = false, length = 20)
+	private Provider provider = Provider.LOCAL;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false, length = 20)
@@ -77,34 +81,54 @@ public class Member {
 	private Instant deletedAt;
 
 	public static Member create(
-
 		String username,
 		String displayName,
 		String email,
 		String hashedPassword,
 		Role role
 	) {
-		validateRequired(username, displayName, email, hashedPassword, role);
+		validateRequired(username, displayName, email, role);
+		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
 		Member member = new Member();
 		member.username = username;
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
+		member.provider = Provider.LOCAL;
 		member.role = role;
 		member.isDeleted = false;
 
 		return member;
 	}
 
-	private static void validateRequired(String username, String displayName, String email, String hashedPassword, Role role) {
+	public static Member createOAuth(
+		String username,
+		String displayName,
+		String email,
+		Provider provider,
+		Role role
+	) {
+		validateRequired(username, displayName, email, role);
+		if (provider == null) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
+		Member member = new Member();
+		member.username = username;
+		member.displayName = displayName;
+		member.email = email;
+		member.hashedPassword = null;
+		member.provider = provider;
+		member.role = role;
+		member.isDeleted = false;
+
+		return member;
+	}
+
+	private static void validateRequired(String username, String displayName, String email, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
 		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
-		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
-
 	}
 
 	public void updateInfo(String displayName, String hashedPassword) {

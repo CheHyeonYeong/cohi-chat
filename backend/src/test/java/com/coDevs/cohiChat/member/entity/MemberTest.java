@@ -22,6 +22,47 @@ class MemberTest {
 	}
 
 	@Nested
+	@DisplayName("OAuth 회원 생성")
+	class CreateOAuth {
+
+		@Test
+		@DisplayName("OAuth 회원이 정상 생성된다 (비밀번호 없음)")
+		void createOAuthMemberSuccess() {
+			Member member = Member.createOAuth("google_123", "GoogleUser", "google@test.com", Provider.GOOGLE, Role.GUEST);
+
+			assertEquals("google_123", member.getUsername());
+			assertEquals("GoogleUser", member.getDisplayName());
+			assertEquals("google@test.com", member.getEmail());
+			assertEquals(Provider.GOOGLE, member.getProvider());
+			assertEquals(Role.GUEST, member.getRole());
+			assertEquals(null, member.getHashedPassword());
+		}
+
+		@Test
+		@DisplayName("OAuth 회원 생성 시 email이 null이면 예외")
+		void createOAuthMemberFailNullEmail() {
+			CustomException ex = assertThrows(CustomException.class,
+				() -> Member.createOAuth("kakao_456", "KakaoUser", null, Provider.KAKAO, Role.GUEST));
+			assertEquals(ErrorCode.INVALID_EMAIL, ex.getErrorCode());
+		}
+
+		@Test
+		@DisplayName("OAuth 회원 생성 시 provider가 null이면 예외")
+		void createOAuthMemberFailNullProvider() {
+			CustomException ex = assertThrows(CustomException.class,
+				() -> Member.createOAuth("oauth_user", "User", "user@test.com", null, Role.GUEST));
+			assertEquals(ErrorCode.INVALID_PROVIDER, ex.getErrorCode());
+		}
+
+		@Test
+		@DisplayName("기존 create()로 생성한 회원은 provider가 LOCAL")
+		void createLocalMemberHasLocalProvider() {
+			Member member = createGuestMember();
+			assertEquals(Provider.LOCAL, member.getProvider());
+		}
+	}
+
+	@Nested
 	@DisplayName("호스트 승격")
 	class PromoteToHost {
 
