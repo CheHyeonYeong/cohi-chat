@@ -66,4 +66,12 @@ public class TimeSlotCreateRequestDTO {
         }
         return !startDate.isAfter(endDate);
     }
+
+    @AssertTrue(message = "시작일은 오늘 이후여야 합니다.")
+    public boolean isStartDateNotPast() {
+        if (startDate == null) {
+            return true;
+        }
+        return !startDate.isBefore(LocalDate.now());
+    }
 }

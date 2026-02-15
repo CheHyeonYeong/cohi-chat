@@ -227,7 +227,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                 <label className="block text-sm text-gray-500 mb-1">시작일</label>
                                                 <input
                                                     type="date"
-                                                    value={entry.startDate}
+                                                    value={entry.startDate ?? ''}
                                                     onChange={(e) => updateEntry(index, { startDate: e.target.value })}
                                                     disabled={entry.existingId != null}
                                                     min={toLocalDateString(new Date())}
@@ -238,7 +238,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                 <label className="block text-sm text-gray-500 mb-1">종료일</label>
                                                 <input
                                                     type="date"
-                                                    value={entry.endDate}
+                                                    value={entry.endDate ?? ''}
                                                     onChange={(e) => updateEntry(index, { endDate: e.target.value })}
                                                     disabled={entry.existingId != null}
                                                     min={entry.startDate}

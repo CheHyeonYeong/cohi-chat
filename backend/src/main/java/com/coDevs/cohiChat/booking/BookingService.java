@@ -255,30 +255,34 @@ public class BookingService {
             return;
         }
 
-        Calendar calendar = calendarOpt.get();
-        Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
-        Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
-        String summary = buildEventSummary(booking.getGuestId());
+        try {
+            Calendar calendar = calendarOpt.get();
+            Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
+            Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
+            String summary = buildEventSummary(booking.getGuestId());
 
-        if (booking.getGoogleEventId() == null) {
-            String eventId = googleCalendarService.createEvent(
-                summary, description, startDateTime, endDateTime, calendar.getGoogleCalendarId()
-            );
-            if (eventId != null) {
-                booking.setGoogleEventId(eventId);
-                log.info("Google Calendar event created for booking: {}", booking.getId());
-            } else {
-                log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
+            if (booking.getGoogleEventId() == null) {
+                String eventId = googleCalendarService.createEvent(
+                    summary, description, startDateTime, endDateTime, calendar.getGoogleCalendarId()
+                );
+                if (eventId != null) {
+                    booking.setGoogleEventId(eventId);
+                    log.info("Google Calendar event created for booking: {}", booking.getId());
+                } else {
+                    log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
+                }
+                return;
             }
-            return;
-        }
 
-        boolean updated = googleCalendarService.updateEvent(
-            booking.getGoogleEventId(), summary, description,
-            startDateTime, endDateTime, calendar.getGoogleCalendarId()
-        );
-        if (updated) {
-            log.info("Google Calendar event updated for booking: {}", booking.getId());
+            boolean updated = googleCalendarService.updateEvent(
+                booking.getGoogleEventId(), summary, description,
+                startDateTime, endDateTime, calendar.getGoogleCalendarId()
+            );
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
+        } catch (Exception e) {
+            log.error("Google Calendar event upsert failed for booking: {}", booking.getId(), e);
         }
     }
 
