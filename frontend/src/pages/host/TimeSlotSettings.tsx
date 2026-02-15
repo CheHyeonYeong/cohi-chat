@@ -30,8 +30,6 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
         weekdays: ts.weekdays,
         startTime: normalizeTime(ts.startTime),
         endTime: normalizeTime(ts.endTime),
-        startDate: ts.startDate ?? undefined,
-        endDate: ts.endDate ?? undefined,
         existingId: ts.id,
     }));
 }
@@ -84,9 +82,6 @@ export default function TimeSlotSettings() {
             if (entry.startTime >= entry.endTime) {
                 newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
             }
-            if (entry.startDate && entry.endDate && new Date(entry.startDate + 'T00:00:00') > new Date(entry.endDate + 'T00:00:00')) {
-                newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
-            }
         });
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -101,26 +96,18 @@ export default function TimeSlotSettings() {
                     startTime: `${entry.startTime}:00`,
                     endTime: `${entry.endTime}:00`,
                     weekdays: entry.weekdays,
-                    ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
                 })
             )
         );
-        const failures = results
-            .map((r, i) => ({ result: r, entry: newEntries[i] }))
-            .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
+        const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (failures.length > 0) {
-            const reasons = failures.map((f) => {
-                const label = `${f.entry.startTime}~${f.entry.endTime}`;
-                const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
-                return `[${label}] ${msg}`;
-            });
-            setErrors({ save: reasons.join(', ') });
+            const reasons = failures.map((f) => f.reason instanceof Error ? f.reason.message : '알 수 없는 오류');
+            const uniqueReasons = [...new Set(reasons)];
+            setErrors({ save: uniqueReasons.join(', ') });
         } else {
             setErrors({});
         }
-        if (failures.length < results.length) {
-            setLastSaved(new Date());
-        }
+        setLastSaved(new Date());
         syncedRef.current = false;
         refetch();
     };

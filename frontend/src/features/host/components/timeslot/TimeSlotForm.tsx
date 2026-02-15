@@ -1,13 +1,9 @@
 import { useState, useMemo } from 'react';
 
-export const DEFAULT_DATE_RANGE_DAYS = 30;
-
 export interface TimeSlotEntry {
     weekdays: number[];
     startTime: string;
     endTime: string;
-    startDate?: string;
-    endDate?: string;
     /** 서버에서 불러온 기존 타임슬롯의 ID. undefined면 신규. */
     existingId?: number;
 }
@@ -25,13 +21,6 @@ interface TimeSlotFormProps {
     deletingId?: number | null;
     errors: Record<string, string>;
 }
-
-const toLocalDateString = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-};
 
 const DAYS = [
     { label: '일', value: 0 },
@@ -192,60 +181,6 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             ))}
                                         </select>
                                     </div>
-                                </div>
-
-                                {/* Date range */}
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm text-gray-500 mb-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={!!entry.startDate}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    const now = new Date();
-                                                    const today = toLocalDateString(now);
-                                                    const later = new Date(now);
-                                                    later.setDate(later.getDate() + DEFAULT_DATE_RANGE_DAYS);
-                                                    const monthLater = toLocalDateString(later);
-                                                    updateEntry(index, { startDate: today, endDate: monthLater });
-                                                } else {
-                                                    updateEntry(index, { startDate: undefined, endDate: undefined });
-                                                }
-                                            }}
-                                            disabled={entry.existingId != null}
-                                            className="rounded border-gray-300"
-                                        />
-                                        기간 지정
-                                    </label>
-                                    {entry.existingId != null && entry.startDate && (
-                                        <p className="text-xs text-gray-400 mb-2">기존 타임슬롯의 기간은 수정할 수 없습니다.</p>
-                                    )}
-                                    {entry.startDate && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm text-gray-500 mb-1">시작일</label>
-                                                <input
-                                                    type="date"
-                                                    value={entry.startDate}
-                                                    onChange={(e) => updateEntry(index, { startDate: e.target.value })}
-                                                    disabled={entry.existingId != null}
-                                                    min={toLocalDateString(new Date())}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm text-gray-500 mb-1">종료일</label>
-                                                <input
-                                                    type="date"
-                                                    value={entry.endDate}
-                                                    onChange={(e) => updateEntry(index, { endDate: e.target.value })}
-                                                    disabled={entry.existingId != null}
-                                                    min={entry.startDate}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* Inline time validation error */}

@@ -1,6 +1,5 @@
 package com.coDevs.cohiChat.timeslot;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,16 +24,12 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
            "JOIN t.weekdayEntities w " +
            "WHERE t.userId = :userId " +
            "AND t.startTime < :endTime AND t.endTime > :startTime " +
-           "AND w.weekday IN :weekdays " +
-           "AND (t.endDate IS NULL OR :startDate IS NULL OR t.endDate >= :startDate) " +
-           "AND (t.startDate IS NULL OR :endDate IS NULL OR t.startDate <= :endDate)")
+           "AND w.weekday IN :weekdays")
     List<TimeSlot> findOverlappingTimeSlots(
         @Param("userId") UUID userId,
         @Param("startTime") LocalTime startTime,
         @Param("endTime") LocalTime endTime,
-        @Param("weekdays") List<Integer> weekdays,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate
+        @Param("weekdays") List<Integer> weekdays
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
