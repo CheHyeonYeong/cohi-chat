@@ -64,6 +64,7 @@ public enum ErrorCode {
 	BOOKING_NOT_CANCELLABLE(HttpStatus.UNPROCESSABLE_ENTITY, "취소할 수 없는 예약 상태입니다."),
 	BOOKING_NOT_MODIFIABLE(HttpStatus.UNPROCESSABLE_ENTITY, "상태를 변경할 수 없는 예약입니다."),
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
+	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
 
 	/**
 	 * 파일 관련 예외들.

@@ -78,10 +78,10 @@ class BookingIntegrationTest {
         );
         guest = memberRepository.save(guest);
 
-        // 호스트 캘린더 생성
+        // 호스트 캘린더 생성 (테스트에서 사용하는 모든 topic 포함)
         Calendar calendar = Calendar.create(
             host.getId(),
-            List.of("커리어 상담"),
+            List.of("커리어 상담", "프로젝트 상담", "첫 번째 상담", "두 번째 상담", "재예약 상담"),
             "게스트에게 보여줄 설명입니다.",
             "test@group.calendar.google.com"
         );
