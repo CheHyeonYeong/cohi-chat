@@ -46,6 +46,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
 			.authorizeHttpRequests(auth -> auth
+				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
 				.requestMatchers("/swagger-ui/**", "/hello", "/api/hello", "/members/v1/signup", "/members/v1/login", "/members/v1/refresh", "/members/v1/hosts", "/timeslot/v1/hosts/**").permitAll()
 				// /calendar/v1 엔드포인트는 인증 필수 (permitAll 규칙보다 먼저 적용)
 				.requestMatchers("/calendar/v1", "/calendar/v1/**").authenticated()
