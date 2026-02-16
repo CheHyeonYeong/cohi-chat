@@ -19,6 +19,7 @@ import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
 import { useAuth } from '~/features/member';
+import { useHost } from '~/hooks/useHost';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });
@@ -28,6 +29,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
 
     const navigate = useNavigate();
     const auth = useAuth();
+    const { data: host } = useHost(slug);
     const calendar = useCalendarEvent(slug);
     const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
@@ -83,7 +85,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                     </div>
 
                     <h2 className="text-primary text-2xl">
-                        <span className="font-bold">{slug}</span>님과 약속잡기
+                        <span className="font-bold">{host?.displayName ?? slug}</span>님과 약속잡기
                     </h2>
                 </div>
 
