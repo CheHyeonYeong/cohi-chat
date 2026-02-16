@@ -35,7 +35,7 @@ public class MemberWithdrawalEventListener {
             Calendar hostCalendar = calendarRepository.findById(event.getMemberId()).orElse(null);
             if (hostCalendar != null) {
                 for (Booking booking : event.getHostBookings()) {
-                    deleteGoogleCalendarEvent(booking, hostCalendar.getGoogleCalendarId());
+                    deleteGoogleCalendarEventSafely(booking, hostCalendar.getGoogleCalendarId());
                 }
             }
         }
@@ -44,8 +44,21 @@ public class MemberWithdrawalEventListener {
         for (Booking booking : event.getGuestBookings()) {
             UUID hostId = booking.getTimeSlot().getUserId();
             calendarRepository.findById(hostId).ifPresent(calendar ->
-                deleteGoogleCalendarEvent(booking, calendar.getGoogleCalendarId())
+                deleteGoogleCalendarEventSafely(booking, calendar.getGoogleCalendarId())
             );
+        }
+    }
+
+    /**
+     * 예외를 격리하여 Google Calendar 이벤트 삭제를 시도.
+     * 한 건의 실패가 나머지 삭제 작업을 차단하지 않도록 함.
+     */
+    private void deleteGoogleCalendarEventSafely(Booking booking, String googleCalendarId) {
+        try {
+            deleteGoogleCalendarEvent(booking, googleCalendarId);
+        } catch (Exception e) {
+            log.error("Unexpected error while deleting Google Calendar event for booking: {}, eventId: {}",
+                booking.getId(), booking.getGoogleEventId(), e);
         }
     }
 
