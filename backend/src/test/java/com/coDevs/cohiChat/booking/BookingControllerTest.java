@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -645,6 +646,136 @@ class BookingControllerTest {
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").exists());
+    }
+
+    // ===== 호스트 노쇼 신고 테스트 (Issue #195) =====
+
+    @Test
+    @DisplayName("성공: 호스트 노쇼 신고 - 200 OK")
+    void reportHostNoShowSuccess() throws Exception {
+        // given
+        Long bookingId = 1L;
+        BookingResponseDTO response = BookingResponseDTO.builder()
+            .id(bookingId)
+            .timeSlotId(TIME_SLOT_ID)
+            .guestId(GUEST_ID)
+            .bookingDate(FUTURE_DATE)
+            .startTime(LocalTime.of(10, 0))
+            .endTime(LocalTime.of(11, 0))
+            .topic("프로젝트 상담")
+            .description("설명")
+            .attendanceStatus(AttendanceStatus.HOST_NO_SHOW)
+            .createdAt(Instant.now())
+            .build();
+
+        given(bookingService.reportHostNoShow(eq(bookingId), eq(GUEST_ID), any())).willReturn(response);
+
+        String requestBody = """
+            {
+                "reason": "호스트가 나타나지 않았습니다."
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(post("/bookings/{bookingId}/report-noshow", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.attendanceStatus").value("HOST_NO_SHOW"))
+            .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    @Test
+    @DisplayName("실패: 미팅 시작 전 노쇼 신고 - 422")
+    void reportHostNoShowFailMeetingNotStarted() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.reportHostNoShow(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.MEETING_NOT_STARTED));
+
+        String requestBody = """
+            {
+                "reason": "사유"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(post("/bookings/{bookingId}/report-noshow", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
+    }
+
+    @Test
+    @DisplayName("실패: 이미 신고된 예약 재신고 - 409")
+    void reportHostNoShowFailAlreadyReported() throws Exception {
+        // given
+        Long bookingId = 1L;
+        given(bookingService.reportHostNoShow(eq(bookingId), eq(GUEST_ID), any()))
+            .willThrow(new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED));
+
+        String requestBody = """
+            {
+                "reason": "사유"
+            }
+            """;
+
+        // when & then
+        mockMvc.perform(post("/bookings/{bookingId}/report-noshow", bookingId)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").exists());
+    }
+
+    // ===== 호스트 노쇼 이력 조회 테스트 (Issue #195) =====
+
+    @Test
+    @DisplayName("성공: 호스트 노쇼 이력 조회 - 200 OK")
+    void getNoShowHistorySuccess() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+        NoShowHistoryResponseDTO response = NoShowHistoryResponseDTO.builder()
+            .id(1L)
+            .bookingId(10L)
+            .hostId(hostId)
+            .reportedBy(GUEST_ID)
+            .reason("사유")
+            .bookingDate(FUTURE_DATE)
+            .bookingTopic("상담")
+            .build();
+
+        given(bookingService.getNoShowHistoryByHostId(eq(hostId))).willReturn(List.of(response));
+
+        // when & then
+        mockMvc.perform(get("/bookings/host/{hostId}/noshow-history", hostId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].bookingId").value(10))
+            .andExpect(jsonPath("$.data[0].reason").value("사유"))
+            .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    @Test
+    @DisplayName("성공: 노쇼 이력 없으면 빈 목록 - 200 OK")
+    void getNoShowHistoryEmptyList() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+        given(bookingService.getNoShowHistoryByHostId(eq(hostId))).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/bookings/host/{hostId}/noshow-history", hostId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.data").isEmpty());
     }
 
 }

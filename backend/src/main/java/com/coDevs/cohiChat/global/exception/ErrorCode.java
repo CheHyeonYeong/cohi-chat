@@ -64,6 +64,9 @@ public enum ErrorCode {
 	BOOKING_NOT_CANCELLABLE(HttpStatus.UNPROCESSABLE_ENTITY, "취소할 수 없는 예약 상태입니다."),
 	BOOKING_NOT_MODIFIABLE(HttpStatus.UNPROCESSABLE_ENTITY, "상태를 변경할 수 없는 예약입니다."),
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
+	NOSHOW_NOT_REPORTABLE(HttpStatus.UNPROCESSABLE_ENTITY, "노쇼 신고가 불가능한 예약 상태입니다."),
+	MEETING_NOT_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "미팅 시작 시간이 지나지 않았습니다."),
+	NOSHOW_ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 노쇼 신고가 접수된 예약입니다."),
 
 	/**
 	 * 파일 관련 예외들.

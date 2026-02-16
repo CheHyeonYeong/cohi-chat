@@ -1,9 +1,8 @@
 package com.coDevs.cohiChat.booking.controller;
 
 import java.util.List;
+import java.util.UUID;
 
-import com.coDevs.cohiChat.booking.BookingService;
-import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,11 +16,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.booking.BookingService;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
+import com.coDevs.cohiChat.booking.request.NoShowReportRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 
@@ -162,6 +165,40 @@ public class BookingController {
         Member member = memberService.getMember(userDetails.getUsername());
         bookingService.cancelBooking(bookingId, member.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "호스트 노쇼 신고", description = "게스트가 호스트의 노쇼를 신고합니다. 미팅 시작 시간이 경과한 SCHEDULED 상태의 예약만 신고 가능합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "노쇼 신고 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (게스트만 신고 가능)"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
+        @ApiResponse(responseCode = "409", description = "이미 신고된 예약"),
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (미팅 시작 전, 신고 불가능한 상태)")
+    })
+    @PostMapping("/{bookingId}/report-noshow")
+    public ResponseEntity<ApiResponseDTO<BookingResponseDTO>> reportHostNoShow(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody NoShowReportRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingResponseDTO response = bookingService.reportHostNoShow(bookingId, member.getId(), request.getReason());
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "호스트 노쇼 이력 조회", description = "특정 호스트의 노쇼 이력을 조회합니다. 인증된 사용자라면 누구든 조회 가능합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/host/{hostId}/noshow-history")
+    public ResponseEntity<ApiResponseDTO<List<NoShowHistoryResponseDTO>>> getNoShowHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID hostId
+    ) {
+        List<NoShowHistoryResponseDTO> responses = bookingService.getNoShowHistoryByHostId(hostId);
+        return ResponseEntity.ok(ApiResponseDTO.success(responses));
     }
 
     @Operation(summary = "예약 수정 (게스트)", description = "게스트가 본인의 예약 정보(주제, 설명, 일정)를 수정합니다.")
