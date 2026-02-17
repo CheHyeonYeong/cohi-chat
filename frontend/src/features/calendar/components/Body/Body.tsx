@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { cn } from "~/libs/cn";
 import { checkAvailableBookingDate } from "../../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../../types";
 
@@ -27,9 +27,9 @@ export default function Body({ year, month, days, baseDate, timeslots, bookings,
     const now = baseDate ?? new Date();
 
     return (
-        <div className={clsx("min-w-[360px] h-[390px]")}>
+        <div className={cn("min-w-[360px] h-[390px]")}>
             <table
-                className={clsx("w-full h-full")}
+                className={cn("w-full h-full")}
             >
                 <thead className="w-full">
                     <tr className="text-lg font-semibold border-b grid grid-cols-7 gap-4">
@@ -55,7 +55,7 @@ export default function Body({ year, month, days, baseDate, timeslots, bookings,
                                         role={day !== 0 ? "button" : undefined}
                                         role-label={day !== 0 ? `day-${day}` : undefined}
                                         key={dayIndex}
-                                        className={clsx(
+                                        className={cn(
                                             "booking-cell flex justify-center items-center rounded-full w-12 h-12 select-none",
                                             { 'text-sm text-[#AAAAAA] bg-inherit hover:cursor-default': !isAvailable },
                                             { 'text-lg font-bold text-primary bg-blue-50': isAvailable },
