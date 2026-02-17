@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '~/components/button/Button';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -215,20 +216,17 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                 ✓ 형식이 확인되었습니다
                             </div>
                         ) : (
-                            <button
-                                type="button"
+                            <Button
+                                variant="primary"
+                                size="lg"
                                 onClick={() => {
                                     if (isValid) setConfirmed(true);
                                 }}
                                 disabled={!hasInput || !isValid}
-                                className={`w-full py-3 rounded-lg font-semibold transition-colors ${
-                                    hasInput && isValid
-                                        ? 'cohe-btn-primary'
-                                        : 'bg-[var(--cohe-bg-warm)] text-gray-400 cursor-not-allowed'
-                                }`}
+                                className="w-full rounded-lg"
                             >
                                 연동 확인
-                            </button>
+                            </Button>
                         )}
 
                     </div>
