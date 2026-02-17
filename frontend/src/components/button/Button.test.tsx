@@ -50,4 +50,77 @@ describe('Button', () => {
         const button = container.querySelector('button');
         expect(button?.className).toContain('rounded-md');
     });
+
+    describe('type', () => {
+        it('should default to type="button"', () => {
+            const { container } = render(<Button variant="primary">Test</Button>);
+            const button = container.querySelector('button');
+            expect(button?.getAttribute('type')).toBe('button');
+        });
+
+        it('should allow type="submit" override', () => {
+            const { container } = render(<Button variant="primary" type="submit">Submit</Button>);
+            const button = container.querySelector('button');
+            expect(button?.getAttribute('type')).toBe('submit');
+        });
+    });
+
+    describe('disabled', () => {
+        it('should apply disabled classes', () => {
+            const { container } = render(<Button variant="primary">Test</Button>);
+            const button = container.querySelector('button');
+            expect(button?.className).toContain('disabled:opacity-50');
+            expect(button?.className).toContain('disabled:cursor-not-allowed');
+        });
+
+        it('should set disabled attribute when disabled', () => {
+            const { container } = render(<Button variant="primary" disabled>Test</Button>);
+            const button = container.querySelector('button');
+            expect(button?.disabled).toBe(true);
+        });
+
+        it('should keep variant class when disabled (CSS handles :disabled style)', () => {
+            const { container } = render(<Button variant="primary" disabled>Test</Button>);
+            const button = container.querySelector('button');
+            expect(button?.className).toContain('cohe-btn-primary');
+        });
+    });
+
+    describe('asChild', () => {
+        it('should render child element instead of button', () => {
+            const { container } = render(
+                <Button variant="primary" asChild>
+                    <a href="/test">Link</a>
+                </Button>
+            );
+            const anchor = container.querySelector('a');
+            expect(anchor).not.toBeNull();
+            expect(anchor?.className).toContain('cohe-btn-primary');
+            expect(container.querySelector('button')).toBeNull();
+        });
+
+        it('should not add type="button" when asChild', () => {
+            const { container } = render(
+                <Button variant="primary" asChild>
+                    <a href="/test">Link</a>
+                </Button>
+            );
+            const anchor = container.querySelector('a');
+            expect(anchor?.getAttribute('type')).toBeNull();
+        });
+    });
+
+    describe('loading', () => {
+        it('should be disabled when loading', () => {
+            const { container } = render(<Button variant="primary" loading>Loading</Button>);
+            const button = container.querySelector('button');
+            expect(button?.disabled).toBe(true);
+        });
+
+        it('should keep variant class when loading (CSS handles :disabled style)', () => {
+            const { container } = render(<Button variant="primary" loading>Loading</Button>);
+            const button = container.querySelector('button');
+            expect(button?.className).toContain('cohe-btn-primary');
+        });
+    });
 });
