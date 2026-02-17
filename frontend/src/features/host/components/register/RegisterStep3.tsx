@@ -1,3 +1,4 @@
+import Button from '~/components/button/Button';
 import type { Step1Data } from './RegisterStep1';
 import type { Step2Data } from './RegisterStep2';
 
@@ -92,18 +93,15 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
             )}
 
             {/* Submit */}
-            <button
-                type="button"
+            <Button
+                variant="primary"
+                size="lg"
                 onClick={onSubmit}
-                disabled={isPending}
-                className={`w-full py-3.5 rounded-lg font-semibold text-lg transition-colors ${
-                    isPending
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'cohe-btn-primary'
-                }`}
+                loading={isPending}
+                className="w-full rounded-lg"
             >
                 {isPending ? '등록 중...' : '호스트 등록 완료'}
-            </button>
+            </Button>
         </div>
     );
 }
