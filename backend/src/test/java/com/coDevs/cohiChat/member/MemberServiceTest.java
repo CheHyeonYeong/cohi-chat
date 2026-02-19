@@ -29,6 +29,7 @@ import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -73,6 +74,9 @@ class MemberServiceTest {
 
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
+
+	@Mock
+	private TokenService tokenService;
 
 	@Mock
 	private RateLimitService rateLimitService;
@@ -155,33 +159,30 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그인 성공 - Access Token과 Refresh Token 모두 발급, 토큰은 해시되어 저장")
+	@DisplayName("성공: 로그인 성공 - TokenService.issueTokens 호출")
 	void loginSuccess() {
 		LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.build();
 
+		LoginResponseDTO mockResponse = LoginResponseDTO.builder()
+			.accessToken("test-access-token")
+			.refreshToken("test-refresh-token")
+			.expiredInMinutes(60L)
+			.username(TEST_USERNAME)
+			.displayName(TEST_DISPLAY_NAME)
+			.build();
+
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
-		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
-		given(jwtTokenProvider.createRefreshToken(anyString())).willReturn("test-refresh-token");
-		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
-		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
-		given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+		given(tokenService.issueTokens(member)).willReturn(mockResponse);
 
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
 
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-
-		// 저장된 RefreshToken의 token 필드가 원문이 아닌 해시값인지 검증
-		ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-		verify(refreshTokenRepository).save(captor.capture());
-		RefreshToken savedToken = captor.getValue();
-		assertThat(savedToken.getToken()).isNotEqualTo("test-refresh-token");
-		assertThat(savedToken.getUsername()).isEqualTo(TEST_USERNAME);
+		verify(tokenService).issueTokens(member);
 	}
 
 	@Test
@@ -333,6 +334,7 @@ class MemberServiceTest {
 		);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
@@ -375,6 +377,7 @@ class MemberServiceTest {
 		String tokenNotInRedis = "not-in-redis-token";
 
 		given(jwtTokenProvider.getUsernameFromToken(tokenNotInRedis)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(tokenNotInRedis)).willReturn("some-hash");
 		given(refreshTokenRepository.findByToken(anyString())).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
@@ -390,6 +393,7 @@ class MemberServiceTest {
 		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");

@@ -20,6 +20,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "member", indexes = {
 	@Index(name = "idx_member_email", columnList = "email"),
 	@Index(name = "idx_member_username", columnList = "username")
+}, uniqueConstraints = {
+	@UniqueConstraint(name = "uk_member_email_provider", columnNames = {"email", "provider"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -49,14 +52,14 @@ public class Member {
 	@Column(name = "display_name", length = 50, nullable = false)
 	private String displayName;
 
-	@Column(length = 255, nullable = false, unique = true)
+	@Column(length = 255, nullable = false)
 	private String email;
 
-	@Column(name = "hashed_password")
+	@Column(name = "hashed_password", nullable = true)
 	private String hashedPassword;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "provider", nullable = false, length = 20)
+	@Column(name = "provider", nullable = false, updatable = false, length = 20)
 	private Provider provider = Provider.LOCAL;
 
 	@Enumerated(EnumType.STRING)
@@ -135,7 +138,7 @@ public class Member {
 		if (displayName != null && !displayName.isBlank()) {
 			this.displayName = displayName;
 		}
-		if (hashedPassword != null && !hashedPassword.isBlank()) {
+		if (hashedPassword != null && !hashedPassword.isBlank() && this.provider == Provider.LOCAL) {
 			this.hashedPassword = hashedPassword;
 		}
 	}

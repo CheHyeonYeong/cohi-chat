@@ -28,6 +28,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+	private static final String[] PUBLIC_ENDPOINTS = {
+		"/swagger-ui/**", "/hello", "/api/hello",
+		"/members/v1/signup", "/members/v1/login", "/members/v1/refresh",
+		"/members/v1/hosts", "/timeslot/v1/hosts/**", "/oauth/v1/**"
+	};
+
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Bean
@@ -46,7 +52,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/swagger-ui/**", "/hello", "/api/hello", "/members/v1/signup", "/members/v1/login", "/members/v1/refresh", "/members/v1/hosts", "/timeslot/v1/hosts/**", "/oauth/v1/**").permitAll()
+				.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
 				// /calendar/v1 엔드포인트는 인증 필수 (permitAll 규칙보다 먼저 적용)
 				.requestMatchers("/calendar/v1", "/calendar/v1/**").authenticated()
 				// 공개 캘린더 엔드포인트 (slug 기반)

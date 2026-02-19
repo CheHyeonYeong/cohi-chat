@@ -7,7 +7,10 @@ import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Provider;
 
 @Component
@@ -45,18 +48,30 @@ public class GoogleOAuthClient implements OAuthClient {
 	public OAuthUserInfo getUserInfo(String authorizationCode) {
 		String accessToken = exchangeToken(authorizationCode);
 
-		Map<String, Object> userInfo = restClient.get()
-			.uri(USERINFO_URL)
-			.header("Authorization", "Bearer " + accessToken)
-			.retrieve()
-			.body(Map.class);
+		Map<String, Object> userInfo;
+		try {
+			userInfo = restClient.get()
+				.uri(USERINFO_URL)
+				.header("Authorization", "Bearer " + accessToken)
+				.retrieve()
+				.body(Map.class);
+		} catch (RestClientException e) {
+			throw new CustomException(ErrorCode.OAUTH_USER_INFO_FAILED);
+		}
 
-		return new OAuthUserInfo(
-			Provider.GOOGLE,
-			(String) userInfo.get("sub"),
-			(String) userInfo.get("email"),
-			(String) userInfo.get("name")
-		);
+		if (userInfo == null) {
+			throw new CustomException(ErrorCode.OAUTH_USER_INFO_FAILED);
+		}
+
+		String sub = (String) userInfo.get("sub");
+		String email = (String) userInfo.get("email");
+		String name = (String) userInfo.get("name");
+
+		if (sub == null || email == null) {
+			throw new CustomException(ErrorCode.OAUTH_USER_INFO_FAILED);
+		}
+
+		return new OAuthUserInfo(Provider.GOOGLE, sub, email, name);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -67,12 +82,21 @@ public class GoogleOAuthClient implements OAuthClient {
 			+ "&client_secret=" + encode(config.getClientSecret())
 			+ "&redirect_uri=" + encode(config.getRedirectUri());
 
-		Map<String, Object> response = restClient.post()
-			.uri(TOKEN_URL)
-			.contentType(MediaType.APPLICATION_FORM_URLENCODED)
-			.body(body)
-			.retrieve()
-			.body(Map.class);
+		Map<String, Object> response;
+		try {
+			response = restClient.post()
+				.uri(TOKEN_URL)
+				.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+				.body(body)
+				.retrieve()
+				.body(Map.class);
+		} catch (RestClientException e) {
+			throw new CustomException(ErrorCode.OAUTH_TOKEN_EXCHANGE_FAILED);
+		}
+
+		if (response == null || response.get("access_token") == null) {
+			throw new CustomException(ErrorCode.OAUTH_TOKEN_EXCHANGE_FAILED);
+		}
 
 		return (String) response.get("access_token");
 	}

@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.member.entity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +36,7 @@ class MemberTest {
 			assertEquals("google@test.com", member.getEmail());
 			assertEquals(Provider.GOOGLE, member.getProvider());
 			assertEquals(Role.GUEST, member.getRole());
-			assertEquals(null, member.getHashedPassword());
+			assertNull(member.getHashedPassword());
 		}
 
 		@Test
