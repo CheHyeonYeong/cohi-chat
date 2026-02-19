@@ -264,20 +264,22 @@ public class MemberService {
 	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
 
-		if (accessToken != null) {
-			try {
-				long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
-				if (remainingSeconds <= 0) {
-					return;
-				}
-				String tokenHash = TokenHashUtil.hash(accessToken);
-				AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
-				accessTokenBlacklistRepository.save(blacklist);
-			} catch (ExpiredJwtException e) {
-				// 이미 만료된 토큰은 블랙리스트 등록 불필요
-			} catch (Exception e) {
-				log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
+		if (accessToken == null) {
+			return;
+		}
+
+		try {
+			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+			if (remainingSeconds <= 0) {
+				return;
 			}
+			String tokenHash = TokenHashUtil.hash(accessToken);
+			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+			accessTokenBlacklistRepository.save(blacklist);
+		} catch (ExpiredJwtException e) {
+			log.debug("이미 만료된 토큰, 블랙리스트 등록 생략: {}", e.getMessage());
+		} catch (Exception e) {
+			log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
 		}
 	}
 
