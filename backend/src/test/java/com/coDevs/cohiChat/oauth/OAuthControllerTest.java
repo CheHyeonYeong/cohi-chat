@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.oauth;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,6 +19,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 
 @SpringBootTest
@@ -62,5 +65,42 @@ class OAuthControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.accessToken").value("test-access-token"))
 			.andExpect(jsonPath("$.username").value("google_123"));
+	}
+
+	@Test
+	@DisplayName("GET /oauth/v1/{provider}/authorize - 지원하지 않는 provider 시 400")
+	void getAuthorizationUrl_unsupportedProvider() throws Exception {
+		given(oAuthService.getAuthorizationUrl("github"))
+			.willThrow(new CustomException(ErrorCode.INVALID_PROVIDER));
+
+		mockMvc.perform(get("/oauth/v1/github/authorize"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.success").value(false))
+			.andExpect(jsonPath("$.error.code").value("INVALID_PROVIDER"));
+	}
+
+	@Test
+	@DisplayName("POST /oauth/v1/{provider}/callback - 빈 code 시 400")
+	void socialLoginCallback_blankCode() throws Exception {
+		mockMvc.perform(post("/oauth/v1/google/callback")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\": \"\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.success").value(false))
+			.andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+	}
+
+	@Test
+	@DisplayName("POST /oauth/v1/{provider}/callback - 지원하지 않는 provider 시 400")
+	void socialLoginCallback_unsupportedProvider() throws Exception {
+		willThrow(new CustomException(ErrorCode.INVALID_PROVIDER))
+			.given(oAuthService).socialLogin("github", "test-auth-code");
+
+		mockMvc.perform(post("/oauth/v1/github/callback")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\": \"test-auth-code\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.success").value(false))
+			.andExpect(jsonPath("$.error.code").value("INVALID_PROVIDER"));
 	}
 }

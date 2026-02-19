@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.member.RefreshTokenRepository;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -21,6 +22,7 @@ public class TokenService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RefreshTokenRepository refreshTokenRepository;
 
+	@Transactional
 	public LoginResponseDTO issueTokens(Member member) {
 		String accessToken = jwtTokenProvider.createAccessToken(
 			member.getUsername(), member.getRole().name()

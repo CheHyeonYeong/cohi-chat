@@ -1,7 +1,5 @@
 package com.coDevs.cohiChat.oauth;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -36,8 +34,8 @@ public class KakaoOAuthClient implements OAuthClient {
 	@Override
 	public String getAuthorizationUrl() {
 		return AUTHORIZATION_URL
-			+ "?client_id=" + encode(config.getClientId())
-			+ "&redirect_uri=" + encode(config.getRedirectUri())
+			+ "?client_id=" + OAuthClientUtils.encode(config.getClientId())
+			+ "&redirect_uri=" + OAuthClientUtils.encode(config.getRedirectUri())
 			+ "&response_type=code";
 	}
 
@@ -89,10 +87,10 @@ public class KakaoOAuthClient implements OAuthClient {
 	@SuppressWarnings("unchecked")
 	private String exchangeToken(String authorizationCode) {
 		String body = "grant_type=authorization_code"
-			+ "&code=" + encode(authorizationCode)
-			+ "&client_id=" + encode(config.getClientId())
-			+ "&client_secret=" + encode(config.getClientSecret())
-			+ "&redirect_uri=" + encode(config.getRedirectUri());
+			+ "&code=" + OAuthClientUtils.encode(authorizationCode)
+			+ "&client_id=" + OAuthClientUtils.encode(config.getClientId())
+			+ "&client_secret=" + OAuthClientUtils.encode(config.getClientSecret())
+			+ "&redirect_uri=" + OAuthClientUtils.encode(config.getRedirectUri());
 
 		Map<String, Object> response;
 		try {
@@ -113,7 +111,4 @@ public class KakaoOAuthClient implements OAuthClient {
 		return (String) response.get("access_token");
 	}
 
-	private static String encode(String value) {
-		return URLEncoder.encode(value, StandardCharsets.UTF_8);
-	}
 }
