@@ -1,9 +1,13 @@
 package com.coDevs.cohiChat.member;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
+import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
@@ -12,7 +16,12 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,23 +33,29 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.text.RandomStringGenerator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final BookingRepository bookingRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
 	private final TokenService tokenService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public SignupResponseDTO signup(SignupRequestDTO request){
@@ -134,10 +149,82 @@ public class MemberService {
 		return MemberResponseDTO.from(member);
 	}
 
+	/**
+	 * 회원 탈퇴 처리.
+	 * DB 트랜잭션 커밋 후 이벤트 리스너에서 Google Calendar 이벤트를 삭제하여 일관성 보장.
+	 */
 	@Transactional
 	public void deleteMember(String username) {
 		Member member = getMember(username);
+		LocalDate today = LocalDate.now();
+
+		// 1. 미래 예약 조회 (GCal 삭제 이벤트용)
+		List<Booking> hostBookings = findFutureHostBookings(member, today);
+		List<Booking> guestBookings = findFutureGuestBookings(member, today);
+
+		// 2. 예약 취소 처리
+		String cancellationReason = "회원 탈퇴로 인한 취소";
+		hostBookings.forEach(booking -> booking.forceCancel(cancellationReason));
+		guestBookings.forEach(booking -> booking.forceCancel(cancellationReason));
+
+		// 3. 회원 soft delete 및 refresh token 삭제
 		member.softDelete();
+		refreshTokenRepository.deleteById(username);
+
+		// 4. 트랜잭션 커밋 후 GCal 이벤트 삭제를 위한 이벤트 발행
+		eventPublisher.publishEvent(new MemberWithdrawalEvent(
+			member.getId(),
+			member.getRole(),
+			hostBookings,
+			guestBookings,
+			today
+		));
+	}
+
+	/**
+	 * 회원 탈퇴 시 영향받는 예약 조회
+	 * @param username 사용자명
+	 * @return 영향받는 예약 목록
+	 */
+	@Transactional(readOnly = true)
+	public WithdrawalCheckResponseDTO checkWithdrawal(String username) {
+		Member member = getMember(username);
+		LocalDate today = LocalDate.now();
+		List<AffectedBookingDTO> affectedBookings = new ArrayList<>();
+
+		// 호스트인 경우: 호스트로서의 미래 예약 조회
+		findFutureHostBookings(member, today)
+			.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));
+
+		// 모든 사용자: 게스트로서의 미래 예약 조회
+		findFutureGuestBookings(member, today)
+			.forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));
+
+		return WithdrawalCheckResponseDTO.of(affectedBookings);
+	}
+
+	private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
+		return AffectedBookingDTO.builder()
+			.bookingId(booking.getId())
+			.bookingDate(booking.getBookingDate())
+			.startTime(booking.getTimeSlot().getStartTime())
+			.endTime(booking.getTimeSlot().getEndTime())
+			.topic(booking.getTopic())
+			.role(role)
+			.build();
+	}
+
+	private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
+		if (member.getRole() != Role.HOST) {
+			return Collections.emptyList();
+		}
+		return bookingRepository.findFutureBookingsByHostId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
+	}
+
+	private List<Booking> findFutureGuestBookings(Member member, LocalDate today) {
+		return bookingRepository.findFutureBookingsByGuestId(
+			member.getId(), today, AttendanceStatus.SCHEDULED);
 	}
 
 	@Transactional(readOnly = true)

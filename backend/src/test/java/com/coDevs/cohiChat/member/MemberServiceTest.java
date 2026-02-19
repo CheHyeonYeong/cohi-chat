@@ -9,10 +9,24 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
+import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
+import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+
+import org.springframework.context.ApplicationEventPublisher;
+
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.mockito.ArgumentCaptor;
 
@@ -67,10 +81,10 @@ class MemberServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Mock
-	private PasswordEncoder passwordEncoder;
+	private BookingRepository bookingRepository;
 
-	@InjectMocks
-	private MemberService memberService;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
@@ -80,6 +94,12 @@ class MemberServiceTest {
 
 	@Mock
 	private RateLimitService rateLimitService;
+
+	@Mock
+	private ApplicationEventPublisher eventPublisher;
+
+	@InjectMocks
+	private MemberService memberService;
 
 
 	@BeforeEach
@@ -440,5 +460,165 @@ class MemberServiceTest {
 
 		// then
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+	}
+
+	@Test
+	@DisplayName("성공: 탈퇴 확인 - 게스트 미래 예약이 있는 경우")
+	void checkWithdrawalWithGuestBookings() {
+		// given
+		UUID guestId = UUID.randomUUID();
+		UUID hostId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(mockBooking));
+
+		// when
+		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
+
+		// then
+		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
+		assertThat(result.getAffectedBookings()).hasSize(1);
+		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("GUEST");
+	}
+
+	@Test
+	@DisplayName("성공: 탈퇴 확인 - 호스트 미래 예약이 있는 경우")
+	void checkWithdrawalWithHostBookings() {
+		// given
+		Member hostMember = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.HOST);
+		UUID hostId = UUID.randomUUID();
+		UUID guestId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
+		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(mockBooking));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(Collections.emptyList());
+
+		// when
+		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
+
+		// then
+		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
+		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("HOST");
+	}
+
+	@Test
+	@DisplayName("성공: 탈퇴 확인 - 예약이 없는 경우")
+	void checkWithdrawalWithNoBookings() {
+		// given
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(Collections.emptyList());
+
+		// when
+		WithdrawalCheckResponseDTO result = memberService.checkWithdrawal(TEST_USERNAME);
+
+		// then
+		assertThat(result.getAffectedBookingsCount()).isEqualTo(0);
+		assertThat(result.getAffectedBookings()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("성공: 예약이 없는 회원 탈퇴 시 Soft Delete, Refresh Token 삭제 및 이벤트 발행")
+	void deleteMemberWithNoBookingsSuccess() {
+		// given
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(Collections.emptyList());
+
+		// when
+		memberService.deleteMember(TEST_USERNAME);
+
+		// then
+		assertThat(member.isDeleted()).isTrue();
+		assertThat(member.getDeletedAt()).isNotNull();
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(eventPublisher).publishEvent(any(MemberWithdrawalEvent.class));
+	}
+
+	@Test
+	@DisplayName("성공: 게스트 탈퇴 시 미래 예약이 강제 취소되고 GCal 삭제 이벤트 발행")
+	void deleteMemberCancelsGuestBookings() {
+		// given
+		UUID guestId = UUID.randomUUID();
+		UUID hostId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(mockBooking));
+
+		// when
+		memberService.deleteMember(TEST_USERNAME);
+
+		// then
+		assertThat(member.isDeleted()).isTrue();
+		assertThat(mockBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+		assertThat(mockBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		// GCal 삭제를 위한 이벤트 발행 검증
+		ArgumentCaptor<MemberWithdrawalEvent> eventCaptor = ArgumentCaptor.forClass(MemberWithdrawalEvent.class);
+		verify(eventPublisher).publishEvent(eventCaptor.capture());
+		MemberWithdrawalEvent publishedEvent = eventCaptor.getValue();
+		assertThat(publishedEvent.getGuestBookings()).hasSize(1);
+		assertThat(publishedEvent.getMemberRole()).isEqualTo(Role.GUEST);
+	}
+
+	@Test
+	@DisplayName("성공: 호스트 탈퇴 시 호스트로서의 미래 예약도 강제 취소되고 GCal 삭제 이벤트 발행")
+	void deleteMemberCancelsHostBookings() {
+		// given
+		Member hostMember = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.HOST);
+		UUID hostId = UUID.randomUUID();
+		UUID guestId = UUID.randomUUID();
+		LocalDate futureDate = LocalDate.now().plusDays(7);
+
+		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
+		Booking hostBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명");
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
+		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(List.of(hostBooking));
+		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
+			.willReturn(Collections.emptyList());
+
+		// when
+		memberService.deleteMember(TEST_USERNAME);
+
+		// then
+		assertThat(hostMember.isDeleted()).isTrue();
+		assertThat(hostBooking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+		assertThat(hostBooking.getCancelledReason()).isEqualTo("회원 탈퇴로 인한 취소");
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		// GCal 삭제를 위한 이벤트 발행 검증
+		ArgumentCaptor<MemberWithdrawalEvent> eventCaptor = ArgumentCaptor.forClass(MemberWithdrawalEvent.class);
+		verify(eventPublisher).publishEvent(eventCaptor.capture());
+		MemberWithdrawalEvent publishedEvent = eventCaptor.getValue();
+		assertThat(publishedEvent.getHostBookings()).hasSize(1);
+		assertThat(publishedEvent.getMemberRole()).isEqualTo(Role.HOST);
+	}
+
+	private TimeSlot createMockTimeSlot(UUID userId) {
+		return TimeSlot.create(
+			userId,
+			LocalTime.of(10, 0),
+			LocalTime.of(11, 0),
+			List.of(1, 2, 3, 4, 5)
+		);
 	}
 }
