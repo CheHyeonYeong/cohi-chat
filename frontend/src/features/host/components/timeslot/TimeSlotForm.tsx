@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import Button from '~/components/button/Button';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
@@ -53,6 +53,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPending, deletingId, errors }: TimeSlotFormProps) {
     const [expandedIndex, setExpandedIndex] = useState(0);
+    const savedDatesRef = useRef<Record<number, { startDate: string; endDate: string }>>({});
 
     const timeValidationErrors = useMemo(() => {
         return entries.map((entry) => {
@@ -203,13 +204,20 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             checked={!!entry.startDate}
                                             onChange={(e) => {
                                                 if (e.target.checked) {
-                                                    const now = new Date();
-                                                    const today = toLocalDateString(now);
-                                                    const later = new Date(now);
-                                                    later.setDate(later.getDate() + DEFAULT_DATE_RANGE_DAYS);
-                                                    const monthLater = toLocalDateString(later);
-                                                    updateEntry(index, { startDate: today, endDate: monthLater });
+                                                    const saved = savedDatesRef.current[index];
+                                                    if (saved) {
+                                                        updateEntry(index, { startDate: saved.startDate, endDate: saved.endDate });
+                                                    } else {
+                                                        const now = new Date();
+                                                        const today = toLocalDateString(now);
+                                                        const later = new Date(now);
+                                                        later.setDate(later.getDate() + DEFAULT_DATE_RANGE_DAYS);
+                                                        updateEntry(index, { startDate: today, endDate: toLocalDateString(later) });
+                                                    }
                                                 } else {
+                                                    if (entry.startDate && entry.endDate) {
+                                                        savedDatesRef.current[index] = { startDate: entry.startDate, endDate: entry.endDate };
+                                                    }
                                                     updateEntry(index, { startDate: undefined, endDate: undefined });
                                                 }
                                             }}

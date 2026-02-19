@@ -10,15 +10,9 @@ export function isTimeslotAvailableOnDate(
     if (!timeslot.weekdays.includes(weekday)) return false;
     const { startDate, endDate } = timeslot;
     if (startDate || endDate) {
-        const date = new Date(year, month - 1, day);
-        if (startDate) {
-            const [sy, sm, sd] = startDate.split('-').map(Number);
-            if (date < new Date(sy, sm - 1, sd)) return false;
-        }
-        if (endDate) {
-            const [ey, em, ed] = endDate.split('-').map(Number);
-            if (date > new Date(ey, em - 1, ed)) return false;
-        }
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (startDate && dateStr < startDate) return false;
+        if (endDate && dateStr > endDate) return false;
     }
     return true;
 }
