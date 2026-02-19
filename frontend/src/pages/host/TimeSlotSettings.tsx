@@ -49,7 +49,7 @@ export default function TimeSlotSettings() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const syncedRef = useRef(false);
 
-    const { data: existingTimeslots, isLoading, error: loadError, refetch } = useMyTimeslots();
+    const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
@@ -86,7 +86,9 @@ export default function TimeSlotSettings() {
             if (entry.startTime >= entry.endTime) {
                 newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
             }
-            if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
+            if ((entry.startDate && !entry.endDate) || (!entry.startDate && entry.endDate)) {
+                newErrors[`date_${i}`] = `새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.`;
+            } else if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
                 newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
             }
         });
@@ -124,7 +126,6 @@ export default function TimeSlotSettings() {
             setLastSaved(new Date());
         }
         syncedRef.current = false;
-        refetch();
     };
 
     const handleDelete = async (existingId: number) => {
@@ -136,7 +137,6 @@ export default function TimeSlotSettings() {
                 return remaining.length > 0 ? remaining : [{ ...defaultEntry }];
             });
             syncedRef.current = false;
-            refetch();
         } catch (err) {
             const message = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
             setErrors({ delete: message });
