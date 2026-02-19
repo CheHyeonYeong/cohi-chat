@@ -50,6 +50,9 @@ export interface IPaginatedBookingDetail {
 export interface IBookingFile {
     id: number;
     file: string;
+    originalFileName: string;
+    fileSize: number;
+    contentType: string;
 }
 
 export interface ICalendar {

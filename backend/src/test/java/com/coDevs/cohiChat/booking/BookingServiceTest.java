@@ -55,6 +55,7 @@ class BookingServiceTest {
     private static final LocalDate PAST_DATE = LocalDate.now().minusDays(1);
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
+    private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
 
     @Mock
     private BookingRepository bookingRepository;
@@ -88,6 +89,15 @@ class BookingServiceTest {
     @BeforeEach
     void setUp() {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+
+        // 기본 Calendar mock 설정 (TEST_TOPIC 포함)
+        Calendar defaultCalendar = Calendar.create(
+            HOST_ID,
+            List.of(TEST_TOPIC, "topic", "커리어 상담", "이직 상담", "포트폴리오 리뷰"),
+            "desc",
+            TEST_GOOGLE_CALENDAR_ID
+        );
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(defaultCalendar));
 
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -878,7 +888,7 @@ class BookingServiceTest {
     void updateBookingSuccess() {
         // given
         Long bookingId = 1L;
-        String newTopic = "새로운 주제";
+        String newTopic = "이직 상담";  // Calendar에 정의된 topic 사용
         String newDescription = "새로운 설명";
         LocalDate newBookingDate = FUTURE_DATE.plusDays(3);
 
@@ -1052,7 +1062,7 @@ class BookingServiceTest {
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
+        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
         given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
@@ -1066,31 +1076,6 @@ class BookingServiceTest {
         verify(googleCalendarService).createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
         );
-    }
-
-    @Test
-    @DisplayName("성공: 호스트 캘린더가 없어도 예약은 정상 생성된다")
-    void createBookingWithoutCalendar() {
-        // given
-        given(guestMember.getId()).willReturn(GUEST_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsDuplicateBooking(
-            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
-        )).willReturn(false);
-        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.empty());
-
-        // when
-        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
-
-        // then
-        assertThat(response.getGoogleEventId()).isNull();
-        verify(googleCalendarService, never()).createEvent(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1200,7 +1185,7 @@ class BookingServiceTest {
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
+        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
         given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar API 실패 (null 반환)
         given(googleCalendarService.createEvent(
@@ -1285,5 +1270,175 @@ class BookingServiceTest {
 
         // then - 예약 취소는 정상 완료
         assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.CANCELLED);
+    }
+
+    // ===== topic 검증 테스트 (Issue #257) =====
+
+    @Test
+    @DisplayName("성공: 호스트가 정의한 topic으로 예약 생성")
+    void createBookingWithValidTopicSuccess() {
+        // given
+        String validTopic = "커리어 상담";
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // 호스트의 캘린더에 정의된 topics
+        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+
+        BookingCreateRequestDTO validRequest = BookingCreateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE)
+            .topic(validTopic)
+            .description(TEST_DESCRIPTION)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, validRequest);
+
+        // then
+        assertThat(response.getTopic()).isEqualTo(validTopic);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 정의하지 않은 topic으로 예약 생성")
+    void createBookingWithInvalidTopicFail() {
+        // given
+        String invalidTopic = "임의의 주제";  // 호스트가 정의하지 않은 topic
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+
+        // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
+        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+
+        BookingCreateRequestDTO invalidRequest = BookingCreateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(FUTURE_DATE)
+            .topic(invalidTopic)
+            .description(TEST_DESCRIPTION)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, invalidRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOPIC);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트 캘린더가 없을 때 예약 생성 실패")
+    void createBookingWithoutHostCalendarFail() {
+        // given
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        // 호스트 캘린더가 없음
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CALENDAR_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("성공: 호스트가 정의한 topic으로 예약 수정")
+    void updateBookingWithValidTopicSuccess() {
+        // given
+        Long bookingId = 1L;
+        String validTopic = "이직 상담";
+        String newDescription = "새로운 설명";
+        LocalDate newBookingDate = FUTURE_DATE.plusDays(3);
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
+
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(newBookingDate), any(), eq(bookingId)
+        )).willReturn(false);
+
+        // 호스트의 캘린더에 정의된 topics
+        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(newBookingDate)
+            .topic(validTopic)
+            .description(newDescription)
+            .build();
+
+        // when
+        BookingResponseDTO response = bookingService.updateBooking(bookingId, GUEST_ID, updateRequest);
+
+        // then
+        assertThat(response.getTopic()).isEqualTo(validTopic);
+        assertThat(response.getDescription()).isEqualTo(newDescription);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 정의하지 않은 topic으로 예약 수정")
+    void updateBookingWithInvalidTopicFail() {
+        // given
+        Long bookingId = 1L;
+        String invalidTopic = "해킹 상담";  // 호스트가 정의하지 않은 topic
+        String googleCalendarId = "test-calendar-id@group.calendar.google.com";
+        LocalDate newBookingDate = FUTURE_DATE.plusDays(3);
+
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
+
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(newBookingDate), any(), eq(bookingId)
+        )).willReturn(false);
+
+        // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
+        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+
+        BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
+            .timeSlotId(TIME_SLOT_ID)
+            .bookingDate(newBookingDate)
+            .topic(invalidTopic)
+            .description(TEST_DESCRIPTION)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOPIC);
     }
 }

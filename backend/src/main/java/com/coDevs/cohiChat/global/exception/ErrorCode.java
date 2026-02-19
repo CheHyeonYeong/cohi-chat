@@ -64,13 +64,20 @@ public enum ErrorCode {
 	BOOKING_NOT_CANCELLABLE(HttpStatus.UNPROCESSABLE_ENTITY, "취소할 수 없는 예약 상태입니다."),
 	BOOKING_NOT_MODIFIABLE(HttpStatus.UNPROCESSABLE_ENTITY, "상태를 변경할 수 없는 예약입니다."),
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
+	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
 
 	/**
 	 * 파일 관련 예외들.
 	 */
 	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
 	FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일은 업로드할 수 없습니다."),
-	FILE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장 중 오류가 발생했습니다.");
+	FILE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장 중 오류가 발생했습니다."),
+	FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기가 10MB를 초과합니다."),
+	FILE_TOTAL_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "예약당 총 파일 용량 50MB를 초과합니다."),
+	FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "예약당 최대 파일 개수(5개)를 초과합니다."),
+	FILE_EXTENSION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 파일 확장자입니다. (허용: pdf, doc, docx, txt, jpg, jpeg, png, gif)"),
+	FILE_EXTENSION_BLOCKED(HttpStatus.BAD_REQUEST, "보안상 업로드가 차단된 파일 형식입니다. (차단: exe, bat, sh, js, php)"),
+	FILE_MIME_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "파일 형식이 올바르지 않습니다.");
 
 	private final HttpStatus status;
 	private final String message;
