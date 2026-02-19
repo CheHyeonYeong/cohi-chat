@@ -63,6 +63,8 @@ export default function TimeSlotSettings() {
                 .map((ts) => new Date(ts.updatedAt))
                 .sort((a, b) => b.getTime() - a.getTime())[0];
             if (latestUpdate) setLastSaved(latestUpdate);
+        } else {
+            setEntries([{ ...defaultEntry }]);
         }
         syncedRef.current = true;
     }, [existingTimeslots]);
@@ -129,6 +131,10 @@ export default function TimeSlotSettings() {
         try {
             setDeletingId(existingId);
             await deleteTimeslotMutation.mutateAsync(existingId);
+            setEntries((prev) => {
+                const remaining = prev.filter((e) => e.existingId !== existingId);
+                return remaining.length > 0 ? remaining : [{ ...defaultEntry }];
+            });
             syncedRef.current = false;
             refetch();
         } catch (err) {
