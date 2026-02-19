@@ -32,17 +32,17 @@ export default function Booking() {
             </div>
         </div>
     );
-    if (!booking) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
-            <div className="w-full max-w-4xl mx-auto px-8">
-                예약 정보를 찾을 수 없습니다.
-            </div>
-        </div>
-    );
     if (error) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 {getErrorMessage(error, '예약 정보를 불러오는 중 오류가 발생했습니다.')}
+            </div>
+        </div>
+    );
+    if (!booking) return (
+        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+            <div className="w-full max-w-4xl mx-auto px-8">
+                예약 정보를 찾을 수 없습니다.
             </div>
         </div>
     );
@@ -212,6 +212,7 @@ export default function Booking() {
                                 type="button"
                                 onClick={() => setDownloadError(null)}
                                 className="text-red-400 hover:text-red-600 text-sm ml-2"
+                                aria-label="에러 메시지 닫기"
                             >
                                 ✕
                             </button>

@@ -19,7 +19,7 @@ export function getErrorMessage(error: unknown, fallback = '알 수 없는 오�
     if (error instanceof Error) {
         // httpClient가 설정한 메시지가 "HTTP error! status: NNN" 패턴이면 서버 메시지가 없는 것
         const httpFallbackPattern = /^HTTP error! status: \d+$/;
-        if (!httpFallbackPattern.test(error.message)) {
+        if (error.message && !httpFallbackPattern.test(error.message)) {
             return error.message;
         }
         // 상태 코드별 기본 메시지 시도

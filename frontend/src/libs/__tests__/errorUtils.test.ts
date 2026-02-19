@@ -22,6 +22,12 @@ describe('getErrorMessage', () => {
         expect(getErrorMessage(null, '커스텀 폴백')).toBe('커스텀 폴백');
     });
 
+    it('빈 메시지의 Error는 fallback을 반환한다', () => {
+        const error = new Error('');
+        expect(getErrorMessage(error)).toBe('알 수 없는 오류가 발생했습니다.');
+        expect(getErrorMessage(error, '커스텀 폴백')).toBe('커스텀 폴백');
+    });
+
     it('httpClient의 "HTTP error! status: NNN" 패턴이면 상태 코드별 기본 메시지를 반환한다', () => {
         const error = new Error('HTTP error! status: 401', { cause: 401 });
         expect(getErrorMessage(error)).toBe('인증이 만료되었습니다. 다시 로그인해주세요.');
