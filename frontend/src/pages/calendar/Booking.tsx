@@ -25,10 +25,17 @@ export default function Booking() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-    if (!booking || isLoading) return (
+    if (isLoading) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 예약 정보를 불러오고 있습니다...
+            </div>
+        </div>
+    );
+    if (!booking) return (
+        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+            <div className="w-full max-w-4xl mx-auto px-8">
+                예약 정보를 찾을 수 없습니다.
             </div>
         </div>
     );
@@ -64,23 +71,26 @@ export default function Booking() {
             return;
         }
 
-        // mutateAsync를 사용하여 순차 업로드
-        for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
-            setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
-            const formData = new FormData();
-            formData.append('file', file);
-            await uploadFileAsync(formData);
-        }
+        try {
+            // mutateAsync를 사용하여 순차 업로드
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
+                const formData = new FormData();
+                formData.append('file', file);
+                await uploadFileAsync(formData);
+            }
 
-        // 모든 업로드 완료 후 정리
-        setUploadProgress('');
-        setSelectedFiles([]);
-        setValidationErrors([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            // 모든 업로드 완료 후 정리
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            refetch();
+        } finally {
+            setUploadProgress('');
         }
-        refetch();
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
@@ -196,7 +206,16 @@ export default function Booking() {
 
                 {downloadError && (
                     <div className="bg-red-50 border border-red-200 rounded p-3">
-                        <p className="text-red-600 text-sm">{downloadError}</p>
+                        <div className="flex justify-between items-center">
+                            <p className="text-red-600 text-sm">{downloadError}</p>
+                            <button
+                                type="button"
+                                onClick={() => setDownloadError(null)}
+                                className="text-red-400 hover:text-red-600 text-sm ml-2"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
                 )}
 

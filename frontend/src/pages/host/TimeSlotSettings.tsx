@@ -101,6 +101,7 @@ export default function TimeSlotSettings() {
             )
         );
         const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        const successes = results.filter((r) => r.status === 'fulfilled');
         if (failures.length > 0) {
             const reasons = failures.map((f) => getErrorMessage(f.reason, '타임슬롯 저장에 실패했습니다.'));
             const uniqueReasons = [...new Set(reasons)];
@@ -108,7 +109,9 @@ export default function TimeSlotSettings() {
         } else {
             setErrors({});
         }
-        setLastSaved(new Date());
+        if (successes.length > 0) {
+            setLastSaved(new Date());
+        }
         syncedRef.current = false;
         refetch();
     };
