@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import Button from '~/components/button/Button';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 
@@ -231,13 +232,15 @@ export function SignupForm() {
                         </div>
                     )}
 
-                    <button
+                    <Button
+                        variant="primary"
+                        size="lg"
                         type="submit"
                         disabled={isPending}
-                        className="w-full py-3 bg-[var(--cohe-primary)] text-white font-semibold rounded-lg hover:bg-[var(--cohe-primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                        className="w-full rounded-lg mt-2"
                     >
                         {isPending ? '가입 중...' : '회원가입'}
-                    </button>
+                    </Button>
                 </form>
 
                 <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
+import Button from '~/components/button/Button';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import StepIndicator from '~/features/host/components/register/StepIndicator';
 import RegisterStep1, { type Step1Data } from '~/features/host/components/register/RegisterStep1';
@@ -149,12 +150,14 @@ export default function HostRegister() {
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
                     {isCompleted ? (
                         <>
-                            <button
+                            <Button
+                                variant="outline"
+                                size="md"
                                 onClick={handleGoHome}
-                                className="px-6 py-2.5 rounded-lg font-medium cohe-btn-outline"
+                                className="rounded-lg"
                             >
                                 홈으로
-                            </button>
+                            </Button>
                             <div className="flex gap-2">
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
@@ -163,26 +166,26 @@ export default function HostRegister() {
                                     />
                                 ))}
                             </div>
-                            <button
+                            <Button
+                                variant="primary"
+                                size="md"
                                 onClick={handleGoTimeslots}
-                                className="px-6 py-2.5 rounded-lg font-medium cohe-btn-primary"
+                                className="rounded-lg"
                             >
                                 시간 설정하기
-                            </button>
+                            </Button>
                         </>
                     ) : (
                         <>
-                            <button
+                            <Button
+                                variant="outline"
+                                size="md"
                                 onClick={handlePrev}
                                 disabled={currentStep === 1}
-                                className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
-                                    currentStep === 1
-                                        ? 'text-gray-300 cursor-not-allowed'
-                                        : 'cohe-btn-outline'
-                                }`}
+                                className="rounded-lg"
                             >
                                 이전
-                            </button>
+                            </Button>
 
                             {/* Step dots */}
                             <div className="flex gap-2">
@@ -199,12 +202,14 @@ export default function HostRegister() {
                             </div>
 
                             {currentStep < TOTAL_STEPS ? (
-                                <button
+                                <Button
+                                    variant="primary"
+                                    size="md"
                                     onClick={handleNext}
-                                    className="px-6 py-2.5 rounded-lg font-medium cohe-btn-primary"
+                                    className="rounded-lg"
                                 >
                                     다음 단계
-                                </button>
+                                </Button>
                             ) : (
                                 <div className="w-24" />
                             )}
