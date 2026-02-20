@@ -48,26 +48,29 @@ describe('HostRegister', () => {
                 isSuccessState = false;
             });
 
-            vi.spyOn(hostHooks, 'useCreateCalendar').mockImplementation(() => ({
-                mutate: mutateMock,
-                mutateAsync: vi.fn(),
-                isPending: false,
-                get isSuccess() {
-                    return isSuccessState;
-                },
-                isError: false,
-                isIdle: !isSuccessState,
-                error: null,
-                data: undefined,
-                reset: resetMock,
-                status: isSuccessState ? 'success' : 'idle',
-                variables: undefined,
-                context: undefined,
-                failureCount: 0,
-                failureReason: null,
-                isPaused: false,
-                submittedAt: 0,
-            }));
+            vi.spyOn(hostHooks, 'useCreateCalendar').mockImplementation(
+                () =>
+                    ({
+                        mutate: mutateMock,
+                        mutateAsync: vi.fn(),
+                        isPending: false,
+                        get isSuccess() {
+                            return isSuccessState;
+                        },
+                        isError: false,
+                        isIdle: !isSuccessState,
+                        error: null,
+                        data: undefined,
+                        reset: resetMock,
+                        status: isSuccessState ? 'success' : 'idle',
+                        variables: undefined,
+                        context: undefined,
+                        failureCount: 0,
+                        failureReason: null,
+                        isPaused: false,
+                        submittedAt: 0,
+                    }) as unknown as ReturnType<typeof hostHooks.useCreateCalendar>,
+            );
 
             render(<HostRegister />, { wrapper: createWrapper() });
 
