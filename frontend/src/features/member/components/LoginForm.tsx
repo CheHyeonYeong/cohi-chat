@@ -65,10 +65,10 @@ export function LoginForm() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
             {/* Logo */}
-            <div className="flex items-center gap-2 mb-8">
+            <Link to='/' className="flex items-center gap-2 mb-8">
                 <CoffeeCupIcon className="w-10 h-10 text-[var(--cohe-primary)]" />
                 <span className="text-2xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-            </div>
+            </Link>
 
             {/* Login Card */}
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">

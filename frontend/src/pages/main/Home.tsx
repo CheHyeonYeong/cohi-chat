@@ -49,10 +49,10 @@ export default function Home() {
         <div className='w-full min-h-screen bg-[var(--cohe-bg-light)]'>
             {/* Header */}
             <header className='w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm'>
-                <div className='flex items-center gap-2'>
+                <Link to='/' className='flex items-center gap-2'>
                     <CoffeeCupIcon className='w-8 h-8 text-[var(--cohe-primary)]' />
                     <span className='text-xl font-bold text-[var(--cohe-text-dark)]'>coheChat</span>
-                </div>
+                </Link>
                 <div className='flex items-center gap-3'>
                     {isAuthenticated && !isCalendarLoading && (
                         isHost && myCalendar ? (

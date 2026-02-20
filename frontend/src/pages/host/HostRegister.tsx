@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Button from '~/components/button/Button';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
@@ -114,10 +114,10 @@ export default function HostRegister() {
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
             {/* Header */}
             <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
-                <div className="flex items-center gap-2">
+                <Link to='/' className="flex items-center gap-2">
                     <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
                     <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-                </div>
+                </Link>
                 <StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
                 <div className="w-24" />
             </header>
