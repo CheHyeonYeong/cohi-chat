@@ -83,12 +83,19 @@ gh label list
 
 # Milestones 확인 (필수)
 gh api repos/:owner/:repo/milestones --jq ".[] | {number, title}"
+
+# Projects 확인 (필수)
+gh project list
 ```
 
-## PR 생성 후 label/milestone 추가
+## PR 생성 후 label/milestone/project 추가
 
 ```bash
+# label, milestone 추가
 gh pr edit {number} --add-label "Label명" --milestone "milestone title"
+
+# PR을 프로젝트에 추가
+gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {PR_URL}
 ```
 
 ## 유용한 명령어
@@ -111,3 +118,4 @@ gh pr create --draft
 
 - `--milestone` 옵션에는 milestone **title**을 사용 (number 아님)
 - `--label` 옵션에는 정확한 label 이름 사용 (대소문자 구분)
+- Project 권한 필요 시: `gh auth refresh -s read:project -s project`
