@@ -37,23 +37,83 @@ describe('HostRegister', () => {
         vi.clearAllMocks();
     });
 
-    describe('refreshTokenApi 실패 시 사용자 알림', () => {
-        it('토큰 갱신 실패 시 재로그인 안내 메시지가 표시된다', async () => {
-            // Given: isSuccess=true, tokenRefreshFailed=true 상태를 시뮬레이션
-            // RegisterStep3 컴포넌트가 tokenRefreshFailed prop을 받으면 알림 표시
-            vi.spyOn(hostHooks, 'useCreateCalendar').mockReturnValue({
-                mutate: vi.fn(),
-                isPending: false,
-                isSuccess: true,
-                error: null,
-                reset: vi.fn(),
-            } as unknown as ReturnType<typeof hostHooks.useCreateCalendar>);
+    describe('캘린더 생성 성공 시 메시지 표시', () => {
+        it('mutation reset 후에도 성공 상태가 유지되어야 한다', async () => {
+            let isSuccessState = false;
+            const mutateMock = vi.fn((_, options) => {
+                isSuccessState = true;
+                options?.onSuccess?.();
+            });
+            const resetMock = vi.fn(() => {
+                isSuccessState = false;
+            });
 
-            // 실제로 tokenRefreshFailed가 true인 상태를 테스트하려면
-            // HostRegister 컴포넌트 내부 상태를 직접 제어해야 하므로
-            // RegisterStep3를 직접 테스트하는 것이 더 적합합니다.
-            // 여기서는 통합 테스트 대신 RegisterStep3 단위 테스트로 변경합니다.
-            expect(true).toBe(true); // Placeholder - RegisterStep3 테스트에서 검증
+            vi.spyOn(hostHooks, 'useCreateCalendar').mockImplementation(() => ({
+                mutate: mutateMock,
+                mutateAsync: vi.fn(),
+                isPending: false,
+                get isSuccess() {
+                    return isSuccessState;
+                },
+                isError: false,
+                isIdle: !isSuccessState,
+                error: null,
+                data: undefined,
+                reset: resetMock,
+                status: isSuccessState ? 'success' : 'idle',
+                variables: undefined,
+                context: undefined,
+                failureCount: 0,
+                failureReason: null,
+                isPaused: false,
+                submittedAt: 0,
+            }));
+
+            render(<HostRegister />, { wrapper: createWrapper() });
+
+            // 1단계 데이터 입력
+            const topicInput = screen.getByPlaceholderText(/주제를 입력하고 Enter/i);
+            const descInput = screen.getByPlaceholderText(/미팅에 대한 소개를 작성해주세요/i);
+
+            fireEvent.change(topicInput, { target: { value: '테스트 주제' } });
+            fireEvent.keyDown(topicInput, { key: 'Enter' });
+            fireEvent.change(descInput, { target: { value: '이것은 10자 이상의 소개입니다.' } });
+
+            // 2단계로 이동
+            fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+            await waitFor(() => {
+                expect(screen.getByText(/Google Calendar 연동하기/i)).toBeInTheDocument();
+            });
+
+            // 2단계 데이터 입력
+            const calendarIdInput = screen.getByPlaceholderText(/your-id@group.calendar.google.com/i);
+            fireEvent.change(calendarIdInput, {
+                target: { value: 'test@group.calendar.google.com' },
+            });
+
+            // 3단계로 이동
+            fireEvent.click(screen.getByRole('button', { name: /다음 단계/i }));
+            await waitFor(() => {
+                expect(screen.getByText(/등록 정보 확인/i)).toBeInTheDocument();
+            });
+
+            // 호스트 등록 완료 버튼 클릭
+            fireEvent.click(screen.getByRole('button', { name: /호스트 등록 완료/i }));
+
+            // mutate 호출되고 onSuccess 실행됨
+            await waitFor(() => {
+                expect(mutateMock).toHaveBeenCalled();
+            });
+
+            // 성공 후 성공 메시지가 표시되어야 함
+            await waitFor(() => {
+                expect(screen.getByText('호스트 등록 완료!')).toBeInTheDocument();
+                expect(
+                    screen.getByText(
+                        '캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.',
+                    ),
+                ).toBeInTheDocument();
+            });
         });
     });
 
@@ -137,7 +197,31 @@ describe('HostRegister', () => {
     });
 });
 
-describe('RegisterStep3', () => {
+describe('RegisterStep3 성공 메시지 표시', () => {
+    it('isSuccess가 true일 때 성공 메시지가 표시된다', async () => {
+        const { default: RegisterStep3 } = await import(
+            '~/features/host/components/register/RegisterStep3'
+        );
+
+        const mockProps = {
+            step1: { topics: ['테스트'], description: '이것은 테스트 설명입니다.' },
+            step2: { googleCalendarId: 'test@group.calendar.google.com' },
+            isPending: false,
+            error: null,
+            isSuccess: true,
+            tokenRefreshFailed: false,
+            onSubmit: vi.fn(),
+        };
+
+        render(<RegisterStep3 {...mockProps} />, { wrapper: createWrapper() });
+
+        // 성공 메시지 확인
+        expect(screen.getByText('호스트 등록 완료!')).toBeInTheDocument();
+        expect(
+            screen.getByText('캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.'),
+        ).toBeInTheDocument();
+    });
+
     it('tokenRefreshFailed가 true이면 재로그인 안내 메시지가 표시된다', async () => {
         // RegisterStep3 컴포넌트를 직접 import하여 테스트
         const { default: RegisterStep3 } = await import(
