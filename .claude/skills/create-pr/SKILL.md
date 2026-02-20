@@ -24,7 +24,7 @@
 
 3. **PR 생성**
    ```bash
-   gh pr create --title "제목" --body "본문"
+   gh pr create --title "제목" --body "본문" --assignee @me
    ```
 
 ## PR 본문 형식
@@ -49,6 +49,7 @@
 ```bash
 gh pr create \
   --title "feat: 기능 설명" \
+  --assignee @me \
   --body "$(cat <<'EOF'
 ## Summary
 - 변경 사항 요약
@@ -111,11 +112,12 @@ gh pr list
 gh pr view {number}
 
 # Draft PR 생성
-gh pr create --draft
+gh pr create --draft --assignee @me
 ```
 
 ## 주의사항
 
+- **assignee는 항상 `@me` (PR 생성자)로 자동 설정됨**
 - `--milestone` 옵션에는 milestone **title**을 사용 (number 아님)
 - `--label` 옵션에는 정확한 label 이름 사용 (대소문자 구분)
 - Project 권한 필요 시: `gh auth refresh -s read:project -s project`
