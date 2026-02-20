@@ -73,6 +73,24 @@ EOF
 | test: | 테스트 추가 |
 | chore: | 빌드, 설정 등 |
 
+## 필수 확인 명령어
+
+PR 생성 전 반드시 아래 명령어로 정보를 확인:
+
+```bash
+# Labels 확인 (필수)
+gh label list
+
+# Milestones 확인 (필수)
+gh api repos/:owner/:repo/milestones --jq ".[] | {number, title}"
+```
+
+## PR 생성 후 label/milestone 추가
+
+```bash
+gh pr edit {number} --add-label "Label명" --milestone "milestone title"
+```
+
 ## 유용한 명령어
 
 ```bash
@@ -88,3 +106,8 @@ gh pr view {number}
 # Draft PR 생성
 gh pr create --draft
 ```
+
+## 주의사항
+
+- `--milestone` 옵션에는 milestone **title**을 사용 (number 아님)
+- `--label` 옵션에는 정확한 label 이름 사용 (대소문자 구분)

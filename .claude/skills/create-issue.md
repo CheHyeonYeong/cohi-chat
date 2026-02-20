@@ -57,8 +57,22 @@ gh issue create \
 - 기대 효과
 - ✅ 체크포인트 (Check Point)
 
-## 참고
+## 필수 확인 명령어
 
-- Collaborators 확인: `gh api repos/:owner/:repo/collaborators --jq ".[].login"`
-- Milestones 확인: `gh api repos/:owner/:repo/milestones --jq ".[] | {number, title}"`
-- Labels 확인: `gh label list`
+이슈 생성 전 반드시 아래 명령어로 정보를 확인:
+
+```bash
+# Labels 확인 (필수)
+gh label list
+
+# Milestones 확인 (필수)
+gh api repos/:owner/:repo/milestones --jq ".[] | {number, title}"
+
+# Collaborators 확인 (assignee 지정 시)
+gh api repos/:owner/:repo/collaborators --jq ".[].login"
+```
+
+## 주의사항
+
+- `--milestone` 옵션에는 milestone **title**을 사용 (number 아님)
+- `--label` 옵션에는 정확한 label 이름 사용 (대소문자 구분)
