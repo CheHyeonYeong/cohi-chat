@@ -12,7 +12,10 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('~/features/member/api/memberApi', () => ({
-    refreshTokenApi: vi.fn(),
+    refreshTokenApi: vi.fn().mockResolvedValue({
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+    }),
 }));
 
 vi.mock('~/features/member/utils/authEvent', () => ({
@@ -117,6 +120,19 @@ describe('HostRegister', () => {
                     ),
                 ).toBeInTheDocument();
             });
+
+            // mutation.reset()이 호출되어 isSuccessState가 false가 되어도
+            // 컴포넌트의 isCompleted state는 유지되어야 함
+            resetMock();
+            expect(isSuccessState).toBe(false); // mutation 상태는 초기화됨
+
+            // 하지만 성공 메시지는 여전히 표시되어야 함 (isCompleted state로 관리되기 때문)
+            expect(screen.getByText('호스트 등록 완료!')).toBeInTheDocument();
+            expect(
+                screen.getByText(
+                    '캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.',
+                ),
+            ).toBeInTheDocument();
         });
     });
 
