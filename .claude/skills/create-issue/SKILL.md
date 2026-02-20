@@ -75,16 +75,64 @@ gh api repos/:owner/:repo/collaborators --jq ".[].login"
 gh project list
 ```
 
-## 이슈를 Project에 추가
+## 이슈를 Project에 추가 및 필드 설정
+
+### 1단계: 프로젝트에 이슈 추가
 
 ```bash
-# 이슈 생성 후 프로젝트에 추가
 gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {ISSUE_URL}
+```
+
+### 2단계: 프로젝트 정보 조회
+
+```bash
+# 프로젝트 목록 및 ID 확인
+gh project list --owner {OWNER}
+
+# 프로젝트 필드 ID 및 옵션 ID 조회
+gh project field-list {PROJECT_NUMBER} --owner {OWNER} --format json
+```
+
+### 3단계: 프로젝트 아이템 ID 조회
+
+```bash
+gh api graphql -f query='
+  query {
+    user(login: "{OWNER}") {
+      projectV2(number: {PROJECT_NUMBER}) {
+        items(last: 5) {
+          nodes {
+            id
+            content {
+              ... on Issue { number }
+            }
+          }
+        }
+      }
+    }
+  }
+'
+```
+
+### 4단계: 필드 값 설정
+
+```bash
+# Single Select 필드 (Priority, Size, Status 등)
+gh project item-edit --project-id {PROJECT_ID} --id {ITEM_ID} \
+  --field-id {FIELD_ID} --single-select-option-id {OPTION_ID}
+
+# Number 필드 (Estimate)
+gh project item-edit --project-id {PROJECT_ID} --id {ITEM_ID} \
+  --field-id {FIELD_ID} --number {VALUE}
+
+# Date 필드 (Start date, Target date)
+gh project item-edit --project-id {PROJECT_ID} --id {ITEM_ID} \
+  --field-id {FIELD_ID} --date {YYYY-MM-DD}
 ```
 
 ## 작업 산정 기준
 
-이슈 생성 시 Project 필드에 아래 기준으로 값을 설정:
+이슈 생성 시 사용자에게 아래 기준으로 Priority, Size를 질문하고 Project 필드에 설정:
 
 ### Priority (우선순위)
 | 값 | 설명 |
@@ -92,7 +140,6 @@ gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {ISSUE_URL}
 | P0 | 지금 안 하면 장애 / 일정 붕괴 |
 | P1 | 이번 스프린트에 반드시 필요 |
 | P2 | 하면 좋은데 밀려도 됨 |
-| P3 | 백로그용 |
 
 ### Size (작업 크기)
 | 값 | 설명 |
@@ -110,8 +157,16 @@ gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {ISSUE_URL}
 - Start date: 실제 착수일 (YYYY-MM-DD)
 - Target date: 리뷰 + QA 포함 완료 목표일 (YYYY-MM-DD)
 
+## 작업 순서 요약
+
+1. 이슈 생성 (`gh issue create`)
+2. 프로젝트에 추가 (`gh project item-add`)
+3. 아이템 ID 조회 (GraphQL)
+4. Priority, Size 등 필드 설정 (`gh project item-edit`)
+
 ## 주의사항
 
 - `--milestone` 옵션에는 milestone **title**을 사용 (number 아님)
 - `--label` 옵션에는 정확한 label 이름 사용 (대소문자 구분)
 - Project 권한 필요 시: `gh auth refresh -s read:project -s project`
+- 필드 ID와 옵션 ID는 프로젝트마다 다르므로 반드시 조회 후 사용
