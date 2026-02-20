@@ -77,6 +77,15 @@ coheChat/
 - `main` - 메인 브랜치
 - `feature/*` - 기능 개발 브랜치 → PR로 머지
 
+### Git 보호 규칙 (필수)
+**main 브랜치 직접 작업 절대 금지:**
+- `git push origin main` 금지
+- `git merge ... main` (main으로 직접 merge) 금지
+- `gh pr merge` 금지 (PR merge는 GitHub 웹에서만)
+- main 브랜치에서 직접 커밋 금지
+
+**반드시 feature 브랜치에서 작업 → PR 생성 → 웹에서 머지**
+
 ### 코드 리뷰 (Pn 룰)
 | 우선순위 | 설명 |
 |---------|------|
