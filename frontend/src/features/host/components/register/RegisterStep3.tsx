@@ -8,6 +8,7 @@ interface RegisterStep3Props {
     isPending: boolean;
     error: Error | null;
     isSuccess: boolean;
+    tokenRefreshFailed?: boolean;
     onSubmit: () => void;
 }
 
@@ -20,7 +21,7 @@ function CheckCircleIcon({ className = '' }: { className?: string }) {
     );
 }
 
-export default function RegisterStep3({ step1, step2, isPending, error, isSuccess, onSubmit }: RegisterStep3Props) {
+export default function RegisterStep3({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) {
     if (isSuccess) {
         return (
             <div className="w-full max-w-lg mx-auto text-center">
@@ -31,6 +32,14 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
                 <p className="text-[var(--cohe-text-dark)]/70 mb-8">
                     캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.
                 </p>
+                {tokenRefreshFailed && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-left">
+                        <p className="text-sm text-amber-700">
+                            호스트 등록은 완료되었으나 세션 갱신에 실패했습니다.
+                            모든 기능을 사용하려면 <strong>재로그인</strong>이 필요합니다.
+                        </p>
+                    </div>
+                )}
             </div>
         );
     }
