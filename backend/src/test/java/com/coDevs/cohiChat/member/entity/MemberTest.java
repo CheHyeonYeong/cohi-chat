@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.member.entity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,48 @@ class MemberTest {
 
 	private Member createHostMember() {
 		return Member.create("hostuser", "HostUser", "host@test.com", "hashedPw123", Role.HOST);
+	}
+
+	@Nested
+	@DisplayName("OAuth 회원 생성")
+	class CreateOAuth {
+
+		@Test
+		@DisplayName("OAuth 회원이 정상 생성된다 (비밀번호 없음)")
+		void createOAuthMemberSuccess() {
+			Member member = Member.createOAuth("google_123", "GoogleUser", "google@test.com", "123", Provider.GOOGLE, Role.GUEST);
+
+			assertEquals("google_123", member.getUsername());
+			assertEquals("GoogleUser", member.getDisplayName());
+			assertEquals("google@test.com", member.getEmail());
+			assertEquals("123", member.getProviderId());
+			assertEquals(Provider.GOOGLE, member.getProvider());
+			assertEquals(Role.GUEST, member.getRole());
+			assertNull(member.getHashedPassword());
+		}
+
+		@Test
+		@DisplayName("OAuth 회원은 이메일 없이 생성될 수 있다 (카카오 등 이메일 권한 미제공)")
+		void createOAuthMemberWithNullEmailSuccess() {
+			Member member = Member.createOAuth("kakao_456", "KakaoUser", null, "456", Provider.KAKAO, Role.GUEST);
+			assertNull(member.getEmail());
+			assertEquals("kakao_456", member.getUsername());
+		}
+
+		@Test
+		@DisplayName("OAuth 회원 생성 시 provider가 null이면 예외")
+		void createOAuthMemberFailNullProvider() {
+			CustomException ex = assertThrows(CustomException.class,
+				() -> Member.createOAuth("oauth_user", "User", "user@test.com", "someId", null, Role.GUEST));
+			assertEquals(ErrorCode.INVALID_PROVIDER, ex.getErrorCode());
+		}
+
+		@Test
+		@DisplayName("기존 create()로 생성한 회원은 provider가 LOCAL")
+		void createLocalMemberHasLocalProvider() {
+			Member member = createGuestMember();
+			assertEquals(Provider.LOCAL, member.getProvider());
+		}
 	}
 
 	@Nested
