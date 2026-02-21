@@ -48,7 +48,7 @@ public class BookingService {
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
 
-    private ZoneId calendarZoneId;
+    private volatile ZoneId calendarZoneId;
 
     @PostConstruct
     void initZoneId() {
