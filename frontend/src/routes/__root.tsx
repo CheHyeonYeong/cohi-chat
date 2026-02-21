@@ -128,6 +128,7 @@ const oAuthCallbackRoute = createRoute({
     validateSearch: z.object({
         code: z.string().optional(),
         error: z.string().optional(),
+        state: z.string().optional(),
     }),
 })
 
