@@ -79,16 +79,16 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription());
+        upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
         return toBookingResponseDTO(savedBooking);
     }
 
-    private String buildEventSummary(UUID guestId) {
-        return memberRepository.findById(guestId)
-            .filter(m -> m.getDisplayName() != null)
-            .map(m -> m.getDisplayName() + "님과의 미팅")
-            .orElse("미팅");
+    private String buildEventSummary(Member guest) {
+        if (guest == null || guest.getDisplayName() == null) {
+            return "미팅";
+        }
+        return guest.getDisplayName() + "님과의 미팅";
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {
@@ -242,12 +242,13 @@ public class BookingService {
 
         booking.updateSchedule(newTimeSlot, request.getBookingDate());
 
-        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), booking.getDescription());
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), booking.getDescription(), guest);
 
         return toBookingResponseDTO(booking);
     }
 
-    private void upsertGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate, String description) {
+    private void upsertGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate, String description, Member guest) {
         UUID hostId = timeSlot.getUserId();
         var calendarOpt = calendarRepository.findById(hostId);
         if (calendarOpt.isEmpty()) {
@@ -259,7 +260,7 @@ public class BookingService {
             Calendar calendar = calendarOpt.get();
             Instant startDateTime = toInstant(bookingDate, timeSlot.getStartTime());
             Instant endDateTime = toInstant(bookingDate, timeSlot.getEndTime());
-            String summary = buildEventSummary(booking.getGuestId());
+            String summary = buildEventSummary(guest);
 
             if (booking.getGoogleEventId() == null) {
                 String eventId = googleCalendarService.createEvent(
@@ -369,7 +370,8 @@ public class BookingService {
 
         booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
 
-        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription());
+        Member guest = memberRepository.findById(guestId).orElse(null);
+        upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
 
         return toBookingResponseDTO(booking);
     }
