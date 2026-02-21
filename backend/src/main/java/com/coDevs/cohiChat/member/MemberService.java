@@ -239,7 +239,7 @@ public class MemberService {
 		refreshTokenRepository.deleteById(username);
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
 		// 1. JWT 검증 + username 추출 (만료 vs 위조 구분)
 		String verifiedUsername;
@@ -259,14 +259,24 @@ public class MemberService {
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
-		refreshTokenRepository.findByToken(tokenHash)
+		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-		// 4. 사용자 정보 조회
-		Member member = memberRepository.findByUsernameAndIsDeletedFalse(verifiedUsername)
+		// 4. 사용자 정보 조회 및 새 Access Token 발급
+		String username = refreshToken.getUsername();
+		Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-		// 5. RT Rotation: 기존 RT 삭제 후 새 AT + 새 RT 발급
-		return tokenService.rotateTokens(member);
+		String newAccessToken = jwtTokenProvider.createAccessToken(
+			member.getUsername(),
+			member.getRole().name()
+		);
+
+		long expiredInSeconds = jwtTokenProvider.getExpirationSeconds(newAccessToken);
+
+		return RefreshTokenResponseDTO.builder()
+			.accessToken(newAccessToken)
+			.expiredInMinutes(expiredInSeconds / 60)
+			.build();
 	}
 }

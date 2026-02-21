@@ -12,6 +12,5 @@ import lombok.NoArgsConstructor;
 public class RefreshTokenResponseDTO {
 
     private String accessToken;
-    private String refreshToken;
     private long expiredInMinutes;
 }
