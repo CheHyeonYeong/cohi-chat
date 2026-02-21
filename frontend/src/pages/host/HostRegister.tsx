@@ -103,11 +103,11 @@ export default function HostRegister() {
     };
 
     const handleGoTimeslots = () => {
-        navigate({ to: '/app/host/timeslots' });
+        navigate({ to: '/host/timeslots' });
     };
 
     const handleGoHome = () => {
-        navigate({ to: '/app' });
+        navigate({ to: '/' });
     };
 
     return (
