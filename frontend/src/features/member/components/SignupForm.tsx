@@ -102,7 +102,7 @@ export function SignupForm() {
             },
             {
                 onSuccess: () => {
-                    navigate({ to: '/app/login' });
+                    navigate({ to: '/login' });
                 },
             }
         );
@@ -245,7 +245,7 @@ export function SignupForm() {
 
                 <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">
                     이미 계정이 있으신가요?{' '}
-                    <Link to="/app/login" className="text-[var(--cohe-primary)] font-semibold hover:underline">
+                    <Link to="/login" className="text-[var(--cohe-primary)] font-semibold hover:underline">
                         로그인
                     </Link>
                 </div>

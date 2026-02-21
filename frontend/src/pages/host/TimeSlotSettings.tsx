@@ -146,7 +146,7 @@ export default function TimeSlotSettings() {
                 <div className="text-center space-y-4">
                     <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
                     <Link
-                        to="/app/host/register"
+                        to="/host/register"
                         className="inline-block px-6 py-2.5 rounded-lg font-medium cohe-btn-primary"
                     >
                         캘린더 연동하기

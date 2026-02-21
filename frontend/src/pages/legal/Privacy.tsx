@@ -5,7 +5,7 @@ export default function Privacy() {
         <div className="min-h-screen bg-white">
             <div className="max-w-4xl mx-auto px-6 py-16">
                 <Link
-                    to="/app"
+                    to="/"
                     className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-8 transition-colors"
                 >
                     <span>&larr;</span>

@@ -10,7 +10,7 @@ export default function HostRegisterGuarded() {
     useEffect(() => {
         if (isLoading) return;
         if (!isAuthenticated) {
-            navigate({ to: '/app/login' });
+            navigate({ to: '/login' });
         }
     }, [isAuthenticated, isLoading, navigate]);
 

@@ -26,7 +26,7 @@ export function useLogout() {
         queryClient.clear();
         dispatchAuthChange();
 
-        navigate({ to: '/app/login', replace: true });
+        navigate({ to: '/login', replace: true });
     }, [navigate, queryClient]);
 
     return { logout };

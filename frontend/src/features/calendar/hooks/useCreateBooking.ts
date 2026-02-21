@@ -14,7 +14,7 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
             queryClient.invalidateQueries({ queryKey: calendarKeys.bookings(year, month) });
             queryClient.invalidateQueries({ queryKey: calendarKeys.myBookings() });
             navigate({
-                to: '/app/calendar/$slug',
+                to: '/calendar/$slug',
                 params: { slug },
                 search: { year, month },
             });

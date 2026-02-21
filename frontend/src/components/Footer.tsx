@@ -23,7 +23,7 @@ export default function Footer() {
                         <h3 className="text-white font-bold text-lg mb-4">바로가기</h3>
                         <nav className="flex flex-col gap-3">
                             <Link
-                                to="/app"
+                                to="/"
                                 className="text-gray-400 text-sm hover:text-white transition-colors"
                             >
                                 홈
