@@ -29,29 +29,30 @@ class MemberTest {
 		@Test
 		@DisplayName("OAuth 회원이 정상 생성된다 (비밀번호 없음)")
 		void createOAuthMemberSuccess() {
-			Member member = Member.createOAuth("google_123", "GoogleUser", "google@test.com", Provider.GOOGLE, Role.GUEST);
+			Member member = Member.createOAuth("google_123", "GoogleUser", "google@test.com", "123", Provider.GOOGLE, Role.GUEST);
 
 			assertEquals("google_123", member.getUsername());
 			assertEquals("GoogleUser", member.getDisplayName());
 			assertEquals("google@test.com", member.getEmail());
+			assertEquals("123", member.getProviderId());
 			assertEquals(Provider.GOOGLE, member.getProvider());
 			assertEquals(Role.GUEST, member.getRole());
 			assertNull(member.getHashedPassword());
 		}
 
 		@Test
-		@DisplayName("OAuth 회원 생성 시 email이 null이면 예외")
-		void createOAuthMemberFailNullEmail() {
-			CustomException ex = assertThrows(CustomException.class,
-				() -> Member.createOAuth("kakao_456", "KakaoUser", null, Provider.KAKAO, Role.GUEST));
-			assertEquals(ErrorCode.INVALID_EMAIL, ex.getErrorCode());
+		@DisplayName("OAuth 회원은 이메일 없이 생성될 수 있다 (카카오 등 이메일 권한 미제공)")
+		void createOAuthMemberWithNullEmailSuccess() {
+			Member member = Member.createOAuth("kakao_456", "KakaoUser", null, "456", Provider.KAKAO, Role.GUEST);
+			assertNull(member.getEmail());
+			assertEquals("kakao_456", member.getUsername());
 		}
 
 		@Test
 		@DisplayName("OAuth 회원 생성 시 provider가 null이면 예외")
 		void createOAuthMemberFailNullProvider() {
 			CustomException ex = assertThrows(CustomException.class,
-				() -> Member.createOAuth("oauth_user", "User", "user@test.com", null, Role.GUEST));
+				() -> Member.createOAuth("oauth_user", "User", "user@test.com", "someId", null, Role.GUEST));
 			assertEquals(ErrorCode.INVALID_PROVIDER, ex.getErrorCode());
 		}
 

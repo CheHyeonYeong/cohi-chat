@@ -21,8 +21,7 @@ export default function OAuthCallbackPage() {
         loginMutation.mutateAsync({ provider, code, state })
             .then(() => navigate({ to: '/app' }))
             .catch(() => navigate({ to: '/app/login' }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [code, error, provider, state]);
+    }, [code, error, provider, state, navigate, loginMutation]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">

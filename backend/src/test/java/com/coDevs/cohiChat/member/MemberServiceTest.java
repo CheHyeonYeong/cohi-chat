@@ -225,7 +225,7 @@ class MemberServiceTest {
 	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 PASSWORD_MISMATCH 반환")
 	void loginFailOAuthMemberLocalLogin() {
 		Member oAuthMember = Member.createOAuth(
-			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, Provider.GOOGLE, Role.GUEST
+			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "test-provider-id", Provider.GOOGLE, Role.GUEST
 		);
 		LoginRequestDTO request = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)

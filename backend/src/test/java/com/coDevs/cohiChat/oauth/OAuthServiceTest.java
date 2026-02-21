@@ -80,7 +80,7 @@ class OAuthServiceTest {
 	@DisplayName("소셜 로그인 - 신규 회원은 자동 가입 후 JWT 발급")
 	void socialLogin_newUser() {
 		OAuthUserInfo userInfo = new OAuthUserInfo(Provider.GOOGLE, "google-123", "new@gmail.com", "NewUser");
-		Member newMember = Member.createOAuth("google_google-123", "NewUser", "new@gmail.com", Provider.GOOGLE, Role.GUEST);
+		Member newMember = Member.createOAuth("google_google-123", "NewUser", "new@gmail.com", "google-123", Provider.GOOGLE, Role.GUEST);
 		LoginResponseDTO expectedResponse = LoginResponseDTO.builder()
 			.accessToken("test-access-token")
 			.expiredInMinutes(60)
@@ -104,7 +104,7 @@ class OAuthServiceTest {
 	@Test
 	@DisplayName("소셜 로그인 - 기존 회원은 JWT만 발급")
 	void socialLogin_existingUser() {
-		Member existingMember = Member.createOAuth("google_existing", "ExistingUser", "existing@gmail.com", Provider.GOOGLE, Role.GUEST);
+		Member existingMember = Member.createOAuth("google_existing", "ExistingUser", "existing@gmail.com", "existing", Provider.GOOGLE, Role.GUEST);
 		OAuthUserInfo userInfo = new OAuthUserInfo(Provider.GOOGLE, "google-456", "existing@gmail.com", "ExistingUser");
 		LoginResponseDTO expectedResponse = LoginResponseDTO.builder()
 			.accessToken("test-access-token")
