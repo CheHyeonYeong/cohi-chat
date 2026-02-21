@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 
 import { Button } from "~/components/button";
 import { useAuth } from "~/features/member";
-import { checkAvailableBookingDate } from "../../utils";
+import { checkAvailableBookingDate, isTimeslotAvailableOnDate } from "../../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../../types";
 
 interface TimeslotsProps {
@@ -20,7 +20,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
     const weekday = now.getDay(); // 0=일, 1=월, ..., 6=토
     const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday);
     const availableTimeslots = timeslots
-        .filter((ts) => ts.weekdays.includes(weekday))
+        .filter((ts) => isTimeslotAvailableOnDate(ts, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday))
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
