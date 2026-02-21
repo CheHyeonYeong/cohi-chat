@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
+import com.coDevs.cohiChat.global.util.TokenUtil;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.RefreshTokenRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
@@ -30,6 +33,7 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import java.security.Principal;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -67,8 +71,12 @@ public class MemberController {
 
 	@DeleteMapping("/v1/logout")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal) {
-		memberService.logout(principal.getName());
+	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal, HttpServletRequest request) {
+		String accessToken = TokenUtil.resolveToken(request);
+		if (accessToken == null) {
+			throw new CustomException(ErrorCode.INVALID_TOKEN);
+		}
+		memberService.logout(principal.getName(), accessToken);
 		return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
 	}
 

@@ -29,7 +29,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
 
     const navigate = useNavigate();
     const auth = useAuth();
-    const { data: host } = useHost(slug);
+    const { data: host, isLoading: isHostLoading } = useHost(slug);
     const calendar = useCalendarEvent(slug);
     const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
@@ -85,7 +85,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                     </div>
 
                     <h2 className="text-primary text-2xl">
-                        <span className="font-bold">{host?.displayName ?? slug}</span>님과 약속잡기
+                        <span className="font-bold">{isHostLoading ? '...' : (host?.displayName ?? slug)}</span>님과 약속잡기
                     </h2>
                 </div>
 

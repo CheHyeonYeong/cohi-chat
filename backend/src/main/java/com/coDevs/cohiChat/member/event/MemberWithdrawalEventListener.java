@@ -57,8 +57,8 @@ public class MemberWithdrawalEventListener {
         try {
             deleteGoogleCalendarEvent(booking, googleCalendarId);
         } catch (Exception e) {
-            log.error("Unexpected error while deleting Google Calendar event for booking: {}, eventId: {}",
-                booking.getId(), booking.getGoogleEventId(), e);
+            log.error("Google Calendar 이벤트 삭제 실패 - 수동 확인 필요. bookingId: {}, eventId: {}, error: {}",
+                booking.getId(), booking.getGoogleEventId(), e.getMessage(), e);
         }
     }
 

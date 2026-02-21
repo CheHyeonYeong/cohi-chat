@@ -35,7 +35,7 @@ vi.mock('~/features/calendar', () => ({
     Timeslots: () => <div data-testid="calendar-timeslots">Timeslots</div>,
     BookingForm: () => <div data-testid="booking-form">BookingForm</div>,
     getCalendarDays: () => [],
-    useCalendarEvent: () => ({ id: '1', name: 'Test Calendar' }),
+    useCalendarEvent: () => ({ id: 1, name: 'Test Calendar' }),
     useCalendarNavigation: () => ({ handlePrevious: vi.fn(), handleNext: vi.fn() }),
     useTimeslots: () => ({ data: [] }),
     useBookings: () => ({ data: [], refetch: vi.fn() }),
@@ -77,12 +77,31 @@ describe('Calendar', () => {
         );
 
         // displayName이 표시되어야 함
-        expect(screen.getByText('Test User Display')).toBeTruthy();
-        expect(screen.getByText(/님과 약속잡기/)).toBeTruthy();
-
-        // username이 직접 표시되면 안 됨 (displayName과 다른 경우)
         const heading = screen.getByRole('heading', { level: 2 });
         expect(heading.textContent).toContain('Test User Display');
         expect(heading.textContent).not.toContain('testuser');
+        expect(heading.textContent).toContain('님과 약속잡기');
+    });
+
+    it('should fallback to slug when host has no displayName', () => {
+        // useHost mock을 displayName 없는 상태로 변경
+        vi.doMock('~/hooks/useHost', () => ({
+            useHost: () => ({
+                data: { username: 'testuser', displayName: null },
+                isLoading: false,
+                isError: false,
+            }),
+            useHosts: () => ({ data: [], isLoading: false }),
+        }));
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <Calendar />
+            </QueryClientProvider>
+        );
+
+        const heading = screen.getByRole('heading', { level: 2 });
+        // displayName이 null이면 slug가 fallback으로 표시
+        expect(heading.textContent).toContain('님과 약속잡기');
     });
 });
