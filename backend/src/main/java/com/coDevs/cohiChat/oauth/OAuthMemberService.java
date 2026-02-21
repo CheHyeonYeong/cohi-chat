@@ -17,8 +17,8 @@ public class OAuthMemberService {
 
 	@Transactional
 	public Member findOrCreate(OAuthUserInfo userInfo) {
-		return memberRepository.findByEmailAndProviderAndIsDeletedFalse(
-			userInfo.getEmail(), userInfo.getProvider()
+		return memberRepository.findByProviderAndProviderIdAndIsDeletedFalse(
+			userInfo.getProvider(), userInfo.getProviderId()
 		).orElseGet(() -> registerNewMember(userInfo));
 	}
 
@@ -31,6 +31,7 @@ public class OAuthMemberService {
 			username,
 			displayName,
 			userInfo.getEmail(),
+			userInfo.getProviderId(),
 			userInfo.getProvider(),
 			Role.GUEST
 		);

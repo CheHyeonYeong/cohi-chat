@@ -18,18 +18,11 @@ export default function OAuthCallbackPage() {
             return;
         }
 
-        loginMutation.mutate(
-            { provider, code, state },
-            {
-                onSuccess: () => navigate({ to: '/app' }),
-                onError: () => navigate({ to: '/app/login' }),
-            }
-        );
-
-        return () => {
-            hasInitiated.current = false;
-        };
-    }, [code, error, provider, state, navigate, loginMutation]);
+        loginMutation.mutateAsync({ provider, code, state })
+            .then(() => navigate({ to: '/app' }))
+            .catch(() => navigate({ to: '/app/login' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [code, error, provider, state]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">

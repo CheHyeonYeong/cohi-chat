@@ -31,12 +31,15 @@ public class KakaoOAuthClient implements OAuthClient {
 		return Provider.KAKAO;
 	}
 
+	private static final String SCOPE = "profile_nickname";
+
 	@Override
 	public String getAuthorizationUrl(String state) {
 		return AUTHORIZATION_URL
 			+ "?client_id=" + OAuthClientUtils.encode(config.getClientId())
 			+ "&redirect_uri=" + OAuthClientUtils.encode(config.getRedirectUri())
 			+ "&response_type=code"
+			+ "&scope=" + OAuthClientUtils.encode(SCOPE)
 			+ "&state=" + OAuthClientUtils.encode(state);
 	}
 
@@ -76,10 +79,6 @@ public class KakaoOAuthClient implements OAuthClient {
 			if (profile != null) {
 				nickname = (String) profile.get("nickname");
 			}
-		}
-
-		if (email == null) {
-			throw new CustomException(ErrorCode.OAUTH_USER_INFO_FAILED);
 		}
 
 		return new OAuthUserInfo(Provider.KAKAO, providerId, email, nickname);

@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
 	@Index(name = "idx_member_email", columnList = "email"),
 	@Index(name = "idx_member_username", columnList = "username")
 }, uniqueConstraints = {
-	@UniqueConstraint(name = "uk_member_email_provider", columnNames = {"email", "provider"})
+	@UniqueConstraint(name = "uk_member_provider_provider_id", columnNames = {"provider", "provider_id"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -52,7 +52,7 @@ public class Member {
 	@Column(name = "display_name", length = 50, nullable = false)
 	private String displayName;
 
-	@Column(length = 255, nullable = false)
+	@Column(length = 255, nullable = true)
 	private String email;
 
 	@Column(name = "hashed_password", nullable = true)
@@ -61,6 +61,9 @@ public class Member {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "provider", nullable = false, updatable = false, length = 20)
 	private Provider provider = Provider.LOCAL;
+
+	@Column(name = "provider_id", length = 100, nullable = true, updatable = false)
+	private String providerId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false, length = 20)
@@ -90,7 +93,8 @@ public class Member {
 		String hashedPassword,
 		Role role
 	) {
-		validateRequired(username, displayName, email, role);
+		validateRequired(username, displayName, role);
+		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
 		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
 		Member member = new Member();
@@ -109,11 +113,13 @@ public class Member {
 		String username,
 		String displayName,
 		String email,
+		String providerId,
 		Provider provider,
 		Role role
 	) {
-		validateRequired(username, displayName, email, role);
+		validateRequired(username, displayName, role);
 		if (provider == null || provider == Provider.LOCAL) throw new CustomException(ErrorCode.INVALID_PROVIDER);
+		if (providerId == null || providerId.isBlank()) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
 		Member member = new Member();
 		member.username = username;
@@ -121,16 +127,16 @@ public class Member {
 		member.email = email;
 		member.hashedPassword = null;
 		member.provider = provider;
+		member.providerId = providerId;
 		member.role = role;
 		member.isDeleted = false;
 
 		return member;
 	}
 
-	private static void validateRequired(String username, String displayName, String email, Role role) {
+	private static void validateRequired(String username, String displayName, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
-		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
 	}
 
