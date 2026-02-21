@@ -346,26 +346,27 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 유효한 Refresh Token으로 Access Token 재발급 (해시로 조회)")
+	@DisplayName("성공: 유효한 Refresh Token으로 AT + RT 재발급 (Rotation)")
 	void refreshAccessTokenSuccess() {
 		String validRefreshToken = "valid-refresh-token";
 		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
-		RefreshToken storedToken = RefreshToken.create(
-			expectedHash,
-			TEST_USERNAME,
-			604800000L // 7 days in ms
-		);
+		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
 
 		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
 
 		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+		assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
 		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(refreshTokenRepository).save(any(RefreshToken.class));
 	}
 
 	@Test
@@ -416,6 +417,8 @@ class MemberServiceTest {
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
 
