@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createRouter, createRootRoute, Outlet, redirect } from '@tanstack/react-router'
+import { createRouter, createRootRoute, Outlet } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import {
@@ -46,24 +46,16 @@ const RootRoute = createRootRoute({
     },
 })
 
-const indexRoute = createRoute({
-    getParentRoute: () => RootRoute,
-    path: '/',
-    beforeLoad: () => {
-        throw redirect({ to: '/app' })
-    },
-})
-
 const homeRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app',
+    path: '/',
     component: Home,
 })
 
 
 const myBookingsRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/my-bookings',
+    path: '/my-bookings',
     component: MyBookings,
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
@@ -74,7 +66,7 @@ const myBookingsRoute = createRoute({
 
 const bookingRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/booking/$id',
+    path: '/booking/$id',
     component: Booking,
     params: z.object({
         id: z.string().transform<number>((val) => parseInt(val, 10)).pipe(z.number().min(1)),
@@ -84,32 +76,32 @@ const bookingRoute = createRoute({
 
 const loginRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/login',
+    path: '/login',
     component: LoginForm,
 })
 
 const signupRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/signup',
+    path: '/signup',
     component: SignupForm,
 })
 
 
 const hostRegisterRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/host/register',
+    path: '/host/register',
     component: HostRegisterGuarded,
 })
 
 const hostTimeslotsRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/host/timeslots',
+    path: '/host/timeslots',
     component: TimeSlotSettingsGuarded,
 })
 
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/app/calendar/$slug',
+    path: '/calendar/$slug',
     component: Calendar,
     params: z.object({
         slug: z.string().min(4),
@@ -133,7 +125,6 @@ const privacyRoute = createRoute({
 })
 
 export const routeTree = RootRoute.addChildren([
-    indexRoute,
     homeRoute,
     calendarRoute,
     loginRoute,
