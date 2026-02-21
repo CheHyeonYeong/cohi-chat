@@ -85,6 +85,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
 
     const removeEntry = (index: number) => {
         if (entries.length <= 1) return;
+        delete savedDatesRef.current[index];
         const updated = entries.filter((_, i) => i !== index);
         onChange(updated);
         if (expandedIndex >= updated.length) setExpandedIndex(updated.length - 1);
