@@ -39,9 +39,12 @@ public class OAuthController {
 		@PathVariable String provider,
 		@Valid @RequestBody OAuthCallbackRequest request
 	) {
-		LoginResponseDTO response = oAuthService.socialLogin(provider, request.code());
+		LoginResponseDTO response = oAuthService.socialLogin(provider, request.code(), request.state());
 		return ResponseEntity.ok(response);
 	}
 
-	public record OAuthCallbackRequest(@NotBlank(message = "인가 코드는 필수입니다.") String code) {}
+	public record OAuthCallbackRequest(
+		@NotBlank(message = "인가 코드는 필수입니다.") String code,
+		@NotBlank(message = "state는 필수입니다.") String state
+	) {}
 }

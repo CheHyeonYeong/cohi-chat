@@ -113,7 +113,7 @@ public class Member {
 		Role role
 	) {
 		validateRequired(username, displayName, email, role);
-		if (provider == null) throw new CustomException(ErrorCode.INVALID_PROVIDER);
+		if (provider == null || provider == Provider.LOCAL) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
 		Member member = new Member();
 		member.username = username;

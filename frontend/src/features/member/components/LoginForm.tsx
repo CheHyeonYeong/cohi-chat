@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
+import Button from '~/components/button/Button';
 
 interface LoginFormValues {
     username: string;
@@ -52,6 +53,7 @@ export function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [oAuthPending, setOAuthPending] = useState<string | null>(null);
+    const [oAuthError, setOAuthError] = useState<string | null>(null);
     const navigate = useNavigate();
     const loginMutation = useLogin();
     const { fields, handleBlur, validateAll, getInputClassName } =
@@ -60,11 +62,13 @@ export function LoginForm() {
     const handleSocialLogin = async (provider: string) => {
         if (oAuthPending) return;
         setOAuthPending(provider);
+        setOAuthError(null);
         try {
             const url = await getOAuthAuthorizationUrlApi(provider);
             window.location.href = url;
         } catch {
             setOAuthPending(null);
+            setOAuthError('소셜 로그인 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
         }
     };
 
@@ -163,28 +167,33 @@ export function LoginForm() {
                 </div>
 
                 <div className="flex flex-col gap-2 mt-4">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => handleSocialLogin('google')}
                         disabled={!!oAuthPending || isPending}
-                        className="w-full py-3 flex items-center justify-center gap-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 flex items-center justify-center gap-3 !bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <GoogleIcon />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium">
                             {oAuthPending === 'google' ? '연결 중...' : 'Google로 로그인'}
                         </span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={() => handleSocialLogin('kakao')}
                         disabled={!!oAuthPending || isPending}
-                        className="w-full py-3 flex items-center justify-center gap-3 rounded-lg bg-[#FEE500] hover:bg-[#F0D800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 flex items-center justify-center gap-3 !bg-[#FEE500] !border-0 hover:!bg-[#F0D800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <KakaoIcon />
                         <span className="text-sm font-medium text-[#3C1E1E]">
                             {oAuthPending === 'kakao' ? '연결 중...' : '카카오로 로그인'}
                         </span>
-                    </button>
+                    </Button>
+                    {oAuthError && (
+                        <p className="text-xs text-red-500 text-center mt-1">{oAuthError}</p>
+                    )}
                 </div>
 
                 <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">

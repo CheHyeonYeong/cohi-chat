@@ -57,11 +57,11 @@ class OAuthControllerTest {
 			.displayName("TestUser")
 			.build();
 
-		given(oAuthService.socialLogin("google", "test-auth-code")).willReturn(loginResponse);
+		given(oAuthService.socialLogin("google", "test-auth-code", "test-state")).willReturn(loginResponse);
 
 		mockMvc.perform(post("/oauth/v1/google/callback")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"code\": \"test-auth-code\"}"))
+				.content("{\"code\": \"test-auth-code\", \"state\": \"test-state\"}"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.accessToken").value("test-access-token"))
 			.andExpect(jsonPath("$.username").value("google_123"));
@@ -84,21 +84,31 @@ class OAuthControllerTest {
 	void socialLoginCallback_blankCode() throws Exception {
 		mockMvc.perform(post("/oauth/v1/google/callback")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"code\": \"\"}"))
+				.content("{\"code\": \"\", \"state\": \"test-state\"}"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.success").value(false))
 			.andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
 	}
 
 	@Test
+	@DisplayName("POST /oauth/v1/{provider}/callback - state 누락 시 400")
+	void socialLoginCallback_missingState() throws Exception {
+		mockMvc.perform(post("/oauth/v1/google/callback")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"code\": \"test-auth-code\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.success").value(false));
+	}
+
+	@Test
 	@DisplayName("POST /oauth/v1/{provider}/callback - 지원하지 않는 provider 시 400")
 	void socialLoginCallback_unsupportedProvider() throws Exception {
 		willThrow(new CustomException(ErrorCode.INVALID_PROVIDER))
-			.given(oAuthService).socialLogin("github", "test-auth-code");
+			.given(oAuthService).socialLogin("github", "test-auth-code", "test-state");
 
 		mockMvc.perform(post("/oauth/v1/github/callback")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"code\": \"test-auth-code\"}"))
+				.content("{\"code\": \"test-auth-code\", \"state\": \"test-state\"}"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.success").value(false))
 			.andExpect(jsonPath("$.error.code").value("INVALID_PROVIDER"));

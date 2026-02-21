@@ -6,13 +6,16 @@ const OAUTH_API = `${API_BASE}/oauth/v1`;
 
 export async function getOAuthAuthorizationUrlApi(provider: string): Promise<string> {
     const response = await httpClient<{ url: string }>(`${OAUTH_API}/${provider}/authorize`);
+    if (!response?.url) {
+        throw new Error('OAuth 인증 URL을 가져오지 못했습니다.');
+    }
     return response.url;
 }
 
-export async function oAuthCallbackApi(provider: string, code: string): Promise<LoginResponse> {
+export async function oAuthCallbackApi(provider: string, code: string, state: string): Promise<LoginResponse> {
     const response = await httpClient<LoginResponse>(`${OAUTH_API}/${provider}/callback`, {
         method: 'POST',
-        body: { code },
+        body: { code, state },
     });
     if (!response?.accessToken) {
         throw new Error('소셜 로그인 응답이 올바르지 않습니다.');

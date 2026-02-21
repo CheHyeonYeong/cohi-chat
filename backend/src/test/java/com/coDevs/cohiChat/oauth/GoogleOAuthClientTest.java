@@ -66,13 +66,14 @@ class GoogleOAuthClientTest {
 	@Test
 	@DisplayName("Authorization URL이 올바르게 생성된다")
 	void getAuthorizationUrl() {
-		String url = googleOAuthClient.getAuthorizationUrl();
+		String url = googleOAuthClient.getAuthorizationUrl("test-state-value");
 
 		assertThat(url).contains("https://accounts.google.com/o/oauth2/v2/auth");
 		assertThat(url).contains("client_id=test-client-id");
 		assertThat(url).contains("redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fcallback%2Fgoogle");
 		assertThat(url).contains("response_type=code");
 		assertThat(url).contains("scope=");
+		assertThat(url).contains("state=test-state-value");
 	}
 
 	@SuppressWarnings("unchecked")

@@ -3,8 +3,8 @@ package com.coDevs.cohiChat.oauth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
@@ -34,6 +34,9 @@ class OAuthServiceTest {
 	private TokenService tokenService;
 
 	@Mock
+	private OAuthStateService oAuthStateService;
+
+	@Mock
 	private OAuthClient googleOAuthClient;
 
 	@Mock
@@ -49,6 +52,7 @@ class OAuthServiceTest {
 		oAuthService = new OAuthService(
 			oAuthMemberService,
 			tokenService,
+			oAuthStateService,
 			List.of(googleOAuthClient, kakaoOAuthClient)
 		);
 	}
@@ -56,7 +60,8 @@ class OAuthServiceTest {
 	@Test
 	@DisplayName("Google Authorization URL을 반환한다")
 	void getAuthorizationUrl_google() {
-		given(googleOAuthClient.getAuthorizationUrl()).willReturn("https://accounts.google.com/o/oauth2/v2/auth?...");
+		given(oAuthStateService.generateState()).willReturn("test-state");
+		given(googleOAuthClient.getAuthorizationUrl("test-state")).willReturn("https://accounts.google.com/o/oauth2/v2/auth?...");
 
 		String url = oAuthService.getAuthorizationUrl("google");
 
@@ -88,11 +93,12 @@ class OAuthServiceTest {
 		given(oAuthMemberService.findOrCreate(userInfo)).willReturn(newMember);
 		given(tokenService.issueTokens(newMember)).willReturn(expectedResponse);
 
-		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code");
+		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code", "valid-state");
 
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
 		verify(oAuthMemberService).findOrCreate(userInfo);
+		verify(oAuthStateService).validateAndConsumeState("valid-state");
 	}
 
 	@Test
@@ -112,7 +118,7 @@ class OAuthServiceTest {
 		given(oAuthMemberService.findOrCreate(userInfo)).willReturn(existingMember);
 		given(tokenService.issueTokens(existingMember)).willReturn(expectedResponse);
 
-		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code");
+		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code", "valid-state");
 
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 		assertThat(response.getUsername()).isEqualTo("google_existing");
@@ -120,9 +126,20 @@ class OAuthServiceTest {
 	}
 
 	@Test
+	@DisplayName("소셜 로그인 - 유효하지 않은 state 시 INVALID_OAUTH_STATE 예외")
+	void socialLogin_invalidState() {
+		org.mockito.BDDMockito.willThrow(new CustomException(ErrorCode.INVALID_OAUTH_STATE))
+			.given(oAuthStateService).validateAndConsumeState("invalid-state");
+
+		assertThatThrownBy(() -> oAuthService.socialLogin("google", "auth-code", "invalid-state"))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_OAUTH_STATE);
+	}
+
+	@Test
 	@DisplayName("소셜 로그인 - 지원하지 않는 provider 시 예외")
 	void socialLogin_unsupportedProvider() {
-		assertThatThrownBy(() -> oAuthService.socialLogin("github", "auth-code"))
+		assertThatThrownBy(() -> oAuthService.socialLogin("github", "auth-code", "valid-state"))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_PROVIDER);
 	}

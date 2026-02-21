@@ -6,7 +6,7 @@ public interface OAuthClient {
 
 	Provider getProvider();
 
-	String getAuthorizationUrl();
+	String getAuthorizationUrl(String state);
 
 	OAuthUserInfo getUserInfo(String authorizationCode);
 }

@@ -5,7 +5,7 @@ import { useOAuthLogin } from '~/features/member';
 export default function OAuthCallbackPage() {
     const navigate = useNavigate();
     const { provider } = useParams({ strict: false });
-    const { code, error } = useSearch({ strict: false }) as { code?: string; error?: string };
+    const { code, error, state } = useSearch({ strict: false }) as { code?: string; error?: string; state?: string };
     const hasInitiated = useRef(false);
     const loginMutation = useOAuthLogin();
 
@@ -13,19 +13,23 @@ export default function OAuthCallbackPage() {
         if (hasInitiated.current) return;
         hasInitiated.current = true;
 
-        if (error || !code || !provider) {
+        if (error || !code || !provider || !state) {
             navigate({ to: '/app/login' });
             return;
         }
 
         loginMutation.mutate(
-            { provider, code },
+            { provider, code, state },
             {
                 onSuccess: () => navigate({ to: '/app' }),
                 onError: () => navigate({ to: '/app/login' }),
             }
         );
-    }, [code, error, provider, navigate, loginMutation]);
+
+        return () => {
+            hasInitiated.current = false;
+        };
+    }, [code, error, provider, state, navigate, loginMutation]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">

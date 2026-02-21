@@ -33,12 +33,13 @@ public class GoogleOAuthClient implements OAuthClient {
 	}
 
 	@Override
-	public String getAuthorizationUrl() {
+	public String getAuthorizationUrl(String state) {
 		return AUTHORIZATION_URL
 			+ "?client_id=" + OAuthClientUtils.encode(config.getClientId())
 			+ "&redirect_uri=" + OAuthClientUtils.encode(config.getRedirectUri())
 			+ "&response_type=code"
-			+ "&scope=" + OAuthClientUtils.encode(SCOPE);
+			+ "&scope=" + OAuthClientUtils.encode(SCOPE)
+			+ "&state=" + OAuthClientUtils.encode(state);
 	}
 
 	@Override

@@ -66,12 +66,13 @@ class KakaoOAuthClientTest {
 	@Test
 	@DisplayName("Authorization URL이 올바르게 생성된다")
 	void getAuthorizationUrl() {
-		String url = kakaoOAuthClient.getAuthorizationUrl();
+		String url = kakaoOAuthClient.getAuthorizationUrl("test-state-value");
 
 		assertThat(url).contains("https://kauth.kakao.com/oauth/authorize");
 		assertThat(url).contains("client_id=kakao-client-id");
 		assertThat(url).contains("redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fcallback%2Fkakao");
 		assertThat(url).contains("response_type=code");
+		assertThat(url).contains("state=test-state-value");
 	}
 
 	@SuppressWarnings("unchecked")

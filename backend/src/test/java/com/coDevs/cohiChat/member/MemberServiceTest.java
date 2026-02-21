@@ -45,6 +45,7 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -218,6 +219,25 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 PASSWORD_MISMATCH 반환")
+	void loginFailOAuthMemberLocalLogin() {
+		Member oAuthMember = Member.createOAuth(
+			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, Provider.GOOGLE, Role.GUEST
+		);
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.build();
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(oAuthMember));
+		given(passwordEncoder.matches(TEST_PASSWORD, null)).willReturn(false);
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
 
 	@Test

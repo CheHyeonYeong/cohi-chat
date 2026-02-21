@@ -32,11 +32,12 @@ public class KakaoOAuthClient implements OAuthClient {
 	}
 
 	@Override
-	public String getAuthorizationUrl() {
+	public String getAuthorizationUrl(String state) {
 		return AUTHORIZATION_URL
 			+ "?client_id=" + OAuthClientUtils.encode(config.getClientId())
 			+ "&redirect_uri=" + OAuthClientUtils.encode(config.getRedirectUri())
-			+ "&response_type=code";
+			+ "&response_type=code"
+			+ "&state=" + OAuthClientUtils.encode(state);
 	}
 
 	@Override

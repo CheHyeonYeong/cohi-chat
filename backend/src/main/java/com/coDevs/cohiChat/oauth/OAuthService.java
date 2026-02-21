@@ -19,25 +19,32 @@ public class OAuthService {
 
 	private final OAuthMemberService oAuthMemberService;
 	private final TokenService tokenService;
+	private final OAuthStateService oAuthStateService;
 	private final Map<Provider, OAuthClient> oAuthClients;
 
 	public OAuthService(
 		OAuthMemberService oAuthMemberService,
 		TokenService tokenService,
+		OAuthStateService oAuthStateService,
 		List<OAuthClient> oAuthClientList
 	) {
 		this.oAuthMemberService = oAuthMemberService;
 		this.tokenService = tokenService;
+		this.oAuthStateService = oAuthStateService;
 		this.oAuthClients = oAuthClientList.stream()
 			.collect(Collectors.toMap(OAuthClient::getProvider, Function.identity()));
 	}
 
 	public String getAuthorizationUrl(String providerName) {
 		OAuthClient client = getClient(providerName);
-		return client.getAuthorizationUrl();
+		String state = oAuthStateService.generateState();
+		return client.getAuthorizationUrl(state);
 	}
 
-	public LoginResponseDTO socialLogin(String providerName, String authorizationCode) {
+	public LoginResponseDTO socialLogin(String providerName, String authorizationCode, String state) {
+		// 0. CSRF state 검증 및 소비
+		oAuthStateService.validateAndConsumeState(state);
+
 		// 1. 외부 HTTP 호출 (트랜잭션 밖)
 		OAuthClient client = getClient(providerName);
 		OAuthUserInfo userInfo = client.getUserInfo(authorizationCode);

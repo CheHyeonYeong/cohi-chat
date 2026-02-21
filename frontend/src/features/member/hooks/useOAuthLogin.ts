@@ -6,12 +6,13 @@ import type { LoginResponse } from '../types';
 interface OAuthLoginParams {
     provider: string;
     code: string;
+    state: string;
 }
 
 export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLoginParams> {
     return useMutation<LoginResponse, Error, OAuthLoginParams>({
-        mutationFn: async ({ provider, code }) => {
-            const response = await oAuthCallbackApi(provider, code);
+        mutationFn: async ({ provider, code, state }) => {
+            const response = await oAuthCallbackApi(provider, code, state);
 
             localStorage.setItem('auth_token', response.accessToken);
             localStorage.setItem('refresh_token', response.refreshToken);
