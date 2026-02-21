@@ -6,12 +6,12 @@
 
 | 화면 | 파일 | URL |
 |------|------|-----|
-| 홈 화면 | [01-home.md](./01-home.md) | `/app` |
-| 로그인 화면 | [02-login.md](./02-login.md) | `/app/login` |
-| 회원가입 화면 | [03-signup.md](./03-signup.md) | `/app/signup` |
-| 캘린더 화면 | [04-calendar.md](./04-calendar.md) | `/app/calendar/:slug` |
-| 내 예약 목록 | [05-my-bookings.md](./05-my-bookings.md) | `/app/my-bookings` |
-| 예약 상세 | [06-booking-detail.md](./06-booking-detail.md) | `/app/booking/:id` |
+| 홈 화면 | [01-home.md](./01-home.md) | `/` |
+| 로그인 화면 | [02-login.md](./02-login.md) | `/login` |
+| 회원가입 화면 | [03-signup.md](./03-signup.md) | `/signup` |
+| 캘린더 화면 | [04-calendar.md](./04-calendar.md) | `/calendar/:slug` |
+| 내 예약 목록 | [05-my-bookings.md](./05-my-bookings.md) | `/my-bookings` |
+| 예약 상세 | [06-booking-detail.md](./06-booking-detail.md) | `/booking/:id` |
 
 ## 디자인 시스템
 
