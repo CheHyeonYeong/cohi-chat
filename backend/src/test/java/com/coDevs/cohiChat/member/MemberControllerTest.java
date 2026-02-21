@@ -132,6 +132,20 @@ class MemberControllerTest {
 
 			performSignupTest(dto, shouldSucceed);
 		}
+
+		@ParameterizedTest
+		@MethodSource("com.coDevs.cohiChat.member.MemberControllerTest#emailTestProvider")
+		@DisplayName("이메일 검증 테스트")
+		void signupEmailTest(String email, boolean shouldSucceed) throws Exception {
+			SignupRequestDTO dto = SignupRequestDTO.builder()
+				.username(TEST_USERNAME)
+				.password(TEST_PASSWORD)
+				.email(email)
+				.displayName(TEST_DISPLAY_NAME)
+				.build();
+
+			performSignupTest(dto, shouldSucceed);
+		}
 	}
 
 	@Nested
@@ -320,6 +334,34 @@ class MemberControllerTest {
 			Arguments.of("aa", true),
 			Arguments.of("a".repeat(20), true),
 			Arguments.of("a".repeat(21), false)
+		);
+	}
+
+	static Stream<Arguments> emailTestProvider() {
+		return Stream.of(
+			// 유효한 이메일
+			Arguments.of("test@example.com", true),
+			Arguments.of("user.name@domain.co.kr", true),
+			Arguments.of("user+tag@example.org", true),
+			Arguments.of("user123@test.io", true),
+			Arguments.of("a.b.c@example.com", true),
+
+			// 무효한 이메일 - 형식 오류
+			Arguments.of(null, false),
+			Arguments.of("", false),
+			Arguments.of("test", false),
+			Arguments.of("test@", false),
+			Arguments.of("@test.com", false),
+			Arguments.of("test@.com", false),
+
+			// 무효한 이메일 - TLD 부족
+			Arguments.of("test@a", false),
+			Arguments.of("test@a.", false),
+			Arguments.of("a@b.c", false),
+
+			// 무효한 이메일 - 잘못된 문자
+			Arguments.of("test @example.com", false),
+			Arguments.of("test<>@example.com", false)
 		);
 	}
 
