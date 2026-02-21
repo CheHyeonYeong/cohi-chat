@@ -264,10 +264,6 @@ public class MemberService {
 	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
 
-		if (accessToken == null) {
-			return;
-		}
-
 		try {
 			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
 			if (remainingSeconds <= 0) {
