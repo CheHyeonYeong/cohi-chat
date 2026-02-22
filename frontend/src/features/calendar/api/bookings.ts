@@ -80,7 +80,7 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
 export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
     const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
         method: 'POST',
-        body: reason !== undefined ? { reason } : undefined,
+        body: reason ? { reason } : undefined,
     });
     return toBookingDetail(b);
 }

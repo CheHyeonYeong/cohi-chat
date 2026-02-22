@@ -6,8 +6,11 @@ export function useReportHostNoShow(bookingId: number) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (reason?: string) => reportHostNoShow(bookingId, reason),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: calendarKeys.booking(bookingId) });
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: calendarKeys.booking(bookingId) }),
+                queryClient.invalidateQueries({ queryKey: calendarKeys.myBookings() }),
+            ]);
         },
     });
 }

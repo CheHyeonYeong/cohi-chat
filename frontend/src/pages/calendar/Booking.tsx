@@ -1,5 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Button } from "~/components/button";
 import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from "~/features/calendar";
 import type { AttendanceStatus } from "~/features/calendar";
@@ -39,13 +39,20 @@ export default function Booking() {
     const [reportReason, setReportReason] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(timer);
+    }, []);
+
     const isMeetingStarted = useMemo(() => {
         if (!booking) return false;
         const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
         const meetingStart = new Date(booking.when);
         meetingStart.setHours(h, m, 0, 0);
-        return Date.now() >= meetingStart.getTime();
-    }, [booking]);
+        return now >= meetingStart.getTime();
+    }, [booking, now]);
 
     if (!booking || isLoading) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
@@ -225,10 +232,8 @@ export default function Booking() {
                         </h2>
                         <ul className="space-y-1">
                             {noShowHistory.map((item) => (
-                                <li key={item.id} className="text-sm text-red-600 flex flex-row space-x-2">
-                                    <span>{item.bookingDate}</span>
-                                    <span>/</span>
-                                    <span>{item.bookingTopic}</span>
+                                <li key={item.id} className="text-sm text-red-600">
+                                    {item.bookingDate} — 노쇼 발생
                                 </li>
                             ))}
                         </ul>
