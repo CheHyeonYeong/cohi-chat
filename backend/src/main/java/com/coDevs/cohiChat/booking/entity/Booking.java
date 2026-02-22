@@ -176,10 +176,12 @@ public class Booking {
 
     /**
      * 게스트가 호스트 노쇼를 신고
-     * 상태 검증은 서비스 레이어에서 CustomException으로 수행
-     * 이 메서드는 서비스에서 검증 완료 후 호출됨
+     * 엔티티 레벨에서 상태 전이 가능 여부를 검증
      */
     public void reportHostNoShow() {
+        if (!this.attendanceStatus.isGuestReportable()) {
+            throw new IllegalStateException("노쇼 신고가 불가능한 예약 상태입니다: " + this.attendanceStatus);
+        }
         this.attendanceStatus = AttendanceStatus.HOST_NO_SHOW;
         this.noshowReportedAt = Instant.now();
     }
