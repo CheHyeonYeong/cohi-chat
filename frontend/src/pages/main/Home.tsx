@@ -12,7 +12,7 @@ function HostCard({ displayName, username }: { displayName: string; username: st
 
     return (
         <Link
-            to='/app/calendar/$slug'
+            to='/calendar/$slug'
             params={{ slug: username }}
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
@@ -41,7 +41,7 @@ export default function Home() {
         if (isAuthenticated) {
             document.getElementById('host-list')?.scrollIntoView({ behavior: 'smooth' });
         } else {
-            navigate({ to: '/app/login' });
+            navigate({ to: '/login' });
         }
     };
 
@@ -49,25 +49,25 @@ export default function Home() {
         <div className='w-full min-h-screen bg-[var(--cohe-bg-light)]'>
             {/* Header */}
             <header className='w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm'>
-                <div className='flex items-center gap-2'>
+                <Link to='/' className='flex items-center gap-2'>
                     <CoffeeCupIcon className='w-8 h-8 text-[var(--cohe-primary)]' />
                     <span className='text-xl font-bold text-[var(--cohe-text-dark)]'>coheChat</span>
-                </div>
+                </Link>
                 <div className='flex items-center gap-3'>
                     {isAuthenticated && !isCalendarLoading && (
                         isHost && myCalendar ? (
-                            <LinkButton variant="primary" to='/app/host/timeslots'>
+                            <LinkButton variant="primary" to='/host/timeslots'>
                                 호스트 대시보드
                             </LinkButton>
                         ) : (
-                            <LinkButton variant="outline" to='/app/host/register' className="hidden">
+                            <LinkButton variant="outline" to='/host/register'>
                                 호스트 등록하기
                             </LinkButton>
                         )
                     )}
                     {isAuthenticated
                         ? <LogoutButton />
-                        : <LinkButton variant="outline" to='/app/login'>
+                        : <LinkButton variant="outline" to='/login'>
                             로그인
                         </LinkButton>
                     }
