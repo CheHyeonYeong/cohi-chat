@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { Link } from "@tanstack/react-router";
-import clsx from "clsx";
 
 import { Button } from "~/components/button";
 import { useAuth } from "~/features/member";
@@ -34,7 +33,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
                     className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
                     <p>커피챗을 신청할 날짜를 고르세요.</p>
                     <Link
-                        to="/app/login"
+                        to="/login"
                         className="block w-full border border-blue-100 font-semibold rounded py-3 text-center bg-primary text-white hover:bg-secondary">
                         로그인 후 커피챗 신청하기
                     </Link>
@@ -53,7 +52,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}
                     key={`${timeslot.startTime}-${timeslot.endTime}`}
-                    className={clsx("w-full h-fit py-2 px-4 rounded-md")}
+                    className="w-full h-fit"
                     onClick={() => onSelectTimeslot(timeslot)}
                 >
                     <span role="time">{timeslot.startTime}</span>

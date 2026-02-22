@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { cn } from "~/libs/cn";
 
 interface NavigatorProps {
     slug: string;
@@ -32,7 +32,7 @@ export default function Navigator({ slug, year, month, baseDate, onPrevious, onN
     };
 
     return (
-        <div className={clsx("w-full flex justify-center items-center space-x-5")}>
+        <div className={cn("w-full flex justify-center items-center space-x-5")}>
             <NavigatorButton
                 role="button"
                 role-label="button-이전달"
@@ -59,7 +59,7 @@ function NavigatorButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
     const { className, disabled, ...rest } = props;
     return (
         <button
-            className={clsx([
+            className={cn([
                 'w-8 h-8 rounded-full flex items-center justify-center select-none',
                 { 'font-bold text-primary hover:text-white hover:bg-primary': !disabled },
                 { 'cursor-default text-gray-500 hover:text-gray-500 hover:bg-inherit hover:border-transparent': disabled },

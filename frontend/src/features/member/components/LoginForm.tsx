@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import Button from '~/components/button/Button';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
@@ -53,7 +54,7 @@ export function LoginForm() {
         loginMutation.mutate(
             { username: username.trim(), password },
             {
-                onSuccess: () => navigate({ to: '/app' }),
+                onSuccess: () => navigate({ to: '/' }),
             }
         );
     };
@@ -65,10 +66,10 @@ export function LoginForm() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
             {/* Logo */}
-            <div className="flex items-center gap-2 mb-8">
+            <Link to='/' className="flex items-center gap-2 mb-8">
                 <CoffeeCupIcon className="w-10 h-10 text-[var(--cohe-primary)]" />
                 <span className="text-2xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-            </div>
+            </Link>
 
             {/* Login Card */}
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
@@ -116,18 +117,20 @@ export function LoginForm() {
                         </div>
                     )}
 
-                    <button
+                    <Button
+                        variant="primary"
+                        size="lg"
                         type="submit"
                         disabled={isPending}
-                        className="w-full py-3 bg-[var(--cohe-primary)] text-white font-semibold rounded-lg hover:bg-[var(--cohe-primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                        className="w-full rounded-lg mt-2"
                     >
                         {isPending ? '로그인 중...' : '로그인'}
-                    </button>
+                    </Button>
                 </form>
 
                 <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">
                     계정이 없으신가요?{' '}
-                    <Link to="/app/signup" className="text-[var(--cohe-primary)] font-semibold hover:underline">
+                    <Link to="/signup" className="text-[var(--cohe-primary)] font-semibold hover:underline">
                         회원가입
                     </Link>
                 </div>
