@@ -53,7 +53,7 @@ export function LoginForm() {
         loginMutation.mutate(
             { username: username.trim(), password },
             {
-                onSuccess: () => navigate({ to: '/app' }),
+                onSuccess: () => navigate({ to: '/' }),
             }
         );
     };
@@ -129,7 +129,7 @@ export function LoginForm() {
 
                 <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">
                     계정이 없으신가요?{' '}
-                    <Link to="/app/signup" className="text-[var(--cohe-primary)] font-semibold hover:underline">
+                    <Link to="/signup" className="text-[var(--cohe-primary)] font-semibold hover:underline">
                         회원가입
                     </Link>
                 </div>
