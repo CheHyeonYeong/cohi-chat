@@ -53,7 +53,16 @@ public class BookingService {
     @PostConstruct
     void initZoneId() {
         String timezone = googleCalendarProperties.getTimezone();
-        calendarZoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+        if (timezone == null) {
+            calendarZoneId = ZoneId.systemDefault();
+            return;
+        }
+        try {
+            calendarZoneId = ZoneId.of(timezone);
+        } catch (Exception e) {
+            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
+            calendarZoneId = ZoneId.systemDefault();
+        }
     }
 
     @Transactional
@@ -85,7 +94,7 @@ public class BookingService {
     }
 
     private String buildEventSummary(Member guest) {
-        if (guest == null || guest.getDisplayName() == null) {
+        if (guest == null || guest.getDisplayName() == null || guest.getDisplayName().isBlank()) {
             return "미팅";
         }
         return guest.getDisplayName() + "님과의 미팅";

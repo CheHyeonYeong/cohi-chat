@@ -216,8 +216,8 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                         updateEntry(index, { startDate: today, endDate: toLocalDateString(later) });
                                                     }
                                                 } else {
-                                                    if (entry.startDate && entry.endDate) {
-                                                        savedDatesRef.current[index] = { startDate: entry.startDate, endDate: entry.endDate };
+                                                    if (entry.startDate) {
+                                                        savedDatesRef.current[index] = { startDate: entry.startDate, endDate: entry.endDate ?? '' };
                                                     }
                                                     updateEntry(index, { startDate: undefined, endDate: undefined });
                                                 }
