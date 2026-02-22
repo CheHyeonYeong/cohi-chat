@@ -1,6 +1,15 @@
 import type { DateString, ISO8601String, StringTime } from '~/types/base';
 import type { IUserSimple } from '~/types/user';
 
+export type AttendanceStatus =
+    | 'SCHEDULED'
+    | 'ATTENDED'
+    | 'NO_SHOW'
+    | 'HOST_NO_SHOW'
+    | 'CANCELLED'
+    | 'SAME_DAY_CANCEL'
+    | 'LATE';
+
 export interface ITimeSlot {
     id: number;
     userId: string;
@@ -33,6 +42,19 @@ export interface IBookingDetail {
     files: IBookingFile[];
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
+    attendanceStatus: AttendanceStatus;
+    hostId: string | null;
+}
+
+export interface INoShowHistoryItem {
+    id: number;
+    bookingId: number;
+    hostId: string;
+    reportedBy: string;
+    reason: string | null;
+    reportedAt: string;
+    bookingDate: string;
+    bookingTopic: string;
 }
 
 export interface IBookingPayload {

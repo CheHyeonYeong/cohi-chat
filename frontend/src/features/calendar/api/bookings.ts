@@ -1,6 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
 import type { StringTime, ISO8601String } from '~/types/base';
-import type { IBooking, IBookingDetail, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBooking, IBookingDetail, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
@@ -13,6 +13,7 @@ interface BookingFlatResponse {
     id: number;
     timeSlotId: number;
     guestId: string;
+    hostId: string | null;
     when: string;
     startTime: StringTime;
     endTime: StringTime;
@@ -46,6 +47,8 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
         files: [],
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
+        attendanceStatus: b.attendanceStatus as AttendanceStatus,
+        hostId: b.hostId,
     };
 }
 
@@ -72,4 +75,16 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
         body: files,
     });
     return data;
+}
+
+export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
+    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
+        method: 'POST',
+        body: reason !== undefined ? { reason } : undefined,
+    });
+    return toBookingDetail(b);
+}
+
+export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
+    return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
 }

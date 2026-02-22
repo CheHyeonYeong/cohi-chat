@@ -1,7 +1,9 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Button } from "~/components/button";
-import { useBooking, useUploadBookingFile } from "~/features/calendar";
+import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from "~/features/calendar";
+import type { AttendanceStatus } from "~/features/calendar";
+import { useAuth } from "~/features/member";
 import {
     validateFiles,
     getAcceptedFileTypes,
@@ -13,15 +15,37 @@ import { getValidToken } from "~/libs/jwt";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
+const STATUS_LABELS: Record<AttendanceStatus, string> = {
+    SCHEDULED: '예약됨',
+    ATTENDED: '참석',
+    NO_SHOW: '게스트 노쇼',
+    HOST_NO_SHOW: '호스트 노쇼 신고됨',
+    CANCELLED: '취소됨',
+    SAME_DAY_CANCEL: '당일 취소',
+    LATE: '지각',
+};
+
 export default function Booking() {
     const { id } = useParams({ from: '/app/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
+    const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError } = useReportHostNoShow(Number(id));
+    const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<string>('');
+    const [showReportForm, setShowReportForm] = useState(false);
+    const [reportReason, setReportReason] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const isMeetingStarted = useMemo(() => {
+        if (!booking) return false;
+        const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
+        const meetingStart = new Date(booking.when);
+        meetingStart.setHours(h, m, 0, 0);
+        return Date.now() >= meetingStart.getTime();
+    }, [booking]);
 
     if (!booking || isLoading) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
@@ -42,6 +66,10 @@ export default function Booking() {
     const existingFilesCount = booking.files.length;
     const existingTotalSize = booking.files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
     const canUploadMore = existingFilesCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+
+    // 현재 사용자가 게스트인지 판단 (호스트가 아닌 경우)
+    const isGuest = !!currentUser && currentUser.username !== booking.host.username;
+    const canReport = isGuest && booking.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -109,6 +137,15 @@ export default function Booking() {
         }
     };
 
+    const handleReportSubmit = () => {
+        reportNoShow(reportReason || undefined, {
+            onSuccess: () => {
+                setShowReportForm(false);
+                setReportReason('');
+            },
+        });
+    };
+
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8 flex flex-col space-y-4">
@@ -122,6 +159,9 @@ export default function Booking() {
                         <div>{when.getFullYear()}년 {when.getMonth() + 1}월 {when.getDate()}일</div>
                         <div>{booking.timeSlot.startTime} - {booking.timeSlot.endTime}</div>
                     </div>
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                        {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
+                    </span>
                 </div>
 
                 <div className="flex flex-row space-x-2 items-center">
@@ -129,6 +169,71 @@ export default function Booking() {
                 </div>
 
                 <hr className="w-full" />
+
+                {canReport && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h2 className="text-lg font-semibold mb-2">호스트 노쇼 신고</h2>
+                        {!showReportForm ? (
+                            <Button
+                                type="button"
+                                variant="primary"
+                                onClick={() => setShowReportForm(true)}
+                            >
+                                호스트 노쇼 신고
+                            </Button>
+                        ) : (
+                            <div className="flex flex-col space-y-2">
+                                <textarea
+                                    className="w-full border border-gray-300 rounded p-2 text-sm resize-none"
+                                    rows={3}
+                                    placeholder="신고 사유를 입력해주세요 (선택)"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                />
+                                {reportError && (
+                                    <p className="text-red-600 text-sm">{reportError.message}</p>
+                                )}
+                                <div className="flex flex-row space-x-2">
+                                    <Button
+                                        type="button"
+                                        variant="primary"
+                                        loading={isReporting}
+                                        onClick={handleReportSubmit}
+                                    >
+                                        신고하기
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => {
+                                            setShowReportForm(false);
+                                            setReportReason('');
+                                        }}
+                                    >
+                                        취소
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {isGuest && noShowHistory && noShowHistory.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h2 className="text-lg font-semibold mb-2 text-red-700">
+                            이 호스트의 노쇼 이력 {noShowHistory.length}건
+                        </h2>
+                        <ul className="space-y-1">
+                            {noShowHistory.map((item) => (
+                                <li key={item.id} className="text-sm text-red-600 flex flex-row space-x-2">
+                                    <span>{item.bookingDate}</span>
+                                    <span>/</span>
+                                    <span>{item.bookingTopic}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div className="bg-gray-50 p-4 rounded-lg">
                     <h2 className="text-lg font-semibold mb-2">파일 첨부</h2>
