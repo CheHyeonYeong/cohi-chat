@@ -23,6 +23,7 @@ export function getErrorMessage(error: unknown, fallback = '알 수 없는 오�
             return error.message;
         }
         // 상태 코드별 기본 메시지 시도
+        // httpClient는 항상 { cause: response.status }로 숫자를 설정하므로 숫자 체크만으로 충분합니다.
         const status = error.cause;
         if (typeof status === 'number' && HTTP_STATUS_MESSAGES[status]) {
             return HTTP_STATUS_MESSAGES[status];

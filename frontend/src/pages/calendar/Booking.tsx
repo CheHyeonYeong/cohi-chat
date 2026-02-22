@@ -39,6 +39,7 @@ export default function Booking() {
             </div>
         </div>
     );
+    // error 없이 data가 undefined인 경우: API가 빈 응답(204 등)을 반환하거나 ID에 해당하는 예약이 없는 경우
     if (!booking) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
@@ -214,7 +215,7 @@ export default function Booking() {
                                 className="text-red-400 hover:text-red-600 text-sm ml-2"
                                 aria-label="에러 메시지 닫기"
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
                     </div>
