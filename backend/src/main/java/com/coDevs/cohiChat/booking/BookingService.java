@@ -60,6 +60,7 @@ public class BookingService {
         validateNotSelfBooking(guest, timeSlot);
         validateWeekdayAvailable(timeSlot, request.getBookingDate());
         validateNotDuplicateBooking(timeSlot, request.getBookingDate(), null);
+        validateTopic(timeSlot.getUserId(), request.getTopic());
 
         Booking booking = Booking.create(
             timeSlot,
@@ -143,6 +144,20 @@ public class BookingService {
         );
         if (exists) {
             throw new CustomException(ErrorCode.BOOKING_ALREADY_EXISTS);
+        }
+    }
+
+    /**
+     * 예약 주제(topic)가 호스트 캘린더에 정의된 topics 목록에 포함되는지 검증
+     * @param hostId 호스트 ID
+     * @param topic 검증할 주제
+     */
+    private void validateTopic(UUID hostId, String topic) {
+        Calendar calendar = calendarRepository.findById(hostId)
+            .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        if (!calendar.getTopics().contains(topic)) {
+            throw new CustomException(ErrorCode.INVALID_TOPIC);
         }
     }
 
@@ -330,6 +345,7 @@ public class BookingService {
 
         validateWeekdayAvailable(newTimeSlot, request.getBookingDate());
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
+        validateTopic(newTimeSlot.getUserId(), request.getTopic());
 
         booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
 

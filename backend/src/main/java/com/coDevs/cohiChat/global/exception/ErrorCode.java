@@ -67,6 +67,7 @@ public enum ErrorCode {
 	NOSHOW_NOT_REPORTABLE(HttpStatus.UNPROCESSABLE_ENTITY, "노쇼 신고가 불가능한 예약 상태입니다."),
 	MEETING_NOT_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "미팅 시작 시간이 지나지 않았습니다."),
 	NOSHOW_ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 노쇼 신고가 접수된 예약입니다."),
+	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
 
 	/**
 	 * 파일 관련 예외들.

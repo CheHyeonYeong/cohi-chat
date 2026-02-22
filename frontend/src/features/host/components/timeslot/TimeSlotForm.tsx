@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import Button from '~/components/button/Button';
 
 export interface TimeSlotEntry {
     weekdays: number[];
@@ -6,6 +7,10 @@ export interface TimeSlotEntry {
     endTime: string;
     /** 서버에서 불러온 기존 타임슬롯의 ID. undefined면 신규. */
     existingId?: number;
+}
+
+function isInvalidTimeRange(startTime: string, endTime: string): boolean {
+    return startTime >= endTime;
 }
 
 interface TimeSlotFormProps {
@@ -37,6 +42,16 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPending, deletingId, errors }: TimeSlotFormProps) {
     const [expandedIndex, setExpandedIndex] = useState(0);
+
+    const timeValidationErrors = useMemo(() => {
+        return entries.map((entry) => {
+            if (entry.existingId != null) return null;
+            if (isInvalidTimeRange(entry.startTime, entry.endTime)) {
+                return '시작 시간은 종료 시간보다 이전이어야 합니다';
+            }
+            return null;
+        });
+    }, [entries]);
 
     const updateEntry = (index: number, patch: Partial<TimeSlotEntry>) => {
         const updated = entries.map((e, i) => (i === index ? { ...e, ...patch } : e));
@@ -168,6 +183,16 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                         </select>
                                     </div>
                                 </div>
+
+                                {/* Inline time validation error */}
+                                {timeValidationErrors[index] && (
+                                    <p
+                                        data-testid="time-validation-error"
+                                        className="text-sm text-red-500 mt-2"
+                                    >
+                                        {timeValidationErrors[index]}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -189,18 +214,15 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
             ))}
 
             {/* Save */}
-            <button
-                type="button"
+            <Button
+                variant="primary"
+                size="lg"
                 onClick={onSave}
-                disabled={isPending}
-                className={`w-full mt-6 py-3 rounded-lg font-semibold transition-colors ${
-                    isPending
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'cohe-btn-primary'
-                }`}
+                loading={isPending}
+                className="w-full mt-6 rounded-lg"
             >
                 {isPending ? '저장 중...' : '저장하기'}
-            </button>
+            </Button>
         </div>
     );
 }

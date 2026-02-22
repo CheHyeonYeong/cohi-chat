@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import Button from '~/components/button/Button';
 
 export interface Step1Data {
     topics: string[];
@@ -62,13 +63,14 @@ export default function RegisterStep1({ data, onChange, errors }: RegisterStep1P
                         placeholder="주제를 입력하고 Enter"
                         className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] placeholder-gray-400 focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)]"
                     />
-                    <button
-                        type="button"
+                    <Button
+                        variant="outline"
+                        size="md"
                         onClick={addTopic}
-                        className="px-4 py-2.5 rounded-lg cohe-btn-outline text-sm font-medium"
+                        className="rounded-lg"
                     >
                         추가
-                    </button>
+                    </Button>
                 </div>
                 {errors.topics && (
                     <p className="mt-1.5 text-sm text-red-500">{errors.topics}</p>

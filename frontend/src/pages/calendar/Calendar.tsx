@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '~/libs/cn';
 
 import { useSearch, useParams, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, useCallback } from 'react';
@@ -19,6 +19,7 @@ import type { ITimeSlot } from '~/features/calendar';
 
 import './calendar.less';
 import { useAuth } from '~/features/member';
+import { useHost } from '~/hooks/useHost';
 
 function Calendar({ baseDate }: { baseDate?: Date }) {
     const { year, month } = useSearch({ from: '/app/calendar/$slug' });
@@ -28,6 +29,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
 
     const navigate = useNavigate();
     const auth = useAuth();
+    const { data: host } = useHost(slug);
     const calendar = useCalendarEvent(slug);
     const { data: timeslots = [] } = useTimeslots(slug);
     const { data: bookingsApi = [], refetch: refetchBookings } = useBookings(slug, selectedDate);
@@ -75,7 +77,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
 
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
-            <div className={clsx("flex flex-col w-full max-w-4xl mx-auto px-8 space-y-4")}>
+            <div className={cn("flex flex-col w-full max-w-4xl mx-auto px-8 space-y-4")}>
                 <div className='flex flex-row justify-between'>
                     <div className='flex flex-row gap-4'>
                         <Link to='/app' className='bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>첫 화면으로</Link>
@@ -83,11 +85,11 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                     </div>
 
                     <h2 className="text-primary text-2xl">
-                        <span className="font-bold">{slug}</span>님과 약속잡기
+                        <span className="font-bold">{host?.displayName ?? slug}</span>님과 약속잡기
                     </h2>
                 </div>
 
-                {!selectedTimeslot && <div className={clsx("flex flex-col gap-4")}>
+                {!selectedTimeslot && <div className={cn("flex flex-col gap-4")}>
                     <Navigator
                         slug={slug}
                         year={year}
@@ -97,7 +99,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
                         onNext={handleNext}
                     />
 
-                    <div className={clsx("flex flex-row gap-8 w-full")}>
+                    <div className={cn("flex flex-row gap-8 w-full")}>
                         <Body
                             year={year}
                             month={month}

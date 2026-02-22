@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { Link } from "@tanstack/react-router";
-import clsx from "clsx";
 
 import { Button } from "~/components/button";
 import { useAuth } from "~/features/member";
@@ -53,7 +52,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}
                     key={`${timeslot.startTime}-${timeslot.endTime}`}
-                    className={clsx("w-full h-fit py-2 px-4 rounded-md")}
+                    className="w-full h-fit"
                     onClick={() => onSelectTimeslot(timeslot)}
                 >
                     <span role="time">{timeslot.startTime}</span>
