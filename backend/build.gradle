@@ -31,8 +31,9 @@ dependencyManagement {
 
 dependencies {
 
-    // AWS SDK v2 - S3
+    // AWS SDK v2 - S3, Secrets Manager
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:secretsmanager'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
