@@ -14,13 +14,13 @@ export default function OAuthCallbackPage() {
         hasInitiated.current = true;
 
         if (error || !code || !provider || !state) {
-            navigate({ to: '/app/login' });
+            navigate({ to: '/login' });
             return;
         }
 
         loginMutation.mutateAsync({ provider, code, state })
-            .then(() => navigate({ to: '/app' }))
-            .catch(() => navigate({ to: '/app/login' }));
+            .then(() => navigate({ to: '/' }))
+            .catch(() => navigate({ to: '/login' }));
     }, [code, error, provider, state, navigate, loginMutation]);
 
     return (
