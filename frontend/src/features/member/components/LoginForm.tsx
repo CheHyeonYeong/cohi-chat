@@ -4,6 +4,7 @@ import Button from '~/components/button/Button';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
+import { getErrorMessage } from '~/libs/errorUtils';
 
 interface LoginFormValues {
     username: string;
@@ -147,7 +148,7 @@ export function LoginForm() {
 
                     {loginMutation.isError && (
                         <div className="text-red-600 text-sm">
-                            {loginMutation.error?.message || '로그인에 실패했습니다. 다시 시도해주세요.'}
+                            {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
                         </div>
                     )}
 

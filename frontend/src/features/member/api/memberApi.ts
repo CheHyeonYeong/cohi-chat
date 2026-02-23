@@ -39,7 +39,7 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
     });
 
     if (!response) {
-        throw new Error('Signup failed');
+        throw new Error('회원가입에 실패했습니다.');
     }
 
     return response;

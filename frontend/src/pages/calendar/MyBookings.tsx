@@ -2,6 +2,7 @@ import { Link, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import Pagination from '~/components/Pagination';
 import { useMyBookings } from '~/features/calendar';
+import { getErrorMessage } from '~/libs/errorUtils';
 
 export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
@@ -18,7 +19,7 @@ export default function MyBookings() {
                 {isLoading && <div>내 예약 목록을 불러오고 있습니다...</div>}
                 {!!error && <div className="text-red-500 space-y-2">
                     <div className="text-lg font-bold">오류 발생</div>
-                    <div className="text-sm">{error.message}</div>
+                    <div className="text-sm">{getErrorMessage(error)}</div>
                     <Link to="/login" className="inline-block bg-primary text-white px-4 py-2 rounded-md">로그인하기</Link>
                 </div>}
 
