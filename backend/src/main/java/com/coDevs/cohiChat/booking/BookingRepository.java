@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,6 +76,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findFutureBookingsByGuestId(
         @Param("guestId") UUID guestId,
         @Param("today") LocalDate today,
+        @Param("status") AttendanceStatus status
+    );
+
+    /**
+     * 호스트 ID 목록의 커피챗 횟수 배치 집계 (N+1 방지)
+     */
+    @Query("""
+        SELECT b.timeSlot.userId AS hostId, COUNT(b) AS count
+        FROM Booking b
+        WHERE b.timeSlot.userId IN :hostIds
+          AND b.attendanceStatus = :status
+        GROUP BY b.timeSlot.userId
+    """)
+    List<HostChatCount> countAttendedByHostIds(
+        @Param("hostIds") Collection<UUID> hostIds,
         @Param("status") AttendanceStatus status
     );
 }

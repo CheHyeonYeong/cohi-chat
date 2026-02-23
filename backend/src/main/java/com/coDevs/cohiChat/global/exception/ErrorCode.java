@@ -19,6 +19,7 @@ public enum ErrorCode {
 	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "유효하지 않은 비밀번호입니다."),
 	INVALID_DISPLAY_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 닉네임입니다."),
 	INVALID_ROLE(HttpStatus.BAD_REQUEST, "유효하지 않은 권한입니다."),
+	INVALID_PROVIDER(HttpStatus.BAD_REQUEST, "유효하지 않은 인증 제공자입니다."),
 	NO_UPDATE_FIELDS(HttpStatus.BAD_REQUEST, "수정할 항목을 최소 하나 이상 입력해주세요."),
 	INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
