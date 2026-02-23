@@ -1,5 +1,5 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -17,10 +17,8 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
-import { LogoutButton } from '~/components/button/LogoutButton';
-import { useAuth } from '~/features/member';
 import { useBooking, useUploadBookingFile } from '~/features/calendar';
 import type { IBookingFile } from '~/features/calendar';
 import {
@@ -69,7 +67,7 @@ function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
                 aria-label="드래그로 순서 변경"
                 className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 select-none px-1"
             >
-                &#8801;
+                <span aria-hidden="true">&#8801;</span>
             </button>
 
             {/* File name (download on click) */}
@@ -97,7 +95,6 @@ export default function Booking() {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { isAuthenticated } = useAuth();
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -106,12 +103,22 @@ export default function Booking() {
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Sortable file list state
+    // Sortable file list — preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
 
     useEffect(() => {
-        if (booking) setFileOrder(booking.files);
+        if (!booking) return;
+        setFileOrder((prev) => {
+            // Keep user's custom order; append only newly added files at the end
+            const existingIds = new Set(prev.map((f) => f.id));
+            const valid = prev.filter((f) => booking.files.some((bf) => bf.id === f.id));
+            const added = booking.files.filter((f) => !existingIds.has(f.id));
+            return [...valid, ...added];
+        });
     }, [booking]);
+
+    // Stable items array for SortableContext (avoids recreating on every render)
+    const fileIds = useMemo(() => fileOrder.map((f) => f.id), [fileOrder]);
 
     // DnD sensors
     const sensors = useSensors(
@@ -127,8 +134,8 @@ export default function Booking() {
             setValidationErrors([]);
             return;
         }
-        const existingCount = fileOrder.length;
-        const existingSize = fileOrder.reduce((sum, f) => sum + (f.fileSize || 0), 0);
+        const existingCount = booking?.files.length ?? 0;
+        const existingSize = booking?.files.reduce((sum, f) => sum + (f.fileSize || 0), 0) ?? 0;
         const result = validateFiles(files, existingCount, existingSize);
         setValidationErrors(result.errors);
         setSelectedFiles(Array.from(files));
@@ -231,22 +238,15 @@ export default function Booking() {
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
-            {/* Header */}
-            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
-                <Link to="/" className="flex items-center gap-2">
-                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
-                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-                </Link>
-                <div className="flex items-center gap-3">
-                    {isAuthenticated && <LogoutButton />}
-                </div>
-            </header>
+            <PageHeader />
 
-            {/* Content */}
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {/* Back link */}
-                    <Link to="/my-bookings" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohe-primary)]">
+                    <Link
+                        to="/my-bookings"
+                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohe-primary)]"
+                    >
                         &larr; 내 예약 목록으로
                     </Link>
 
@@ -255,7 +255,7 @@ export default function Booking() {
                         <div className="flex items-center gap-4 mb-5">
                             <div className="w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
                                 <span className="text-lg font-semibold text-[var(--cohe-primary)]">
-                                    {booking.host.displayName.charAt(0)}
+                                    {booking.host.displayName[0] ?? '?'}
                                 </span>
                             </div>
                             <div>
@@ -314,7 +314,7 @@ export default function Booking() {
                                             : 'border-gray-200 hover:border-[var(--cohe-primary)]/50 hover:bg-gray-50',
                                     )}
                                 >
-                                    <span className="text-2xl select-none">&#8679;</span>
+                                    <span className="text-2xl select-none" aria-hidden="true">&#8679;</span>
                                     <p className="text-sm text-gray-500">
                                         {isDraggingOver
                                             ? '파일을 놓으세요'
@@ -341,8 +341,8 @@ export default function Booking() {
                                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                         <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
                                         <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
-                                            {validationErrors.map((err, idx) => (
-                                                <li key={idx}>{err.message}</li>
+                                            {validationErrors.map((err) => (
+                                                <li key={err.message}>{err.message}</li>
                                             ))}
                                         </ul>
                                     </div>
@@ -381,10 +381,7 @@ export default function Booking() {
                                     collisionDetection={closestCenter}
                                     onDragEnd={handleDragEnd}
                                 >
-                                    <SortableContext
-                                        items={fileOrder.map((f) => f.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
+                                    <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
                                         <ul className="space-y-2">
                                             {fileOrder.map((file) => (
                                                 <SortableFileItem

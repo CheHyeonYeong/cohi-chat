@@ -1,33 +1,23 @@
-import { Link, useSearch } from '@tanstack/react-router';
-import { useState } from 'react';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { useSearch, useNavigate } from '@tanstack/react-router';
 import LinkButton from '~/components/button/LinkButton';
-import { LogoutButton } from '~/components/button/LogoutButton';
-import { useAuth } from '~/features/member';
+import PageHeader from '~/components/PageHeader';
 import Pagination from '~/components/Pagination';
 import { useMyBookings } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
 
 export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
-    const [currentPage, setCurrentPage] = useState<number>(page);
-    const { data: bookings, isLoading, error } = useMyBookings({ page: currentPage, pageSize });
-    const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    const { data: bookings, isLoading, error } = useMyBookings({ page, pageSize });
+
+    const handlePageChange = (newPage: number) => {
+        navigate({ to: '/my-bookings', search: { page: newPage, pageSize } });
+    };
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
-            {/* Header */}
-            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
-                <Link to="/" className="flex items-center gap-2">
-                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
-                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-                </Link>
-                <div className="flex items-center gap-3">
-                    {isAuthenticated && <LogoutButton />}
-                </div>
-            </header>
+            <PageHeader />
 
-            {/* Content */}
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-2xl font-bold text-[var(--cohe-text-dark)] mb-6">내 예약 목록</h1>
@@ -58,10 +48,10 @@ export default function MyBookings() {
                             </div>
 
                             <Pagination
-                                page={currentPage}
+                                page={page}
                                 pageSize={pageSize}
                                 totalCount={bookings.totalCount}
-                                onPageChange={setCurrentPage}
+                                onPageChange={handlePageChange}
                             />
                         </>
                     )}
