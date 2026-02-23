@@ -25,6 +25,7 @@ import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -42,6 +43,9 @@ class CalendarServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private GoogleCalendarService googleCalendarService;
 
     @Mock
     private Member hostMember;

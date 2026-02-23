@@ -16,6 +16,7 @@ import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -31,6 +32,7 @@ public class CalendarService {
     private final MemberRepository memberRepository;
     private final MemberService memberService;
     private final BookingService bookingService;
+    private final GoogleCalendarService googleCalendarService;
 
     /**
      * 캘린더를 생성한다.
@@ -46,6 +48,8 @@ public class CalendarService {
             member.promoteToHost();
             memberRepository.save(member);
         }
+
+        googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
 
         Calendar calendar = Calendar.create(
             member.getId(),
@@ -78,6 +82,8 @@ public class CalendarService {
 
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
 
         calendar.update(
             request.getTopics(),

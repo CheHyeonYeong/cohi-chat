@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '~/components/button/Button';
+import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -55,8 +56,27 @@ function CheckIcon({ className = '' }: { className?: string }) {
 export default function RegisterStep2({ data, onChange, errors }: RegisterStep2Props) {
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
+    const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
+    const [emailCopied, setEmailCopied] = useState(false);
     const isValid = CALENDAR_ID_REGEX.test(data.googleCalendarId);
     const hasInput = data.googleCalendarId.length > 0;
+
+    useEffect(() => {
+        getServiceAccountEmail()
+            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
+            .catch(() => {/* 이메일 미표시 */});
+    }, []);
+
+    const handleCopyEmail = async () => {
+        if (!serviceAccountEmail) return;
+        try {
+            await navigator.clipboard.writeText(serviceAccountEmail);
+            setEmailCopied(true);
+            setTimeout(() => setEmailCopied(false), 2000);
+        } catch {
+            // clipboard API 미지원 시 무시
+        }
+    };
 
     const handlePaste = async () => {
         try {
@@ -87,7 +107,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Left: Instruction cards */}
                 <div className="flex-1 space-y-4">
-                    {/* Step 1 */}
+                    {/* Step 1 — 서비스 어카운트 공유 설정 */}
                     <div className="bg-white rounded-2xl p-5 shadow-sm">
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
@@ -97,6 +117,49 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                             </div>
                             <div className="flex-1">
                                 <p className="text-xs text-gray-500 mb-1">1단계</p>
+                                <h3 className="font-bold text-[var(--cohe-text-dark)] mb-3">
+                                    서비스 어카운트를 캘린더 편집자로 공유
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                                    coheChat이 캘린더에 예약을 등록하려면, 아래 이메일을 캘린더 편집자로 추가해야 합니다.
+                                </p>
+                                <div className="flex items-center gap-2 bg-[var(--cohe-bg-light)] rounded-lg px-3 py-2 mb-3">
+                                    <span className="flex-1 text-sm font-mono text-[var(--cohe-text-dark)] break-all select-all">
+                                        {serviceAccountEmail || '설정 중...'}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleCopyEmail}
+                                        disabled={!serviceAccountEmail}
+                                        className="flex-shrink-0 text-gray-400 hover:text-[var(--cohe-primary)] transition-colors disabled:opacity-40"
+                                        title="이메일 복사"
+                                    >
+                                        {emailCopied ? (
+                                            <CheckIcon className="w-4 h-4 text-green-500" />
+                                        ) : (
+                                            <CopyIcon className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                                    <li>Google Calendar 설정 &gt; <strong>특정 사용자와 공유</strong></li>
+                                    <li>위 이메일 주소 입력 후 추가</li>
+                                    <li>권한을 <strong>변경 및 이벤트 관리</strong>(편집자)로 설정</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                    2
+                                </span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1">2단계</p>
                                 <h3 className="font-bold text-[var(--cohe-text-dark)] mb-3">
                                     Google Calendar 접속
                                 </h3>
@@ -117,16 +180,16 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                         </div>
                     </div>
 
-                    {/* Step 2 & 3 side by side */}
+                    {/* Step 3 & 4 side by side */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Step 2 */}
+                        {/* Step 3 */}
                         <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
-                                    2
+                                    3
                                 </span>
                                 <div>
-                                    <p className="text-xs text-gray-500">2단계</p>
+                                    <p className="text-xs text-gray-500">3단계</p>
                                     <h3 className="font-bold text-[var(--cohe-text-dark)]">캘린더 설정 열기</h3>
                                 </div>
                             </div>
@@ -140,14 +203,14 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                             </p>
                         </div>
 
-                        {/* Step 3 */}
+                        {/* Step 4 */}
                         <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
-                                    3
+                                    4
                                 </span>
                                 <div>
-                                    <p className="text-xs text-gray-500">3단계</p>
+                                    <p className="text-xs text-gray-500">4단계</p>
                                     <h3 className="font-bold text-[var(--cohe-text-dark)]">캘린더 ID 복사</h3>
                                 </div>
                             </div>

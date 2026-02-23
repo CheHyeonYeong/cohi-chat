@@ -67,6 +67,9 @@ public enum ErrorCode {
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
 	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
 
+	GOOGLE_CALENDAR_ACCESS_DENIED(HttpStatus.BAD_REQUEST,
+		"Google Calendar에 접근할 수 없습니다. 서비스 어카운트 이메일을 캘린더 편집자로 공유했는지 확인해주세요."),
+
 	/**
 	 * 파일 관련 예외들.
 	 */

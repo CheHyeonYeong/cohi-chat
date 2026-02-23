@@ -41,7 +41,7 @@ class GoogleCalendarServiceTest {
         properties.setDefaultCalendarId(TEST_CALENDAR_ID);
         properties.setTimezone(TEST_TIMEZONE);
 
-        googleCalendarService = new GoogleCalendarService(mockCalendar, properties);
+        googleCalendarService = new GoogleCalendarService(mockCalendar, properties, mock(GoogleCalendarConfig.class));
     }
 
     @Nested
@@ -204,7 +204,7 @@ class GoogleCalendarServiceTest {
         void createEvent_whenDisabled_returnsNull() {
             // given
             GoogleCalendarProperties properties = new GoogleCalendarProperties();
-            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties);
+            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties, mock(GoogleCalendarConfig.class));
 
             // when
             String result = disabledService.createEvent(
@@ -224,7 +224,7 @@ class GoogleCalendarServiceTest {
         void updateEvent_whenDisabled_returnsFalse() {
             // given
             GoogleCalendarProperties properties = new GoogleCalendarProperties();
-            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties);
+            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties, mock(GoogleCalendarConfig.class));
 
             // when
             boolean result = disabledService.updateEvent(
@@ -245,7 +245,7 @@ class GoogleCalendarServiceTest {
         void deleteEvent_whenDisabled_returnsFalse() {
             // given
             GoogleCalendarProperties properties = new GoogleCalendarProperties();
-            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties);
+            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties, mock(GoogleCalendarConfig.class));
 
             // when
             boolean result = disabledService.deleteEvent("event-id", null);
@@ -259,7 +259,7 @@ class GoogleCalendarServiceTest {
         void getEvent_whenDisabled_returnsNull() {
             // given
             GoogleCalendarProperties properties = new GoogleCalendarProperties();
-            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties);
+            GoogleCalendarService disabledService = new GoogleCalendarService(null, properties, mock(GoogleCalendarConfig.class));
 
             // when
             Event result = disabledService.getEvent("event-id", null);

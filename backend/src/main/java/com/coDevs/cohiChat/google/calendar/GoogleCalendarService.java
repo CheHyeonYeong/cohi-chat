@@ -7,6 +7,8 @@ import java.time.ZoneId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
@@ -20,13 +22,16 @@ public class GoogleCalendarService {
 
     private final Calendar calendar;
     private final GoogleCalendarProperties properties;
+    private final GoogleCalendarConfig googleCalendarConfig;
 
     public GoogleCalendarService(
         @Autowired(required = false) Calendar calendar,
-        GoogleCalendarProperties properties
+        GoogleCalendarProperties properties,
+        GoogleCalendarConfig googleCalendarConfig
     ) {
         this.calendar = calendar;
         this.properties = properties;
+        this.googleCalendarConfig = googleCalendarConfig;
     }
 
     public String createEvent(
@@ -123,6 +128,31 @@ public class GoogleCalendarService {
         } catch (IOException e) {
             log.error("Failed to get Google Calendar event: {}", eventId, e);
             return null;
+        }
+    }
+
+    public String getServiceAccountEmail() {
+        return googleCalendarConfig.getServiceAccountEmail();
+    }
+
+    public void validateCalendarAccess(String googleCalendarId) {
+        if (calendar == null) {
+            log.warn("Google Calendar not configured, skipping access validation");
+            return;
+        }
+        String resolvedId = resolveCalendarId(googleCalendarId);
+        if (resolvedId == null || resolvedId.isBlank()) {
+            log.warn("Calendar ID not configured, skipping access validation");
+            return;
+        }
+        try {
+            calendar.events()
+                .list(resolvedId)
+                .setMaxResults(1)
+                .execute();
+        } catch (IOException e) {
+            log.error("Calendar access denied for calendarId: {}", googleCalendarId, e);
+            throw new CustomException(ErrorCode.GOOGLE_CALENDAR_ACCESS_DENIED);
         }
     }
 
