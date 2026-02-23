@@ -26,7 +26,7 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 };
 
 export default function Booking() {
-    const { id } = useParams({ from: '/app/booking/$id' });
+    const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
@@ -156,7 +156,7 @@ export default function Booking() {
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8 flex flex-col space-y-4">
-                <Link to='/app/my-bookings' className='inline-block w-fit bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>내 예약 목록으로</Link>
+                <Link to='/my-bookings' className='inline-block w-fit bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>내 예약 목록으로</Link>
 
                 <h1 className="text-2xl font-bold">{booking.host.displayName}님과 약속잡기</h1>
 

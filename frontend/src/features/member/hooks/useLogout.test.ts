@@ -77,7 +77,7 @@ describe('useLogout', () => {
 
         await result.current.logout();
 
-        expect(mockNavigate).toHaveBeenCalledWith({ to: '/app/login', replace: true });
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
     it('should clear localStorage even if API call fails', async () => {

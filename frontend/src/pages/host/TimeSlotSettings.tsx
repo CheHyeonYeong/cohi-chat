@@ -177,7 +177,7 @@ export default function TimeSlotSettings() {
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
-                    <LinkButton variant="primary" to="/app/host/register">
+                    <LinkButton variant="primary" to="/host/register">
                         캘린더 연동하기
                     </LinkButton>
                 </div>
