@@ -18,6 +18,7 @@ import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.RefreshTokenRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateProfileRequestDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
@@ -107,5 +108,14 @@ public class MemberController {
 	@GetMapping("/v1/hosts")
 	public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> getHosts() {
 		return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
+	}
+
+	@PatchMapping("/v1/me/profile")
+	@PreAuthorize("hasRole('HOST')")
+	public ResponseEntity<ApiResponseDTO<HostResponseDTO>> updateProfile(
+		@Valid @RequestBody UpdateProfileRequestDTO request,
+		Principal principal) {
+		HostResponseDTO response = memberService.updateProfile(principal.getName(), request);
+		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 }

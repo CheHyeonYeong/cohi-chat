@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -10,6 +11,7 @@ import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
+import com.coDevs.cohiChat.member.request.UpdateProfileRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
@@ -18,19 +20,19 @@ import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
+import com.coDevs.cohiChat.global.common.TokenHashUtils;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -126,7 +128,7 @@ public class MemberService {
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		String refreshTokenHash = hashToken(refreshTokenValue);
+		String refreshTokenHash = TokenHashUtils.hash(refreshTokenValue);
 		RefreshToken refreshToken = RefreshToken.create(
 			refreshTokenHash,
 			member.getUsername(),
@@ -257,10 +259,29 @@ public class MemberService {
 
 	@Transactional(readOnly = true)
 	public List<HostResponseDTO> getActiveHosts() {
-		return memberRepository.findByRoleAndIsDeletedFalse(Role.HOST)
+		List<Member> hosts = memberRepository.findByRoleAndIsDeletedFalse(Role.HOST);
+		if (hosts.isEmpty()) return List.of();
+		List<UUID> hostIds = hosts.stream().map(Member::getId).toList();
+		Map<UUID, Long> chatCounts = bookingRepository
+			.countAttendedByHostIds(hostIds, AttendanceStatus.ATTENDED)
 			.stream()
-			.map(HostResponseDTO::from)
+			.collect(Collectors.toMap(HostChatCount::getHostId, HostChatCount::getCount));
+		return hosts.stream()
+			.map(h -> HostResponseDTO.from(h, chatCounts.getOrDefault(h.getId(), 0L)))
 			.toList();
+	}
+
+	@Transactional
+	public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
+		Member member = getMember(username);
+		member.updateProfile(req.getJob(), req.getProfileImageUrl());
+		long chatCount = bookingRepository
+			.countAttendedByHostIds(List.of(member.getId()), AttendanceStatus.ATTENDED)
+			.stream()
+			.findFirst()
+			.map(HostChatCount::getCount)
+			.orElse(0L);
+		return HostResponseDTO.from(member, chatCount);
 	}
 
 	public void logout(String username) {
@@ -286,7 +307,7 @@ public class MemberService {
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
-		String tokenHash = hashToken(refreshTokenValue);
+		String tokenHash = TokenHashUtils.hash(refreshTokenValue);
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
@@ -308,13 +329,4 @@ public class MemberService {
 			.build();
 	}
 
-	private String hashToken(String token) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(hash);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException("SHA-256 algorithm not available", e);
-		}
-	}
 }

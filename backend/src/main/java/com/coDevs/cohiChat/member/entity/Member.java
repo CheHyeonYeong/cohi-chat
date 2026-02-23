@@ -52,8 +52,12 @@ public class Member {
 	@Column(length = 255, nullable = false, unique = true)
 	private String email;
 
-	@Column(name = "hashed_password", nullable = false)
+	@Column(name = "hashed_password")
 	private String hashedPassword;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "provider", nullable = false, length = 20)
+	private Provider provider = Provider.LOCAL;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false, length = 20)
@@ -76,35 +80,61 @@ public class Member {
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
 
-	public static Member create(
+	@Column(name = "job", length = 100)
+	private String job;
 
+	@Column(name = "profile_image_url", length = 500)
+	private String profileImageUrl;
+
+	public static Member create(
 		String username,
 		String displayName,
 		String email,
 		String hashedPassword,
 		Role role
 	) {
-		validateRequired(username, displayName, email, hashedPassword, role);
+		validateRequired(username, displayName, email, role);
+		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
 		Member member = new Member();
 		member.username = username;
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
+		// provider는 필드 기본값 Provider.LOCAL 사용
 		member.role = role;
 		member.isDeleted = false;
 
 		return member;
 	}
 
-	private static void validateRequired(String username, String displayName, String email, String hashedPassword, Role role) {
+	public static Member createOAuth(
+		String username,
+		String displayName,
+		String email,
+		Provider provider,
+		Role role
+	) {
+		validateRequired(username, displayName, email, role);
+		if (provider == null) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
+		Member member = new Member();
+		member.username = username;
+		member.displayName = displayName;
+		member.email = email;
+		member.hashedPassword = null;
+		member.provider = provider;
+		member.role = role;
+		member.isDeleted = false;
+
+		return member;
+	}
+
+	private static void validateRequired(String username, String displayName, String email, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
 		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
-		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
-
 	}
 
 	public void updateInfo(String displayName, String hashedPassword) {
@@ -121,6 +151,11 @@ public class Member {
 			throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
 		}
 		this.displayName = displayName;
+	}
+
+	public void updateProfile(String job, String profileImageUrl) {
+		if (job != null) this.job = job;
+		if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
 	}
 
 	public void softDelete() {
