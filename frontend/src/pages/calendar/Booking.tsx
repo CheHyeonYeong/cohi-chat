@@ -1,83 +1,176 @@
-import { Link, useParams } from "@tanstack/react-router";
-import { useState, useRef } from "react";
-import { Button } from "~/components/button";
-import { useBooking, useUploadBookingFile } from "~/features/calendar";
+import { Link, useParams } from '@tanstack/react-router';
+import { useState, useRef, useEffect } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+    arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { Button } from '~/components/button';
+import { LogoutButton } from '~/components/button/LogoutButton';
+import { useAuth } from '~/features/member';
+import { useBooking, useUploadBookingFile } from '~/features/calendar';
+import type { IBookingFile } from '~/features/calendar';
 import {
     validateFiles,
     getAcceptedFileTypes,
     formatFileSize,
     FILE_UPLOAD_LIMITS,
     type FileValidationError,
-} from "~/libs/fileValidation";
-import { getValidToken } from "~/libs/jwt";
+} from '~/libs/fileValidation';
+import { getValidToken } from '~/libs/jwt';
+import { cn } from '~/libs/cn';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+/* ─── Sortable file item ─────────────────────────────────────────────────── */
+
+interface SortableFileItemProps {
+    file: IBookingFile;
+    onDownload: (fileId: number, fileName: string) => void;
+}
+
+function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: file.id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <li
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                'flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100',
+                isDragging && 'opacity-50 shadow-lg',
+            )}
+        >
+            {/* Drag handle */}
+            <button
+                type="button"
+                {...attributes}
+                {...listeners}
+                aria-label="드래그로 순서 변경"
+                className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 select-none px-1"
+            >
+                &#8801;
+            </button>
+
+            {/* File name (download on click) */}
+            <button
+                type="button"
+                onClick={() =>
+                    onDownload(file.id, file.originalFileName || file.file.split('/').pop() || 'download')
+                }
+                className="text-blue-600 hover:underline flex-1 truncate text-left text-sm"
+            >
+                {file.originalFileName || file.file.split('/').pop()}
+            </button>
+
+            {/* File size */}
+            {file.fileSize != null && (
+                <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.fileSize)}</span>
+            )}
+        </li>
+    );
+}
+
+/* ─── Main page ──────────────────────────────────────────────────────────── */
 
 export default function Booking() {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { isAuthenticated } = useAuth();
+
+    // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<string>('');
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Sortable file list state
+    const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
 
-    if (!booking || isLoading) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
-            <div className="w-full max-w-4xl mx-auto px-8">
-                예약 정보를 불러오고 있습니다...
-            </div>
-        </div>
-    );
-    if (error) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
-            <div className="w-full max-w-4xl mx-auto px-8">
-                예약 정보를 불러오는 중 오류가 발생했습니다.
-            </div>
-        </div>
+    useEffect(() => {
+        if (booking) setFileOrder(booking.files);
+    }, [booking]);
+
+    // DnD sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
-    const when = new Date(booking.when);
-    const existingFilesCount = booking.files.length;
-    const existingTotalSize = booking.files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
-    const canUploadMore = existingFilesCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+    /* ── Handlers ────────────────────────────────────────────────────── */
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
+    const handleFileSelect = (files: FileList | null) => {
         if (!files || files.length === 0) {
             setSelectedFiles([]);
             setValidationErrors([]);
             return;
         }
-
-        const result = validateFiles(files, existingFilesCount, existingTotalSize);
+        const existingCount = fileOrder.length;
+        const existingSize = fileOrder.reduce((sum, f) => sum + (f.fileSize || 0), 0);
+        const result = validateFiles(files, existingCount, existingSize);
         setValidationErrors(result.errors);
         setSelectedFiles(Array.from(files));
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleFileSelect(e.target.files);
+    };
+
+    // Desktop drag-and-drop into upload zone
+    const handleDropZoneDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingOver(true);
+    };
+
+    const handleDropZoneDragLeave = (e: React.DragEvent) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDraggingOver(false);
+        }
+    };
+
+    const handleDropZoneDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingOver(false);
+        handleFileSelect(e.dataTransfer.files);
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (validationErrors.length > 0 || selectedFiles.length === 0) {
-            return;
-        }
+        if (validationErrors.length > 0 || selectedFiles.length === 0) return;
 
-        // mutateAsync를 사용하여 순차 업로드
         for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
             setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', selectedFiles[i]);
             await uploadFileAsync(formData);
         }
 
-        // 모든 업로드 완료 후 정리
         setUploadProgress('');
         setSelectedFiles([]);
         setValidationErrors([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
         refetch();
     };
 
@@ -85,14 +178,9 @@ export default function Booking() {
         try {
             const token = getValidToken();
             const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
-
-            if (!response.ok) {
-                throw new Error('다운로드에 실패했습니다.');
-            }
+            if (!response.ok) throw new Error('다운로드에 실패했습니다.');
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -109,113 +197,214 @@ export default function Booking() {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
-            <div className="w-full max-w-4xl mx-auto px-8 flex flex-col space-y-4">
-                <Link to='/my-bookings' className='inline-block w-fit bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>내 예약 목록으로</Link>
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setFileOrder((items) => {
+                const oldIndex = items.findIndex((f) => f.id === active.id);
+                const newIndex = items.findIndex((f) => f.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
 
-                <h1 className="text-2xl font-bold">{booking.host.displayName}님과 약속잡기</h1>
+    /* ── Loading / error states ──────────────────────────────────────── */
 
-                <div className="flex flex-row space-x-2 items-center">
-                    <div>{booking.topic}</div>
-                    <div className="text-sm text-gray-500 flex flex-row items-center space-x-2">
-                        <div>{when.getFullYear()}년 {when.getMonth() + 1}월 {when.getDate()}일</div>
-                        <div>{booking.timeSlot.startTime} - {booking.timeSlot.endTime}</div>
-                    </div>
-                </div>
-
-                <div className="flex flex-row space-x-2 items-center">
-                    {booking.description}
-                </div>
-
-                <hr className="w-full" />
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h2 className="text-lg font-semibold mb-2">파일 첨부</h2>
-                    <p className="text-sm text-gray-600 mb-4">
-                        허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')} |
-                        최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)} |
-                        최대 개수: {FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개
-                    </p>
-                    <p className="text-sm text-gray-600 mb-4">
-                        현재 첨부 파일: {existingFilesCount}개 / {FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개,
-                        총 용량: {formatFileSize(existingTotalSize)} / {formatFileSize(FILE_UPLOAD_LIMITS.MAX_TOTAL_SIZE_PER_BOOKING)}
-                    </p>
-
-                    {!canUploadMore && (
-                        <p className="text-red-600 text-sm mb-4">
-                            최대 파일 개수에 도달했습니다. 새 파일을 첨부하려면 기존 파일을 삭제해주세요.
-                        </p>
-                    )}
-
-                    {canUploadMore && (
-                        <form className="flex flex-col space-y-2 items-start" onSubmit={handleSubmit}>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                name="files"
-                                multiple
-                                accept={getAcceptedFileTypes()}
-                                onChange={handleFileChange}
-                                className="w-full"
-                            />
-
-                            {validationErrors.length > 0 && (
-                                <div className="w-full bg-red-50 border border-red-200 rounded p-3">
-                                    <p className="text-red-700 font-medium text-sm">파일 업로드 오류:</p>
-                                    <ul className="list-disc pl-4 text-red-600 text-sm mt-1">
-                                        {validationErrors.map((err, idx) => (
-                                            <li key={idx}>{err.message}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {uploadError && (
-                                <div className="w-full bg-red-50 border border-red-200 rounded p-3">
-                                    <p className="text-red-600 text-sm">
-                                        업로드 실패: {uploadError.message}
-                                    </p>
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                className="w-full"
-                                disabled={validationErrors.length > 0 || selectedFiles.length === 0 || isUploading}
-                            >
-                                {isUploading ? (uploadProgress || '업로드 중...') : '첨부'}
-                            </Button>
-                        </form>
-                    )}
-                </div>
-
-                {booking.files.length > 0 && (
-                    <div className="bg-white border rounded-lg p-4">
-                        <h3 className="font-medium mb-3">첨부된 파일</h3>
-                        <ul className="space-y-2">
-                            {booking.files.map((file) => (
-                                <li key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDownload(file.id, file.originalFileName || file.file.split('/').pop() || 'download')}
-                                        className="text-blue-600 hover:underline flex-1 truncate text-left"
-                                    >
-                                        {file.originalFileName || file.file.split('/').pop()}
-                                    </button>
-                                    <span className="text-sm text-gray-500 ml-2">
-                                        {file.fileSize ? formatFileSize(file.fileSize) : ''}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-                {booking.files.length === 0 && (
-                    <div>첨부 파일이 없습니다.</div>
-                )}
+    if (isLoading || !booking) {
+        return (
+            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+                <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
             </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+                <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
+            </div>
+        );
+    }
+
+    const when = new Date(booking.when);
+    const canUploadMore = fileOrder.length < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+
+    return (
+        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+            {/* Header */}
+            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
+                <Link to="/" className="flex items-center gap-2">
+                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
+                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
+                </Link>
+                <div className="flex items-center gap-3">
+                    {isAuthenticated && <LogoutButton />}
+                </div>
+            </header>
+
+            {/* Content */}
+            <main className="w-full px-6 py-8 pb-16">
+                <div className="max-w-3xl mx-auto space-y-6">
+                    {/* Back link */}
+                    <Link to="/my-bookings" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohe-primary)]">
+                        &larr; 내 예약 목록으로
+                    </Link>
+
+                    {/* Booking info card */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-4 mb-5">
+                            <div className="w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
+                                <span className="text-lg font-semibold text-[var(--cohe-primary)]">
+                                    {booking.host.displayName.charAt(0)}
+                                </span>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-[var(--cohe-text-dark)]">
+                                    {booking.host.displayName}님과의 커피챗
+                                </h1>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    {when.toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                    })}{' '}
+                                    {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">주제</span>
+                                <p className="mt-1 text-gray-800">{booking.topic}</p>
+                            </div>
+                            {booking.description && (
+                                <div>
+                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">설명</span>
+                                    <p className="mt-1 text-gray-600 text-sm leading-relaxed">{booking.description}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* File section */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
+                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)]">파일 첨부</h2>
+
+                        {/* Capacity info */}
+                        <p className="text-xs text-gray-400">
+                            허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')} &nbsp;|&nbsp;
+                            최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)} &nbsp;|&nbsp;
+                            첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개
+                        </p>
+
+                        {/* Upload form */}
+                        {canUploadMore ? (
+                            <form onSubmit={handleSubmit} className="space-y-3">
+                                {/* Drop zone */}
+                                <div
+                                    onDragOver={handleDropZoneDragOver}
+                                    onDragLeave={handleDropZoneDragLeave}
+                                    onDrop={handleDropZoneDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={cn(
+                                        'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                                        isDraggingOver
+                                            ? 'border-[var(--cohe-primary)] bg-[var(--cohe-primary)]/5'
+                                            : 'border-gray-200 hover:border-[var(--cohe-primary)]/50 hover:bg-gray-50',
+                                    )}
+                                >
+                                    <span className="text-2xl select-none">&#8679;</span>
+                                    <p className="text-sm text-gray-500">
+                                        {isDraggingOver
+                                            ? '파일을 놓으세요'
+                                            : '파일을 드래그하거나 클릭해서 선택'}
+                                    </p>
+                                    {selectedFiles.length > 0 && (
+                                        <p className="text-sm text-[var(--cohe-primary)] font-medium">
+                                            {selectedFiles.map((f) => f.name).join(', ')}
+                                        </p>
+                                    )}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        name="files"
+                                        multiple
+                                        accept={getAcceptedFileTypes()}
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                    />
+                                </div>
+
+                                {/* Validation errors */}
+                                {validationErrors.length > 0 && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
+                                        <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
+                                            {validationErrors.map((err, idx) => (
+                                                <li key={idx}>{err.message}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {/* Upload API error */}
+                                {uploadError && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p className="text-red-600 text-sm">업로드 실패: {uploadError.message}</p>
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    className="w-full"
+                                    disabled={validationErrors.length > 0 || selectedFiles.length === 0}
+                                    loading={isUploading}
+                                >
+                                    {isUploading ? (uploadProgress || '업로드 중...') : '첨부하기'}
+                                </Button>
+                            </form>
+                        ) : (
+                            <p className="text-sm text-red-500">
+                                최대 파일 개수에 도달했습니다. 새 파일을 첨부하려면 기존 파일을 삭제해주세요.
+                            </p>
+                        )}
+
+                        {/* Attached file list (sortable) */}
+                        {fileOrder.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-600">첨부된 파일</p>
+                                <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다.</p>
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <SortableContext
+                                        items={fileOrder.map((f) => f.id)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        <ul className="space-y-2">
+                                            {fileOrder.map((file) => (
+                                                <SortableFileItem
+                                                    key={file.id}
+                                                    file={file}
+                                                    onDownload={handleDownload}
+                                                />
+                                            ))}
+                                        </ul>
+                                    </SortableContext>
+                                </DndContext>
+                            </div>
+                        )}
+
+                        {fileOrder.length === 0 && !canUploadMore && (
+                            <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
+                        )}
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
