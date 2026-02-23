@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.config;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,10 +25,11 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-		String activeProfile = environment.getProperty("spring.profiles.active", "");
-
 		// prod 프로필일 때만 Secrets Manager에서 로드
-		if (!activeProfile.contains("prod")) {
+		boolean isProd = Arrays.stream(environment.getActiveProfiles())
+			.anyMatch(profile -> profile.equals("prod"));
+
+		if (!isProd) {
 			return;
 		}
 
@@ -43,7 +45,7 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
 		}
 	}
 
-	private Map<String, Object> loadSecrets() {
+	private Map<String, Object> loadSecrets() throws Exception {
 		Map<String, Object> properties = new HashMap<>();
 
 		try (SecretsManagerClient client = SecretsManagerClient.builder()
@@ -56,6 +58,10 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
 
 			GetSecretValueResponse response = client.getSecretValue(request);
 			String secretString = response.secretString();
+
+			if (secretString == null || secretString.isBlank()) {
+				throw new IllegalStateException("Secret string is null or empty. Binary secrets are not supported.");
+			}
 
 			ObjectMapper mapper = new ObjectMapper();
 			Map<String, String> secretMap = mapper.readValue(
