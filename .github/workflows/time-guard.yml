@@ -1,0 +1,32 @@
+name: Time Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-working-hours:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check working hours
+        run: |
+          HOUR=$(TZ='Asia/Seoul' date +%H)
+          AUTHOR="${{ github.actor }}"
+
+          echo "현재 시간(KST): ${HOUR}시"
+          echo "PR 작성자: ${AUTHOR}"
+
+          # 새벽 시간 (00:00 ~ 05:59)
+          if [ "$HOUR" -ge 0 ] && [ "$HOUR" -lt 6 ]; then
+            # CheHyeonYeong은 제외
+            if [ "$AUTHOR" != "CheHyeonYeong" ]; then
+              echo ""
+              echo "============================================"
+              echo "새벽 시간(00:00~06:00)에는 PR을 올릴 수 없습니다."
+              echo "내일 아침에 다시 시도해주세요."
+              echo "============================================"
+              exit 1
+            fi
+          fi
+
+          echo "Working hours check passed!"

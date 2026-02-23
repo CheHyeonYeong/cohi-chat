@@ -1,28 +1,45 @@
 import { forwardRef } from "react";
-import clsx from "clsx";
+import { Slot } from "@radix-ui/react-slot";
+import { cn } from "~/libs/cn";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant: "primary" | "secondary" | "outline";
+    size?: "md" | "lg";
+    loading?: boolean;
+    asChild?: boolean;
     className?: string;
     children: React.ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ variant, className, children, ...props }, ref) => {
-        const variantStyles = {
-            primary: "border border-gray-200 bg-blue-500 text-white",
-            secondary: "border border-gray-200 bg-gray-200 text-gray-800",
-            outline: "cohe-btn-outline",
-        }[variant];
+const sizeStyles = {
+    md: "px-4 py-2 text-base font-medium",
+    lg: "px-6 py-3 text-lg font-semibold",
+};
 
+const variantStyles = {
+    primary: "cohe-btn-primary",
+    secondary: "cohe-btn-secondary",
+    outline: "cohe-btn-outline",
+};
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+    ({ variant, size = "md", loading = false, asChild = false, disabled, className, children, ...props }, ref) => {
+        const Comp = asChild ? Slot : "button";
         return (
-            <button
+            <Comp
                 ref={ref}
-                className={clsx("rounded-md", variantStyles, className)}
+                {...(!asChild && { type: "button" as const })}
+                disabled={loading || disabled}
+                className={cn(
+                    "rounded-md disabled:opacity-50 disabled:cursor-not-allowed",
+                    variantStyles[variant],
+                    sizeStyles[size],
+                    className,
+                )}
                 {...props}
             >
                 {children}
-            </button>
+            </Comp>
         );
     }
 );

@@ -1,0 +1,6 @@
+#!/bin/sh
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" = "main" ]; then
+  echo "main 브랜치에 직접 push할 수 없습니다. PR을 생성해주세요."
+  exit 1
+fi

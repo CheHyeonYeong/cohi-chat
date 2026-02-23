@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import Button from '~/components/button/Button';
 
 export interface TimeSlotEntry {
     weekdays: number[];
@@ -213,18 +214,15 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
             ))}
 
             {/* Save */}
-            <button
-                type="button"
+            <Button
+                variant="primary"
+                size="lg"
                 onClick={onSave}
-                disabled={isPending}
-                className={`w-full mt-6 py-3 rounded-lg font-semibold transition-colors ${
-                    isPending
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'cohe-btn-primary'
-                }`}
+                loading={isPending}
+                className="w-full mt-6 rounded-lg"
             >
                 {isPending ? '저장 중...' : '저장하기'}
-            </button>
+            </Button>
         </div>
     );
 }
