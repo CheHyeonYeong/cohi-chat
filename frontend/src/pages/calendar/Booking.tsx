@@ -11,6 +11,7 @@ import {
     FILE_UPLOAD_LIMITS,
     type FileValidationError,
 } from "~/libs/fileValidation";
+import { getErrorMessage } from "~/libs/errorUtils";
 import { getValidToken } from "~/libs/jwt";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -37,6 +38,7 @@ export default function Booking() {
     const [uploadProgress, setUploadProgress] = useState<string>('');
     const [showReportForm, setShowReportForm] = useState(false);
     const [reportReason, setReportReason] = useState('');
+    const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [now, setNow] = useState(() => Date.now());
@@ -59,7 +61,7 @@ export default function Booking() {
         return now >= meetingStart.getTime();
     }, [booking, now]);
 
-    if (!booking || isLoading) return (
+    if (isLoading) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 예약 정보를 불러오고 있습니다...
@@ -69,7 +71,15 @@ export default function Booking() {
     if (error) return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
-                예약 정보를 불러오는 중 오류가 발생했습니다.
+                {getErrorMessage(error, '예약 정보를 불러오는 중 오류가 발생했습니다.')}
+            </div>
+        </div>
+    );
+    // error 없이 data가 undefined인 경우: API가 빈 응답(204 등)을 반환하거나 ID에 해당하는 예약이 없는 경우
+    if (!booking) return (
+        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+            <div className="w-full max-w-4xl mx-auto px-8">
+                예약 정보를 찾을 수 없습니다.
             </div>
         </div>
     );
@@ -102,27 +112,31 @@ export default function Booking() {
             return;
         }
 
-        // mutateAsync를 사용하여 순차 업로드
-        for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
-            setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
-            const formData = new FormData();
-            formData.append('file', file);
-            await uploadFileAsync(formData);
-        }
+        try {
+            // mutateAsync를 사용하여 순차 업로드
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
+                const formData = new FormData();
+                formData.append('file', file);
+                await uploadFileAsync(formData);
+            }
 
-        // 모든 업로드 완료 후 정리
-        setUploadProgress('');
-        setSelectedFiles([]);
-        setValidationErrors([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            // 모든 업로드 완료 후 정리
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            refetch();
+        } finally {
+            setUploadProgress('');
         }
-        refetch();
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
+            setDownloadError(null);
             const token = getValidToken();
             const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
                 headers: {
@@ -145,7 +159,7 @@ export default function Booking() {
             window.URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Download error:', err);
-            alert('파일 다운로드에 실패했습니다.');
+            setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
         }
     };
 
@@ -290,7 +304,7 @@ export default function Booking() {
                             {uploadError && (
                                 <div className="w-full bg-red-50 border border-red-200 rounded p-3">
                                     <p className="text-red-600 text-sm">
-                                        업로드 실패: {uploadError.message}
+                                        업로드 실패: {getErrorMessage(uploadError, '파일 업로드에 실패했습니다.')}
                                     </p>
                                 </div>
                             )}
@@ -306,6 +320,22 @@ export default function Booking() {
                         </form>
                     )}
                 </div>
+
+                {downloadError && (
+                    <div className="bg-red-50 border border-red-200 rounded p-3">
+                        <div className="flex justify-between items-center">
+                            <p className="text-red-600 text-sm">{downloadError}</p>
+                            <button
+                                type="button"
+                                onClick={() => setDownloadError(null)}
+                                className="text-red-400 hover:text-red-600 text-sm ml-2"
+                                aria-label="에러 메시지 닫기"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {booking.files.length > 0 && (
                     <div className="bg-white border rounded-lg p-4">
