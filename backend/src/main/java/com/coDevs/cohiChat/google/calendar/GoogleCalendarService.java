@@ -135,6 +135,19 @@ public class GoogleCalendarService {
         return googleCalendarConfig.getServiceAccountEmail();
     }
 
+    public boolean checkCalendarAccess(String googleCalendarId) {
+        if (calendar == null) return true;
+        String resolvedId = resolveCalendarId(googleCalendarId);
+        if (resolvedId == null || resolvedId.isBlank()) return true;
+        try {
+            calendar.events().list(resolvedId).setMaxResults(1).execute();
+            return true;
+        } catch (IOException e) {
+            log.warn("Calendar access check failed for calendarId: {}", googleCalendarId);
+            return false;
+        }
+    }
+
     public void validateCalendarAccess(String googleCalendarId) {
         if (calendar == null) {
             log.warn("Google Calendar not configured, skipping access validation");

@@ -21,6 +21,7 @@ public class CalendarResponseDTO {
     private String googleCalendarId;
     private Instant createdAt;
     private Instant updatedAt;
+    private Boolean calendarAccessible;
 
     public static CalendarResponseDTO from(Calendar calendar) {
         return CalendarResponseDTO.builder()
@@ -30,6 +31,18 @@ public class CalendarResponseDTO {
             .googleCalendarId(calendar.getGoogleCalendarId())
             .createdAt(calendar.getCreatedAt())
             .updatedAt(calendar.getUpdatedAt())
+            .build();
+    }
+
+    public static CalendarResponseDTO from(Calendar calendar, Boolean calendarAccessible) {
+        return CalendarResponseDTO.builder()
+            .userId(calendar.getUserId())
+            .topics(calendar.getTopics())
+            .description(calendar.getDescription())
+            .googleCalendarId(calendar.getGoogleCalendarId())
+            .createdAt(calendar.getCreatedAt())
+            .updatedAt(calendar.getUpdatedAt())
+            .calendarAccessible(calendarAccessible)
             .build();
     }
 }

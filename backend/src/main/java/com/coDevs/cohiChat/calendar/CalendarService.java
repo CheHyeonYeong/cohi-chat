@@ -73,7 +73,8 @@ public class CalendarService {
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        return CalendarResponseDTO.from(calendar);
+        boolean accessible = googleCalendarService.checkCalendarAccess(calendar.getGoogleCalendarId());
+        return CalendarResponseDTO.from(calendar, accessible);
     }
 
     @Transactional

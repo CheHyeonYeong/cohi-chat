@@ -20,6 +20,7 @@ export interface CalendarResponse {
     googleCalendarId: string;
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
+    calendarAccessible: boolean | null;
 }
 
 // TimeSlot
