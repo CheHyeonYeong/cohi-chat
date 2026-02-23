@@ -5,6 +5,7 @@ import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
@@ -32,12 +33,13 @@ import java.util.stream.Collectors;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
-import com.coDevs.cohiChat.global.common.TokenHashUtils;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.Member;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.text.RandomStringGenerator;
@@ -46,8 +48,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,6 +55,7 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final BookingRepository bookingRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
@@ -128,7 +129,7 @@ public class MemberService {
 
 		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		String refreshTokenHash = TokenHashUtils.hash(refreshTokenValue);
+		String refreshTokenHash = TokenHashUtil.hash(refreshTokenValue);
 		RefreshToken refreshToken = RefreshToken.create(
 			refreshTokenHash,
 			member.getUsername(),
@@ -284,11 +285,25 @@ public class MemberService {
 		return HostResponseDTO.from(member, chatCount);
 	}
 
-	public void logout(String username) {
+	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
+
+		try {
+			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
+			if (remainingSeconds <= 0) {
+				return;
+			}
+			String tokenHash = TokenHashUtil.hash(accessToken);
+			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
+			accessTokenBlacklistRepository.save(blacklist);
+		} catch (ExpiredJwtException e) {
+			log.debug("이미 만료된 토큰, 블랙리스트 등록 생략: {}", e.getMessage());
+		} catch (Exception e) {
+			log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
+		}
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public RefreshTokenResponseDTO refreshAccessToken(String refreshTokenValue) {
 		// 1. JWT 검증 + username 추출 (만료 vs 위조 구분)
 		String verifiedUsername;
@@ -307,24 +322,32 @@ public class MemberService {
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
-		String tokenHash = TokenHashUtils.hash(refreshTokenValue);
-		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenHash)
+		String tokenHash = TokenHashUtil.hash(refreshTokenValue);
+		refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-		// 3. 사용자 정보 조회 및 새 Access Token 발급
-		String username = refreshToken.getUsername();
-		Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
+		// 4. 사용자 정보 조회
+		Member member = memberRepository.findByUsernameAndIsDeletedFalse(verifiedUsername)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-		String newAccessToken = jwtTokenProvider.createAccessToken(
-			member.getUsername(),
-			member.getRole().name()
+		// 5. RT Rotation: 기존 RT 삭제 + 새 RT 발급
+		refreshTokenRepository.deleteById(member.getUsername());
+		String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
+		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
+		RefreshToken newRefreshToken = RefreshToken.create(
+			TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
 		);
+		refreshTokenRepository.save(newRefreshToken);
 
+		// 6. 새 AT 발급
+		String newAccessToken = jwtTokenProvider.createAccessToken(
+			member.getUsername(), member.getRole().name()
+		);
 		long expiredInSeconds = jwtTokenProvider.getExpirationSeconds(newAccessToken);
 
 		return RefreshTokenResponseDTO.builder()
 			.accessToken(newAccessToken)
+			.refreshToken(newRefreshTokenValue)
 			.expiredInMinutes(expiredInSeconds / 60)
 			.build();
 	}
