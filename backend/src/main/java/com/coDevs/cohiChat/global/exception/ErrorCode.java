@@ -69,6 +69,8 @@ public enum ErrorCode {
 
 	GOOGLE_CALENDAR_ACCESS_DENIED(HttpStatus.BAD_REQUEST,
 		"Google Calendar에 접근할 수 없습니다. 서비스 어카운트 이메일을 캘린더 편집자로 공유했는지 확인해주세요."),
+	GOOGLE_CALENDAR_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE,
+		"Google Calendar 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
 	/**
 	 * 파일 관련 예외들.

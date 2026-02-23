@@ -57,6 +57,7 @@ public class CalendarService {
             request.getDescription(),
             request.getGoogleCalendarId()
         );
+        calendar.setCalendarAccessible(true);
 
         try {
             Calendar savedCalendar = calendarRepository.save(calendar);
@@ -66,15 +67,20 @@ public class CalendarService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CalendarResponseDTO getCalendar(Member member) {
         validateHostPermission(member);
 
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        boolean accessible = googleCalendarService.checkCalendarAccess(calendar.getGoogleCalendarId());
-        return CalendarResponseDTO.from(calendar, accessible);
+        // calendarAccessible이 null인 경우(기존 호스트)만 Google API 실제 호출 후 DB에 저장
+        if (calendar.getCalendarAccessible() == null) {
+            boolean accessible = googleCalendarService.checkCalendarAccess(calendar.getGoogleCalendarId());
+            calendar.setCalendarAccessible(accessible);
+        }
+
+        return CalendarResponseDTO.from(calendar);
     }
 
     @Transactional
@@ -91,6 +97,7 @@ public class CalendarService {
             request.getDescription(),
             request.getGoogleCalendarId()
         );
+        calendar.setCalendarAccessible(true);
 
         return CalendarResponseDTO.from(calendar);
     }
