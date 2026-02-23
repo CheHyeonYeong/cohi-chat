@@ -7,6 +7,7 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -115,6 +116,9 @@ public class MemberService {
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+		if (member.getProvider() != Provider.LOCAL) {
+			throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
+		}
 		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
 			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
 		}
@@ -141,7 +145,7 @@ public class MemberService {
 
 		return LoginResponseDTO.builder()
 			.accessToken(accessToken)
-			.expiredInMinutes(expiredInSeconds / 60)
+			.expiredInMinutes((long) Math.ceil((double) expiredInSeconds / 60))
 			.refreshToken(refreshTokenValue)
 			.username(member.getUsername())
 			.displayName(member.getDisplayName())
@@ -348,7 +352,7 @@ public class MemberService {
 		return RefreshTokenResponseDTO.builder()
 			.accessToken(newAccessToken)
 			.refreshToken(newRefreshTokenValue)
-			.expiredInMinutes(expiredInSeconds / 60)
+			.expiredInMinutes((long) Math.ceil((double) expiredInSeconds / 60))
 			.build();
 	}
 

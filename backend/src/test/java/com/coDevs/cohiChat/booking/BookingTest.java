@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -74,7 +75,7 @@ class BookingTest {
         );
 
         // when
-        booking.reportHostNoShow();
+        booking.reportHostNoShow(Instant.now());
 
         // then
         assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.HOST_NO_SHOW);

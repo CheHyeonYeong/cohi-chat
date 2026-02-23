@@ -25,10 +25,16 @@ interface BookingFlatResponse {
     hostDisplayName: string | null;
 }
 
+/** 날짜 전용 문자열("YYYY-MM-DD")을 로컬 자정으로 파싱. UTC 기반 파싱으로 인한 날짜 오차 방지. */
+function parseDateLocal(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
 function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
     return {
         id: b.id,
-        when: new Date(b.when),
+        when: parseDateLocal(b.when),
         topic: b.topic,
         description: b.description,
         timeSlot: {
@@ -49,6 +55,7 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
         updatedAt: b.createdAt,
         attendanceStatus: b.attendanceStatus as AttendanceStatus,
         hostId: b.hostId,
+        guestId: b.guestId,
     };
 }
 
@@ -80,7 +87,7 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
 export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
     const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
         method: 'POST',
-        body: reason ? { reason } : undefined,
+        body: reason && reason.trim() !== '' ? { reason } : undefined,
     });
     return toBookingDetail(b);
 }

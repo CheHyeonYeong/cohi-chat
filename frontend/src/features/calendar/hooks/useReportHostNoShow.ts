@@ -9,7 +9,7 @@ export function useReportHostNoShow(bookingId: number) {
         onSuccess: async () => {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: calendarKeys.booking(bookingId) }),
-                queryClient.invalidateQueries({ queryKey: calendarKeys.myBookings() }),
+                queryClient.invalidateQueries({ queryKey: calendarKeys.myBookingsAll() }),
             ]);
         },
     });

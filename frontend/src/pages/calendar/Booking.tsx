@@ -30,7 +30,7 @@ export default function Booking() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError } = useReportHostNoShow(Number(id));
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
     const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -49,8 +49,13 @@ export default function Booking() {
     const isMeetingStarted = useMemo(() => {
         if (!booking) return false;
         const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
-        const meetingStart = new Date(booking.when);
-        meetingStart.setHours(h, m, 0, 0);
+        // 로컬 날짜 기준으로 생성하여 UTC 파싱으로 인한 날짜 오차 방지
+        const meetingStart = new Date(
+            booking.when.getFullYear(),
+            booking.when.getMonth(),
+            booking.when.getDate(),
+            h, m, 0, 0
+        );
         return now >= meetingStart.getTime();
     }, [booking, now]);
 
@@ -74,8 +79,8 @@ export default function Booking() {
     const existingTotalSize = booking.files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
     const canUploadMore = existingFilesCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
 
-    // 현재 사용자가 게스트인지 판단 (호스트가 아닌 경우)
-    const isGuest = !!currentUser && currentUser.username !== booking.host.username;
+    // 현재 사용자가 이 예약의 게스트인지 판단 (guestId 기준, 단순 호스트 비교 방지)
+    const isGuest = !!currentUser && currentUser.id === booking.guestId;
     const canReport = isGuest && booking.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +220,7 @@ export default function Booking() {
                                         onClick={() => {
                                             setShowReportForm(false);
                                             setReportReason('');
+                                            resetReport();
                                         }}
                                     >
                                         취소

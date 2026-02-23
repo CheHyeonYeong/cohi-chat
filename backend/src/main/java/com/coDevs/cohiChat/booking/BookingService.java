@@ -395,7 +395,7 @@ public class BookingService {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
-        booking.reportHostNoShow();
+        booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
         NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);

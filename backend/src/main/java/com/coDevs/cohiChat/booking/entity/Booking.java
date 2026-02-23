@@ -177,12 +177,13 @@ public class Booking {
     /**
      * 게스트가 호스트 노쇼를 신고
      * 엔티티 레벨에서 상태 전이 가능 여부를 검증
+     * @param now 신고 시각 (결정적 테스트를 위해 호출자가 주입)
      */
-    public void reportHostNoShow() {
+    public void reportHostNoShow(Instant now) {
         if (!this.attendanceStatus.isGuestReportable()) {
             throw new IllegalStateException("노쇼 신고가 불가능한 예약 상태입니다: " + this.attendanceStatus);
         }
         this.attendanceStatus = AttendanceStatus.HOST_NO_SHOW;
-        this.noshowReportedAt = Instant.now();
+        this.noshowReportedAt = now;
     }
 }

@@ -44,6 +44,7 @@ export interface IBookingDetail {
     updatedAt: ISO8601String;
     attendanceStatus: AttendanceStatus;
     hostId: string | null;
+    guestId: string;
 }
 
 export interface INoShowHistoryItem {

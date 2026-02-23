@@ -116,7 +116,7 @@ public class Member {
 		Role role
 	) {
 		validateRequired(username, displayName, email, role);
-		if (provider == null) throw new CustomException(ErrorCode.INVALID_PROVIDER);
+		if (provider == null || provider == Provider.LOCAL) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
 		Member member = new Member();
 		member.username = username;
@@ -161,6 +161,11 @@ public class Member {
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();
+	}
+
+	public void restore() {
+		this.isDeleted = false;
+		this.deletedAt = null;
 	}
 
 	public void promoteToHost() {
