@@ -5,6 +5,7 @@ import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/tim
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
+import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 
@@ -100,14 +101,17 @@ export default function TimeSlotSettings() {
             )
         );
         const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        const successes = results.filter((r) => r.status === 'fulfilled');
         if (failures.length > 0) {
-            const reasons = failures.map((f) => f.reason instanceof Error ? f.reason.message : '알 수 없는 오류');
+            const reasons = failures.map((f) => getErrorMessage(f.reason, '타임슬롯 저장에 실패했습니다.'));
             const uniqueReasons = [...new Set(reasons)];
             setErrors({ save: uniqueReasons.join(', ') });
         } else {
             setErrors({});
         }
-        setLastSaved(new Date());
+        if (successes.length > 0) {
+            setLastSaved(new Date());
+        }
         syncedRef.current = false;
         refetch();
     };
@@ -119,8 +123,7 @@ export default function TimeSlotSettings() {
             syncedRef.current = false;
             refetch();
         } catch (err) {
-            const message = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
-            setErrors({ delete: message });
+            setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
             setDeletingId(null);
         }
