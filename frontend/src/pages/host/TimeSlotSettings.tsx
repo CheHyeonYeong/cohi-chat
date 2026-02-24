@@ -107,7 +107,6 @@ export default function TimeSlotSettings() {
         }
     };
 
-    const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
