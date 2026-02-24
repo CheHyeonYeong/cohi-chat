@@ -85,7 +85,7 @@ export default function TimeSlotSettings() {
         }
     };
 
-    const { data: existingTimeslots, isLoading, error: loadError, refetch } = useMyTimeslots();
+    const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const { data: myCalendar } = useMyCalendar();
     const calendarInaccessible = myCalendar?.calendarAccessible === false;
 
