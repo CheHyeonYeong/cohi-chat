@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 import WeeklySchedulePreview from './WeeklySchedulePreview';
 import type { TimeSlotEntry } from './TimeSlotForm';
 
