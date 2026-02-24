@@ -14,3 +14,4 @@
 - `gh label list`로 label 목록을 확인하고 이슈 내용에 맞는 label을 선택한다
 - 이슈 생성 후 프로젝트에 추가한다: `gh project item-add 6 --owner CheHyeonYeong --url {ISSUE_URL}`
 - 활성 마일스톤을 조회하고 적절한 마일스톤을 지정한다: `gh api repos/:owner/:repo/milestones --jq '.[] | select(.state=="open")'`
+- @.claude/rules/work-estimation.md 기준에 따라 작업산정(Priority/Size/Estimate/Start date/Target date)을 사용자에게 질문하고 프로젝트 필드에 설정한다
