@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
     DndContext,
-    DragOverlay,
     PointerSensor,
     TouchSensor,
     useSensor,
@@ -13,7 +12,7 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeEntryFromDrag } from './dragUtils';
+import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
@@ -55,32 +54,6 @@ function timeToRow(time: string, startHour: number): number {
     return Math.max(0, (h - startHour) * 2 + Math.round(m / 30));
 }
 
-/** 드래그 범위에서 하이라이트할 (col, halfRow) 집합 계산 */
-function computeDragHighlights(
-    dragStartId: string | null,
-    dragOverId: string | null,
-): Set<string> {
-    if (!dragStartId) return new Set();
-    const overId = dragOverId ?? dragStartId;
-
-    const startMatch = dragStartId.match(/^cell-(\d+)-(\d+)$/);
-    const overMatch = overId.match(/^cell-(\d+)-(\d+)$/);
-    if (!startMatch || !overMatch) return new Set();
-
-    const minCol = Math.min(parseInt(startMatch[1]), parseInt(overMatch[1]));
-    const maxCol = Math.max(parseInt(startMatch[1]), parseInt(overMatch[1]));
-    const minRow = Math.min(parseInt(startMatch[2]), parseInt(overMatch[2]));
-    const maxRow = Math.max(parseInt(startMatch[2]), parseInt(overMatch[2]));
-
-    const set = new Set<string>();
-    for (let c = minCol; c <= maxCol; c++) {
-        for (let r = minRow; r <= maxRow; r++) {
-            set.add(`${c}-${r}`);
-        }
-    }
-    return set;
-}
-
 /** read-only 모드 반시간 셀 — dnd 훅 없음 */
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
@@ -96,21 +69,25 @@ function DraggableCell({
     col,
     halfRow,
     isHighlighted,
-    isDragging,
+    isInDragRange,
 }: {
     col: number;
     halfRow: number;
     isHighlighted: boolean;
-    isDragging: boolean;
+    isInDragRange: boolean;
 }) {
     const id = `cell-${col}-${halfRow}`;
     const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({ id });
     const { setNodeRef: setDropRef } = useDroppable({ id });
 
-    const setRef = (node: HTMLElement | null) => {
-        setDragRef(node);
-        setDropRef(node);
-    };
+    // useCallback으로 안정화 — 렌더마다 새 참조 생성 시 dnd-kit ref가 매번 재등록됨
+    const setRef = useCallback(
+        (node: HTMLElement | null) => {
+            setDragRef(node);
+            setDropRef(node);
+        },
+        [setDragRef, setDropRef],
+    );
 
     return (
         <div
@@ -121,8 +98,8 @@ function DraggableCell({
             className="h-6 transition-colors"
             style={{
                 backgroundColor: isHighlighted ? 'var(--cohe-primary)' : undefined,
-                opacity: isHighlighted ? (isDragging ? 0.4 : 0.2) : undefined,
-                cursor: isDragging ? 'crosshair' : 'default',
+                opacity: isHighlighted ? (isInDragRange ? 0.4 : 0.2) : undefined,
+                cursor: 'crosshair',
                 touchAction: 'none',
             }}
         />
@@ -169,8 +146,8 @@ function WeeklyGrid({
                             const bottomExisting = colHighlights.some(
                                 (h) => bottomHalfRow >= h.start && bottomHalfRow < h.end,
                             );
-                            const topDrag = dragHighlights.has(`${colIdx}-${topHalfRow}`);
-                            const bottomDrag = dragHighlights.has(`${colIdx}-${bottomHalfRow}`);
+                            const topInRange = dragHighlights.has(`${colIdx}-${topHalfRow}`);
+                            const bottomInRange = dragHighlights.has(`${colIdx}-${bottomHalfRow}`);
 
                             return (
                                 <div key={colIdx} className="bg-white h-12 flex flex-col">
@@ -179,14 +156,14 @@ function WeeklyGrid({
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={topHalfRow}
-                                                isHighlighted={topExisting || topDrag}
-                                                isDragging={isDragging && topDrag}
+                                                isHighlighted={topExisting || topInRange}
+                                                isInDragRange={isDragging && topInRange}
                                             />
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={bottomHalfRow}
-                                                isHighlighted={bottomExisting || bottomDrag}
-                                                isDragging={isDragging && bottomDrag}
+                                                isHighlighted={bottomExisting || bottomInRange}
+                                                isInDragRange={isDragging && bottomInRange}
                                             />
                                         </>
                                     ) : (
@@ -217,20 +194,23 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
     const hours = useMemo(() => computeHoursRange(entries), [entries]);
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
 
-    const highlights: Map<number, { start: number; end: number }[]> = new Map();
-    for (const entry of entries) {
-        if (!entry.startTime || !entry.endTime || entry.weekdays.length === 0) continue;
-        const startRow = timeToRow(entry.startTime, startHour);
-        const endRow = timeToRow(entry.endTime, startHour);
-        if (startRow >= endRow) continue;
+    const highlights = useMemo(() => {
+        const map = new Map<number, { start: number; end: number }[]>();
+        for (const entry of entries) {
+            if (!entry.startTime || !entry.endTime || entry.weekdays.length === 0) continue;
+            const startRow = timeToRow(entry.startTime, startHour);
+            const endRow = timeToRow(entry.endTime, startHour);
+            if (startRow >= endRow) continue;
 
-        for (const wd of entry.weekdays) {
-            const col = DAY_MAP[wd];
-            if (col === undefined) continue;
-            if (!highlights.has(col)) highlights.set(col, []);
-            highlights.get(col)!.push({ start: startRow, end: endRow });
+            for (const wd of entry.weekdays) {
+                const col = DAY_MAP[wd];
+                if (col === undefined) continue;
+                if (!map.has(col)) map.set(col, []);
+                map.get(col)!.push({ start: startRow, end: endRow });
+            }
         }
-    }
+        return map;
+    }, [entries, startHour]);
 
     const dragHighlights = computeDragHighlights(dragStartId, dragOverId);
     const isDragging = dragStartId !== null;
@@ -248,7 +228,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
         const endId = (event.over?.id as string) ?? dragStartId;
         if (onChange && dragStartId && endId) {
             const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            if (entry) {
+            if (entry && !isDuplicateEntry(entries, entry)) {
                 onChange([...entries, entry]);
             }
         }
@@ -296,10 +276,6 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
                             onDragCancel={handleDragCancel}
                         >
                             {grid}
-                            {/* 투명 오버레이 — 브라우저 기본 드래그 미리보기 숨김 */}
-                            <DragOverlay dropAnimation={null}>
-                                {isDragging ? <div style={{ display: 'none' }} /> : null}
-                            </DragOverlay>
                         </DndContext>
                     ) : (
                         grid

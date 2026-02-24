@@ -1,8 +1,6 @@
-/**
- * @vitest-environment happy-dom
- */
 import { describe, it, expect } from 'vitest';
-import { parseCellId, rowToTime, computeEntryFromDrag } from './dragUtils';
+import { parseCellId, rowToTime, computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
+import type { TimeSlotEntry } from './TimeSlotForm';
 
 describe('parseCellId', () => {
     it('유효한 cell ID를 파싱해야 한다', () => {
@@ -69,7 +67,6 @@ describe('computeEntryFromDrag', () => {
     });
 
     it('여러 열에 걸친 드래그는 해당 요일들을 포함해야 한다', () => {
-        // col 0(월)~col 2(수) 드래그
         const entry = computeEntryFromDrag('cell-0-0', 'cell-2-3', START_HOUR);
         expect(entry).not.toBeNull();
         expect(entry!.weekdays).toEqual([1, 2, 3]); // 월, 화, 수
@@ -92,5 +89,55 @@ describe('computeEntryFromDrag', () => {
     it('유효하지 않은 ID가 있으면 null을 반환해야 한다', () => {
         expect(computeEntryFromDrag('invalid', 'cell-0-0', START_HOUR)).toBeNull();
         expect(computeEntryFromDrag('cell-0-0', 'invalid', START_HOUR)).toBeNull();
+    });
+});
+
+describe('computeDragHighlights', () => {
+    it('dragStartId가 null이면 빈 Set을 반환해야 한다', () => {
+        expect(computeDragHighlights(null, null).size).toBe(0);
+    });
+
+    it('dragOverId가 null이면 시작 셀만 하이라이트해야 한다', () => {
+        const result = computeDragHighlights('cell-1-2', null);
+        expect(result).toEqual(new Set(['1-2']));
+    });
+
+    it('직사각형 드래그 범위의 모든 셀을 반환해야 한다', () => {
+        const result = computeDragHighlights('cell-0-0', 'cell-1-1');
+        expect(result).toEqual(new Set(['0-0', '0-1', '1-0', '1-1']));
+    });
+
+    it('역방향 드래그도 동일한 범위를 반환해야 한다', () => {
+        const forward = computeDragHighlights('cell-0-0', 'cell-2-3');
+        const backward = computeDragHighlights('cell-2-3', 'cell-0-0');
+        expect(forward).toEqual(backward);
+    });
+
+    it('유효하지 않은 ID는 빈 Set을 반환해야 한다', () => {
+        expect(computeDragHighlights('invalid', 'cell-0-0').size).toBe(0);
+    });
+});
+
+describe('isDuplicateEntry', () => {
+    const base: TimeSlotEntry = { weekdays: [1, 2, 3], startTime: '09:00', endTime: '18:00' };
+
+    it('동일한 entry가 있으면 true를 반환해야 한다', () => {
+        expect(isDuplicateEntry([base], { weekdays: [1, 2, 3], startTime: '09:00', endTime: '18:00' })).toBe(true);
+    });
+
+    it('weekday 순서가 다른 동일 entry도 true를 반환해야 한다', () => {
+        expect(isDuplicateEntry([base], { weekdays: [3, 1, 2], startTime: '09:00', endTime: '18:00' })).toBe(true);
+    });
+
+    it('시간이 다르면 false를 반환해야 한다', () => {
+        expect(isDuplicateEntry([base], { weekdays: [1, 2, 3], startTime: '10:00', endTime: '18:00' })).toBe(false);
+    });
+
+    it('요일이 다르면 false를 반환해야 한다', () => {
+        expect(isDuplicateEntry([base], { weekdays: [1, 2], startTime: '09:00', endTime: '18:00' })).toBe(false);
+    });
+
+    it('entries가 비어있으면 false를 반환해야 한다', () => {
+        expect(isDuplicateEntry([], base)).toBe(false);
     });
 });
