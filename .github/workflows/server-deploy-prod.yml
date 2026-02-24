@@ -48,7 +48,9 @@ jobs:
 
       - name: Upload JAR to S3
         run: |
-          aws s3 cp backend/build/libs/*.jar s3://cohi-chat-config/app.jar
+          JAR_FILE=$(find backend/build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          echo "Uploading: $JAR_FILE"
+          aws s3 cp "$JAR_FILE" s3://cohi-chat-config/app.jar
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
