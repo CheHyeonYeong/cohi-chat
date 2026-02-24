@@ -16,6 +16,8 @@ export interface ITimeSlot {
     startTime: StringTime;
     endTime: StringTime;
     weekdays: number[];
+    startDate: string | null;
+    endDate: string | null;
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
 }

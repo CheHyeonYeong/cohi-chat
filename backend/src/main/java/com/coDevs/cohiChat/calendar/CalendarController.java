@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.calendar;
 
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
@@ -44,6 +46,7 @@ public class CalendarController {
     private final CalendarService calendarService;
     private final MemberService memberService;
     private final ObjectMapper objectMapper;
+    private final GoogleCalendarService googleCalendarService;
 
     @PostMapping("/v1")
     public ResponseEntity<ApiResponseDTO<CalendarResponseDTO>> createCalendar(
@@ -62,6 +65,12 @@ public class CalendarController {
         Member member = memberService.getMember(userDetails.getUsername());
         CalendarResponseDTO response = calendarService.getCalendar(member);
         return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @GetMapping("/v1/service-account")
+    public ResponseEntity<Map<String, String>> getServiceAccountEmail() {
+        String email = googleCalendarService.getServiceAccountEmail();
+        return ResponseEntity.ok(Map.of("serviceAccountEmail", email != null ? email : ""));
     }
 
     @PutMapping("/v1")

@@ -40,6 +40,9 @@ public class Calendar {
     @Column(name = "google_calendar_id", nullable = false, length = 1024)
     private String googleCalendarId;
 
+    @Column(name = "calendar_accessible")
+    private Boolean calendarAccessible;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
@@ -67,6 +70,10 @@ public class Calendar {
         this.topics = topics;
         this.description = description;
         this.googleCalendarId = googleCalendarId;
+    }
+
+    public void setCalendarAccessible(boolean accessible) {
+        this.calendarAccessible = accessible;
     }
 
 }

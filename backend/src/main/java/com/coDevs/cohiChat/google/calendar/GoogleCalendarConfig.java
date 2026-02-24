@@ -16,6 +16,7 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,8 @@ public class GoogleCalendarConfig {
 
     private final GoogleCalendarProperties properties;
 
+    private String extractedServiceAccountEmail = null;
+
     @Bean
     public Calendar googleCalendar() {
         String credentialsPath = properties.getCredentialsPath();
@@ -49,9 +52,14 @@ public class GoogleCalendarConfig {
         }
 
         try {
-            GoogleCredentials credentials = GoogleCredentials
-                .fromStream(new FileInputStream(credentialsPath))
-                .createScoped(SCOPES);
+            GoogleCredentials baseCredentials = GoogleCredentials
+                .fromStream(new FileInputStream(credentialsPath));
+
+            if (baseCredentials instanceof ServiceAccountCredentials sac) {
+                this.extractedServiceAccountEmail = sac.getClientEmail();
+            }
+
+            GoogleCredentials credentials = baseCredentials.createScoped(SCOPES);
 
             return new Calendar.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
@@ -67,5 +75,9 @@ public class GoogleCalendarConfig {
             log.error("Failed to initialize Google Calendar service", e);
             return null;
         }
+    }
+
+    public String getServiceAccountEmail() {
+        return extractedServiceAccountEmail;
     }
 }

@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.booking.BookingService;
 import com.coDevs.cohiChat.calendar.request.CalendarCreateRequestDTO;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -60,6 +61,9 @@ class CalendarControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private GoogleCalendarService googleCalendarService;
 
     private static final String TEST_USERNAME = "testuser";
     private static final List<String> TEST_TOPICS = List.of("커리어 상담", "이력서 리뷰");
