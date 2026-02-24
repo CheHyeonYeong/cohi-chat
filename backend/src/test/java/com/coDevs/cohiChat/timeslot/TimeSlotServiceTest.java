@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +38,7 @@ class TimeSlotServiceTest {
     private static final UUID TEST_USER_ID = UUID.randomUUID();
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
-    private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 월, 화, 수
+    private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 일, 월, 화
 
     @Mock
     private TimeSlotRepository timeSlotRepository;
@@ -78,7 +79,7 @@ class TimeSlotServiceTest {
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
         givenCalendarExists();
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of());
         given(timeSlotRepository.save(any(TimeSlot.class))).willAnswer(inv -> inv.getArgument(0));
     }
@@ -137,7 +138,7 @@ class TimeSlotServiceTest {
             LocalTime.of(11, 0),
             List.of(0, 1, 2)
         );
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of(existingTimeSlot));
 
         // when & then
@@ -160,7 +161,7 @@ class TimeSlotServiceTest {
             .weekdays(requestWeekdays)
             .build();
 
-        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList()))
+        given(timeSlotRepository.findOverlappingTimeSlots(any(), any(), any(), anyList(), any(), any()))
             .willReturn(List.of());
         given(timeSlotRepository.save(any(TimeSlot.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -172,7 +173,9 @@ class TimeSlotServiceTest {
             eq(TEST_USER_ID),
             eq(TEST_START_TIME),
             eq(TEST_END_TIME),
-            eq(requestWeekdays)
+            eq(requestWeekdays),
+            any(),
+            any()
         );
     }
 
@@ -192,5 +195,44 @@ class TimeSlotServiceTest {
 
         // then
         assertThat(response).hasSize(2);
+    }
+
+    // ===== 날짜 범위 지정 테스트 =====
+
+    @Test
+    @DisplayName("성공: 날짜 범위가 지정된 타임슬롯 생성")
+    void createTimeSlotWithDateRangeSuccess() {
+        // given
+        givenSuccessfulCreateMocks();
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(30);
+        TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
+            .weekdays(TEST_WEEKDAYS)
+            .startDate(startDate)
+            .endDate(endDate)
+            .build();
+
+        // when
+        TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, request);
+
+        // then
+        assertThat(response.getStartDate()).isEqualTo(startDate);
+        assertThat(response.getEndDate()).isEqualTo(endDate);
+    }
+
+    @Test
+    @DisplayName("성공: 날짜 범위 없이(무기한) 타임슬롯 생성")
+    void createTimeSlotWithoutDateRangeSuccess() {
+        // given
+        givenSuccessfulCreateMocks();
+
+        // when
+        TimeSlotResponseDTO response = timeSlotService.createTimeSlot(hostMember, requestDTO);
+
+        // then
+        assertThat(response.getStartDate()).isNull();
+        assertThat(response.getEndDate()).isNull();
     }
 }

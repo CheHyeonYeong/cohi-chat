@@ -64,11 +64,17 @@ public enum ErrorCode {
 	SELF_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "자기 자신에게는 부킹을 할 수 없습니다."),
 	PAST_BOOKING(HttpStatus.UNPROCESSABLE_ENTITY, "과거 일자에는 부킹을 할 수 없습니다."),
 	WEEKDAY_NOT_AVAILABLE(HttpStatus.UNPROCESSABLE_ENTITY, "해당 요일에는 예약할 수 없습니다."),
+	BOOKING_DATE_OUT_OF_RANGE(HttpStatus.UNPROCESSABLE_ENTITY, "해당 날짜는 예약 가능 기간이 아닙니다."),
 	INVALID_YEAR_MONTH(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 년도 또는 월입니다."),
 	BOOKING_NOT_CANCELLABLE(HttpStatus.UNPROCESSABLE_ENTITY, "취소할 수 없는 예약 상태입니다."),
 	BOOKING_NOT_MODIFIABLE(HttpStatus.UNPROCESSABLE_ENTITY, "상태를 변경할 수 없는 예약입니다."),
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
 	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
+
+	GOOGLE_CALENDAR_ACCESS_DENIED(HttpStatus.BAD_REQUEST,
+		"Google Calendar에 접근할 수 없습니다. 서비스 어카운트 이메일을 캘린더 편집자로 공유했는지 확인해주세요."),
+	GOOGLE_CALENDAR_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE,
+		"Google Calendar 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
 	/**
 	 * 파일 관련 예외들.

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
@@ -25,6 +27,7 @@ import com.coDevs.cohiChat.calendar.request.CalendarUpdateRequestDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -42,6 +45,9 @@ class CalendarServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private GoogleCalendarService googleCalendarService;
 
     @Mock
     private Member hostMember;
@@ -118,12 +124,13 @@ class CalendarServiceTest {
     }
 
     @Test
-    @DisplayName("성공: 호스트가 캘린더 조회")
+    @DisplayName("성공: 호스트가 캘린더 조회 (기존 호스트: calendarAccessible null → Google API 1회 호출 후 저장)")
     void getCalendarSuccess() {
         // given
         givenHostMember();
         Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
         given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        given(googleCalendarService.checkCalendarAccess(TEST_GOOGLE_CALENDAR_ID)).willReturn(true);
 
         // when
         CalendarResponseDTO response = calendarService.getCalendar(hostMember);
@@ -132,6 +139,24 @@ class CalendarServiceTest {
         assertThat(response.getTopics()).isEqualTo(TEST_TOPICS);
         assertThat(response.getDescription()).isEqualTo(TEST_DESCRIPTION);
         assertThat(response.getGoogleCalendarId()).isEqualTo(TEST_GOOGLE_CALENDAR_ID);
+        assertThat(response.getCalendarAccessible()).isTrue();
+    }
+
+    @Test
+    @DisplayName("성공: calendarAccessible이 이미 저장된 호스트 조회 시 Google API 호출 없음")
+    void getCalendarSuccessWhenAccessibleAlreadyCached() {
+        // given
+        givenHostMember();
+        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        calendar.setCalendarAccessible(true);
+        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+
+        // when
+        CalendarResponseDTO response = calendarService.getCalendar(hostMember);
+
+        // then
+        assertThat(response.getCalendarAccessible()).isTrue();
+        then(googleCalendarService).should(never()).checkCalendarAccess(any());
     }
 
     @Test

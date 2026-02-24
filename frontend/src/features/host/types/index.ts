@@ -20,6 +20,7 @@ export interface CalendarResponse {
     googleCalendarId: string;
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
+    calendarAccessible: boolean | null;
 }
 
 // TimeSlot
@@ -27,6 +28,8 @@ export interface TimeSlotCreatePayload {
     startTime: string;
     endTime: string;
     weekdays: number[];
+    startDate?: string;
+    endDate?: string;
 }
 
 export interface TimeSlotResponse {
@@ -35,6 +38,8 @@ export interface TimeSlotResponse {
     startTime: StringTime;
     endTime: StringTime;
     weekdays: number[];
+    startDate: string | null;
+    endDate: string | null;
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
 }

@@ -89,6 +89,7 @@ class BookingServiceTest {
     @BeforeEach
     void setUp() {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+        bookingService.initZoneId();
 
         // 기본 Calendar mock 설정 (TEST_TOPIC 포함)
         Calendar defaultCalendar = Calendar.create(
@@ -1041,6 +1042,149 @@ class BookingServiceTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
     }
 
+    // ===== 날짜 범위 검증 테스트 (Issue #240) =====
+
+    @Test
+    @DisplayName("실패: 타임슬롯 날짜 범위 밖 예약 시 실패")
+    void createBookingFailWhenDateOutOfRange() {
+        // given
+        LocalDate startDate = FUTURE_DATE.plusDays(10);
+        LocalDate endDate = FUTURE_DATE.plusDays(20);
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartDate()).willReturn(startDate);
+        given(timeSlot.getEndDate()).willReturn(endDate);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when & then - FUTURE_DATE는 startDate보다 이전이므로 범위 밖
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_DATE_OUT_OF_RANGE);
+    }
+
+    @Test
+    @DisplayName("성공: 타임슬롯 날짜 범위가 null(무기한)이면 예약 가능")
+    void createBookingSuccessWhenNoDateRange() {
+        // given
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getStartDate()).willReturn(null);
+        given(timeSlot.getEndDate()).willReturn(null);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response.getTimeSlotId()).isEqualTo(TIME_SLOT_ID);
+    }
+
+    @Test
+    @DisplayName("성공: 예약 날짜가 타임슬롯 시작일과 같으면 예약 가능 (경계값)")
+    void createBookingSuccessWhenDateEqualsStartDate() {
+        // given
+        LocalDate startDate = FUTURE_DATE;
+        LocalDate endDate = FUTURE_DATE.plusDays(10);
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getStartDate()).willReturn(startDate);
+        given(timeSlot.getEndDate()).willReturn(endDate);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response.getBookingDate()).isEqualTo(FUTURE_DATE);
+    }
+
+    @Test
+    @DisplayName("성공: 예약 날짜가 타임슬롯 종료일과 같으면 예약 가능 (경계값)")
+    void createBookingSuccessWhenDateEqualsEndDate() {
+        // given
+        LocalDate endDate = FUTURE_DATE;
+        LocalDate startDate = FUTURE_DATE.minusDays(10);
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getStartDate()).willReturn(startDate);
+        given(timeSlot.getEndDate()).willReturn(endDate);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
+
+        // then
+        assertThat(response.getBookingDate()).isEqualTo(FUTURE_DATE);
+    }
+
+    @Test
+    @DisplayName("실패: 예약 날짜가 타임슬롯 종료일 다음날이면 범위 밖")
+    void createBookingFailWhenDateIsOneDayAfterEndDate() {
+        // given
+        LocalDate startDate = FUTURE_DATE.minusDays(10);
+        LocalDate endDate = FUTURE_DATE.minusDays(1);
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartDate()).willReturn(startDate);
+        given(timeSlot.getEndDate()).willReturn(endDate);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_DATE_OUT_OF_RANGE);
+    }
+
+    @Test
+    @DisplayName("실패: 예약 날짜가 타임슬롯 시작일 전날이면 범위 밖")
+    void createBookingFailWhenDateIsOneDayBeforeStartDate() {
+        // given
+        LocalDate startDate = FUTURE_DATE.plusDays(1);
+        LocalDate endDate = FUTURE_DATE.plusDays(10);
+
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartDate()).willReturn(startDate);
+        given(timeSlot.getEndDate()).willReturn(endDate);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_DATE_OUT_OF_RANGE);
+    }
+
     // ===== Google Calendar 연동 테스트 (Issue #63) =====
 
     @Test
@@ -1051,6 +1195,7 @@ class BookingServiceTest {
         String googleEventId = "created-event-id";
 
         given(guestMember.getId()).willReturn(GUEST_ID);
+        given(guestMember.getDisplayName()).willReturn("홍길동");
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
@@ -1061,6 +1206,7 @@ class BookingServiceTest {
             eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
         given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
@@ -1074,7 +1220,7 @@ class BookingServiceTest {
         // then
         assertThat(response.getGoogleEventId()).isEqualTo(googleEventId);
         verify(googleCalendarService).createEvent(
-            anyString(), anyString(), any(), any(), eq(googleCalendarId)
+            eq("홍길동님과의 미팅"), anyString(), any(), any(), eq(googleCalendarId)
         );
     }
 
@@ -1092,6 +1238,9 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        given(guestMember.getDisplayName()).willReturn("홍길동");
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getId()).willReturn(newTimeSlotId);
@@ -1120,7 +1269,7 @@ class BookingServiceTest {
 
         // then
         verify(googleCalendarService).updateEvent(
-            eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
+            eq(googleEventId), eq("홍길동님과의 미팅"), anyString(), any(), any(), eq(googleCalendarId)
         );
     }
 
@@ -1184,6 +1333,7 @@ class BookingServiceTest {
             eq(timeSlot), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
         given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
@@ -1214,6 +1364,8 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getId()).willReturn(newTimeSlotId);

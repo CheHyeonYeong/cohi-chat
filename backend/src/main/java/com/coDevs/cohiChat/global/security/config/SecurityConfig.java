@@ -32,7 +32,8 @@ public class SecurityConfig {
 	private static final String[] PUBLIC_ENDPOINTS = {
 		"/swagger-ui/**", "/hello", "/api/hello",
 		"/members/v1/signup", "/members/v1/login", "/members/v1/refresh",
-		"/members/v1/hosts", "/timeslot/v1/hosts/**", "/oauth/v1/**"
+		"/members/v1/hosts", "/timeslot/v1/hosts/**", "/oauth/v1/**",
+		"/calendar/v1/service-account"
 	};
 
 	private final JwtTokenProvider jwtTokenProvider;
