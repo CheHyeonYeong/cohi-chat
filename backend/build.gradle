@@ -58,8 +58,8 @@ dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-redis-common:8.14.0'
     implementation 'com.bucket4j:bucket4j_jdk17-lettuce:8.14.0'
 
-    runtimeOnly 'org.xerial:sqlite-jdbc:3.45.2.0'
-    implementation 'org.hibernate.orm:hibernate-community-dialects'
+    runtimeOnly 'org.postgresql:postgresql'
+    testRuntimeOnly 'com.h2database:h2'
 
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
