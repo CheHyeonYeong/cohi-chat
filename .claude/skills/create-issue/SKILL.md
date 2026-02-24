@@ -62,17 +62,17 @@ gh project list
 ### 1단계: 프로젝트에 이슈 추가
 
 ```bash
-gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {ISSUE_URL}
+gh project item-add 6 --owner CheHyeonYeong --url {ISSUE_URL}
 ```
 
 ### 2단계: 프로젝트 정보 조회
 
 ```bash
 # 프로젝트 목록 및 ID 확인
-gh project list --owner {OWNER}
+gh project list --owner CheHyeonYeong
 
 # 프로젝트 필드 ID 및 옵션 ID 조회
-gh project field-list {PROJECT_NUMBER} --owner {OWNER} --format json
+gh project field-list 6 --owner CheHyeonYeong --format json
 ```
 
 ### 3단계: 프로젝트 아이템 ID 조회
@@ -80,8 +80,8 @@ gh project field-list {PROJECT_NUMBER} --owner {OWNER} --format json
 ```bash
 gh api graphql -f query='
   query {
-    user(login: "{OWNER}") {
-      projectV2(number: {PROJECT_NUMBER}) {
+    user(login: "CheHyeonYeong") {
+      projectV2(number: 6) {
         items(last: 5) {
           nodes {
             id
