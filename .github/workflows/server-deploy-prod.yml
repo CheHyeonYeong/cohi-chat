@@ -46,6 +46,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Upload JAR to S3
+        run: |
+          aws s3 cp backend/build/libs/*.jar s3://cohi-chat-config/app.jar
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -53,7 +57,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
-          command_timeout: 20m
+          command_timeout: 5m
           script: |
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
@@ -70,13 +74,14 @@ jobs:
             git reset --hard origin/${{ github.ref_name }}
 
             aws s3 cp s3://cohi-chat-config/.env .env
+            aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
             # Free up disk space before build (cohi-chat project only)
             # Note: --volumes 제거 - Redis 데이터 볼륨 보호
             docker system prune -af \
               --filter "label=com.docker.compose.project=cohi-chat" || true
 
-            docker-compose -f docker-compose.prod.yml build backend
+            docker-compose -f docker-compose.prod.yml build --no-cache backend
             docker-compose -f docker-compose.prod.yml up -d redis backend
 
             echo "Waiting for backend to start..."
