@@ -29,3 +29,9 @@ export async function updateCalendar(payload: CalendarUpdatePayload): Promise<Ca
     }
     return response;
 }
+
+export async function getServiceAccountEmail(): Promise<{ serviceAccountEmail: string }> {
+    const res = await fetch(`${API_BASE}/calendar/v1/service-account`);
+    if (!res.ok) throw new Error('Failed to fetch service account email');
+    return res.json();
+}

@@ -40,7 +40,9 @@ public class TimeSlotService {
             calendar.getUserId(),
             request.getStartTime(),
             request.getEndTime(),
-            request.getWeekdays()
+            request.getWeekdays(),
+            request.getStartDate(),
+            request.getEndDate()
         );
 
         TimeSlot savedTimeSlot = timeSlotRepository.save(timeSlot);
@@ -94,7 +96,9 @@ public class TimeSlotService {
             userId,
             request.getStartTime(),
             request.getEndTime(),
-            request.getWeekdays()
+            request.getWeekdays(),
+            request.getStartDate(),
+            request.getEndDate()
         );
 
         if (!overlappingTimeSlots.isEmpty()) {

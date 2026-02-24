@@ -16,6 +16,7 @@ import com.coDevs.cohiChat.calendar.response.CalendarPublicResponseDTO;
 import com.coDevs.cohiChat.calendar.response.CalendarResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -31,6 +32,7 @@ public class CalendarService {
     private final MemberRepository memberRepository;
     private final MemberService memberService;
     private final BookingService bookingService;
+    private final GoogleCalendarService googleCalendarService;
 
     /**
      * 캘린더를 생성한다.
@@ -47,12 +49,15 @@ public class CalendarService {
             memberRepository.save(member);
         }
 
+        googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
+
         Calendar calendar = Calendar.create(
             member.getId(),
             request.getTopics(),
             request.getDescription(),
             request.getGoogleCalendarId()
         );
+        calendar.setCalendarAccessible(true);
 
         try {
             Calendar savedCalendar = calendarRepository.save(calendar);
@@ -62,12 +67,18 @@ public class CalendarService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CalendarResponseDTO getCalendar(Member member) {
         validateHostPermission(member);
 
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
+
+        // calendarAccessible이 null인 경우(기존 호스트)만 Google API 실제 호출 후 DB에 저장
+        if (calendar.getCalendarAccessible() == null) {
+            boolean accessible = googleCalendarService.checkCalendarAccess(calendar.getGoogleCalendarId());
+            calendar.setCalendarAccessible(accessible);
+        }
 
         return CalendarResponseDTO.from(calendar);
     }
@@ -79,11 +90,14 @@ public class CalendarService {
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
+        googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
+
         calendar.update(
             request.getTopics(),
             request.getDescription(),
             request.getGoogleCalendarId()
         );
+        calendar.setCalendarAccessible(true);
 
         return CalendarResponseDTO.from(calendar);
     }

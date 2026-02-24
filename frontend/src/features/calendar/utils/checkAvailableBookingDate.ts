@@ -1,5 +1,22 @@
 import type { IBooking, ICalendarEvent, ITimeSlot } from '../types';
 
+export function isTimeslotAvailableOnDate(
+    timeslot: ITimeSlot,
+    year: number,
+    month: number,
+    day: number,
+    weekday: number
+): boolean {
+    if (!timeslot.weekdays.includes(weekday)) return false;
+    const { startDate, endDate } = timeslot;
+    if (startDate || endDate) {
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (startDate && dateStr < startDate) return false;
+        if (endDate && dateStr > endDate) return false;
+    }
+    return true;
+}
+
 export function checkAvailableBookingDate(
     baseDate: Date,
     timeslots: ITimeSlot[],
@@ -24,12 +41,13 @@ export function checkAvailableBookingDate(
         return false;
     }
 
+    // day === 0은 달력 그리드의 빈 셀 (getCalendarDays에서 패딩으로 채운 값)
     if (day === 0) {
         return false;
     }
 
-    const isTimeSlotWeekday = timeslots.some(timeslot => timeslot.weekdays.includes(weekday));
-    if (!isTimeSlotWeekday) return false;
+    const hasAvailableTimeslot = timeslots.some(timeslot => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
+    if (!hasAvailableTimeslot) return false;
 
     return !bookings.some((booking) => {
         const [bookingYear, bookingMonth, bookingDay] = booking.when.split("-");
@@ -48,10 +66,7 @@ export function checkAvailableBookingDate(
             const [endHour, endMinute] = timeslot.endTime.split(":");
             const endTime = Number(endHour) * 60 + Number(endMinute);
 
-            return (bookingEndTime >= startTime && bookingEndTime <= endTime)
-                || (bookingStartTime >= startTime && bookingStartTime <= endTime)
-                || (startTime <= bookingStartTime && bookingEndTime <= endTime)
-                || (bookingStartTime <= startTime && bookingEndTime >= endTime);
+            return bookingStartTime < endTime && bookingEndTime > startTime;
         });
     });
 }
