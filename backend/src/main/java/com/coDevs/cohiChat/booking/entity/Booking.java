@@ -46,7 +46,7 @@ public class Booking {
     @OnDelete(action = OnDeleteAction.NO_ACTION)
     private TimeSlot timeSlot;
 
-    @Column(name = "guest_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "guest_id", nullable = false, columnDefinition = "uuid")
     private UUID guestId;
 
     @Column(name = "booking_date", nullable = false)

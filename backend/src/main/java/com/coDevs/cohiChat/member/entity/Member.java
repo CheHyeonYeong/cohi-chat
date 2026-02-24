@@ -39,7 +39,7 @@ public class Member {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
-	@Column(columnDefinition = "BINARY(16)")
+	@Column(columnDefinition = "uuid")
 	private UUID id;
 
 	/**

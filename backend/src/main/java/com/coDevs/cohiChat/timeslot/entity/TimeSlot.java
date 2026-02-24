@@ -35,7 +35,7 @@ public class TimeSlot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "calendar_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "calendar_id", nullable = false, columnDefinition = "uuid")
     private UUID userId;
 
     @Column(name = "start_time", nullable = false)

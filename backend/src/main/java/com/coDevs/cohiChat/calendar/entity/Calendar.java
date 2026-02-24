@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
 public class Calendar {
 
     @Id
-    @Column(name = "user_id", columnDefinition = "BINARY(16)")
+    @Column(name = "user_id", columnDefinition = "uuid")
     private UUID userId;
 
     @JdbcTypeCode(SqlTypes.JSON)
