@@ -12,3 +12,4 @@
 - 템플릿의 섹션 순서를 변경하지 않는다
 - 템플릿에 없는 임의 섹션을 추가하지 않는다
 - `gh label list`로 label 목록을 확인하고 이슈 내용에 맞는 label을 선택한다
+- 이슈 생성 후 프로젝트에 추가한다: `gh project item-add 6 --owner CheHyeonYeong --url {ISSUE_URL}`
