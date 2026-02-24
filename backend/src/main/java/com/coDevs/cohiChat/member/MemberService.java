@@ -5,6 +5,7 @@ import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
@@ -60,6 +61,7 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
+	private final TokenService tokenService;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
@@ -119,33 +121,7 @@ public class MemberService {
 			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
 		}
 
-		String accessToken = jwtTokenProvider.createAccessToken(
-			member.getUsername(),
-			member.getRole().name()
-		);
-
-		// 기존 refresh token 삭제 후 새로 발급 (Redis key = username)
-		refreshTokenRepository.deleteById(member.getUsername());
-
-		String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
-		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		String refreshTokenHash = TokenHashUtil.hash(refreshTokenValue);
-		RefreshToken refreshToken = RefreshToken.create(
-			refreshTokenHash,
-			member.getUsername(),
-			refreshTokenExpirationMs
-		);
-		refreshTokenRepository.save(refreshToken);
-
-		long expiredInSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
-
-		return LoginResponseDTO.builder()
-			.accessToken(accessToken)
-			.expiredInMinutes(expiredInSeconds / 60)
-			.refreshToken(refreshTokenValue)
-			.username(member.getUsername())
-			.displayName(member.getDisplayName())
-			.build();
+		return tokenService.issueTokens(member);
 	}
 
 	public Member getMember(String username) {
@@ -322,7 +298,7 @@ public class MemberService {
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
-		String tokenHash = TokenHashUtil.hash(refreshTokenValue);
+		String tokenHash = tokenService.hashToken(refreshTokenValue);
 		refreshTokenRepository.findByToken(tokenHash)
 			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
@@ -351,5 +327,4 @@ public class MemberService {
 			.expiredInMinutes(expiredInSeconds / 60)
 			.build();
 	}
-
 }

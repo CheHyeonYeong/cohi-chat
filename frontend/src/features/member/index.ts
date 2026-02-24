@@ -1,6 +1,7 @@
 // hooks
 export { useAuth } from './hooks/useAuth';
 export { useLogin } from './hooks/useLogin';
+export { useOAuthLogin } from './hooks/useOAuthLogin';
 export { useLogout } from './hooks/useLogout';
 export { useSignup } from './hooks/useSignup';
 export { useUpdateProfile } from './hooks/useUpdateProfile';

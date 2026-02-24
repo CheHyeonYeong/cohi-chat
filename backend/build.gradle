@@ -11,6 +11,18 @@ description = 'Demo project for Spring Boot'
 bootRun {
     // 애플리케이션 실행 시 JVM 인코딩을 UTF-8로 설정
     jvmArgs "-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"
+    // 로컬 개발 시 local 프로파일 적용 (application-local.properties 로드)
+    systemProperty "spring.profiles.active", "local"
+    // 프로젝트 루트의 .env 파일 로드
+    def envFile = file("${projectDir}/../.env")
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def parts = line.split('=', 2)
+                environment(parts[0].trim(), parts[1]?.trim() ?: '')
+            }
+        }
+    }
 }
 
 java {
@@ -31,8 +43,9 @@ dependencyManagement {
 
 dependencies {
 
-    // AWS SDK v2 - S3
+    // AWS SDK v2 - S3, Secrets Manager
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:secretsmanager'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'

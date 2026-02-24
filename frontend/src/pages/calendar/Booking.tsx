@@ -28,6 +28,7 @@ import {
     FILE_UPLOAD_LIMITS,
     type FileValidationError,
 } from '~/libs/fileValidation';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
 
@@ -101,6 +102,7 @@ export default function Booking() {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<string>('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Sortable file list — preserves DnD order across refetches
@@ -167,22 +169,26 @@ export default function Booking() {
         e.preventDefault();
         if (validationErrors.length > 0 || selectedFiles.length === 0) return;
 
-        for (let i = 0; i < selectedFiles.length; i++) {
-            setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
-            const formData = new FormData();
-            formData.append('file', selectedFiles[i]);
-            await uploadFileAsync(formData);
-        }
+        try {
+            for (let i = 0; i < selectedFiles.length; i++) {
+                setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
+                const formData = new FormData();
+                formData.append('file', selectedFiles[i]);
+                await uploadFileAsync(formData);
+            }
 
-        setUploadProgress('');
-        setSelectedFiles([]);
-        setValidationErrors([]);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        refetch();
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            refetch();
+        } finally {
+            setUploadProgress('');
+        }
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
+            setDownloadError(null);
             const token = getValidToken();
             const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -200,7 +206,7 @@ export default function Booking() {
             window.URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Download error:', err);
-            alert('파일 다운로드에 실패했습니다.');
+            setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
         }
     };
 

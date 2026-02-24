@@ -20,6 +20,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "member", indexes = {
 	@Index(name = "idx_member_email", columnList = "email"),
 	@Index(name = "idx_member_username", columnList = "username")
+}, uniqueConstraints = {
+	@UniqueConstraint(name = "uk_member_provider_provider_id", columnNames = {"provider", "provider_id"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -49,15 +52,18 @@ public class Member {
 	@Column(name = "display_name", length = 50, nullable = false)
 	private String displayName;
 
-	@Column(length = 255, nullable = false, unique = true)
+	@Column(length = 255, nullable = true)
 	private String email;
 
-	@Column(name = "hashed_password")
+	@Column(name = "hashed_password", nullable = true)
 	private String hashedPassword;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "provider", nullable = false, length = 20)
+	@Column(name = "provider", nullable = false, updatable = false, length = 20)
 	private Provider provider = Provider.LOCAL;
+
+	@Column(name = "provider_id", length = 100, nullable = true, updatable = false)
+	private String providerId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false, length = 20)
@@ -86,6 +92,7 @@ public class Member {
 	@Column(name = "profile_image_url", length = 500)
 	private String profileImageUrl;
 
+
 	public static Member create(
 		String username,
 		String displayName,
@@ -93,7 +100,8 @@ public class Member {
 		String hashedPassword,
 		Role role
 	) {
-		validateRequired(username, displayName, email, role);
+		validateRequired(username, displayName, role);
+		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
 		if (hashedPassword == null || hashedPassword.isBlank()) throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
 		Member member = new Member();
@@ -101,7 +109,7 @@ public class Member {
 		member.displayName = displayName;
 		member.email = email;
 		member.hashedPassword = hashedPassword;
-		// provider는 필드 기본값 Provider.LOCAL 사용
+		member.provider = Provider.LOCAL;
 		member.role = role;
 		member.isDeleted = false;
 
@@ -112,11 +120,13 @@ public class Member {
 		String username,
 		String displayName,
 		String email,
+		String providerId,
 		Provider provider,
 		Role role
 	) {
-		validateRequired(username, displayName, email, role);
-		if (provider == null) throw new CustomException(ErrorCode.INVALID_PROVIDER);
+		validateRequired(username, displayName, role);
+		if (provider == null || provider == Provider.LOCAL) throw new CustomException(ErrorCode.INVALID_PROVIDER);
+		if (providerId == null || providerId.isBlank()) throw new CustomException(ErrorCode.INVALID_PROVIDER);
 
 		Member member = new Member();
 		member.username = username;
@@ -124,16 +134,16 @@ public class Member {
 		member.email = email;
 		member.hashedPassword = null;
 		member.provider = provider;
+		member.providerId = providerId;
 		member.role = role;
 		member.isDeleted = false;
 
 		return member;
 	}
 
-	private static void validateRequired(String username, String displayName, String email, Role role) {
+	private static void validateRequired(String username, String displayName, Role role) {
 		if (username == null || username.isBlank()) throw new CustomException(ErrorCode.INVALID_USERNAME);
 		if (displayName == null || displayName.isBlank()) throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);
-		if (email == null || email.isBlank()) throw new CustomException(ErrorCode.INVALID_EMAIL);
 		if (role == null) throw new CustomException(ErrorCode.INVALID_ROLE);
 	}
 
@@ -141,7 +151,7 @@ public class Member {
 		if (displayName != null && !displayName.isBlank()) {
 			this.displayName = displayName;
 		}
-		if (hashedPassword != null && !hashedPassword.isBlank()) {
+		if (hashedPassword != null && !hashedPassword.isBlank() && this.provider == Provider.LOCAL) {
 			this.hashedPassword = hashedPassword;
 		}
 	}
