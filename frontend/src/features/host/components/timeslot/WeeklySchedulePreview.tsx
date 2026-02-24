@@ -3,6 +3,7 @@ import {
     DndContext,
     PointerSensor,
     TouchSensor,
+    KeyboardSensor,
     useSensor,
     useSensors,
     useDraggable,
@@ -94,6 +95,7 @@ function DraggableCell({
             ref={setRef}
             {...attributes}
             {...listeners}
+            tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
             className="h-6 transition-colors"
             style={{
@@ -189,6 +191,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 1 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
+        useSensor(KeyboardSensor),
     );
 
     const hours = useMemo(() => computeHoursRange(entries), [entries]);
