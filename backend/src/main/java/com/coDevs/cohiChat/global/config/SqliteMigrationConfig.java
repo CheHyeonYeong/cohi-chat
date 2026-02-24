@@ -81,7 +81,9 @@ public class SqliteMigrationConfig {
                         "  updated_at TIMESTAMP," +
                         "  host_registered_at TIMESTAMP," +
                         "  is_deleted BOOLEAN NOT NULL DEFAULT 0," +
-                        "  deleted_at TIMESTAMP" +
+                        "  deleted_at TIMESTAMP," +
+                        "  job VARCHAR(100)," +
+                        "  profile_image_url VARCHAR(500)" +
                         ")"
                     );
                     stmt.execute(
