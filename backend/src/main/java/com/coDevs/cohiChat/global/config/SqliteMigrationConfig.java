@@ -115,6 +115,23 @@ public class SqliteMigrationConfig {
                     "WHERE provider = 'GOOGLE' AND provider_id IS NULL AND username LIKE 'google_%'"
                 );
                 log.info("Migrated: backfilled provider_id for existing OAuth members");
+
+                // job, profile_image_url 컬럼 추가 (호스트 프로필 편집 기능 도입)
+                var rsJob = stmt.executeQuery(
+                    "SELECT COUNT(*) FROM pragma_table_info('member') WHERE name = 'job'"
+                );
+                if (rsJob.next() && rsJob.getInt(1) == 0) {
+                    stmt.execute("ALTER TABLE member ADD COLUMN job VARCHAR(100)");
+                    log.info("Migrated: added 'job' column to member table");
+                }
+                var rsProfileImg = stmt.executeQuery(
+                    "SELECT COUNT(*) FROM pragma_table_info('member') WHERE name = 'profile_image_url'"
+                );
+                if (rsProfileImg.next() && rsProfileImg.getInt(1) == 0) {
+                    stmt.execute("ALTER TABLE member ADD COLUMN profile_image_url VARCHAR(500)");
+                    log.info("Migrated: added 'profile_image_url' column to member table");
+                }
+
             } catch (Exception e) {
                 log.warn("SQLite migration skipped: {}", e.getMessage());
             }
