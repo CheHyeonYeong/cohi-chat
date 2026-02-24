@@ -6,6 +6,7 @@ import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySch
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
 import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
 import type { TimeSlotResponse } from '~/features/host';
+import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 
@@ -162,8 +163,7 @@ export default function TimeSlotSettings() {
             });
             syncedRef.current = false;
         } catch (err) {
-            const message = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
-            setErrors({ delete: message });
+            setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
             setDeletingId(null);
         }

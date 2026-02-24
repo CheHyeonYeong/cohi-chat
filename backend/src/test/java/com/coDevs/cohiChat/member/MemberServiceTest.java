@@ -43,7 +43,10 @@ import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.global.security.jwt.TokenService;
+import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -80,6 +83,9 @@ class MemberServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Mock
+	private AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+
+	@Mock
 	private BookingRepository bookingRepository;
 
 	@Mock
@@ -87,6 +93,9 @@ class MemberServiceTest {
 
 	@Mock
 	private JwtTokenProvider jwtTokenProvider;
+
+	@Mock
+	private TokenService tokenService;
 
 	@Mock
 	private RateLimitService rateLimitService;
@@ -175,33 +184,30 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그인 성공 - Access Token과 Refresh Token 모두 발급, 토큰은 해시되어 저장")
+	@DisplayName("성공: 로그인 성공 - TokenService.issueTokens 호출")
 	void loginSuccess() {
 		LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
 			.build();
 
+		LoginResponseDTO mockResponse = LoginResponseDTO.builder()
+			.accessToken("test-access-token")
+			.refreshToken("test-refresh-token")
+			.expiredInMinutes(60L)
+			.username(TEST_USERNAME)
+			.displayName(TEST_DISPLAY_NAME)
+			.build();
+
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(passwordEncoder.matches(TEST_PASSWORD, "hashedPassword")).willReturn(true);
-		given(jwtTokenProvider.createAccessToken(any(), any())).willReturn("test-access-token");
-		given(jwtTokenProvider.createRefreshToken(anyString())).willReturn("test-refresh-token");
-		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
-		given(jwtTokenProvider.getExpirationSeconds(anyString())).willReturn(3600L);
-		given(refreshTokenRepository.save(any(RefreshToken.class))).willAnswer(inv -> inv.getArgument(0));
+		given(tokenService.issueTokens(member)).willReturn(mockResponse);
 
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
 
 		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
 		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-
-		// 저장된 RefreshToken의 token 필드가 원문이 아닌 해시값인지 검증
-		ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-		verify(refreshTokenRepository).save(captor.capture());
-		RefreshToken savedToken = captor.getValue();
-		assertThat(savedToken.getToken()).isNotEqualTo("test-refresh-token");
-		assertThat(savedToken.getUsername()).isEqualTo(TEST_USERNAME);
+		verify(tokenService).issueTokens(member);
 	}
 
 	@Test
@@ -217,6 +223,25 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 PASSWORD_MISMATCH 반환")
+	void loginFailOAuthMemberLocalLogin() {
+		Member oAuthMember = Member.createOAuth(
+			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "test-provider-id", Provider.GOOGLE, Role.GUEST
+		);
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.build();
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(oAuthMember));
+		given(passwordEncoder.matches(TEST_PASSWORD, null)).willReturn(false);
+
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 	}
 
 	@Test
@@ -342,26 +367,28 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 유효한 Refresh Token으로 Access Token 재발급 (해시로 조회)")
+	@DisplayName("성공: 유효한 Refresh Token으로 AT + RT 재발급 (Rotation)")
 	void refreshAccessTokenSuccess() {
 		String validRefreshToken = "valid-refresh-token";
 		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
-		RefreshToken storedToken = RefreshToken.create(
-			expectedHash,
-			TEST_USERNAME,
-			604800000L // 7 days in ms
-		);
+		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
 
 		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
 
 		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+		assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
 		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(refreshTokenRepository).save(any(RefreshToken.class));
 	}
 
 	@Test
@@ -395,6 +422,7 @@ class MemberServiceTest {
 		String tokenNotInRedis = "not-in-redis-token";
 
 		given(jwtTokenProvider.getUsernameFromToken(tokenNotInRedis)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(tokenNotInRedis)).willReturn("some-hash");
 		given(refreshTokenRepository.findByToken(anyString())).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
@@ -410,8 +438,11 @@ class MemberServiceTest {
 		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
 
@@ -449,13 +480,80 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제")
+	@DisplayName("성공: 로그아웃 시 Refresh Token 삭제 및 Access Token 블랙리스트 등록")
 	void logoutSuccess() {
+		// given
+		String accessToken = "test-access-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1800L);
+
 		// when
-		memberService.logout(TEST_USERNAME);
+		memberService.logout(TEST_USERNAME, accessToken);
 
 		// then
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+
+		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
+		verify(accessTokenBlacklistRepository).save(captor.capture());
+		AccessTokenBlacklist saved = captor.getValue();
+		assertThat(saved.getTokenHash()).isNotEqualTo(accessToken); // 해시되어 저장
+		assertThat(saved.getExpirationSeconds()).isEqualTo(1800L);
+	}
+
+	@Test
+	@DisplayName("성공: 로그아웃 시 만료 임박 토큰도 블랙리스트 등록")
+	void logoutWithNearExpiredToken() {
+		// given
+		String accessToken = "near-expired-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1L);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository).save(any(AccessTokenBlacklist.class));
+	}
+
+	@Test
+	@DisplayName("성공: accessToken이 null이면 블랙리스트 등록 없이 Refresh Token만 삭제")
+	void logoutWithNullAccessToken() {
+		// when
+		memberService.logout(TEST_USERNAME, null);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+	}
+
+	@Test
+	@DisplayName("성공: 이미 만료된 토큰으로 로그아웃 시 블랙리스트 등록 건너뜀")
+	void logoutWithExpiredToken() {
+		// given
+		String accessToken = "expired-token";
+		willThrow(new ExpiredJwtException(null, null, "expired"))
+			.given(jwtTokenProvider).getExpirationSeconds(accessToken);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
+	}
+
+	@Test
+	@DisplayName("성공: TTL이 0 이하인 토큰은 블랙리스트 등록 건너뜀")
+	void logoutWithZeroTtlToken() {
+		// given
+		String accessToken = "zero-ttl-token";
+		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(0L);
+
+		// when
+		memberService.logout(TEST_USERNAME, accessToken);
+
+		// then
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(accessTokenBlacklistRepository, never()).save(any(AccessTokenBlacklist.class));
 	}
 
 	@Test

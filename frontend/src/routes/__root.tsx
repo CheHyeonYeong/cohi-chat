@@ -8,6 +8,7 @@ import {
 import Calendar from '../pages/calendar/Calendar'
 import { LoginForm, SignupForm } from '~/features/member'
 import Home from '~/pages/main/Home'
+import OAuthCallbackPage from '~/pages/oauth/OAuthCallbackPage'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
@@ -112,6 +113,17 @@ const calendarRoute = createRoute({
     }),
 })
 
+const oAuthCallbackRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/oauth/callback/$provider',
+    component: OAuthCallbackPage,
+    validateSearch: z.object({
+        code: z.string().optional(),
+        error: z.string().optional(),
+        state: z.string().optional(),
+    }),
+})
+
 const termsRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/terms',
@@ -133,6 +145,7 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
+    oAuthCallbackRoute,
     termsRoute,
     privacyRoute,
 ])
