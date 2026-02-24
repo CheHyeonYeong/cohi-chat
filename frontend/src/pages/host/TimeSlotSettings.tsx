@@ -265,7 +265,7 @@ export default function TimeSlotSettings() {
                         />
                     </div>
                     <div className="flex-1">
-                        <WeeklySchedulePreview entries={entries} />
+                        <WeeklySchedulePreview entries={entries} onChange={setEntries} />
                     </div>
                 </div>
             </main>
