@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Button from '~/components/button/Button';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { Header } from '~/components/header';
 import StepIndicator from '~/features/host/components/register/StepIndicator';
 import RegisterStep1, { type Step1Data } from '~/features/host/components/register/RegisterStep1';
 import RegisterStep2, { type Step2Data, CALENDAR_ID_REGEX } from '~/features/host/components/register/RegisterStep2';
@@ -113,14 +113,10 @@ export default function HostRegister() {
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
             {/* Header */}
-            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
-                <Link to='/' className="flex items-center gap-2">
-                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
-                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-                </Link>
-                <StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-                <div className="w-24" />
-            </header>
+            <Header
+                center={<StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />}
+                right={<div className="w-24" />}
+            />
 
             {/* Content */}
             <main className="w-full px-6 py-10 md:py-16 pb-28">

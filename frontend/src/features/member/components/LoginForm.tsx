@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
+import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
@@ -37,15 +38,6 @@ function KakaoIcon() {
     return (
         <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path fillRule="evenodd" clipRule="evenodd" d="M9 0C4.029 0 0 3.134 0 7c0 2.493 1.611 4.673 4.035 5.933L3.054 17.1c-.079.332.299.595.578.393L8.87 13.94c.043.002.086.003.13.003 4.971 0 9-3.134 9-7S13.971 0 9 0z" fill="#3C1E1E"/>
-        </svg>
-    );
-}
-
-function CoffeeCupIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 21V19H20V21H2ZM4 18C3.45 18 2.979 17.804 2.587 17.412C2.195 17.02 1.99933 16.5493 2 16V5H18V9H20C20.55 9 21.021 9.196 21.413 9.588C21.805 9.98 22.0007 10.4507 22 11V14C22 14.55 21.804 15.021 21.412 15.413C21.02 15.805 20.5493 16.0007 20 16H18V18H4ZM18 14H20V11H18V14ZM4 16H16V7H4V16Z"/>
-            <path d="M7 4C7 3.5 7.5 2 9 2C10.5 2 11 3.5 11 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
         </svg>
     );
 }
