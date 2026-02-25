@@ -36,10 +36,10 @@ public class NoShowHistory {
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
-    @Column(name = "host_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "host_id", nullable = false, columnDefinition = "uuid")
     private UUID hostId;
 
-    @Column(name = "reported_by", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "reported_by", nullable = false, columnDefinition = "uuid")
     private UUID reportedBy;
 
     @Column(name = "reason", length = 255)
