@@ -60,7 +60,7 @@ coheChat/
 
 ## API 문서
 
-- Swagger UI: http://localhost:8080/swagger-ui.html
+- Swagger UI: http://54.180.118.178:8080/api/swagger-ui/index.html
 
 ## 팀
 
