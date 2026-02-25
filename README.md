@@ -64,10 +64,10 @@ coheChat/
 
 ## 팀
 
-| FullStack | FullStack |
-|:---------:|:---------:|
-| **채현영** | **김희수** |
-| [@CheHyeonYeong](https://github.com/CheHyeonYeong) | [@Tarte12](https://github.com/Tarte12) |
+| FullStack | FullStack |FullStack |
+|:---------:|:---------:|:---------:|
+| **채현영** | **김희수** | **박천** |
+| [@CheHyeonYeong](https://github.com/CheHyeonYeong) | [@Tarte12](https://github.com/Tarte12) |[@say8425](https://github.com/say8425) |
 
 ## 라이선스
 
