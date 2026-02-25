@@ -131,7 +131,7 @@ function WeeklyGrid({
                     <div key={hour} className="contents">
                         {/* Time label */}
                         <div className="bg-white flex items-start justify-end pr-2 pt-0.5 h-12">
-                            <span className="text-xs text-gray-400">
+                            <span data-testid="time-label" className="text-xs text-gray-400">
                                 {String(hour).padStart(2, '0')}:00
                             </span>
                         </div>

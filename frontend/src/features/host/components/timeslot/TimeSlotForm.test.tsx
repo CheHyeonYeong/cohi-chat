@@ -72,7 +72,7 @@ describe('TimeSlotForm', () => {
             let warnings = container.querySelectorAll('[data-testid="time-validation-error"]');
             expect(warnings.length).toBe(0);
 
-            // 두 번째 entry를 펼침 (data-testid로 정확히 선택)
+            // 두 번째 entry를 펼침
             const entryHeaders = container.querySelectorAll('[data-testid="entry-header"]');
             fireEvent.click(entryHeaders[1]);
 
