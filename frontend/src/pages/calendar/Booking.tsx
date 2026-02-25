@@ -404,14 +404,13 @@ export default function Booking() {
                         )}
 
                                                 {downloadError && (
-                                                    <p className="mt-1 text-sm text-red-500">{downloadError}</p> 
-                                                )}
-                        
-                                                {fileOrder.length === 0 && (
-                                                    <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
-                                                )}
-                                            </div>
-                        
+                            <p className="mt-1 text-sm text-red-500">{downloadError}</p>
+                        )}
+
+                        {fileOrder.length === 0 && (
+                            <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
+                        )}
+                    </div>
                 </div>
             </main>
         </div>
