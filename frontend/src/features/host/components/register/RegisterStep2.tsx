@@ -167,7 +167,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                     href="https://calendar.google.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)] text-sm font-medium hover:bg-[var(--cohe-bg-warm)] transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)] text-sm font-medium hover:bg-[rgb(var(--cohe-bg-warm))] transition-colors"
                                 >
                                     calendar.google.com 열기
                                     <ExternalLinkIcon className="w-3.5 h-3.5" />

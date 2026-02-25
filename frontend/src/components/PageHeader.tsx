@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
 
 interface PageHeaderProps {
-    right?: React.ReactNode;
+    right?: ReactNode;
 }
 
 export default function PageHeader({ right }: PageHeaderProps) {

@@ -176,13 +176,12 @@ export default function Booking() {
                 formData.append('file', selectedFiles[i]);
                 await uploadFileAsync(formData);
             }
-
-            setSelectedFiles([]);
-            setValidationErrors([]);
-            if (fileInputRef.current) fileInputRef.current.value = '';
             refetch();
         } finally {
             setUploadProgress('');
+            setSelectedFiles([]);
+            setValidationErrors([]);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -260,7 +259,7 @@ export default function Booking() {
                     {/* Booking info card */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center gap-4 mb-5">
-                            <div className="w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center flex-shrink-0">
                                 <span className="text-lg font-semibold text-[var(--cohe-primary)]">
                                     {booking.host.displayName[0] ?? '?'}
                                 </span>

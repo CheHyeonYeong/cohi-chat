@@ -256,7 +256,7 @@ export default function TimeSlotSettings() {
                     <span className="mx-1.5">&gt;</span>
                     <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
                 </nav>
-                <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center">
                     <span className="text-sm text-[var(--cohe-primary)]">👤</span>
                 </div>
             </header>
