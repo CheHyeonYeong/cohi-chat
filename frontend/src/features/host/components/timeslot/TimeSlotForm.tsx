@@ -125,6 +125,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                         <div
                             data-testid="entry-header"
                             className="flex justify-between items-center cursor-pointer"
+                            data-testid="entry-header"
                             onClick={() => setExpandedIndex(index)}
                         >
                             <div className="flex items-center gap-2">

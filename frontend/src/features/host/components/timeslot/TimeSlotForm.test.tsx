@@ -94,7 +94,7 @@ describe('TimeSlotForm', () => {
             );
 
             // 두 번째 entry를 펼침
-            const entryHeaders = container.querySelectorAll('.cursor-pointer');
+            const entryHeaders = container.querySelectorAll('[data-testid="entry-header"]');
             fireEvent.click(entryHeaders[1]);
 
             const errors = container.querySelectorAll('[data-testid="overlap-error"]');
