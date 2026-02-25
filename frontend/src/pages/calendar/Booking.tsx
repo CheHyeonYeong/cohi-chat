@@ -44,7 +44,7 @@ export default function Booking() {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
-        const timer = setInterval(() => setNow(Date.now()), 30_000);
+        const timer = setInterval(() => setNow(Date.now()), 10_000);
         return () => clearInterval(timer);
     }, []);
 

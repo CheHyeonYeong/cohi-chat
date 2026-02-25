@@ -14,16 +14,20 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "noshow_history")
+@Table(name = "noshow_history", indexes = {
+    @Index(name = "idx_noshow_history_host_id", columnList = "host_id")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NoShowHistory {
@@ -42,6 +46,7 @@ public class NoShowHistory {
     @Column(name = "reported_by", nullable = false, columnDefinition = "uuid")
     private UUID reportedBy;
 
+    @Size(max = 255)
     @Column(name = "reason", length = 255)
     private String reason;
 

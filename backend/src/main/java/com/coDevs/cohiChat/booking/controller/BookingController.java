@@ -187,14 +187,16 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
-    @Operation(summary = "호스트 노쇼 이력 조회", description = "특정 호스트의 노쇼 이력을 조회합니다. 인증된 사용자라면 누구든 조회 가능합니다.")
+    @Operation(
+        summary = "호스트 노쇼 이력 조회",
+        description = "특정 호스트의 노쇼 이력을 조회합니다. 게스트가 예약 전 호스트 신뢰도를 확인할 수 있도록 인증된 사용자 누구나 조회 가능합니다."
+    )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @GetMapping("/host/{hostId}/noshow-history")
     public ResponseEntity<ApiResponseDTO<List<NoShowHistoryResponseDTO>>> getNoShowHistory(
-            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID hostId
     ) {
         List<NoShowHistoryResponseDTO> responses = bookingService.getNoShowHistoryByHostId(hostId);
