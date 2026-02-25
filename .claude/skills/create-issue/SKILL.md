@@ -26,6 +26,8 @@
 
 3. **이슈 생성**: `gh issue create` 명령어로 이슈 생성
 
+> **본문 형식**: @.claude/rules/issues.md 규칙을 따른다.
+
 ## 이슈 생성 명령어
 
 ```bash
@@ -36,26 +38,6 @@ gh issue create \
   --milestone "milestone-title" \
   --body "본문 내용"
 ```
-
-## 템플릿별 필수 섹션
-
-### Feature
-- 🎯 목표 (What & Why)
-- 📦 구체적으로 뭘 만들지 (Deliverables)
-- 🚫 다음에 할 일 (Out of Scope)
-- ✅ 체크포인트 (Check Point)
-
-### Bug
-- 버그 설명
-- 재현 방법
-- 기대 동작
-- 환경 정보
-
-### Refactoring
-- 🎯 목표 (What & Why)
-- 📦 구체적으로 뭘 바꿀지 (Deliverables)
-- 기대 효과
-- ✅ 체크포인트 (Check Point)
 
 ## 필수 확인 명령어
 
@@ -80,17 +62,17 @@ gh project list
 ### 1단계: 프로젝트에 이슈 추가
 
 ```bash
-gh project item-add {PROJECT_NUMBER} --owner {OWNER} --url {ISSUE_URL}
+gh project item-add 6 --owner CheHyeonYeong --url {ISSUE_URL}
 ```
 
 ### 2단계: 프로젝트 정보 조회
 
 ```bash
 # 프로젝트 목록 및 ID 확인
-gh project list --owner {OWNER}
+gh project list --owner CheHyeonYeong
 
 # 프로젝트 필드 ID 및 옵션 ID 조회
-gh project field-list {PROJECT_NUMBER} --owner {OWNER} --format json
+gh project field-list 6 --owner CheHyeonYeong --format json
 ```
 
 ### 3단계: 프로젝트 아이템 ID 조회
@@ -98,8 +80,8 @@ gh project field-list {PROJECT_NUMBER} --owner {OWNER} --format json
 ```bash
 gh api graphql -f query='
   query {
-    user(login: "{OWNER}") {
-      projectV2(number: {PROJECT_NUMBER}) {
+    user(login: "CheHyeonYeong") {
+      projectV2(number: 6) {
         items(last: 5) {
           nodes {
             id
@@ -132,30 +114,7 @@ gh project item-edit --project-id {PROJECT_ID} --id {ITEM_ID} \
 
 ## 작업 산정 기준
 
-이슈 생성 시 사용자에게 아래 기준으로 Priority, Size를 질문하고 Project 필드에 설정:
-
-### Priority (우선순위)
-| 값 | 설명 |
-|----|------|
-| P0 | 지금 안 하면 장애 / 일정 붕괴 |
-| P1 | 이번 스프린트에 반드시 필요 |
-| P2 | 하면 좋은데 밀려도 됨 |
-
-### Size (작업 크기)
-| 값 | 설명 |
-|----|------|
-| S | 반나절~1일 |
-| M | 1~2일 |
-| L | 3~5일 |
-| XL | 쪼개야 함 (설계 다시) |
-
-### Estimate (예상 소요)
-- 단위: 개발자 작업일 기준 (0.5d / 1d / 2d / 3d)
-- Size는 "감각", Estimate는 "약속용 수치"
-
-### Start date / Target date
-- Start date: 실제 착수일 (YYYY-MM-DD)
-- Target date: 리뷰 + QA 포함 완료 목표일 (YYYY-MM-DD)
+> @.claude/rules/work-estimation.md 규칙을 따른다.
 
 ## 작업 순서 요약
 
