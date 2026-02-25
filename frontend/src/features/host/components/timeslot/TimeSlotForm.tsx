@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import Button from '~/components/button/Button';
+import { isDuplicateEntry } from './dragUtils';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -62,6 +63,14 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                 return '시작 시간은 종료 시간보다 이전이어야 합니다';
             }
             return null;
+        });
+    }, [entries]);
+
+    const overlapErrors = useMemo(() => {
+        return entries.map((entry, index) => {
+            if (entry.existingId != null) return null;
+            const others = entries.filter((_, i) => i !== index);
+            return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
         });
     }, [entries]);
 
@@ -275,6 +284,14 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                         {timeValidationErrors[index]}
                                     </p>
                                 )}
+                                {overlapErrors[index] && (
+                                    <p
+                                        data-testid="overlap-error"
+                                        className="text-sm text-red-500 mt-2"
+                                    >
+                                        {overlapErrors[index]}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -301,6 +318,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                 size="lg"
                 onClick={onSave}
                 loading={isPending}
+                disabled={timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)}
                 className="w-full mt-6 rounded-lg"
             >
                 {isPending ? '저장 중...' : '저장하기'}

@@ -129,12 +129,33 @@ describe('isDuplicateEntry', () => {
         expect(isDuplicateEntry([base], { weekdays: [3, 1, 2], startTime: '09:00', endTime: '18:00' })).toBe(true);
     });
 
-    it('시간이 다르면 false를 반환해야 한다', () => {
-        expect(isDuplicateEntry([base], { weekdays: [1, 2, 3], startTime: '10:00', endTime: '18:00' })).toBe(false);
+    it('같은 요일이고 시간이 겹치면 true를 반환해야 한다', () => {
+        // base: 09:00~18:00, 새 entry: 10:00~12:00 → 포함 관계이므로 겹침
+        expect(isDuplicateEntry([base], { weekdays: [1], startTime: '10:00', endTime: '12:00' })).toBe(true);
     });
 
-    it('요일이 다르면 false를 반환해야 한다', () => {
-        expect(isDuplicateEntry([base], { weekdays: [1, 2], startTime: '09:00', endTime: '18:00' })).toBe(false);
+    it('같은 요일이고 시간이 부분적으로 겹치면 true를 반환해야 한다', () => {
+        // base: 09:00~18:00, 새 entry: 17:00~20:00 → 17:00~18:00 겹침
+        expect(isDuplicateEntry([base], { weekdays: [1], startTime: '17:00', endTime: '20:00' })).toBe(true);
+    });
+
+    it('같은 요일이지만 시간이 인접(붙어있음)하면 false를 반환해야 한다', () => {
+        // base: 09:00~18:00, 새 entry: 18:00~20:00 → 겹침 없음
+        expect(isDuplicateEntry([base], { weekdays: [1], startTime: '18:00', endTime: '20:00' })).toBe(false);
+    });
+
+    it('같은 요일이지만 시간이 완전히 분리되면 false를 반환해야 한다', () => {
+        expect(isDuplicateEntry([base], { weekdays: [1], startTime: '19:00', endTime: '21:00' })).toBe(false);
+    });
+
+    it('요일이 전혀 겹치지 않으면 false를 반환해야 한다', () => {
+        // base: 월화수, 새 entry: 목금 → 요일 겹침 없음
+        expect(isDuplicateEntry([base], { weekdays: [4, 5], startTime: '09:00', endTime: '18:00' })).toBe(false);
+    });
+
+    it('일부 요일이 겹치고 시간도 겹치면 true를 반환해야 한다', () => {
+        // base: 월화수, 새 entry: 수목금 → 수요일 겹침
+        expect(isDuplicateEntry([base], { weekdays: [3, 4, 5], startTime: '09:00', endTime: '18:00' })).toBe(true);
     });
 
     it('entries가 비어있으면 false를 반환해야 한다', () => {

@@ -81,13 +81,12 @@ export function computeDragHighlights(
     return set;
 }
 
-/** 동일한 요일 집합 + 동일한 시간 범위를 가진 entry가 이미 존재하는지 확인 */
+/** 새 entry와 요일이 겹치면서 시간대도 겹치는 entry가 이미 존재하는지 확인 */
 export function isDuplicateEntry(entries: TimeSlotEntry[], newEntry: TimeSlotEntry): boolean {
-    const sortedNew = [...newEntry.weekdays].sort((a, b) => a - b).join(',');
-    return entries.some(
-        (e) =>
-            e.startTime === newEntry.startTime &&
-            e.endTime === newEntry.endTime &&
-            [...e.weekdays].sort((a, b) => a - b).join(',') === sortedNew,
-    );
+    const newDays = new Set(newEntry.weekdays);
+    return entries.some((e) => {
+        const sharesDay = e.weekdays.some((d) => newDays.has(d));
+        if (!sharesDay) return false;
+        return e.startTime < newEntry.endTime && newEntry.startTime < e.endTime;
+    });
 }
