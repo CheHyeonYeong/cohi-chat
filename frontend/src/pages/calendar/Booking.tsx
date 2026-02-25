@@ -403,7 +403,7 @@ export default function Booking() {
                             </div>
                         )}
 
-                                                {downloadError && (
+                        {downloadError && (
                             <p className="mt-1 text-sm text-red-500">{downloadError}</p>
                         )}
 
