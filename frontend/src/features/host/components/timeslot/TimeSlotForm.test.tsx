@@ -65,15 +65,15 @@ describe('TimeSlotForm', () => {
             ];
 
             const { container } = render(
-                <TimeSlotForm {...defaultProps} entries={entries} />
+                <TimeSlotForm {...defaultProps} entries={entries} />,
             );
 
             // 첫 번째 entry는 유효하므로 에러가 없어야 함
             let warnings = container.querySelectorAll('[data-testid="time-validation-error"]');
             expect(warnings.length).toBe(0);
 
-            // 두 번째 entry를 펼침
-            const entryHeaders = container.querySelectorAll('.cursor-pointer');
+            // 두 번째 entry를 펼침 (data-testid로 정확히 선택)
+            const entryHeaders = container.querySelectorAll('[data-testid="entry-header"]');
             fireEvent.click(entryHeaders[1]);
 
             // 두 번째 entry에 에러가 있어야 함

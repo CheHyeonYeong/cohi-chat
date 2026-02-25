@@ -123,6 +123,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                         } p-4`}
                     >
                         <div
+                            data-testid="entry-header"
                             className="flex justify-between items-center cursor-pointer"
                             onClick={() => setExpandedIndex(index)}
                         >
@@ -132,6 +133,9 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                 </span>
                                 {entry.existingId != null && (
                                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>
+                                )}
+                                {(timeValidationErrors[index] || overlapErrors[index]) && (
+                                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
                                 )}
                             </div>
                             {entry.existingId != null && onDelete ? (
@@ -311,6 +315,13 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
             {Object.values(errors).map((msg, i) => (
                 <p key={i} className="mt-2 text-sm text-red-500">{msg}</p>
             ))}
+
+            {/* 겹침/시간 오류 요약 */}
+            {(timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)) && (
+                <p className="text-sm text-red-500 mt-4 text-center">
+                    저장할 수 없는 시간대가 있습니다. 각 시간대를 확인해주세요.
+                </p>
+            )}
 
             {/* Save */}
             <Button

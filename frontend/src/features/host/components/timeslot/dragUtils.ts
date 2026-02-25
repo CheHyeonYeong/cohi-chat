@@ -83,10 +83,10 @@ export function computeDragHighlights(
 
 /** 새 entry와 요일이 겹치면서 시간대도 겹치는 entry가 이미 존재하는지 확인 */
 export function isDuplicateEntry(entries: TimeSlotEntry[], newEntry: TimeSlotEntry): boolean {
-    const newDays = new Set(newEntry.weekdays);
-    return entries.some((e) => {
-        const sharesDay = e.weekdays.some((d) => newDays.has(d));
-        if (!sharesDay) return false;
-        return e.startTime < newEntry.endTime && newEntry.startTime < e.endTime;
-    });
+    return entries.some(
+        (e) =>
+            newEntry.startTime < e.endTime &&
+            newEntry.endTime > e.startTime &&
+            e.weekdays.some((wd) => newEntry.weekdays.includes(wd)),
+    );
 }
