@@ -163,12 +163,11 @@ public class Member {
 		this.displayName = displayName;
 	}
 
-	public void updateProfile(String job, String profileImageUrl) {
-		if (job != null) this.job = job;
-		if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
-	}
-
-	public void softDelete() {
+		public void updateProfile(String job, String profileImageUrl) {
+			if (job != null && !job.isBlank()) this.job = job;
+			if (profileImageUrl != null && !profileImageUrl.isBlank()) this.profileImageUrl = profileImageUrl;
+		}
+		public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();
 	}

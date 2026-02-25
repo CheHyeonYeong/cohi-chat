@@ -22,7 +22,7 @@ export default function BookingCard({ booking, className }: BookingCardProps) {
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-semibold text-[var(--cohe-primary)]">
-                            {booking.host.displayName[0] ?? '?'}
+                            {booking.host?.displayName?.[0] ?? '?'}
                         </span>
                     </div>
                     <p className="font-semibold text-[var(--cohe-text-dark)]">{booking.host.displayName}님과</p>

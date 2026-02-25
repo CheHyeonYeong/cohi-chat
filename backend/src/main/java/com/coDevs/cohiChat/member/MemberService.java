@@ -251,13 +251,21 @@ public class MemberService {
 	@Transactional
 	public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
 		Member member = getMember(username);
+
+		if (member.getRole() != Role.HOST) {
+			throw new IllegalStateException("호스트 권한이 필요합니다.");
+		}
+
+		// URL 프로토콜 검증 (XSS 방지)
+		if (req.getProfileImageUrl() != null && !req.getProfileImageUrl().isBlank()) {
+			String url = req.getProfileImageUrl().toLowerCase();
+			if (!url.startsWith("http://") && !url.startsWith("https://")) {
+				throw new IllegalArgumentException("프로필 이미지는 http:// 또는 https:// 로 시작하는 URL이어야 합니다.");
+			}
+		}
+
 		member.updateProfile(req.getJob(), req.getProfileImageUrl());
-		long chatCount = bookingRepository
-			.countAttendedByHostIds(List.of(member.getId()), AttendanceStatus.ATTENDED)
-			.stream()
-			.findFirst()
-			.map(HostChatCount::getCount)
-			.orElse(0L);
+		long chatCount = bookingRepository.countAttendedByHostId(member.getId(), AttendanceStatus.ATTENDED);
 		return HostResponseDTO.from(member, chatCount);
 	}
 

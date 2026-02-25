@@ -13,6 +13,8 @@ import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
+const PROFILE_SAVE_SUCCESS_DURATION = 3000;
+const COPY_SUCCESS_DURATION = 2000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -64,6 +66,15 @@ export default function TimeSlotSettings() {
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
+    const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (hostProfile) {
@@ -79,7 +90,8 @@ export default function TimeSlotSettings() {
                 profileImageUrl: profileImageUrl || undefined,
             });
             setProfileSaved(true);
-            setTimeout(() => setProfileSaved(false), 3000);
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
         } catch {
             // 에러는 updateProfileMutation.isError / error로 표시
         }
@@ -101,7 +113,8 @@ export default function TimeSlotSettings() {
         try {
             await navigator.clipboard.writeText(serviceAccountEmail);
             setEmailCopied(true);
-            setTimeout(() => setEmailCopied(false), 2000);
+            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+            emailCopiedTimerRef.current = setTimeout(() => setEmailCopied(false), COPY_SUCCESS_DURATION);
         } catch {
             // clipboard API 미지원 시 무시
         }

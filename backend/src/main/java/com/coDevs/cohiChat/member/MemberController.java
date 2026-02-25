@@ -34,6 +34,10 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import java.security.Principal;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
+@Tag(name = "Member", description = "회원 관련 API")
 public class MemberController {
 
 	private final MemberService memberService;
@@ -118,6 +123,12 @@ public class MemberController {
 		return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
 	}
 
+	@Operation(summary = "호스트 프로필 수정", description = "호스트가 자신의 프로필 정보(직업, 이미지 등)를 수정합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "프로필 수정 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요"),
+		@ApiResponse(responseCode = "403", description = "호스트 권한 필요")
+	})
 	@PatchMapping("/v1/me/profile")
 	@PreAuthorize("hasRole('HOST')")
 	public ResponseEntity<ApiResponseDTO<HostResponseDTO>> updateProfile(

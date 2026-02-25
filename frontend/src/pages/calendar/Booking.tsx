@@ -43,7 +43,7 @@ interface SortableFileItemProps {
 
 function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: file.id,
+        id: String(file.id),
     });
 
     const style = {
@@ -120,7 +120,7 @@ export default function Booking() {
     }, [booking]);
 
     // Stable items array for SortableContext (avoids recreating on every render)
-    const fileIds = useMemo(() => fileOrder.map((f) => f.id), [fileOrder]);
+    const fileIds = useMemo(() => fileOrder.map((f) => String(f.id)), [fileOrder]);
 
     // DnD sensors
     const sensors = useSensors(
@@ -214,8 +214,9 @@ export default function Booking() {
         const { active, over } = event;
         if (over && active.id !== over.id) {
             setFileOrder((items) => {
-                const oldIndex = items.findIndex((f) => f.id === active.id);
-                const newIndex = items.findIndex((f) => f.id === over.id);
+                const oldIndex = items.findIndex((f) => String(f.id) === active.id);
+                const newIndex = items.findIndex((f) => String(f.id) === over.id);
+                if (oldIndex === -1 || newIndex === -1) return items;
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
@@ -402,14 +403,15 @@ export default function Booking() {
                             </div>
                         )}
 
-                        {downloadError && (
-                            <p className="mt-1 text-sm text-red-500">{downloadError}</p>
-                        )}
-
-                        {fileOrder.length === 0 && !canUploadMore && (
-                            <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
-                        )}
-                    </div>
+                                                {downloadError && (
+                                                    <p className="mt-1 text-sm text-red-500">{downloadError}</p> 
+                                                )}
+                        
+                                                {fileOrder.length === 0 && (
+                                                    <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
+                                                )}
+                                            </div>
+                        
                 </div>
             </main>
         </div>
