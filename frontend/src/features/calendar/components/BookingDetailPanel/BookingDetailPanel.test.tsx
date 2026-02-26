@@ -34,7 +34,7 @@ const mockBooking: IBookingDetail = {
 
 // Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, any> }) => {
+    Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
         let href = to;
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
