@@ -78,6 +78,7 @@ export interface IBookingFile {
     originalFileName: string;
     fileSize: number;
     contentType: string;
+    createdAt: ISO8601String;
 }
 
 export interface ICalendar {
