@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { cn } from '~/libs/cn';
 
 interface FileDropZoneProps {
@@ -9,6 +9,7 @@ interface FileDropZoneProps {
 
 export default function FileDropZone({ onFilesDropped, disabled = false, className }: FileDropZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -27,9 +28,24 @@ export default function FileDropZone({ onFilesDropped, disabled = false, classNa
         if (files.length > 0) onFilesDropped(files);
     };
 
+    const handleClick = () => {
+        if (!disabled) fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            onFilesDropped(e.target.files);
+            e.target.value = '';
+        }
+    };
+
     return (
         <div
             data-testid="file-drop-zone"
+            role="button"
+            tabIndex={disabled ? -1 : 0}
+            onClick={handleClick}
+            onKeyDown={(e) => e.key === 'Enter' && handleClick()}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -38,11 +54,19 @@ export default function FileDropZone({ onFilesDropped, disabled = false, classNa
                 isDragging
                     ? 'border-[var(--cohe-primary)] bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)]'
                     : 'border-gray-200 text-gray-400',
-                disabled && 'opacity-50 cursor-not-allowed',
+                disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                 className,
             )}
         >
-            <span>📎 파일을 드래그하여 업로드</span>
+            <span>📎 파일을 드래그하거나 클릭하여 업로드</span>
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+                aria-hidden
+            />
         </div>
     );
 }
