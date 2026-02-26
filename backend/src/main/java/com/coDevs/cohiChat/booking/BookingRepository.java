@@ -12,7 +12,6 @@ import org.springframework.data.repository.query.Param;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 
-
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /**
@@ -104,5 +103,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countAttendedByHostId(
         @Param("hostId") UUID hostId,
         @Param("status") AttendanceStatus status
-    ); 30e3e0686e7101de034a2beb5eaaa52d7455c975
+    );
 }

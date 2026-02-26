@@ -283,7 +283,7 @@ export default function TimeSlotSettings() {
                             </button>
                         </div>
                         <p className="text-xs text-amber-600 mt-2">
-                            Google Calendar 설정 > 특정 사용자와 공유 > 위 이메일 추가 > 변경 및 이벤트 관리(편집자) 권한 선택
+                            Google Calendar 설정 &gt; 특정 사용자와 공유 &gt; 위 이메일 추가 &gt; 변경 및 이벤트 관리(편집자) 권한 선택
                         </p>
                     </div>
                 </div>
