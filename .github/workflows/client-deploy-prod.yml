@@ -74,12 +74,13 @@ jobs:
             git fetch origin
             git reset --hard origin/${{ github.ref_name }}
 
-            aws s3 cp s3://cohi-chat-config/.env .env
+            # Secrets Manager에서 환경변수 가져오기
+            aws secretsmanager get-secret-value --secret-id cohi-chat/prod --query SecretString --output text | \
+              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
 
-            # Free up disk space before build (cohi-chat project only)
-            # Note: --volumes 제거 - 캐시 볼륨 보호
-            docker system prune -af \
-              --filter "label=com.docker.compose.project=cohi-chat" || true
+            # Free up disk space before build
+            # Note: docker image prune만 사용 - 빌드 캐시 보호
+            docker image prune -af || true
 
             docker-compose -f docker-compose.prod.yml build frontend
             docker-compose -f docker-compose.prod.yml up -d frontend
