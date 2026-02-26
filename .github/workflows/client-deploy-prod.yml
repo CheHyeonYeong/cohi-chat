@@ -77,10 +77,11 @@ jobs:
             aws s3 cp s3://cohi-chat-config/.env .env
 
             # Free up disk space before build (cohi-chat project only)
-            docker system prune -af --volumes \
+            # Note: --volumes 제거 - 캐시 볼륨 보호
+            docker system prune -af \
               --filter "label=com.docker.compose.project=cohi-chat" || true
 
-            docker-compose -f docker-compose.prod.yml build --no-cache frontend
+            docker-compose -f docker-compose.prod.yml build frontend
             docker-compose -f docker-compose.prod.yml up -d frontend
 
             echo "Waiting for frontend to start..."
