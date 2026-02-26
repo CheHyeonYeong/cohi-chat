@@ -1,4 +1,4 @@
-name: Client Deploy Production
+﻿name: Client Deploy Production
 
 on:
   push:
@@ -60,18 +60,40 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          S3_FRONTEND_DIST: ${{ env.S3_FRONTEND_DIST }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_FRONTEND_DIST
           command_timeout: 40m
           script: |
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
             export S3_FRONTEND_DIST=$S3_FRONTEND_DIST
-            set -e
+            set -euo pipefail
+
+            if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ]; then
+              echo "Missing AWS envs"
+              exit 1
+            fi
+            if [ -z "$S3_FRONTEND_DIST" ]; then
+              echo "S3_FRONTEND_DIST is empty"
+              exit 1
+            fi
+            command -v aws >/dev/null 2>&1 || { echo "aws cli not found"; exit 1; }
+            command -v docker >/dev/null 2>&1 || { echo "docker not found"; exit 1; }
+            command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
+            command -v python3 >/dev/null 2>&1 || { echo "python3 not found"; exit 1; }
+            aws sts get-caller-identity || { echo "AWS auth failed"; exit 1; }
+
+            echo "Deploy start: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "Git ref: ${{ github.ref_name }}"
 
             if [ ! -d ~/cohi-chat ]; then
               git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
@@ -84,7 +106,8 @@ jobs:
 
             # Secrets Manager에서 환경변수 가져오기
             aws secretsmanager get-secret-value --secret-id cohi-chat/prod --query SecretString --output text | \
-              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
+              python3 -c "import sys,json; data=json.load(sys.stdin); print('\\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
+            mkdir -p frontend/dist
 
             # Free up disk space before build
             # Note: docker image prune만 사용 - 빌드 캐시 보호
@@ -98,3 +121,4 @@ jobs:
 
             docker-compose -f docker-compose.prod.yml ps
             docker-compose -f docker-compose.prod.yml logs --tail=50 frontend
+            echo "Deploy success: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
