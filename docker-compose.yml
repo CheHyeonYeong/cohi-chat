@@ -13,9 +13,12 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-devpassword}
-      - SQLITE_DB_PATH=/app/data/cohi-chat.db
-    volumes:
-      - sqlite-data:/app/data
+      # Supabase PostgreSQL
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
+      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
+      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
+      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
     networks:
       - cohi-chat-network
     depends_on:
@@ -74,7 +77,3 @@ networks:
 volumes:
   redis-data:
     driver: local
-  sqlite-data:
-    driver: local
-  # Uncomment if you need persistent volumes
-  # postgres-data:
