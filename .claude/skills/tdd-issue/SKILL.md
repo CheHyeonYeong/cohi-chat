@@ -1,4 +1,4 @@
-# TDD 기반 이슈 개발
+﻿# TDD 기반 이슈 개발
 
 > GitHub 이슈를 TDD 방식으로 개발하는 워크플로우
 
@@ -13,7 +13,7 @@
 ## 작업 순서
 
 1. **브랜치 생성**: `{작성자이니셜}_$ARGUMENTS` 형식으로 브랜치 생성 (예: `khs_82`, `chy_82`)
-2. **이슈 확인**: GitHub 이슈 조회 → `https://github.com/CheHyeonYeong/cohi-chat/issues/$ARGUMENTS`
+2. **이슈 확인**: GitHub CLI(`gh issue view $ARGUMENTS`)를 통해 이슈 내용 확인
 3. **실행 계획 작성**: `.claude/issue/$ARGUMENTS.md`에 checkpoint 단위로 계획 작성
 4. **순차 작업**: 작성된 계획 파일을 보면서 checkpoint 순서대로 진행
 5. **TDD 사이클**: 테스트 작성 → 실패 확인 → 구현 → 테스트 통과 → 리팩토링
@@ -48,3 +48,5 @@
 ## 시작하기
 
 이슈 번호 `$ARGUMENTS`에서 숫자를 추출하여 위 작업을 순서대로 진행해주세요.
+
+
