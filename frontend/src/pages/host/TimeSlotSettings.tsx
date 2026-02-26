@@ -138,9 +138,11 @@ export default function TimeSlotSettings() {
                 })
             )
         );
+        
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
-            .filter((item) => item.result.status === 'rejected');
+            .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
+            
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
                 const label = f.entry.startTime + '~' + f.entry.endTime;
