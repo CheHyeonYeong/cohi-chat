@@ -75,7 +75,10 @@ jobs:
             git fetch origin
             git reset --hard origin/${{ github.ref_name }}
 
-            aws s3 cp s3://cohi-chat-config/.env .env
+            # Secrets Manager에서 환경변수 가져오기
+            aws secretsmanager get-secret-value --secret-id cohi-chat/prod --query SecretString --output text | \
+              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
+
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
             # Free up disk space before build
