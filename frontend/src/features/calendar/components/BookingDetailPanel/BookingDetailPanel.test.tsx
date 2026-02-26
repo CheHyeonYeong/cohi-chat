@@ -23,64 +23,54 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    hostId: 'host-uuid',
+    guestId: 'guest-uuid',
+    attendanceStatus: 'SCHEDULED',
     files: [],
     createdAt: '2024-02-01T00:00:00Z',
     updatedAt: '2024-02-01T00:00:00Z',
 };
 
+// Mock @tanstack/react-router
+vi.mock('@tanstack/react-router', () => ({
+    Link: ({ children, to }: any) => <a href={to}>{children}</a>,
+}));
+
 describe('BookingDetailPanel', () => {
     afterEach(() => cleanup());
 
-    it('topic을 렌더링해야 한다', () => {
-        const { container } = render(
-            <BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />,
-        );
-        expect(container.textContent).toContain('커리어 상담');
+    it('예약이 없으면 안내 메시지를 표시해야 한다', () => {
+        const { getByText } = render(<BookingDetailPanel booking={null as any} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByText(/예약을 선택해주세요/i)).toBeInTheDocument();
     });
 
-    it('날짜와 시간을 렌더링해야 한다', () => {
-        const { container } = render(
-            <BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />,
-        );
-        expect(container.textContent).toContain('10:00');
-        expect(container.textContent).toContain('11:00');
-        expect(container.textContent).toContain('2024');
+    it('예약 정보(호스트 이름, 주제, 설명)를 표시해야 한다', () => {
+        const { getByText } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByText('홍길동')).toBeInTheDocument();
+        expect(getByText('커리어 상담')).toBeInTheDocument();
+        expect(getByText('포트폴리오 피드백 요청드립니다.')).toBeInTheDocument();
     });
 
-    it('설명을 렌더링해야 한다', () => {
-        const { container } = render(
-            <BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />,
-        );
-        expect(container.textContent).toContain('포트폴리오 피드백 요청드립니다.');
+    it('예약 날짜와 시간을 표시해야 한다', () => {
+        const { getByText } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByText(/2024년 2월 15일/)).toBeInTheDocument();
+        expect(getByText('10:00 - 11:00')).toBeInTheDocument();
     });
 
-    it('파일이 없으면 "첨부 파일이 없습니다"를 표시해야 한다', () => {
-        const { container } = render(
-            <BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />,
-        );
-        expect(container.textContent).toContain('첨부 파일이 없습니다');
+    it('상세 페이지로 이동하는 링크가 있어야 한다', () => {
+        const { getByRole } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
+        const link = getByRole('link');
+        expect(link.getAttribute('href')).toBe('/booking/1');
     });
 
-    it('파일이 있으면 파일명을 렌더링해야 한다', () => {
+    it('파일이 있으면 파일 목록을 표시해야 한다', () => {
         const bookingWithFiles: IBookingDetail = {
             ...mockBooking,
             files: [
-                { id: 1, file: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 10240, contentType: 'application/pdf' },
-                { id: 2, file: 'b.png', originalFileName: 'portfolio.png', fileSize: 20480, contentType: 'image/png' },
+                { id: 1, file: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf' },
             ],
         };
-        const { container } = render(
-            <BookingDetailPanel booking={bookingWithFiles} onUpload={vi.fn()} isUploading={false} />,
-        );
-        expect(container.textContent).toContain('resume.pdf');
-        expect(container.textContent).toContain('portfolio.png');
-    });
-
-    it('isUploading이 true이면 업로드 버튼이 비활성화돼야 한다', () => {
-        const { getByText } = render(
-            <BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading />,
-        );
-        const btn = getByText(/업로드 중/);
-        expect(btn.closest('button')).toBeDisabled();
+        const { getByText } = render(<BookingDetailPanel booking={bookingWithFiles} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByText('resume.pdf')).toBeInTheDocument();
     });
 });

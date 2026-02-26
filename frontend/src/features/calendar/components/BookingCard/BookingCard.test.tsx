@@ -23,6 +23,9 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    hostId: 'host-uuid',
+    guestId: 'guest-uuid',
+    attendanceStatus: 'SCHEDULED',
     files: [],
     createdAt: '2024-02-01T00:00:00Z',
     updatedAt: '2024-02-01T00:00:00Z',
@@ -66,7 +69,7 @@ describe('BookingCard', () => {
         expect(getByRole('button').className).not.toContain('border-[var(--cohe-primary)]');
     });
 
-    it('파일이 있으면 첨부 개수 뱃지를 표시해야 한다', () => {
+    it('파일이 있으면 첨부 개수 배지를 표시해야 한다', () => {
         const bookingWithFiles: IBookingDetail = {
             ...mockBooking,
             files: [
