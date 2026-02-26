@@ -65,20 +65,82 @@ describe('TimeSlotForm', () => {
             ];
 
             const { container } = render(
-                <TimeSlotForm {...defaultProps} entries={entries} />
+                <TimeSlotForm {...defaultProps} entries={entries} />,
             );
 
             // 첫 번째 entry는 유효하므로 에러가 없어야 함
             let warnings = container.querySelectorAll('[data-testid="time-validation-error"]');
             expect(warnings.length).toBe(0);
 
-            // 두 번째 entry를 펼침
-            const entryHeaders = container.querySelectorAll('.cursor-pointer');
+            // 두 번째 entry를 펼침 (data-testid로 정확히 선택)
+            const entryHeaders = container.querySelectorAll('[data-testid="entry-header"]');
             fireEvent.click(entryHeaders[1]);
 
             // 두 번째 entry에 에러가 있어야 함
             warnings = container.querySelectorAll('[data-testid="time-validation-error"]');
             expect(warnings.length).toBe(1);
+        });
+    });
+
+    describe('시간대 겹침 검증', () => {
+        it('요일과 시간대가 겹치는 entry가 있으면 겹침 경고를 표시해야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '18:00' },
+                { weekdays: [1], startTime: '10:00', endTime: '12:00' },
+            ];
+
+            const { container } = render(
+                <TimeSlotForm {...defaultProps} entries={entries} />,
+            );
+
+            // 두 번째 entry를 펼침
+            const entryHeaders = container.querySelectorAll('[data-testid="entry-header"]');
+            fireEvent.click(entryHeaders[1]);
+
+            const errors = container.querySelectorAll('[data-testid="overlap-error"]');
+            expect(errors.length).toBe(1);
+        });
+
+        it('요일이 겹치지 않으면 겹침 경고를 표시하지 않아야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 2, 3], startTime: '09:00', endTime: '18:00' },
+                { weekdays: [4, 5], startTime: '09:00', endTime: '18:00' },
+            ];
+
+            const { container } = render(
+                <TimeSlotForm {...defaultProps} entries={entries} />,
+            );
+
+            const errors = container.querySelectorAll('[data-testid="overlap-error"]');
+            expect(errors.length).toBe(0);
+        });
+
+        it('시간대가 인접(붙어있음)하면 겹침 경고를 표시하지 않아야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1], startTime: '09:00', endTime: '12:00' },
+                { weekdays: [1], startTime: '12:00', endTime: '18:00' },
+            ];
+
+            const { container } = render(
+                <TimeSlotForm {...defaultProps} entries={entries} />,
+            );
+
+            const errors = container.querySelectorAll('[data-testid="overlap-error"]');
+            expect(errors.length).toBe(0);
+        });
+
+        it('겹치는 entry가 있으면 저장 버튼이 비활성화돼야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1], startTime: '09:00', endTime: '18:00' },
+                { weekdays: [1], startTime: '10:00', endTime: '12:00' },
+            ];
+
+            const { getByRole } = render(
+                <TimeSlotForm {...defaultProps} entries={entries} />,
+            );
+
+            const saveButton = getByRole('button', { name: '저장하기' });
+            expect(saveButton).toBeDisabled();
         });
     });
 });
