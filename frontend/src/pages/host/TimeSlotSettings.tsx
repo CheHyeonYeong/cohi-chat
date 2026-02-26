@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Header } from '~/components/header';
+import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
-import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
-import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
+import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
 import { getErrorMessage } from '~/libs/errorUtils';
 
@@ -49,30 +48,7 @@ export default function TimeSlotSettings() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
-    const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
-    const [emailCopied, setEmailCopied] = useState(false);
     const syncedRef = useRef(false);
-
-    const { data: myCalendar } = useMyCalendar();
-    const calendarInaccessible = myCalendar?.calendarAccessible === false;
-
-    useEffect(() => {
-        if (!calendarInaccessible) return;
-        getServiceAccountEmail()
-            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => {});
-    }, [calendarInaccessible]);
-
-    const handleCopyEmail = async () => {
-        if (!serviceAccountEmail) return;
-        try {
-            await navigator.clipboard.writeText(serviceAccountEmail);
-            setEmailCopied(true);
-            setTimeout(() => setEmailCopied(false), 2000);
-        } catch {
-            // clipboard API 미지원 시 무시
-        }
-    };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
@@ -202,53 +178,22 @@ export default function TimeSlotSettings() {
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
             {/* Header */}
-            <Header
-                center={
-                    <nav className="text-sm text-gray-500">
-                        <span>호스트 대시보드</span>
-                        <span className="mx-1.5">&gt;</span>
-                        <span>설정</span>
-                        <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
-                    </nav>
-                }
-                right={
-                    <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
-                        <span className="text-sm text-[var(--cohe-primary)]">👤</span>
-                    </div>
-                }
-            />
-
-            {/* Calendar access warning banner */}
-            {calendarInaccessible && (
-                <div className="w-full bg-amber-50 border-b border-amber-200 px-6 py-4">
-                    <div className="max-w-6xl mx-auto">
-                        <p className="font-semibold text-amber-800 mb-1">
-                            ⚠️ Google Calendar 연동이 완료되지 않았습니다
-                        </p>
-                        <p className="text-sm text-amber-700 mb-2">
-                            아래 서비스 어카운트 이메일을 캘린더 편집자로 공유해야 예약 시 Google Calendar에 이벤트가 등록됩니다.
-                        </p>
-                        <div className="flex items-center gap-2 bg-white rounded-lg border border-amber-200 px-3 py-2 max-w-lg">
-                            <span className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
-                                {serviceAccountEmail || '불러오는 중...'}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={handleCopyEmail}
-                                disabled={!serviceAccountEmail}
-                                className="flex-shrink-0 text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-40 text-xs font-medium"
-                                title="이메일 복사"
-                            >
-                                {emailCopied ? '✓ 복사됨' : '복사'}
-                            </button>
-                        </div>
-                        <p className="text-xs text-amber-600 mt-2">
-                            Google Calendar 설정 → 특정 사용자와 공유 → 위 이메일 추가 → 변경 및 이벤트 관리(편집자) 권한 선택
-                        </p>
-                    </div>
+            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
+                <Link to='/' className="flex items-center gap-2">
+                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
+                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
+                </Link>
+                <nav className="text-sm text-gray-500">
+                    <span>호스트 대시보드</span>
+                    <span className="mx-1.5">&gt;</span>
+                    <Link to="/host/settings" className="hover:text-[var(--cohe-primary)]">캘린더 설정</Link>
+                    <span className="mx-1.5">&gt;</span>
+                    <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
+                </nav>
+                <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
+                    <span className="text-sm text-[var(--cohe-primary)]">👤</span>
                 </div>
-            )}
+            </header>
 
             {/* Content */}
             <main className="w-full px-6 py-8 pb-20">
@@ -285,3 +230,4 @@ export default function TimeSlotSettings() {
         </div>
     );
 }
+

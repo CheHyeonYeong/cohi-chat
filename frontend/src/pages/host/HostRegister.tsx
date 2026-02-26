@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+﻿import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Button from '~/components/button/Button';
 import { Header } from '~/components/header';
 import StepIndicator from '~/features/host/components/register/StepIndicator';
 import RegisterStep1, { type Step1Data } from '~/features/host/components/register/RegisterStep1';
-import RegisterStep2, { type Step2Data, CALENDAR_ID_REGEX } from '~/features/host/components/register/RegisterStep2';
+import RegisterStep2, { type Step2Data } from '~/features/host/components/register/RegisterStep2';
 import RegisterStep3 from '~/features/host/components/register/RegisterStep3';
 import { useCreateCalendar } from '~/features/host';
+import { validateCalendarData } from '~/features/host/utils/validation';
 import { refreshTokenApi } from '~/features/member/api/memberApi';
 import { dispatchAuthChange } from '~/features/member/utils/authEvent';
 
@@ -33,33 +34,33 @@ export default function HostRegister() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    const validateStep1 = (): boolean => {
-        const newErrors: Record<string, string> = {};
-        if (data.step1.topics.length === 0) {
-            newErrors.topics = '주제를 최소 1개 이상 입력해주세요.';
-        }
-        if (data.step1.description.trim().length < 10) {
-            newErrors.description = '소개는 최소 10자 이상 입력해주세요.';
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const validateStep2 = (): boolean => {
-        const newErrors: Record<string, string> = {};
-        const id = data.step2.googleCalendarId;
-        if (!id) {
-            newErrors.googleCalendarId = 'Google Calendar ID를 입력해주세요.';
-        } else if (!CALENDAR_ID_REGEX.test(id)) {
-            newErrors.googleCalendarId = 'Google Calendar ID 형식이 올바르지 않습니다. (예: xxx@group.calendar.google.com)';
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const handleNext = () => {
-        if (currentStep === 1 && !validateStep1()) return;
-        if (currentStep === 2 && !validateStep2()) return;
+        const validationData = {
+            topics: data.step1.topics,
+            description: data.step1.description,
+            googleCalendarId: data.step2.googleCalendarId || 'temporary@group.calendar.google.com', // Placeholder for step 1 validation
+        };
+
+        if (currentStep === 1) {
+            const stepErrors = validateCalendarData(validationData);
+            const { topics, description } = stepErrors;
+            if (topics || description) {
+                setErrors({ topics, description } as any);
+                return;
+            }
+        }
+
+        if (currentStep === 2) {
+            const stepErrors = validateCalendarData({
+                ...validationData,
+                googleCalendarId: data.step2.googleCalendarId,
+            });
+            if (stepErrors.googleCalendarId) {
+                setErrors({ googleCalendarId: stepErrors.googleCalendarId });
+                return;
+            }
+        }
+
         if (currentStep < TOTAL_STEPS) {
             setErrors({});
             createCalendarMutation.reset();
@@ -84,17 +85,14 @@ export default function HostRegister() {
             },
             {
                 onSuccess: async () => {
-                    // 성공 상태를 먼저 설정하여 mutation 상태 변경에 관계없이 성공 UI 유지
                     setIsCompleted(true);
                     try {
                         const response = await refreshTokenApi();
                         localStorage.setItem('auth_token', response.accessToken);
                         localStorage.setItem('refresh_token', response.refreshToken);
                     } catch {
-                        // 토큰 갱신 실패 - 사용자에게 재로그인 필요 알림
                         setTokenRefreshFailed(true);
                     }
-                    // auth 캐시를 무효화하여 HostGuard가 새 역할(HOST)을 인식하도록 함
                     await queryClient.invalidateQueries({ queryKey: ['auth'] });
                     dispatchAuthChange();
                 },
@@ -112,13 +110,11 @@ export default function HostRegister() {
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
-            {/* Header */}
             <Header
                 center={<StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />}
                 right={<div className="w-24" />}
             />
 
-            {/* Content */}
             <main className="w-full px-6 py-10 md:py-16 pb-28">
                 {currentStep === 1 && (
                     <RegisterStep1
@@ -147,7 +143,6 @@ export default function HostRegister() {
                 )}
             </main>
 
-            {/* Bottom Navigation */}
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
                     {isCompleted ? (
@@ -189,7 +184,6 @@ export default function HostRegister() {
                                 이전
                             </Button>
 
-                            {/* Step dots */}
                             <div className="flex gap-2">
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
