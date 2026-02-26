@@ -240,7 +240,7 @@ export default function Booking() {
     }
 
     const when = new Date(booking.when);
-    const canUploadMore = fileOrder.length < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+    const canUploadMore = (fileOrder.length + selectedFiles.length) < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">

@@ -98,6 +98,7 @@ export default function MyBookings() {
     };
 
     const handleUpload = async (files: FileList) => {
+        if (!selectedId) return;
         for (const file of files) {
             const formData = new FormData();
             formData.append('file', file);

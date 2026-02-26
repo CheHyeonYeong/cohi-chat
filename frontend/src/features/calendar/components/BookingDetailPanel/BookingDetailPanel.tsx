@@ -72,7 +72,6 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                         type="button"
                         variant="primary"
                         size="sm"
-                        disabled={isUploading}
                         loading={isUploading}
                         onClick={() => fileInputRef.current?.click()}
                     >

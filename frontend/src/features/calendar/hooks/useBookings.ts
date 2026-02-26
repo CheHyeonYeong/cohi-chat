@@ -79,15 +79,19 @@ export function useBookingsStreamQuery({
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n').filter(Boolean);
                     lines.forEach(line => {
-                        const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
-                        setItems((prevData) => {
-                            const index = prevData.findIndex((item) => item.id === data.id);
-                            if (index === -1) {
-                                return [...prevData, data];
-                            }
-                            return prevData;
-                        });
-                        onMessageRef.current?.(data);
+                        try {
+                            const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
+                            setItems((prevData) => {
+                                const index = prevData.findIndex((item) => item.id === data.id);
+                                if (index === -1) {
+                                    return [...prevData, data];
+                                }
+                                return prevData;
+                            });
+                            onMessageRef.current?.(data);
+                        } catch {
+                            console.warn('Failed to parse stream chunk:', line);
+                        }
                     });
                 }
             } catch (error) {

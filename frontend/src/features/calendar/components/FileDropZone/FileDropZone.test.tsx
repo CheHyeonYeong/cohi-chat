@@ -46,4 +46,25 @@ describe('FileDropZone', () => {
         fireEvent.dragOver(zone, { dataTransfer: { types: ['Files'] } });
         expect(zone.className).not.toContain('border-[var(--cohe-primary)]');
     });
+
+    it('파일 선택(change) 시 onFilesDropped 콜백이 호출돼야 한다', () => {
+        const onFilesDropped = vi.fn();
+        const { container } = render(<FileDropZone onFilesDropped={onFilesDropped} />);
+        const input = container.querySelector('input[type="file"]')!;
+
+        const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+        fireEvent.change(input, { target: { files: [file] } });
+
+        expect(onFilesDropped).toHaveBeenCalledOnce();
+    });
+
+    it('disabled이면 파일 선택 시 onFilesDropped 콜백이 호출되지 않아야 한다', () => {
+        const onFilesDropped = vi.fn();
+        const { getByTestId } = render(<FileDropZone onFilesDropped={onFilesDropped} disabled />);
+        const zone = getByTestId('file-drop-zone');
+
+        fireEvent.click(zone);
+
+        expect(onFilesDropped).not.toHaveBeenCalled();
+    });
 });

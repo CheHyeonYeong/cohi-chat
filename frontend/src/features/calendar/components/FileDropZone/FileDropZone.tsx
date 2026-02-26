@@ -45,7 +45,7 @@ export default function FileDropZone({ onFilesDropped, disabled = false, classNa
             role="button"
             tabIndex={disabled ? -1 : 0}
             onClick={handleClick}
-            onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+            onKeyDown={(e) => { if (!disabled && e.key === 'Enter') handleClick(); }}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
