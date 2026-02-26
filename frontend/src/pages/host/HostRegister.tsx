@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Button from '~/components/button/Button';
 import { Header } from '~/components/header';
@@ -45,7 +45,7 @@ export default function HostRegister() {
             const stepErrors = validateCalendarData(validationData);
             const { topics, description } = stepErrors;
             if (topics || description) {
-                setErrors({ topics, description } as any);
+                setErrors({ topics: topics || '', description: description || '' });
                 return;
             }
         }
@@ -216,3 +216,4 @@ export default function HostRegister() {
         </div>
     );
 }
+

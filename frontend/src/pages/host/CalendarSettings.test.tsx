@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
@@ -44,12 +44,12 @@ describe('CalendarSettings', () => {
             data: mockCalendarData,
             isLoading: false,
             error: null,
-        } as any);
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
 
         vi.spyOn(hostHooks, 'useUpdateCalendar').mockReturnValue({
             mutate: vi.fn(),
             isPending: false,
-        } as any);
+        } as unknown as ReturnType<typeof hostHooks.useUpdateCalendar>);
 
         render(<CalendarSettings />, { wrapper: createWrapper() });
 
@@ -64,13 +64,13 @@ describe('CalendarSettings', () => {
             data: mockCalendarData,
             isLoading: false,
             error: null,
-        } as any);
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
 
         const mutateAsyncMock = vi.fn().mockResolvedValue(mockCalendarData);
         vi.spyOn(hostHooks, 'useUpdateCalendar').mockReturnValue({
             mutateAsync: mutateAsyncMock,
             isPending: false,
-        } as any);
+        } as unknown as ReturnType<typeof hostHooks.useUpdateCalendar>);
 
         render(<CalendarSettings />, { wrapper: createWrapper() });
 
@@ -94,7 +94,7 @@ describe('CalendarSettings', () => {
             data: mockCalendarData,
             isLoading: false,
             error: null,
-        } as any);
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
 
         render(<CalendarSettings />, { wrapper: createWrapper() });
 
