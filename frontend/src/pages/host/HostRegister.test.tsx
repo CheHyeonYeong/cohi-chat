@@ -9,6 +9,8 @@ import * as hostHooks from '~/features/host/hooks';
 // Mock dependencies
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
+    Link: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+        React.createElement('a', props, children),
 }));
 
 vi.mock('~/features/member/api/memberApi', () => ({

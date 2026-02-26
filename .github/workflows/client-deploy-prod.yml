@@ -64,8 +64,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_FRONTEND_DIST
-          command_timeout: 20m
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          command_timeout: 40m
           script: |
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
@@ -82,12 +82,13 @@ jobs:
             git fetch origin
             git reset --hard origin/${{ github.ref_name }}
 
-            aws s3 cp s3://cohi-chat-config/.env .env
-            mkdir -p frontend/dist
+            # Secrets Manager에서 환경변수 가져오기
+            aws secretsmanager get-secret-value --secret-id cohi-chat/prod --query SecretString --output text | \
+              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
 
-            # Free up disk space before build (cohi-chat project only)
-            docker system prune -af --volumes \
-              --filter "label=com.docker.compose.project=cohi-chat" || true
+            # Free up disk space before build
+            # Note: docker image prune만 사용 - 빌드 캐시 보호
+            docker image prune -af || true
 
             aws s3 sync "$S3_FRONTEND_DIST" ~/cohi-chat/frontend/dist --delete
             docker-compose -f docker-compose.prod.yml up -d frontend
