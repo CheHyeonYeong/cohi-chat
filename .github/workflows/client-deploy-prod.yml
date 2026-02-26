@@ -15,6 +15,7 @@ concurrency:
 
 env:
   AWS_REGION: ap-northeast-2
+  S3_FRONTEND_DIST: s3://cohi-chat-config/frontend/dist
 
 jobs:
   build-and-deploy:
@@ -43,6 +44,8 @@ jobs:
         run: |
           cd frontend
           pnpm build
+        env:
+          VITE_API_URL: /api
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -51,18 +54,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Upload frontend dist to S3
+        run: |
+          aws s3 sync frontend/dist ${{ env.S3_FRONTEND_DIST }} --delete
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_FRONTEND_DIST
           command_timeout: 20m
           script: |
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
+            export S3_FRONTEND_DIST=$S3_FRONTEND_DIST
             set -e
 
             if [ ! -d ~/cohi-chat ]; then
@@ -75,12 +83,13 @@ jobs:
             git reset --hard origin/${{ github.ref_name }}
 
             aws s3 cp s3://cohi-chat-config/.env .env
+            mkdir -p frontend/dist
 
             # Free up disk space before build (cohi-chat project only)
             docker system prune -af --volumes \
               --filter "label=com.docker.compose.project=cohi-chat" || true
 
-            docker-compose -f docker-compose.prod.yml build --no-cache frontend
+            aws s3 sync "$S3_FRONTEND_DIST" ~/cohi-chat/frontend/dist --delete
             docker-compose -f docker-compose.prod.yml up -d frontend
 
             echo "Waiting for frontend to start..."
