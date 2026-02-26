@@ -36,7 +36,7 @@ jobs:
           path: backend/build/reports/tests/
 
   frontend:
-    name: Frontend Build & Lint
+    name: Frontend Build, Lint & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -64,6 +64,11 @@ jobs:
         run: |
           cd frontend
           pnpm lint
+
+      - name: Test
+        run: |
+          cd frontend
+          pnpm test -- --run
 
       - name: Build
         run: |
