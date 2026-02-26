@@ -68,7 +68,7 @@ jobs:
       - name: Test
         run: |
           cd frontend
-          pnpm test --run
+          pnpm test -- --run
 
       - name: Build
         run: |
