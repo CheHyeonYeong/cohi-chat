@@ -32,7 +32,6 @@ import io.jsonwebtoken.JwtException;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.Member;
 
 import lombok.RequiredArgsConstructor;
@@ -245,7 +244,7 @@ public class MemberService {
 			if (remainingSeconds <= 0) {
 				return;
 			}
-			String tokenHash = TokenHashUtil.hash(accessToken);
+			String tokenHash = tokenService.hashToken(accessToken);
 			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
 			accessTokenBlacklistRepository.save(blacklist);
 		} catch (ExpiredJwtException e) {
@@ -278,7 +277,7 @@ public class MemberService {
 		// 현재 세션(신 RT)도 강제 무효화하여 공격 차단
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
 		if (refreshTokenRepository.findByToken(tokenHash).isEmpty()) {
-			log.warn("토큰 재사용 감지 - 현재 세션 강제 무효화: username={}", verifiedUsername);
+			log.warn("토큰 재사용 감지 - 현재 세션 강제 무효화: username={}, tokenHash={}", verifiedUsername, tokenHash);
 			refreshTokenRepository.deleteById(verifiedUsername);
 			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 		}
@@ -292,7 +291,7 @@ public class MemberService {
 		String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
 		RefreshToken newRefreshToken = RefreshToken.create(
-			TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
+			tokenService.hashToken(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
 		);
 		refreshTokenRepository.save(newRefreshToken);
 

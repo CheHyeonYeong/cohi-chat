@@ -178,7 +178,9 @@ class MemberControllerIntegrationTest {
 			mockMvc.perform(post(REFRESH_ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"invalid-token\"}"))
-				.andExpect(status().isUnauthorized());
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
 		}
 
 		@Test
@@ -190,7 +192,9 @@ class MemberControllerIntegrationTest {
 			mockMvc.perform(post(REFRESH_ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"expired-token\"}"))
-				.andExpect(status().isUnauthorized());
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("EXPIRED_REFRESH_TOKEN"));
 		}
 
 		@Test
@@ -202,7 +206,9 @@ class MemberControllerIntegrationTest {
 			mockMvc.perform(post(REFRESH_ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"valid-but-rate-limited\"}"))
-				.andExpect(status().isTooManyRequests());
+				.andExpect(status().isTooManyRequests())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("RATE_LIMIT_EXCEEDED"));
 		}
 
 		@Test

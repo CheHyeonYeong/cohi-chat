@@ -447,6 +447,8 @@ class MemberServiceTest {
 
 		// 현재 세션(신 RT)도 강제 무효화되어야 함
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		// 새 RT는 발급되지 않아야 함 (정상 rotation과 구분)
+		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
 	}
 
 	@Test
