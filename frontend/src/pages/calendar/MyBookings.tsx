@@ -64,7 +64,7 @@ export default function MyBookings() {
     const [sortedIds, setSortedIds] = useState<number[]>([]);
 
     // 선택된 예약 full detail (파일 포함)
-    const { data: selectedBooking } = useBooking(selectedId ?? 0);
+    const { data: selectedBooking } = useBooking(selectedId);
     const { mutateAsync: uploadFileAsync, isPending: isUploading } = useUploadBookingFile(selectedId ?? 0);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -98,9 +98,9 @@ export default function MyBookings() {
     };
 
     const handleUpload = async (files: FileList) => {
-        for (let i = 0; i < files.length; i++) {
+        for (const file of files) {
             const formData = new FormData();
-            formData.append('file', files[i]);
+            formData.append('file', file);
             await uploadFileAsync(formData);
         }
     };

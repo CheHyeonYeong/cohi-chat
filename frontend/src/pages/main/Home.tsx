@@ -89,7 +89,7 @@ export default function Home() {
                                 호스트 대시보드
                             </LinkButton>
                         ) : (
-                            <LinkButton variant="outline" to='/host/register' className="hidden">
+                            <LinkButton variant="outline" to='/host/register'>
                                 호스트 등록하기
                             </LinkButton>
                         )

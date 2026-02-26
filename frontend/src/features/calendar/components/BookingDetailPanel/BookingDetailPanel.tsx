@@ -100,7 +100,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                             <li key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <span className="text-xs text-gray-400">📄</span>
-                                    <span className="text-sm text-gray-700 truncate">{file.originalFileName}</span>
+                                    <span className="text-sm text-gray-700 truncate">{file.originalFileName ?? '알 수 없는 파일'}</span>
                                     {file.fileSize > 0 && (
                                         <span className="text-xs text-gray-400 flex-shrink-0">
                                             {formatFileSize(file.fileSize)}
@@ -110,7 +110,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                                 {onDownload && (
                                     <button
                                         type="button"
-                                        onClick={() => onDownload(file.id, file.originalFileName)}
+                                        onClick={() => onDownload(file.id, file.originalFileName ?? '알 수 없는 파일')}
                                         className="text-xs text-[var(--cohe-primary)] hover:underline flex-shrink-0 ml-2"
                                     >
                                         다운로드

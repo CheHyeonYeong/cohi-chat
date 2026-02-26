@@ -42,7 +42,7 @@ export default function FileDropZone({ onFilesDropped, disabled = false, classNa
                 className,
             )}
         >
-            <span>📎 파일을 드래그하거나 클릭하여 업로드</span>
+            <span>📎 파일을 드래그하여 업로드</span>
         </div>
     );
 }

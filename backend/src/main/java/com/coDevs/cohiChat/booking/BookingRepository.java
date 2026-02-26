@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.HostChatCountProjection;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -89,7 +90,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
           AND b.attendanceStatus = :status
         GROUP BY b.timeSlot.userId
     """)
-    List<HostChatCount> countAttendedByHostIds(
+    List<HostChatCountProjection> countAttendedByHostIds(
         @Param("hostIds") Collection<UUID> hostIds,
         @Param("status") AttendanceStatus status
     );

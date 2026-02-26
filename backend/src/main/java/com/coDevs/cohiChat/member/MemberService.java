@@ -1,7 +1,7 @@
 package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
-import com.coDevs.cohiChat.booking.HostChatCount;
+import com.coDevs.cohiChat.booking.HostChatCountProjection;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -242,7 +242,7 @@ public class MemberService {
 		Map<UUID, Long> chatCounts = bookingRepository
 			.countAttendedByHostIds(hostIds, AttendanceStatus.ATTENDED)
 			.stream()
-			.collect(Collectors.toMap(HostChatCount::getHostId, HostChatCount::getCount));
+			.collect(Collectors.toMap(HostChatCountProjection::getHostId, HostChatCountProjection::getCount));
 		return hosts.stream()
 			.map(h -> HostResponseDTO.from(h, chatCounts.getOrDefault(h.getId(), 0L)))
 			.toList();
@@ -253,15 +253,7 @@ public class MemberService {
 		Member member = getMember(username);
 
 		if (member.getRole() != Role.HOST) {
-			throw new IllegalStateException("호스트 권한이 필요합니다.");
-		}
-
-		// URL 프로토콜 검증 (XSS 방지)
-		if (req.getProfileImageUrl() != null && !req.getProfileImageUrl().isBlank()) {
-			String url = req.getProfileImageUrl().toLowerCase();
-			if (!url.startsWith("http://") && !url.startsWith("https://")) {
-				throw new IllegalArgumentException("프로필 이미지는 http:// 또는 https:// 로 시작하는 URL이어야 합니다.");
-			}
+			throw new CustomException(ErrorCode.ACCESS_DENIED);
 		}
 
 		member.updateProfile(req.getJob(), req.getProfileImageUrl());

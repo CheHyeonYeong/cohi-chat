@@ -20,10 +20,11 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
     });
 }
 
-export function useBooking(id: number) {
+export function useBooking(id: number | null) {
     return useQuery<IBookingDetail>({
-        queryKey: calendarKeys.booking(id),
-        queryFn: () => getBooking(id),
+        queryKey: calendarKeys.booking(id ?? 0),
+        queryFn: () => getBooking(id!),
+        enabled: id !== null,
     });
 }
 

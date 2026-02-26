@@ -27,7 +27,8 @@ public class OAuthMemberService {
 	private Member registerNewMember(OAuthUserInfo userInfo) {
 		String username = userInfo.getProvider().name().toLowerCase() + "_" + userInfo.getProviderId();
 		if (memberRepository.existsByUsernameAndIsDeletedFalse(username)) {
-			username = username + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+			String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+			username = username + "_" + suffix;
 		}
 		String displayName = (userInfo.getDisplayName() != null && !userInfo.getDisplayName().isBlank())
 			? userInfo.getDisplayName() : username;

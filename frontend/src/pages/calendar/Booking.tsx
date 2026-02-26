@@ -347,8 +347,8 @@ export default function Booking() {
                                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                         <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
                                         <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
-                                            {validationErrors.map((err) => (
-                                                <li key={err.message}>{err.message}</li>
+                                            {validationErrors.map((err, i) => (
+                                                <li key={i}>{err.message}</li>
                                             ))}
                                         </ul>
                                     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -138,7 +138,7 @@ export default function TimeSlotSettings() {
         syncedRef.current = true;
     }, [existingTimeslots]);
 
-    const newEntries = entries.filter((e) => e.existingId == null);
+    const newEntries = useMemo(() => entries.filter((e) => e.existingId == null), [entries]);
     const hasNewEntries = newEntries.length > 0;
 
     const validate = (): boolean => {
