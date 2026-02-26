@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
 import { Header } from '~/components/header';
 import RegisterStep1 from '~/features/host/components/register/RegisterStep1';
