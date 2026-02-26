@@ -16,9 +16,13 @@ export default function PasswordResetConfirmPage() {
     const verifyMutation = useVerifyResetToken();
     const confirmMutation = useConfirmPasswordReset();
 
+    const confirmPasswordError =
+        confirmPassword && newPassword !== confirmPassword ? '비밀번호가 일치하지 않습니다.' : null;
+
     useEffect(() => {
         if (token) {
             verifyMutation.mutate(token);
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
@@ -32,7 +36,6 @@ export default function PasswordResetConfirmPage() {
             return;
         }
         if (newPassword !== confirmPassword) {
-            setPasswordError('비밀번호가 일치하지 않습니다.');
             return;
         }
 
@@ -129,6 +132,9 @@ export default function PasswordResetConfirmPage() {
                                     placeholder="비밀번호 재입력"
                                     className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
                                 />
+                                {confirmPasswordError && (
+                                    <span className="text-xs text-red-500 mt-1">{confirmPasswordError}</span>
+                                )}
                             </div>
 
                             {(passwordError || confirmMutation.isError) && (

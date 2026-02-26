@@ -162,9 +162,6 @@ public class Member {
 	}
 
 	public void resetPassword(String hashedPassword) {
-		if (this.provider != Provider.LOCAL) {
-			throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_LOCAL);
-		}
 		this.hashedPassword = hashedPassword;
 	}
 

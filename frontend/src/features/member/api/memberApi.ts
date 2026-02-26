@@ -74,7 +74,10 @@ export async function requestPasswordResetApi(email: string): Promise<void> {
 }
 
 export async function verifyResetTokenApi(token: string): Promise<void> {
-    await httpClient<void>(`${API_BASE}/auth/password-reset/verify?token=${encodeURIComponent(token)}`);
+    await httpClient<void>(`${API_BASE}/auth/password-reset/verify`, {
+        method: 'POST',
+        body: { token },
+    });
 }
 
 export async function confirmPasswordResetApi(token: string, newPassword: string): Promise<void> {

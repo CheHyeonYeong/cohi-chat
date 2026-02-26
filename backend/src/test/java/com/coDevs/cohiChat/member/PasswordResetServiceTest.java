@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.inOrder;
 
 import java.util.Optional;
 
@@ -126,6 +127,7 @@ class PasswordResetServiceTest {
 
 		given(passwordResetTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(stored));
 		given(memberRepository.findByEmailAndIsDeletedFalse(TEST_EMAIL)).willReturn(Optional.of(localMember));
+		given(passwordEncoder.matches(newPassword, localMember.getHashedPassword())).willReturn(false);
 		given(passwordEncoder.encode(newPassword)).willReturn("new-hashed-pw");
 
 		passwordResetService.confirmPasswordReset(rawToken, newPassword);
@@ -141,5 +143,49 @@ class PasswordResetServiceTest {
 		assertThatThrownBy(() -> passwordResetService.confirmPasswordReset("bad-token", "newPassword123!"))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_RESET_TOKEN);
+	}
+
+	@Test
+	@DisplayName("실패: 탈퇴한 사용자 이메일의 토큰으로 비밀번호 변경 시 예외")
+	void confirmPasswordReset_deletedUser_throwsException() {
+		String rawToken = "valid-token";
+		PasswordResetToken stored = PasswordResetToken.create(TEST_EMAIL, "some-hash");
+
+		given(passwordResetTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(stored));
+		given(memberRepository.findByEmailAndIsDeletedFalse(TEST_EMAIL)).willReturn(Optional.empty());
+
+		assertThatThrownBy(() -> passwordResetService.confirmPasswordReset(rawToken, "newPassword123!"))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("실패: 현재 비밀번호와 동일한 비밀번호로 변경 시 예외")
+	void confirmPasswordReset_samePassword_throwsException() {
+		String rawToken = "valid-token";
+		String samePassword = "samePassword!";
+		PasswordResetToken stored = PasswordResetToken.create(TEST_EMAIL, "some-hash");
+
+		given(passwordResetTokenRepository.findByTokenHash(anyString())).willReturn(Optional.of(stored));
+		given(memberRepository.findByEmailAndIsDeletedFalse(TEST_EMAIL)).willReturn(Optional.of(localMember));
+		given(passwordEncoder.matches(samePassword, localMember.getHashedPassword())).willReturn(true);
+
+		assertThatThrownBy(() -> passwordResetService.confirmPasswordReset(rawToken, samePassword))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.SAME_PASSWORD_NOT_ALLOWED);
+
+		verify(passwordResetTokenRepository, never()).deleteById(anyString());
+	}
+
+	@Test
+	@DisplayName("성공: 이메일 발송 후 Redis 저장 순서 보장")
+	void requestPasswordReset_emailSentBeforeSave() {
+		given(memberRepository.findByEmailAndIsDeletedFalse(TEST_EMAIL)).willReturn(Optional.of(localMember));
+
+		passwordResetService.requestPasswordReset(TEST_EMAIL);
+
+		var inOrder = inOrder(emailService, passwordResetTokenRepository);
+		inOrder.verify(emailService).sendPasswordResetEmail(eq(TEST_EMAIL), anyString());
+		inOrder.verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
 	}
 }

@@ -13,7 +13,10 @@ export default function PasswordResetRequestPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         mutation.mutate(email, {
-            onSuccess: () => setSubmitted(true),
+            onSuccess: () => {
+                setSubmitted(true);
+                setEmail('');
+            },
         });
     };
 
@@ -54,6 +57,7 @@ export default function PasswordResetRequestPage() {
                                     disabled={mutation.isPending}
                                     required
                                     placeholder="example@email.com"
+                                    autoComplete="email"
                                     className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-[var(--cohe-primary)] transition-colors"
                                 />
                             </div>

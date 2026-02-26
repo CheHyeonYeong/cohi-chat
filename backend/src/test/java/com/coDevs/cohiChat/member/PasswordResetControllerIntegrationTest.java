@@ -3,7 +3,6 @@ package com.coDevs.cohiChat.member;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -77,7 +76,7 @@ class PasswordResetControllerIntegrationTest {
 	}
 
 	@Nested
-	@DisplayName("GET /auth/password-reset/verify - 토큰 유효성 검증")
+	@DisplayName("POST /auth/password-reset/verify - 토큰 유효성 검증")
 	class VerifyResetTokenTest {
 
 		@Test
@@ -85,8 +84,9 @@ class PasswordResetControllerIntegrationTest {
 		void verify_validToken_returns200() throws Exception {
 			doNothing().when(passwordResetService).verifyResetToken(anyString());
 
-			mockMvc.perform(get("/auth/password-reset/verify")
-					.param("token", "valid-token"))
+			mockMvc.perform(post("/auth/password-reset/verify")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"token\": \"valid-token\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true));
 		}
@@ -97,11 +97,21 @@ class PasswordResetControllerIntegrationTest {
 			doThrow(new CustomException(ErrorCode.INVALID_RESET_TOKEN))
 				.when(passwordResetService).verifyResetToken(anyString());
 
-			mockMvc.perform(get("/auth/password-reset/verify")
-					.param("token", "invalid-token"))
+			mockMvc.perform(post("/auth/password-reset/verify")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"token\": \"invalid-token\"}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.error.code").value("INVALID_RESET_TOKEN"));
+		}
+
+		@Test
+		@DisplayName("빈 토큰 → 400 Bad Request")
+		void verify_blankToken_returns400() throws Exception {
+			mockMvc.perform(post("/auth/password-reset/verify")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"token\": \"\"}"))
+				.andExpect(status().isBadRequest());
 		}
 	}
 

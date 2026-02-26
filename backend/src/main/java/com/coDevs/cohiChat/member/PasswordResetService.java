@@ -29,7 +29,7 @@ public class PasswordResetService {
 	private final EmailService emailService;
 	private final PasswordEncoder passwordEncoder;
 
-	@Value("${password-reset.base-url}")
+	@Value("${password-reset.base-url:http://localhost:3000}")
 	private String baseUrl;
 
 	/**
@@ -51,10 +51,10 @@ public class PasswordResetService {
 
 		String rawToken = UUID.randomUUID().toString();
 		String tokenHash = TokenHashUtil.hash(rawToken);
-		passwordResetTokenRepository.save(PasswordResetToken.create(email, tokenHash));
 
 		String resetLink = baseUrl + "/password-reset/confirm?token=" + rawToken;
 		emailService.sendPasswordResetEmail(email, resetLink);
+		passwordResetTokenRepository.save(PasswordResetToken.create(email, tokenHash));
 
 		log.info("비밀번호 재설정 이메일 발송 완료: email={}", email);
 	}
@@ -79,6 +79,10 @@ public class PasswordResetService {
 
 		Member member = memberRepository.findByEmailAndIsDeletedFalse(resetToken.getEmail())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+		if (passwordEncoder.matches(newPassword, member.getHashedPassword())) {
+			throw new CustomException(ErrorCode.SAME_PASSWORD_NOT_ALLOWED);
+		}
 
 		member.resetPassword(passwordEncoder.encode(newPassword));
 		passwordResetTokenRepository.deleteById(resetToken.getEmail());

@@ -101,7 +101,7 @@ const passwordResetConfirmRoute = createRoute({
     path: '/password-reset/confirm',
     component: PasswordResetConfirmPage,
     validateSearch: z.object({
-        token: z.string().optional(),
+        token: z.string().min(1).optional(),
     }),
 })
 

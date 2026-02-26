@@ -34,8 +34,14 @@ public class JavaMailEmailService implements EmailService {
 			);
 			mailSender.send(message);
 		} catch (MailException e) {
-			log.error("이메일 발송 실패: to={}, error={}", to, e.getMessage());
+			log.error("이메일 발송 실패: to={}, error={}", maskEmail(to), e.getMessage());
 			throw new CustomException(ErrorCode.EMAIL_SEND_FAILED);
 		}
+	}
+
+	private String maskEmail(String email) {
+		int atIndex = email.indexOf('@');
+		if (atIndex <= 1) return "***" + email.substring(atIndex);
+		return email.charAt(0) + "***" + email.substring(atIndex);
 	}
 }
