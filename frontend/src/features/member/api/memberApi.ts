@@ -6,6 +6,8 @@ import type {
     SignupPayload,
     SignupResponse,
     MemberResponseDTO,
+    HostResponseDTO,
+    UpdateProfilePayload,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -70,4 +72,15 @@ export async function getUserApi(username: string): Promise<MemberResponseDTO> {
     return httpClient<MemberResponseDTO>(
         `${MEMBER_API}/${encodeURIComponent(username)}`
     );
+}
+
+export async function updateProfileApi(payload: UpdateProfilePayload): Promise<HostResponseDTO> {
+    const response = await httpClient<HostResponseDTO>(`${MEMBER_API}/me/profile`, {
+        method: 'PATCH',
+        body: payload,
+    });
+    if (!response) {
+        throw new Error('프로필 업데이트에 실패했습니다.');
+    }
+    return response;
 }

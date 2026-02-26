@@ -226,7 +226,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 PASSWORD_MISMATCH 반환")
+	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 SOCIAL_LOGIN_REQUIRED 반환")
 	void loginFailOAuthMemberLocalLogin() {
 		Member oAuthMember = Member.createOAuth(
 			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "test-provider-id", Provider.GOOGLE, Role.GUEST
@@ -237,11 +237,10 @@ class MemberServiceTest {
 			.build();
 
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(oAuthMember));
-		given(passwordEncoder.matches(TEST_PASSWORD, null)).willReturn(false);
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.SOCIAL_LOGIN_REQUIRED);
 	}
 
 	@Test
