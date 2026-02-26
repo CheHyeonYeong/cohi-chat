@@ -96,6 +96,11 @@ describe('CalendarSettings', () => {
             error: null,
         } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
 
+        vi.spyOn(hostHooks, 'useUpdateCalendar').mockReturnValue({
+            mutate: vi.fn(),
+            isPending: false,
+        } as unknown as ReturnType<typeof hostHooks.useUpdateCalendar>);
+
         render(<CalendarSettings />, { wrapper: createWrapper() });
 
         const descInput = screen.getByDisplayValue(mockCalendarData.description);
@@ -107,5 +112,45 @@ describe('CalendarSettings', () => {
         await waitFor(() => {
             expect(screen.getByText(/소개는 최소 10자 이상 입력해주세요/i)).toBeInTheDocument();
         });
+    });
+
+    it('로딩 중일 때 로딩 상태를 표시해야 한다', () => {
+        vi.spyOn(hostHooks, 'useMyCalendar').mockReturnValue({
+            data: undefined,
+            isLoading: true,
+            error: null,
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
+
+        render(<CalendarSettings />, { wrapper: createWrapper() });
+        expect(screen.getByText(/불러오는 중/i)).toBeInTheDocument();
+    });
+
+    it('데이터 로드 실패 시 에러 메시지를 표시해야 한다', () => {
+        vi.spyOn(hostHooks, 'useMyCalendar').mockReturnValue({
+            data: undefined,
+            isLoading: false,
+            error: new Error('Load failed'),
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
+
+        render(<CalendarSettings />, { wrapper: createWrapper() });
+        expect(screen.getByText(/정보를 불러오지 못했습니다/i)).toBeInTheDocument();
+    });
+
+    it('저장 중일 때 버튼이 비활성화되고 텍스트가 변경되어야 한다', async () => {
+        vi.spyOn(hostHooks, 'useMyCalendar').mockReturnValue({
+            data: mockCalendarData,
+            isLoading: false,
+            error: null,
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
+
+        vi.spyOn(hostHooks, 'useUpdateCalendar').mockReturnValue({
+            mutateAsync: vi.fn(),
+            isPending: true,
+        } as unknown as ReturnType<typeof hostHooks.useUpdateCalendar>);
+
+        render(<CalendarSettings />, { wrapper: createWrapper() });
+        
+        const saveButton = screen.getByRole('button', { name: /저장 중/i });
+        expect(saveButton).toBeDisabled();
     });
 });

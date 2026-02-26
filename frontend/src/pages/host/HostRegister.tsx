@@ -35,24 +35,22 @@ export default function HostRegister() {
     const queryClient = useQueryClient();
 
     const handleNext = () => {
-        const validationData = {
-            topics: data.step1.topics,
-            description: data.step1.description,
-            googleCalendarId: data.step2.googleCalendarId || 'temporary@group.calendar.google.com', // Placeholder for step 1 validation
-        };
-
         if (currentStep === 1) {
-            const stepErrors = validateCalendarData(validationData);
-            const { topics, description } = stepErrors;
-            if (topics || description) {
-                setErrors({ topics: topics || '', description: description || '' });
+            const stepErrors = validateCalendarData({
+                topics: data.step1.topics,
+                description: data.step1.description,
+            });
+            if (stepErrors.topics || stepErrors.description) {
+                setErrors({
+                    topics: stepErrors.topics || '',
+                    description: stepErrors.description || '',
+                });
                 return;
             }
         }
 
         if (currentStep === 2) {
             const stepErrors = validateCalendarData({
-                ...validationData,
                 googleCalendarId: data.step2.googleCalendarId,
             });
             if (stepErrors.googleCalendarId) {
