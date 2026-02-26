@@ -53,7 +53,6 @@ export default function TimeSlotSettings() {
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
-    // TODO: 전체 호스트 목록에서 필터링하는 비효율 구조 — 추후 GET /members/v1/me/profile 전용 API로 교체 필요
     const { data: hostProfile } = useHost(user?.username ?? '');
     const [job, setJob] = useState('');
     const [profileImageUrl, setProfileImageUrl] = useState('');
@@ -81,27 +80,6 @@ export default function TimeSlotSettings() {
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
-    const { data: myCalendar } = useMyCalendar();
-    const calendarInaccessible = myCalendar?.calendarAccessible === false;
-
-    useEffect(() => {
-        if (!calendarInaccessible) return;
-        getServiceAccountEmail()
-            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => {});
-    }, [calendarInaccessible]);
-
-    const handleCopyEmail = async () => {
-        if (!serviceAccountEmail) return;
-        try {
-            await navigator.clipboard.writeText(serviceAccountEmail);
-            setEmailCopied(true);
-            setTimeout(() => setEmailCopied(false), 2000);
-        } catch {
-            // clipboard API 미지원 시 무시
-        }
-    };
-
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
@@ -241,7 +219,6 @@ export default function TimeSlotSettings() {
 
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto space-y-8">
-                    {/* 프로필 편집 */}
                     <section className="bg-white rounded-2xl p-6 shadow-sm">
                         <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">내 프로필</h2>
                         <div className="flex flex-col sm:flex-row gap-4">
@@ -285,7 +262,6 @@ export default function TimeSlotSettings() {
                         )}
                     </section>
 
-                    {/* 타임슬롯 설정 */}
                     <div className="flex flex-col lg:flex-row gap-8">
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
