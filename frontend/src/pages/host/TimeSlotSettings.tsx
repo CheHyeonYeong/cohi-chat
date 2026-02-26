@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
@@ -230,4 +230,3 @@ export default function TimeSlotSettings() {
         </div>
     );
 }
-
