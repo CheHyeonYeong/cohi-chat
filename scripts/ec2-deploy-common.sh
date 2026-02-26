@@ -46,9 +46,13 @@ load_secrets() {
         python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
 }
 
-# Docker 이미지 정리 (빌드 캐시 보호)
-cleanup_docker_images() {
-    docker image prune -af || true
+# Docker 정리 (최근 캐시 보호)
+cleanup_docker() {
+    # 24시간 이상 된 미사용 이미지만 삭제 (최근 빌드 캐시 유지)
+    docker image prune -af --filter "until=24h" || true
+
+    # 빌드 캐시는 10GB까지만 유지
+    docker builder prune -af --keep-storage=10GB || true
 }
 
 # 배포 시작 로그
@@ -74,5 +78,5 @@ run_common_setup() {
     log_deploy_start "$git_ref"
     sync_git_repo "$repository" "$git_ref"
     load_secrets
-    cleanup_docker_images
+    cleanup_docker
 }
