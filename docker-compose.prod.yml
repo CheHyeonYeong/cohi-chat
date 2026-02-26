@@ -17,8 +17,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    volumes:
-      - sqlite-data:/app/data
     env_file:
       - .env
     environment:
@@ -26,6 +24,12 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # Supabase PostgreSQL
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
+      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
+      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
+      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
     depends_on:
       redis:
         condition: service_healthy
@@ -45,7 +49,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  sqlite-data:
-    driver: local
   redis-data:
     driver: local
