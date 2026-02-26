@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
     DndContext,
@@ -62,6 +62,12 @@ export default function MyBookings() {
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [sortedIds, setSortedIds] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (bookings?.bookings) {
+            setSortedIds(bookings.bookings.map(b => b.id));
+        }
+    }, [bookings]);
 
     // 선택된 예약 full detail (파일 포함)
     const { data: selectedBooking } = useBooking(selectedId);
