@@ -197,6 +197,11 @@ export function LoginForm() {
                         회원가입
                     </Link>
                 </div>
+                <div className="text-center text-sm mt-2">
+                    <Link to="/password-reset" className="text-gray-400 hover:text-[var(--cohe-primary)] hover:underline">
+                        비밀번호를 잊으셨나요?
+                    </Link>
+                </div>
             </div>
         </div>
     );

@@ -66,6 +66,24 @@ export async function refreshTokenApi(): Promise<LoginResponse> {
     return response;
 }
 
+export async function requestPasswordResetApi(email: string): Promise<void> {
+    await httpClient<void>(`${API_BASE}/auth/password-reset/request`, {
+        method: 'POST',
+        body: { email },
+    });
+}
+
+export async function verifyResetTokenApi(token: string): Promise<void> {
+    await httpClient<void>(`${API_BASE}/auth/password-reset/verify?token=${encodeURIComponent(token)}`);
+}
+
+export async function confirmPasswordResetApi(token: string, newPassword: string): Promise<void> {
+    await httpClient<void>(`${API_BASE}/auth/password-reset/confirm`, {
+        method: 'POST',
+        body: { token, newPassword },
+    });
+}
+
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {
     return httpClient<MemberResponseDTO>(
         `${MEMBER_API}/${encodeURIComponent(username)}`

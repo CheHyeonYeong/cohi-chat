@@ -161,6 +161,13 @@ public class Member {
 		this.deletedAt = Instant.now();
 	}
 
+	public void resetPassword(String hashedPassword) {
+		if (this.provider != Provider.LOCAL) {
+			throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_LOCAL);
+		}
+		this.hashedPassword = hashedPassword;
+	}
+
 	public void promoteToHost() {
 		if (this.role == Role.HOST) {
 			throw new CustomException(ErrorCode.ALREADY_HOST);

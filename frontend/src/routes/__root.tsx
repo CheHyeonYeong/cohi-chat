@@ -11,6 +11,8 @@ import Home from '~/pages/main/Home'
 import OAuthCallbackPage from '~/pages/oauth/OAuthCallbackPage'
 import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
+import PasswordResetRequestPage from '~/pages/member/PasswordResetRequestPage'
+import PasswordResetConfirmPage from '~/pages/member/PasswordResetConfirmPage'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
 import Footer from '~/components/Footer'
@@ -88,6 +90,21 @@ const signupRoute = createRoute({
 })
 
 
+const passwordResetRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/password-reset',
+    component: PasswordResetRequestPage,
+})
+
+const passwordResetConfirmRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/password-reset/confirm',
+    component: PasswordResetConfirmPage,
+    validateSearch: z.object({
+        token: z.string().optional(),
+    }),
+})
+
 const hostRegisterRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/host/register',
@@ -141,6 +158,8 @@ export const routeTree = RootRoute.addChildren([
     calendarRoute,
     loginRoute,
     signupRoute,
+    passwordResetRoute,
+    passwordResetConfirmRoute,
     myBookingsRoute,
     bookingRoute,
     hostRegisterRoute,
