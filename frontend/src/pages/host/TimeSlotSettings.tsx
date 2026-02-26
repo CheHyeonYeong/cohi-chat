@@ -182,9 +182,7 @@ export default function TimeSlotSettings() {
                     <nav className="text-sm text-gray-500">
                         <span>호스트 대시보드</span>
                         <span className="mx-1.5">&gt;</span>
-                        <Link to="/host/settings" className="hover:text-[var(--cohe-primary)]">캘린더 설정</Link>
-                        <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
+                        <span className="text-[var(--cohe-text-dark)] font-medium">시간대 설정</span>
                     </nav>
                 }
                 right={

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
 import { Header } from '~/components/header';
@@ -17,12 +17,14 @@ export default function CalendarSettings() {
     const [googleCalendarId, setGoogleCalendarId] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const syncedRef = useRef(false);
 
     useEffect(() => {
-        if (calendar) {
+        if (calendar && !syncedRef.current) {
             setTopics(calendar.topics);
             setDescription(calendar.description);
             setGoogleCalendarId(calendar.googleCalendarId);
+            syncedRef.current = true;
         }
     }, [calendar]);
 
@@ -47,6 +49,7 @@ export default function CalendarSettings() {
                 googleCalendarId,
             });
             setSaveSuccess(true);
+            syncedRef.current = false; // Allow re-sync on success if needed
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (err) {
             setErrors({ submit: getErrorMessage(err, '저장 중 오류가 발생했습니다.') });
@@ -75,8 +78,6 @@ export default function CalendarSettings() {
                 center={
                     <nav className="text-sm text-gray-500">
                         <span>호스트 대시보드</span>
-                        <span className="mx-1.5">&gt;</span>
-                        <Link to="/host/timeslots" className="hover:text-[var(--cohe-primary)]">시간대 설정</Link>
                         <span className="mx-1.5">&gt;</span>
                         <span className="text-[var(--cohe-text-dark)] font-medium">캘린더 설정</span>
                     </nav>
