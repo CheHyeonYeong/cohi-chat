@@ -73,7 +73,7 @@ describe('BookingCard', () => {
         const bookingWithFiles: IBookingDetail = {
             ...mockBooking,
             files: [
-                { id: 1, fileName: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf' },
+                { id: 1, fileName: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf', createdAt: '2024-01-01T00:00:00Z' },
             ],
         };
         const { container } = render(<BookingCard booking={bookingWithFiles} />);
