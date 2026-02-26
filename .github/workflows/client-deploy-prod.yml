@@ -75,7 +75,25 @@ jobs:
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
-            set -e
+            export S3_FRONTEND_DIST=$S3_FRONTEND_DIST
+            set -euo pipefail
+
+            if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ]; then
+              echo "Missing AWS envs"
+              exit 1
+            fi
+            if [ -z "$S3_FRONTEND_DIST" ]; then
+              echo "S3_FRONTEND_DIST is empty"
+              exit 1
+            fi
+            command -v aws >/dev/null 2>&1 || { echo "aws cli not found"; exit 1; }
+            command -v docker >/dev/null 2>&1 || { echo "docker not found"; exit 1; }
+            command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found"; exit 1; }
+            command -v python3 >/dev/null 2>&1 || { echo "python3 not found"; exit 1; }
+            aws sts get-caller-identity || { echo "AWS auth failed"; exit 1; }
+
+            echo "Deploy start: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "Git ref: ${{ github.ref_name }}"
 
             if [ ! -d ~/cohi-chat ]; then
               git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
@@ -95,10 +113,6 @@ jobs:
             # Note: docker image prune만 사용 - 빌드 캐시 보호
             docker image prune -af || true
 
-            if [ -z "$S3_FRONTEND_DIST" ]; then
-              echo "S3_FRONTEND_DIST is empty"
-              exit 1
-            fi
             aws s3 sync "$S3_FRONTEND_DIST" ~/cohi-chat/frontend/dist --delete
             docker-compose -f docker-compose.prod.yml up -d frontend
 
@@ -107,3 +121,4 @@ jobs:
 
             docker-compose -f docker-compose.prod.yml ps
             docker-compose -f docker-compose.prod.yml logs --tail=50 frontend
+            echo "Deploy success: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
