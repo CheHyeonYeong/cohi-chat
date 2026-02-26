@@ -274,9 +274,14 @@ public class MemberService {
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
+		// JWT는 유효하지만 Redis에 없는 경우 = 이미 Rotation된 구 RT 재사용 → 토큰 탈취 가능성
+		// 현재 세션(신 RT)도 강제 무효화하여 공격 차단
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
-		refreshTokenRepository.findByToken(tokenHash)
-			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+		if (refreshTokenRepository.findByToken(tokenHash).isEmpty()) {
+			log.warn("토큰 재사용 감지 - 현재 세션 강제 무효화: username={}", verifiedUsername);
+			refreshTokenRepository.deleteById(verifiedUsername);
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
 
 		// 4. 사용자 정보 조회
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(verifiedUsername)

@@ -431,6 +431,25 @@ class MemberServiceTest {
 	}
 
 	@Test
+	@DisplayName("실패: 이미 Rotation된 RT 재사용 감지 시 현재 세션 무효화 후 예외")
+	void refreshAccessToken_detectedReuseInvalidatesCurrentSession() {
+		// given: JWT는 유효하지만 Redis에 없는 토큰 (이미 Rotation된 구 RT)
+		String reusedToken = "already-rotated-refresh-token";
+
+		given(jwtTokenProvider.getUsernameFromToken(reusedToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(reusedToken)).willReturn("old-hash");
+		given(refreshTokenRepository.findByToken("old-hash")).willReturn(Optional.empty());
+
+		// when & then
+		assertThatThrownBy(() -> memberService.refreshAccessToken(reusedToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+
+		// 현재 세션(신 RT)도 강제 무효화되어야 함
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+	}
+
+	@Test
 	@DisplayName("성공: Refresh Token 재발급 시 rate limit 체크 호출")
 	void refreshAccessToken_callsRateLimitCheck() {
 		String validRefreshToken = "valid-refresh-token";

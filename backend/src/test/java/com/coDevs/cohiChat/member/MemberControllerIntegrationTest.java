@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,9 +29,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
@@ -136,6 +140,78 @@ class MemberControllerIntegrationTest {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"displayName\": \"NewNick\"}"))
 				.andExpect(status().isForbidden());
+		}
+	}
+
+	@Nested
+	@DisplayName("POST /members/v1/refresh - 토큰 갱신 API")
+	class RefreshTokenTest {
+
+		private static final String REFRESH_ENDPOINT = "/members/v1/refresh";
+
+		@Test
+		@DisplayName("유효한 RT 제출 시 200 OK + 새 AT/RT 반환")
+		void refreshWithValidToken_returns200WithNewTokens() throws Exception {
+			RefreshTokenResponseDTO response = RefreshTokenResponseDTO.builder()
+				.accessToken("new-access-token")
+				.refreshToken("new-refresh-token")
+				.expiredInMinutes(30)
+				.build();
+			when(memberService.refreshAccessToken(anyString())).thenReturn(response);
+
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"valid-refresh-token\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+				.andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"))
+				.andExpect(jsonPath("$.data.expiredInMinutes").value(30));
+		}
+
+		@Test
+		@DisplayName("유효하지 않은 RT 제출 시 401 Unauthorized 반환")
+		void refreshWithInvalidToken_returns401() throws Exception {
+			when(memberService.refreshAccessToken(anyString()))
+				.thenThrow(new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"invalid-token\"}"))
+				.andExpect(status().isUnauthorized());
+		}
+
+		@Test
+		@DisplayName("만료된 RT 제출 시 401 Unauthorized 반환")
+		void refreshWithExpiredToken_returns401() throws Exception {
+			when(memberService.refreshAccessToken(anyString()))
+				.thenThrow(new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN));
+
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"expired-token\"}"))
+				.andExpect(status().isUnauthorized());
+		}
+
+		@Test
+		@DisplayName("Rate Limit 초과 시 429 Too Many Requests 반환")
+		void refreshWithRateLimitExceeded_returns429() throws Exception {
+			when(memberService.refreshAccessToken(anyString()))
+				.thenThrow(new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED));
+
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"valid-but-rate-limited\"}"))
+				.andExpect(status().isTooManyRequests());
+		}
+
+		@Test
+		@DisplayName("RT 미포함(빈 값) 요청 시 400 Bad Request 반환")
+		void refreshWithBlankToken_returns400() throws Exception {
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"\"}"))
+				.andExpect(status().isBadRequest());
 		}
 	}
 
