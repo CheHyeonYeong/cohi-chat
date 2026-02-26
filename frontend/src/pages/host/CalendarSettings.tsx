@@ -48,7 +48,7 @@ export default function CalendarSettings() {
                 googleCalendarId,
             });
             setSaveSuccess(true);
-            syncedRef.current = false; // Allow re-sync on success if needed
+            syncedRef.current = false;
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (err) {
             setErrors({ submit: getErrorMessage(err, '저장 중 오류가 발생했습니다.') });
@@ -81,7 +81,7 @@ export default function CalendarSettings() {
                         <span className="text-[var(--cohe-text-dark)] font-medium">캘린더 설정</span>
                     </nav>
                 }
-                right={<div className="w-9 h-9" />}
+                right={<div className="w-9 h-9"></div>}
             />
 
             <main className="w-full px-6 py-10 max-w-4xl mx-auto space-y-8">
@@ -98,7 +98,7 @@ export default function CalendarSettings() {
                         />
                     </section>
 
-                    <div className="h-px bg-gray-100" />
+                    <div className="h-px bg-gray-100"></div>
 
                     <section>
                         <h2 className="text-lg font-semibold mb-6 text-[var(--cohe-text-dark)]">연동 캘린더 수정</h2>

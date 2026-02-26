@@ -110,7 +110,7 @@ export default function HostRegister() {
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
             <Header
                 center={<StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />}
-                right={<div className="w-24" />}
+                right={<div className="w-24"></div>}
             />
 
             <main className="w-full px-6 py-10 md:py-16 pb-28">
@@ -158,7 +158,7 @@ export default function HostRegister() {
                                     <div
                                         key={i}
                                         className="w-2.5 h-2.5 rounded-full bg-[var(--cohe-primary)]"
-                                    />
+                                    ></div>
                                 ))}
                             </div>
                             <Button
@@ -186,12 +186,13 @@ export default function HostRegister() {
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
                                         key={i}
-                                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                                            i + 1 === currentStep
+                                        className={
+                                            'w-2.5 h-2.5 rounded-full transition-colors ' +
+                                            (i + 1 === currentStep
                                                 ? 'bg-[var(--cohe-primary)]'
-                                                : 'bg-[var(--cohe-bg-warm)]'
-                                        }`}
-                                    />
+                                                : 'bg-[var(--cohe-bg-warm)]')
+                                        }
+                                    ></div>
                                 ))}
                             </div>
 
@@ -205,7 +206,7 @@ export default function HostRegister() {
                                     다음 단계
                                 </Button>
                             ) : (
-                                <div className="w-24" />
+                                <div className="w-24"></div>
                             )}
                         </>
                     )}

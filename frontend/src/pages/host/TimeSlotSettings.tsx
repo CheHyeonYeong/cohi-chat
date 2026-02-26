@@ -15,12 +15,11 @@ function formatWeekdaySummary(weekdays: number[]): string {
     const names = sorted.map((d) => DAY_NAMES[d]);
     const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
     if (isConsecutive && sorted.length >= 2) {
-        return `${names[0]}~${names[names.length - 1]}`;
+        return names[0] + '~' + names[names.length - 1];
     }
     return names.join(', ');
 }
 
-/** "HH:mm:ss" | "HH:mm" → "HH:mm" */
 function normalizeTime(time: string): string {
     return time.slice(0, 5);
 }
@@ -54,7 +53,6 @@ export default function TimeSlotSettings() {
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
-    // 서버 데이터를 폼에 반영 (초기 로드 및 mutation 후 재동기화)
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
@@ -82,15 +80,15 @@ export default function TimeSlotSettings() {
         }
         newEntries.forEach((entry, i) => {
             if (entry.weekdays.length === 0) {
-                newErrors[`weekdays_${i}`] = `새 시간대: 요일을 최소 1개 이상 선택해주세요.`;
+                newErrors['weekdays_' + i] = '새 시간대: 요일을 최소 1개 이상 선택해주세요.';
             }
             if (entry.startTime >= entry.endTime) {
-                newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
+                newErrors['time_' + i] = '새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.';
             }
             if ((entry.startDate && !entry.endDate) || (!entry.startDate && entry.endDate)) {
-                newErrors[`date_${i}`] = `새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.`;
+                newErrors['date_' + i] = '새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.';
             } else if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
-                newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
+                newErrors['date_' + i] = '새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.';
             }
         });
         setErrors(newErrors);
@@ -103,8 +101,8 @@ export default function TimeSlotSettings() {
         const results = await Promise.allSettled(
             newEntries.map((entry) =>
                 createTimeslotMutation.mutateAsync({
-                    startTime: `${entry.startTime}:00`,
-                    endTime: `${entry.endTime}:00`,
+                    startTime: entry.startTime + ':00',
+                    endTime: entry.endTime + ':00',
                     weekdays: entry.weekdays,
                     ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
                 })
@@ -112,12 +110,12 @@ export default function TimeSlotSettings() {
         );
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
-            .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
+            .filter((item) => item.result.status === 'rejected');
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
-                const label = `${f.entry.startTime}~${f.entry.endTime}`;
+                const label = f.entry.startTime + '~' + f.entry.endTime;
                 const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
-                return `[${label}] ${msg}`;
+                return '[' + label + '] ' + msg;
             });
             setErrors({ save: reasons.join(', ') });
         } else {
@@ -146,7 +144,7 @@ export default function TimeSlotSettings() {
     };
 
     const summaryText = entries
-        .map((e) => `${formatWeekdaySummary(e.weekdays)}, ${e.startTime} - ${e.endTime}`)
+        .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
         .join(' / ');
 
     const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
@@ -192,7 +190,6 @@ export default function TimeSlotSettings() {
                 }
             />
 
-            {/* Content */}
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
                     <div className="w-full lg:w-[400px] flex-shrink-0">
@@ -212,7 +209,6 @@ export default function TimeSlotSettings() {
                 </div>
             </main>
 
-            {/* Bottom status bar */}
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">
                     <span>현재 설정: {summaryText}</span>
