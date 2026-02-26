@@ -65,6 +65,7 @@ public class Member {
 	@Column(name = "provider_id", length = 100, nullable = true, updatable = false)
 	private String providerId;
 
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role", nullable = false, length = 20)
 	private Role role;
@@ -85,6 +86,13 @@ public class Member {
 
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
+
+	@Column(name = "job", length = 100)
+	private String job;
+
+	@Column(name = "profile_image_url", length = 500)
+	private String profileImageUrl;
+
 
 	public static Member create(
 		String username,
@@ -156,9 +164,19 @@ public class Member {
 		this.displayName = displayName;
 	}
 
+	public void updateProfile(String job, String profileImageUrl) {
+		if (job != null) this.job = job;
+		if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+	}
+
 	public void softDelete() {
 		this.isDeleted = true;
 		this.deletedAt = Instant.now();
+	}
+
+	public void restore() {
+		this.isDeleted = false;
+		this.deletedAt = null;
 	}
 
 	public void promoteToHost() {

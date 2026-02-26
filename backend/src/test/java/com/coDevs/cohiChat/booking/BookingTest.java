@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -64,4 +65,21 @@ class BookingTest {
         // then
         assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
     }
+
+    @Test
+    @DisplayName("성공: 호스트 노쇼 신고 시 상태가 HOST_NO_SHOW로 변경되고 신고 시간이 기록된다")
+    void reportHostNoShowSuccess() {
+        // given
+        Booking booking = Booking.create(
+            timeSlot, TEST_GUEST_ID, TEST_BOOKING_DATE, TEST_TOPIC, TEST_DESCRIPTION
+        );
+
+        // when
+        booking.reportHostNoShow(Instant.now());
+
+        // then
+        assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.HOST_NO_SHOW);
+        assertThat(booking.getNoshowReportedAt()).isNotNull();
+    }
+
 }

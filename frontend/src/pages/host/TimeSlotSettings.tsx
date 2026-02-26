@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
 import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
 import type { TimeSlotResponse } from '~/features/host';
+import { useAuth, useUpdateProfile } from '~/features/member';
+import { useHost } from '~/hooks/useHost';
+import Button from '~/components/button/Button';
+import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
@@ -53,6 +56,35 @@ export default function TimeSlotSettings() {
     const [emailCopied, setEmailCopied] = useState(false);
     const syncedRef = useRef(false);
 
+    const { data: user } = useAuth();
+    // TODO: 전체 호스트 목록에서 필터링하는 비효율 구조 — 추후 GET /members/v1/me/profile 전용 API로 교체 필요
+    const { data: hostProfile } = useHost(user?.username ?? '');
+    const [job, setJob] = useState('');
+    const [profileImageUrl, setProfileImageUrl] = useState('');
+    const [profileSaved, setProfileSaved] = useState(false);
+    const updateProfileMutation = useUpdateProfile();
+
+    useEffect(() => {
+        if (hostProfile) {
+            setJob(hostProfile.job ?? '');
+            setProfileImageUrl(hostProfile.profileImageUrl ?? '');
+        }
+    }, [hostProfile]);
+
+    const handleProfileSave = async () => {
+        try {
+            await updateProfileMutation.mutateAsync({
+                job: job || undefined,
+                profileImageUrl: profileImageUrl || undefined,
+            });
+            setProfileSaved(true);
+            setTimeout(() => setProfileSaved(false), 3000);
+        } catch {
+            // 에러는 updateProfileMutation.isError / error로 표시
+        }
+    };
+
+    const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const { data: myCalendar } = useMyCalendar();
     const calendarInaccessible = myCalendar?.calendarAccessible === false;
 
@@ -74,7 +106,6 @@ export default function TimeSlotSettings() {
         }
     };
 
-    const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
@@ -188,12 +219,9 @@ export default function TimeSlotSettings() {
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
-                    <Link
-                        to="/host/register"
-                        className="inline-block px-6 py-2.5 rounded-lg font-medium cohe-btn-primary"
-                    >
+                    <LinkButton variant="primary" to="/host/register">
                         캘린더 연동하기
-                    </Link>
+                    </LinkButton>
                 </div>
             </div>
         );
@@ -252,20 +280,67 @@ export default function TimeSlotSettings() {
 
             {/* Content */}
             <main className="w-full px-6 py-8 pb-20">
-                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-                    <div className="w-full lg:w-[400px] flex-shrink-0">
-                        <TimeSlotForm
-                            entries={entries}
-                            onChange={setEntries}
-                            onSave={handleSave}
-                            onDelete={handleDelete}
-                            isPending={createTimeslotMutation.isPending}
-                            deletingId={deletingId}
-                            errors={errors}
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <WeeklySchedulePreview entries={entries} onChange={setEntries} />
+                <div className="max-w-6xl mx-auto space-y-8">
+                    {/* 프로필 편집 */}
+                    <section className="bg-white rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">내 프로필</h2>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
+                                <input
+                                    type="text"
+                                    value={job}
+                                    onChange={(e) => setJob(e.target.value)}
+                                    placeholder="예: 백엔드 개발자 @ 스타트업"
+                                    maxLength={100}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohe-primary)]/30 focus:border-[var(--cohe-primary)]"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
+                                <input
+                                    type="url"
+                                    value={profileImageUrl}
+                                    onChange={(e) => setProfileImageUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    maxLength={500}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohe-primary)]/30 focus:border-[var(--cohe-primary)]"
+                                />
+                            </div>
+                            <div className="flex items-end gap-2">
+                                <Button
+                                    variant="primary"
+                                    onClick={handleProfileSave}
+                                    loading={updateProfileMutation.isPending}
+                                >
+                                    저장
+                                </Button>
+                                {profileSaved && (
+                                    <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
+                                )}
+                            </div>
+                        </div>
+                        {updateProfileMutation.isError && (
+                            <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
+                        )}
+                    </section>
+
+                    {/* 타임슬롯 설정 */}
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="w-full lg:w-[400px] flex-shrink-0">
+                            <TimeSlotForm
+                                entries={entries}
+                                onChange={setEntries}
+                                onSave={handleSave}
+                                onDelete={handleDelete}
+                                isPending={createTimeslotMutation.isPending}
+                                deletingId={deletingId}
+                                errors={errors}
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <WeeklySchedulePreview entries={entries} onChange={setEntries} />
+                        </div>
                     </div>
                 </div>
             </main>
