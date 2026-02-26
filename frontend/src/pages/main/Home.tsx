@@ -38,7 +38,7 @@ function HostCard({
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center overflow-hidden flex-shrink-0'>
+            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
                 {isSafeUrl(profileImageUrl) && !imgError ? (
                     <img
                         src={profileImageUrl}
@@ -111,7 +111,7 @@ export default function Home() {
                             부담 없는 대화로 진짜 정보를
                         </h1>
                         <p className='text-lg md:text-xl text-[var(--cohe-text-dark)]/80'>
-                            현직자 · 채용담당자와 1:1 커피쳇
+                            현직자·채용담당자와 1:1 커피챗
                         </p>
 
                         {/* Tags */}

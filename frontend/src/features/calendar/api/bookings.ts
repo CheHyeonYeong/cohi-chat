@@ -1,6 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
 import type { StringTime, ISO8601String } from '~/types/base';
-import type { IBooking, IBookingDetail, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBooking, IBookingDetail, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
@@ -13,6 +13,7 @@ interface BookingFlatResponse {
     id: number;
     timeSlotId: number;
     guestId: string;
+    hostId: string | null;
     when: string;
     startTime: StringTime;
     endTime: StringTime;
@@ -24,10 +25,16 @@ interface BookingFlatResponse {
     hostDisplayName: string | null;
 }
 
+/** 날짜 전용 문자열("YYYY-MM-DD")을 로컬 자정으로 파싱. UTC 기반 파싱으로 인한 날짜 오차 방지. */
+function parseDateLocal(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
 function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
     return {
         id: b.id,
-        when: new Date(b.when),
+        when: parseDateLocal(b.when),
         topic: b.topic,
         description: b.description,
         timeSlot: {
@@ -48,6 +55,9 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
         files: [],
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
+        attendanceStatus: b.attendanceStatus as AttendanceStatus,
+        hostId: b.hostId,
+        guestId: b.guestId,
     };
 }
 
@@ -74,4 +84,16 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
         body: files,
     });
     return data;
+}
+
+export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
+    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
+        method: 'POST',
+        body: reason && reason.trim() !== '' ? { reason } : undefined,
+    });
+    return toBookingDetail(b);
+}
+
+export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
+    return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
 }

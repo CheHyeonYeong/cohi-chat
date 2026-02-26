@@ -21,7 +21,7 @@ function formatWeekdaySummary(weekdays: number[]): string {
     const names = sorted.map((d) => DAY_NAMES[d]);
     const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
     if (isConsecutive && sorted.length >= 2) {
-        return `${names[0]}~${names[names.length - 1]}`;
+        return names[0] + '~' + names[names.length - 1];
     }
     return names.join(', ');
 }
@@ -248,9 +248,7 @@ export default function TimeSlotSettings() {
                     <nav className="text-sm text-gray-500">
                         <span>호스트 대시보드</span>
                         <span className="mx-1.5">&gt;</span>
-                        <span>설정</span>
-                        <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
+                        <span className="text-[var(--cohe-text-dark)] font-medium">시간대 설정</span>
                     </nav>
                 }
                 right={
@@ -258,14 +256,14 @@ export default function TimeSlotSettings() {
                         <span className="text-sm text-[var(--cohe-primary)]">👤</span>
                     </div>
                 }
-
             />
+
             {/* Calendar access warning banner */}
             {calendarInaccessible && (
                 <div className="w-full bg-amber-50 border-b border-amber-200 px-6 py-4">
                     <div className="max-w-6xl mx-auto">
                         <p className="font-semibold text-amber-800 mb-1">
-                            ⚠️ Google Calendar 연동이 완료되지 않았습니다
+                            ⚠️ Google Calendar 연동이 완료되지 않았습니다.
                         </p>
                         <p className="text-sm text-amber-700 mb-2">
                             아래 서비스 어카운트 이메일을 캘린더 편집자로 공유해야 예약 시 Google Calendar에 이벤트가 등록됩니다.
@@ -281,11 +279,11 @@ export default function TimeSlotSettings() {
                                 className="flex-shrink-0 text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-40 text-xs font-medium"
                                 title="이메일 복사"
                             >
-                                {emailCopied ? '✓ 복사됨' : '복사'}
+                                {emailCopied ? '✅ 복사됨' : '복사'}
                             </button>
                         </div>
                         <p className="text-xs text-amber-600 mt-2">
-                            Google Calendar 설정 → 특정 사용자와 공유 → 위 이메일 추가 → 변경 및 이벤트 관리(편집자) 권한 선택
+                            Google Calendar 설정 > 특정 사용자와 공유 > 위 이메일 추가 > 변경 및 이벤트 관리(편집자) 권한 선택
                         </p>
                     </div>
                 </div>
@@ -352,7 +350,7 @@ export default function TimeSlotSettings() {
                             />
                         </div>
                         <div className="flex-1">
-                            <WeeklySchedulePreview entries={entries} />
+                            <WeeklySchedulePreview entries={entries} onChange={setEntries} />
                         </div>
                     </div>
                 </div>

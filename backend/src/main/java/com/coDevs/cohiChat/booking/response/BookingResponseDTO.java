@@ -21,6 +21,7 @@ public class BookingResponseDTO {
     private Long id;
     private Long timeSlotId;
     private UUID guestId;
+    private UUID hostId;
 
     @JsonProperty("when")
     private LocalDate bookingDate;
@@ -44,6 +45,7 @@ public class BookingResponseDTO {
             .id(booking.getId())
             .timeSlotId(booking.getTimeSlot().getId())
             .guestId(booking.getGuestId())
+            .hostId(booking.getTimeSlot().getUserId())
             .bookingDate(booking.getBookingDate())
             .startTime(booking.getTimeSlot().getStartTime())
             .endTime(booking.getTimeSlot().getEndTime())

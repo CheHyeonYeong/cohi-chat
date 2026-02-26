@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import WeeklySchedulePreview from './WeeklySchedulePreview';
 import type { TimeSlotEntry } from './TimeSlotForm';
@@ -15,7 +15,7 @@ describe('WeeklySchedulePreview', () => {
         it('entries가 비어있으면 기본 범위(08:00~22:00)를 표시해야 한다', () => {
             const { container } = render(<WeeklySchedulePreview entries={[]} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('08:00');
@@ -31,7 +31,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('06:00');
@@ -44,7 +44,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('23:00');
@@ -58,7 +58,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('05:00');
@@ -75,6 +75,66 @@ describe('WeeklySchedulePreview', () => {
             // 하이라이트가 없어야 함 (유효하지 않은 범위이므로)
             const highlightedCells = container.querySelectorAll('[style*="background-color"]');
             expect(highlightedCells.length).toBe(0);
+        });
+    });
+
+    describe('드래그 선택 기능', () => {
+        it('onChange가 없으면 grid-cell data-testid가 없어야 한다 (read-only 모드)', () => {
+            const { container } = render(<WeeklySchedulePreview entries={[]} />);
+            // onChange 미전달 시 DndContext를 사용하지 않음
+            const cells = container.querySelectorAll('[data-testid^="grid-cell-"]');
+            expect(cells.length).toBe(0);
+        });
+
+        it('onChange가 있으면 그리드 셀이 렌더링돼야 한다 (interactive 모드)', () => {
+            const onChange = vi.fn();
+            const { container } = render(
+                <WeeklySchedulePreview entries={[]} onChange={onChange} />,
+            );
+            const cells = container.querySelectorAll('[data-testid^="grid-cell-"]');
+            // 기본 범위(08~22) = 15시간 × 2 half-rows × 7일 = 210 셀
+            expect(cells.length).toBe(210);
+        });
+
+        it('드래그 안내 문구가 onChange 유무에 따라 다르게 표시돼야 한다', () => {
+            const { container: readOnly } = render(<WeeklySchedulePreview entries={[]} />);
+            expect(readOnly.textContent).toContain('왼쪽 폼에서 시간대를 설정하면');
+
+            cleanup();
+
+            const { container: interactive } = render(
+                <WeeklySchedulePreview entries={[]} onChange={vi.fn()} />,
+            );
+            expect(interactive.textContent).toContain('그리드를 드래그해');
+        });
+
+        it('interactive 모드에서 셀은 touch-action:none 스타일을 가져야 한다 (dnd-kit 설정 확인)', () => {
+            const onChange = vi.fn();
+            const { getByTestId } = render(
+                <WeeklySchedulePreview entries={[]} onChange={onChange} />,
+            );
+
+            const cell = getByTestId('grid-cell-0-0');
+            // dnd-kit PointerSensor/TouchSensor가 활성화됐을 때 필수 스타일
+            expect(cell.style.touchAction).toBe('none');
+        });
+
+        it('기존 entries가 있어도 interactive 모드가 정상 렌더링돼야 한다', () => {
+            const onChange = vi.fn();
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '18:00' },
+            ];
+            const { container } = render(
+                <WeeklySchedulePreview entries={entries} onChange={onChange} />,
+            );
+
+            // 하이라이트된 셀과 DraggableCell이 공존해야 함
+            const cells = container.querySelectorAll('[data-testid^="grid-cell-"]');
+            expect(cells.length).toBeGreaterThan(0);
+
+            // 09:00~18:00 범위의 셀이 하이라이트돼야 함
+            const highlightedCells = container.querySelectorAll('[style*="background-color"]');
+            expect(highlightedCells.length).toBeGreaterThan(0);
         });
     });
 });

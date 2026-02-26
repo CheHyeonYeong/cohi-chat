@@ -19,8 +19,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
-import { useBooking, useUploadBookingFile } from '~/features/calendar';
-import type { IBookingFile } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
+import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
+import { useAuth } from '~/features/member';
 import {
     validateFiles,
     getAcceptedFileTypes,
@@ -34,7 +35,17 @@ import { cn } from '~/libs/cn';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-/* ─── Sortable file item ─────────────────────────────────────────────────── */
+const STATUS_LABELS: Record<AttendanceStatus, string> = {
+    SCHEDULED: '예약됨',
+    ATTENDED: '참석',
+    NO_SHOW: '게스트 노쇼',
+    HOST_NO_SHOW: '호스트 노쇼 신고됨',
+    CANCELLED: '취소됨',
+    SAME_DAY_CANCEL: '당일 취소',
+    LATE: '지각',
+};
+
+/* --- Sortable file item --------------------------------------------------- */
 
 interface SortableFileItemProps {
     file: IBookingFile;
@@ -90,12 +101,15 @@ function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
     );
 }
 
-/* ─── Main page ──────────────────────────────────────────────────────────── */
+/* --- Main page ------------------------------------------------------------ */
 
 export default function Booking() {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
+    const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
+    const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -105,8 +119,31 @@ export default function Booking() {
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Sortable file list — preserves DnD order across refetches
+    // Host no-show report state
+    const [showReportForm, setShowReportForm] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+
+    // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
+
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 10_000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const isMeetingStarted = useMemo(() => {
+        if (!booking) return false;
+        const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
+        const meetingStart = new Date(
+            booking.when.getFullYear(),
+            booking.when.getMonth(),
+            booking.when.getDate(),
+            h, m, 0, 0
+        );
+        return now >= meetingStart.getTime();
+    }, [booking, now]);
 
     useEffect(() => {
         if (!booking) return;
@@ -128,7 +165,7 @@ export default function Booking() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
-    /* ── Handlers ────────────────────────────────────────────────────── */
+    /* -- Handlers ---------------------------------------------------------- */
 
     const handleFileSelect = (files: FileList | null) => {
         if (!files || files.length === 0) {
@@ -142,6 +179,10 @@ export default function Booking() {
         setValidationErrors(result.errors);
         setSelectedFiles(Array.from(files));
     };
+
+    // 현재 사용자가 이 예약의 게스트인지 판단
+    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
+    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileSelect(e.target.files);
@@ -221,7 +262,16 @@ export default function Booking() {
         }
     };
 
-    /* ── Loading / error states ──────────────────────────────────────── */
+    const handleReportSubmit = () => {
+        reportNoShow(reportReason || undefined, {
+            onSuccess: () => {
+                setShowReportForm(false);
+                setReportReason('');
+            },
+        });
+    };
+
+    /* -- Loading / error states -------------------------------------------- */
 
     if (isLoading || !booking) {
         return (
@@ -258,28 +308,35 @@ export default function Booking() {
 
                     {/* Booking info card */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-4 mb-5">
-                            <div className="w-12 h-12 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center flex-shrink-0">
-                                <span className="text-lg font-semibold text-[var(--cohe-primary)]">
-                                    {booking.host.displayName[0] ?? '?'}
-                                </span>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
+                                    <span className="text-lg font-semibold text-[var(--cohe-primary)]">
+                                        {booking.host.displayName[0] ?? '?'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-[var(--cohe-text-dark)]">
+                                        {booking.host.displayName}님과의 커피챗
+                                    </h1>
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                        {when.toLocaleDateString('ko-KR', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                        })}{' '}
+                                        {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-[var(--cohe-text-dark)]">
-                                    {booking.host.displayName}님과의 커피챗
-                                </h1>
-                                <p className="text-sm text-gray-500 mt-0.5">
-                                    {when.toLocaleDateString('ko-KR', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}{' '}
-                                    {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
-                                </p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
+                                    {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
+                                </span>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div>
                                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">주제</span>
                                 <p className="mt-1 text-gray-800">{booking.topic}</p>
@@ -293,16 +350,88 @@ export default function Booking() {
                         </div>
                     </div>
 
+                    {/* Host No-show report section */}
+                    {canReport && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+                            <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
+                            {!showReportForm ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                                    <Button
+                                        type="button"
+                                        variant="primary"
+                                        onClick={() => setShowReportForm(true)}
+                                        className="rounded-xl"
+                                    >
+                                        호스트 노쇼 신고
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col space-y-3">
+                                    <textarea
+                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                        rows={3}
+                                        placeholder="신고 사유를 입력해주세요 (선택)"
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                    />
+                                    {reportError && (
+                                        <p className="text-red-600 text-sm">{reportError.message}</p>
+                                    )}
+                                    <div className="flex flex-row space-x-2">
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            loading={isReporting}
+                                            onClick={handleReportSubmit}
+                                            className="rounded-xl px-6"
+                                        >
+                                            신고하기
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => {
+                                                setShowReportForm(false);
+                                                setReportReason('');
+                                                resetReport();
+                                            }}
+                                            className="rounded-xl px-6"
+                                        >
+                                            취소
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {isGuest && noShowHistory && noShowHistory.length > 0 && (
+                        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
+                            <h2 className="text-lg font-semibold mb-3 text-red-800">
+                                이 호스트의 노쇼 이력 {noShowHistory.length}건
+                            </h2>
+                            <ul className="space-y-2">
+                                {noShowHistory.map((item) => (
+                                    <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                        {item.bookingDate} 노쇼 발생
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* File section */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
                         <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)]">파일 첨부</h2>
 
                         {/* Capacity info */}
-                        <p className="text-xs text-gray-400">
-                            허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')} &nbsp;|&nbsp;
-                            최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)} &nbsp;|&nbsp;
-                            첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개
-                        </p>
+                        <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                            <span>허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')}</span>
+                            <span>최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)}</span>
+                            <span>첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개</span>
+                        </div>
 
                         {/* Upload form */}
                         {canUploadMore ? (
@@ -373,7 +502,7 @@ export default function Booking() {
                             </form>
                         ) : (
                             <p className="text-sm text-red-500">
-                                최대 파일 개수에 도달했습니다. 새 파일을 첨부하려면 기존 파일을 삭제해주세요.
+                                최대 파일 개수에 도달했습니다. 더 파일을 첨부하려면 기존 파일을 삭제해주세요.
                             </p>
                         )}
 

@@ -1,13 +1,14 @@
 package com.coDevs.cohiChat.member;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
-import com.coDevs.cohiChat.booking.HostChatCountProjection;
+import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
+import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -117,6 +118,9 @@ public class MemberService {
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+		if (member.getProvider() != Provider.LOCAL) {
+			throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
+		}
 		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
 			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
 		}
@@ -242,7 +246,11 @@ public class MemberService {
 		Map<UUID, Long> chatCounts = bookingRepository
 			.countAttendedByHostIds(hostIds, AttendanceStatus.ATTENDED)
 			.stream()
+<<<<<<< HEAD
 			.collect(Collectors.toMap(HostChatCountProjection::getHostId, HostChatCountProjection::getCount));
+=======
+			.collect(Collectors.toMap(HostChatCount::getHostId, HostChatCount::getCount));
+>>>>>>> 30e3e0686e7101de034a2beb5eaaa52d7455c975
 		return hosts.stream()
 			.map(h -> HostResponseDTO.from(h, chatCounts.getOrDefault(h.getId(), 0L)))
 			.toList();
@@ -251,6 +259,7 @@ public class MemberService {
 	@Transactional
 	public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
 		Member member = getMember(username);
+<<<<<<< HEAD
 
 		if (member.getRole() != Role.HOST) {
 			throw new CustomException(ErrorCode.ACCESS_DENIED);
@@ -258,6 +267,15 @@ public class MemberService {
 
 		member.updateProfile(req.getJob(), req.getProfileImageUrl());
 		long chatCount = bookingRepository.countAttendedByHostId(member.getId(), AttendanceStatus.ATTENDED);
+=======
+		member.updateProfile(req.getJob(), req.getProfileImageUrl());
+		long chatCount = bookingRepository
+			.countAttendedByHostIds(List.of(member.getId()), AttendanceStatus.ATTENDED)
+			.stream()
+			.findFirst()
+			.map(HostChatCount::getCount)
+			.orElse(0L);
+>>>>>>> 30e3e0686e7101de034a2beb5eaaa52d7455c975
 		return HostResponseDTO.from(member, chatCount);
 	}
 
@@ -324,7 +342,7 @@ public class MemberService {
 		return RefreshTokenResponseDTO.builder()
 			.accessToken(newAccessToken)
 			.refreshToken(newRefreshTokenValue)
-			.expiredInMinutes(expiredInSeconds / 60)
+			.expiredInMinutes((long) Math.ceil((double) expiredInSeconds / 60))
 			.build();
 	}
 }

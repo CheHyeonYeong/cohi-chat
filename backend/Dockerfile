@@ -12,11 +12,8 @@ RUN groupadd -r spring && useradd -r -g spring spring
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown -R spring:spring /app
 
-# Copy pre-built JAR (uploaded from CI)
-COPY app.jar app.jar
-
-# Change ownership to non-root user
-RUN chown spring:spring app.jar
+# Copy pre-built JAR (uploaded from CI) with proper ownership
+COPY --chown=spring:spring app.jar app.jar
 
 USER spring
 

@@ -31,6 +31,7 @@ public enum ErrorCode {
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자가 없습니다."),
 
 	PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다."),
+	SOCIAL_LOGIN_REQUIRED(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 비밀번호 로그인을 사용할 수 없습니다."),
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 인증 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
@@ -69,6 +70,9 @@ public enum ErrorCode {
 	BOOKING_NOT_CANCELLABLE(HttpStatus.UNPROCESSABLE_ENTITY, "취소할 수 없는 예약 상태입니다."),
 	BOOKING_NOT_MODIFIABLE(HttpStatus.UNPROCESSABLE_ENTITY, "상태를 변경할 수 없는 예약입니다."),
 	INVALID_BOOKING_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 예약 상태입니다."),
+	NOSHOW_NOT_REPORTABLE(HttpStatus.UNPROCESSABLE_ENTITY, "노쇼 신고가 불가능한 예약 상태입니다."),
+	MEETING_NOT_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "미팅 시작 시간이 지나지 않았습니다."),
+	NOSHOW_ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 노쇼 신고가 접수된 예약입니다."),
 	INVALID_TOPIC(HttpStatus.UNPROCESSABLE_ENTITY, "호스트가 정의한 상담 주제 중에서 선택해주세요."),
 
 	GOOGLE_CALENDAR_ACCESS_DENIED(HttpStatus.BAD_REQUEST,
