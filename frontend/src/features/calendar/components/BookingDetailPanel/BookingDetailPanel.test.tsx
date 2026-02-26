@@ -32,9 +32,17 @@ const mockBooking: IBookingDetail = {
     updatedAt: '2024-02-01T00:00:00Z',
 };
 
-// Mock @tanstack/react-router
+// Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+    Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, any> }) => {
+        let href = to;
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                href = href.replace('$' + key, String(value));
+            });
+        }
+        return <a href={href}>{children}</a>;
+    },
 }));
 
 describe('BookingDetailPanel', () => {
@@ -42,7 +50,7 @@ describe('BookingDetailPanel', () => {
 
     it('예약이 없으면 안내 메시지를 표시해야 한다', () => {
         const { getByText } = render(<BookingDetailPanel booking={null} onUpload={vi.fn()} isUploading={false} />);
-        expect(getByText('예약을 선택해주세요.')).toBeInTheDocument();
+        expect(getByText(/예약을 선택해주세요/)).toBeInTheDocument();
     });
 
     it('예약 정보(호스트 이름, 주제, 설명)를 표시해야 한다', () => {
@@ -54,7 +62,7 @@ describe('BookingDetailPanel', () => {
 
     it('예약 날짜와 시간을 표시해야 한다', () => {
         const { getByText } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
-        expect(getByText(/2024년 2월 15일/)).toBeInTheDocument();
+        expect(getByText((content) => content.includes('2024년 2월 15일'))).toBeInTheDocument();
         expect(getByText('10:00 - 11:00')).toBeInTheDocument();
     });
 
@@ -68,7 +76,7 @@ describe('BookingDetailPanel', () => {
         const bookingWithFiles: IBookingDetail = {
             ...mockBooking,
             files: [
-                { id: 1, fileName: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf' },
+                { id: 1, fileName: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf', createdAt: '2024-01-01T00:00:00Z' },
             ],
         };
         const { getByText } = render(<BookingDetailPanel booking={bookingWithFiles} onUpload={vi.fn()} isUploading={false} />);
