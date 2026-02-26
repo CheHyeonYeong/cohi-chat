@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -340,22 +339,8 @@ export default function TimeSlotSettings() {
                             />
                         </div>
                         <div className="flex-1">
-                            <WeeklySchedulePreview entries={entries} />
+                            <WeeklySchedulePreview entries={entries} onChange={setEntries} />
                         </div>
-                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-                    <div className="w-full lg:w-[400px] flex-shrink-0">
-                        <TimeSlotForm
-                            entries={entries}
-                            onChange={setEntries}
-                            onSave={handleSave}
-                            onDelete={handleDelete}
-                            isPending={createTimeslotMutation.isPending}
-                            deletingId={deletingId}
-                            errors={errors}
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <WeeklySchedulePreview entries={entries} onChange={setEntries} />
                     </div>
                 </div>
             </main>
