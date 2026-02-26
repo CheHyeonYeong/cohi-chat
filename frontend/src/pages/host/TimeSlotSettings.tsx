@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
@@ -231,22 +231,22 @@ export default function TimeSlotSettings() {
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
             {/* Header */}
-            <header className="w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm">
-                <Link to='/' className="flex items-center gap-2">
-                    <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
-                    <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
-                </Link>
-                <nav className="text-sm text-gray-500">
-                    <span>호스트 대시보드</span>
-                    <span className="mx-1.5">&gt;</span>
-                    <span>설정</span>
-                    <span className="mx-1.5">&gt;</span>
-                    <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
-                </nav>
-                <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
-                    <span className="text-sm text-[var(--cohe-primary)]">👤</span>
-                </div>
-            </header>
+            <Header
+                center={
+                    <nav className="text-sm text-gray-500">
+                        <span>호스트 대시보드</span>
+                        <span className="mx-1.5">&gt;</span>
+                        <span>설정</span>
+                        <span className="mx-1.5">&gt;</span>
+                        <span className="text-[var(--cohe-text-dark)] font-medium">예약 가능 시간 설정</span>
+                    </nav>
+                }
+                right={
+                    <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
+                        <span className="text-sm text-[var(--cohe-primary)]">👤</span>
+                    </div>
+                }
+            />
 
             {/* Calendar access warning banner */}
             {calendarInaccessible && (
@@ -342,6 +342,20 @@ export default function TimeSlotSettings() {
                         <div className="flex-1">
                             <WeeklySchedulePreview entries={entries} />
                         </div>
+                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+                    <div className="w-full lg:w-[400px] flex-shrink-0">
+                        <TimeSlotForm
+                            entries={entries}
+                            onChange={setEntries}
+                            onSave={handleSave}
+                            onDelete={handleDelete}
+                            isPending={createTimeslotMutation.isPending}
+                            deletingId={deletingId}
+                            errors={errors}
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <WeeklySchedulePreview entries={entries} onChange={setEntries} />
                     </div>
                 </div>
             </main>

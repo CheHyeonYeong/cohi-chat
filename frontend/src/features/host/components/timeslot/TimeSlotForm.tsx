@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import Button from '~/components/button/Button';
+import { isDuplicateEntry } from './dragUtils';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -65,6 +66,14 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
         });
     }, [entries]);
 
+    const overlapErrors = useMemo(() => {
+        return entries.map((entry, index) => {
+            if (entry.existingId != null) return null;
+            const others = entries.filter((_, i) => i !== index);
+            return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
+        });
+    }, [entries]);
+
     const updateEntry = (index: number, patch: Partial<TimeSlotEntry>) => {
         const updated = entries.map((e, i) => (i === index ? { ...e, ...patch } : e));
         onChange(updated);
@@ -114,6 +123,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                         } p-4`}
                     >
                         <div
+                            data-testid="entry-header"
                             className="flex justify-between items-center cursor-pointer"
                             onClick={() => setExpandedIndex(index)}
                         >
@@ -123,6 +133,9 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                 </span>
                                 {entry.existingId != null && (
                                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>
+                                )}
+                                {(timeValidationErrors[index] || overlapErrors[index]) && (
+                                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
                                 )}
                             </div>
                             {entry.existingId != null && onDelete ? (
@@ -275,6 +288,14 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                         {timeValidationErrors[index]}
                                     </p>
                                 )}
+                                {overlapErrors[index] && (
+                                    <p
+                                        data-testid="overlap-error"
+                                        className="text-sm text-red-500 mt-2"
+                                    >
+                                        {overlapErrors[index]}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -295,12 +316,20 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                 <p key={i} className="mt-2 text-sm text-red-500">{msg}</p>
             ))}
 
+            {/* 겹침/시간 오류 요약 */}
+            {(timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)) && (
+                <p className="text-sm text-red-500 mt-4 text-center">
+                    저장할 수 없는 시간대가 있습니다. 각 시간대를 확인해주세요.
+                </p>
+            )}
+
             {/* Save */}
             <Button
                 variant="primary"
                 size="lg"
                 onClick={onSave}
                 loading={isPending}
+                disabled={timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)}
                 className="w-full mt-6 rounded-lg"
             >
                 {isPending ? '저장 중...' : '저장하기'}
