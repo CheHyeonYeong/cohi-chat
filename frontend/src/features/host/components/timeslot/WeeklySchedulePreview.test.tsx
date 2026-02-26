@@ -15,7 +15,7 @@ describe('WeeklySchedulePreview', () => {
         it('entries가 비어있으면 기본 범위(08:00~22:00)를 표시해야 한다', () => {
             const { container } = render(<WeeklySchedulePreview entries={[]} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('08:00');
@@ -31,7 +31,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('06:00');
@@ -44,7 +44,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('23:00');
@@ -58,7 +58,7 @@ describe('WeeklySchedulePreview', () => {
 
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
-            const timeLabels = container.querySelectorAll('.text-xs.text-gray-400');
+            const timeLabels = container.querySelectorAll('[data-testid="time-label"]');
             const times = Array.from(timeLabels).map((el) => el.textContent);
 
             expect(times).toContain('05:00');
