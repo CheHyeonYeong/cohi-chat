@@ -4,6 +4,7 @@ export { useLogin } from './hooks/useLogin';
 export { useOAuthLogin } from './hooks/useOAuthLogin';
 export { useLogout } from './hooks/useLogout';
 export { useSignup } from './hooks/useSignup';
+export { useUpdateProfile } from './hooks/useUpdateProfile';
 
 // components
 export { LoginForm } from './components/LoginForm';
@@ -22,4 +23,5 @@ export type {
     LoginResponse,
     SignupPayload,
     SignupResponse,
+    UpdateProfilePayload,
 } from './types';

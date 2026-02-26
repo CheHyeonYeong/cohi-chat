@@ -16,6 +16,9 @@ export interface HostResponseDTO {
     id: string;
     username: string;
     displayName: string;
+    job?: string;
+    profileImageUrl?: string;
+    chatCount: number;
 }
 
 export interface IUserSimple {
@@ -58,4 +61,9 @@ export interface SignupResponse {
     id: string;
     username: string;
     displayName: string;
+}
+
+export interface UpdateProfilePayload {
+    job?: string;
+    profileImageUrl?: string;
 }

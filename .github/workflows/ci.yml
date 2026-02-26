@@ -36,22 +36,24 @@ jobs:
           path: backend/build/reports/tests/
 
   frontend:
-    name: Frontend Build & Lint
+    name: Frontend Build, Lint & Test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install dependencies
         run: |
@@ -62,6 +64,11 @@ jobs:
         run: |
           cd frontend
           pnpm lint
+
+      - name: Test
+        run: |
+          cd frontend
+          pnpm test -- --run
 
       - name: Build
         run: |
