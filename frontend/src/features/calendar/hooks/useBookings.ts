@@ -29,7 +29,7 @@ export function useBooking(id: number | null) {
 }
 
 export function useUploadBookingFile(id: number) {
-    return useMutation<IBookingDetail, Error, FormData>({
+    return useMutation<import('../types').IBookingFile, Error, FormData>({
         mutationFn: (files: FormData) => uploadBookingFile(id, files),
     });
 }

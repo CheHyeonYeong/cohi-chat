@@ -86,11 +86,11 @@ function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
             <button
                 type="button"
                 onClick={() =>
-                    onDownload(file.id, file.originalFileName || file.file.split('/').pop() || 'download')
+                    onDownload(file.id, file.originalFileName || file.fileName.split('/').pop() || 'download')
                 }
                 className="text-blue-600 hover:underline flex-1 truncate text-left text-sm"
             >
-                {file.originalFileName || file.file.split('/').pop()}
+                {file.originalFileName || file.fileName.split('/').pop()}
             </button>
 
             {/* File size */}

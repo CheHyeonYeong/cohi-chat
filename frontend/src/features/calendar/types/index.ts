@@ -74,7 +74,7 @@ export interface IPaginatedBookingDetail {
 
 export interface IBookingFile {
     id: number;
-    file: string;
+    fileName: string;
     originalFileName: string;
     fileSize: number;
     contentType: string;

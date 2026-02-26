@@ -68,7 +68,7 @@ describe('BookingDetailPanel', () => {
         const bookingWithFiles: IBookingDetail = {
             ...mockBooking,
             files: [
-                { id: 1, file: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf' },
+                { id: 1, fileName: 'a.pdf', originalFileName: 'resume.pdf', fileSize: 1024, contentType: 'application/pdf' },
             ],
         };
         const { getByText } = render(<BookingDetailPanel booking={bookingWithFiles} onUpload={vi.fn()} isUploading={false} />);
