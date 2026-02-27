@@ -107,7 +107,7 @@ export default function HostRegister() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <Header
                 center={<StepIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />}
                 right={<div className="w-24"></div>}
@@ -157,7 +157,7 @@ export default function HostRegister() {
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
                                         key={i}
-                                        className="w-2.5 h-2.5 rounded-full bg-[var(--cohe-primary)]"
+                                        className="w-2.5 h-2.5 rounded-full bg-[var(--cohi-primary)]"
                                     ></div>
                                 ))}
                             </div>
@@ -189,8 +189,8 @@ export default function HostRegister() {
                                         className={
                                             'w-2.5 h-2.5 rounded-full transition-colors ' +
                                             (i + 1 === currentStep
-                                                ? 'bg-[var(--cohe-primary)]'
-                                                : 'bg-[var(--cohe-bg-warm)]')
+                                                ? 'bg-[var(--cohi-primary)]'
+                                                : 'bg-[var(--cohi-bg-warm)]')
                                         }
                                     ></div>
                                 ))}

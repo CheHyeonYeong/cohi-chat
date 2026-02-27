@@ -10,7 +10,7 @@ export default function MyBookings() {
     const { data: bookings, isLoading, error } = useMyBookings({ page: currentPage, pageSize });
 
     return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8 space-y-4">
                 <Link to='/' className='bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>첫 화면으로</Link>
 

@@ -26,10 +26,10 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
         return (
             <div className="w-full max-w-lg mx-auto text-center">
                 <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-6" />
-                <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohe-text-dark)] mb-3">
+                <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-3">
                     호스트 등록 완료!
                 </h2>
-                <p className="text-[var(--cohe-text-dark)]/70 mb-8">
+                <p className="text-[var(--cohi-text-dark)]/70 mb-8">
                     캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.
                 </p>
                 {tokenRefreshFailed && (
@@ -46,10 +46,10 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohe-text-dark)] mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
                 등록 정보 확인
             </h2>
-            <p className="text-[var(--cohe-text-dark)]/70 mb-8">
+            <p className="text-[var(--cohi-text-dark)]/70 mb-8">
                 입력한 내용을 확인하고 등록을 완료해주세요.
             </p>
 
@@ -62,7 +62,7 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
                         {step1.topics.map((topic) => (
                             <span
                                 key={topic}
-                                className="px-3 py-1.5 bg-[var(--cohe-primary)]/10 text-[var(--cohe-primary)] rounded-full text-sm font-medium"
+                                className="px-3 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
                             >
                                 {topic}
                             </span>
@@ -73,13 +73,13 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
                 {/* Description */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm">
                     <h3 className="text-sm font-semibold text-gray-500 mb-2">소개</h3>
-                    <p className="text-[var(--cohe-text-dark)] whitespace-pre-wrap">{step1.description}</p>
+                    <p className="text-[var(--cohi-text-dark)] whitespace-pre-wrap">{step1.description}</p>
                 </div>
 
                 {/* Google Calendar */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm">
                     <h3 className="text-sm font-semibold text-gray-500 mb-2">Google Calendar ID</h3>
-                    <p className="text-[var(--cohe-text-dark)] break-all">
+                    <p className="text-[var(--cohi-text-dark)] break-all">
                         {step2.googleCalendarId}
                     </p>
                 </div>

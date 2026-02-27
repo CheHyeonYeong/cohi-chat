@@ -35,11 +35,11 @@ describe('LogoutButton', () => {
         expect(button?.textContent).toBe('로그아웃');
     });
 
-    it('should apply cohe-btn-outline style', () => {
+    it('should apply cohi-btn-outline style', () => {
         const { container } = render(<LogoutButton />);
 
         const button = container.querySelector('button');
-        expect(button?.className).toContain('cohe-btn-outline');
+        expect(button?.className).toContain('cohi-btn-outline');
     });
 
     it('should call logout when clicked', () => {

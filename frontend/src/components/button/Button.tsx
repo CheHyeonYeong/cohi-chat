@@ -17,9 +17,9 @@ const sizeStyles = {
 };
 
 const variantStyles = {
-    primary: "cohe-btn-primary",
-    secondary: "cohe-btn-secondary",
-    outline: "cohe-btn-outline",
+    primary: "cohi-btn-primary",
+    secondary: "cohi-btn-secondary",
+    outline: "cohi-btn-outline",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

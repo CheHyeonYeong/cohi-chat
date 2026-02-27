@@ -95,7 +95,7 @@ export function useFormValidation<T extends object>(
         (name: keyof T, baseClass = ''): string => {
             const field = fields[name];
             if (!field?.touched) {
-                return `${baseClass} border-gray-300 focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)]`;
+                return `${baseClass} border-gray-300 focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]`;
             }
             if (field.error) {
                 return `${baseClass} border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500`;

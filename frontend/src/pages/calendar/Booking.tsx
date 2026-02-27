@@ -62,14 +62,14 @@ export default function Booking() {
     }, [booking, now]);
 
     if (isLoading) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 예약 정보를 불러오고 있습니다...
             </div>
         </div>
     );
     if (error) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 {getErrorMessage(error, '예약 정보를 불러오는 중 오류가 발생했습니다.')}
             </div>
@@ -77,7 +77,7 @@ export default function Booking() {
     );
     // error 없이 data가 undefined인 경우: API가 빈 응답(204 등)을 반환하거나 ID에 해당하는 예약이 없는 경우
     if (!booking) return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8">
                 예약 정보를 찾을 수 없습니다.
             </div>
@@ -173,7 +173,7 @@ export default function Booking() {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className="w-full max-w-4xl mx-auto px-8 flex flex-col space-y-4">
                 <Link to='/my-bookings' className='inline-block w-fit bg-gray-500 hover:bg-gray-700 hover:text-white text-white px-4 py-2 rounded-md'>내 예약 목록으로</Link>
 

@@ -1,6 +1,6 @@
-# coheChat 와이어프레임
+# cohiChat 와이어프레임
 
-이 문서는 coheChat 서비스의 UI/UX 설계를 위한 ASCII 기반 와이어프레임입니다.
+이 문서는 cohiChat 서비스의 UI/UX 설계를 위한 ASCII 기반 와이어프레임입니다.
 
 ## 화면 목록
 
