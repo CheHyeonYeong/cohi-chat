@@ -20,14 +20,12 @@ function HostCard({
     chatCount: number;
     profileImageUrl?: string;
 }) {
-    const now = new Date();
-
     return (
         <Link
-            to='/calendar/$slug'
-            params={{ slug: username }}
-            search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
-            className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
+            to='/host/$hostId'
+            params={{ hostId: username }}
+            className='flex items-center gap-4 bg-white rounded-2xl px-6 py-5 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
+            data-testid={`host-card-${username}`}
         >
             <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
                 {profileImageUrl ? (
@@ -38,13 +36,15 @@ function HostCard({
                     </span>
                 )}
             </div>
-            <div className='flex flex-col min-w-0'>
+            <div className='flex flex-col min-w-0 flex-1'>
                 <span className='font-semibold text-[var(--cohe-text-dark)] truncate'>{displayName}</span>
                 <span className='text-sm text-gray-500 truncate'>{job ?? 'Host'}</span>
-                {chatCount > 0 && (
-                    <span className='text-xs text-[var(--cohe-primary)]'>커피챗 {chatCount}회</span>
-                )}
             </div>
+            {chatCount > 0 && (
+                <span className='flex-shrink-0 px-2.5 py-1 bg-[var(--cohe-primary)]/10 text-[var(--cohe-primary)] rounded-full text-xs font-medium'>
+                    {chatCount}회
+                </span>
+            )}
         </Link>
     );
 }

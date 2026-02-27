@@ -13,6 +13,7 @@ import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
+import HostProfile from '~/pages/host/HostProfile'
 import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
@@ -100,6 +101,15 @@ const hostTimeslotsRoute = createRoute({
     component: TimeSlotSettingsGuarded,
 })
 
+const hostProfileRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/host/$hostId',
+    component: HostProfile,
+    params: z.object({
+        hostId: z.string(),
+    }),
+})
+
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/calendar/$slug',
@@ -145,6 +155,7 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
+    hostProfileRoute,
     oAuthCallbackRoute,
     termsRoute,
     privacyRoute,
