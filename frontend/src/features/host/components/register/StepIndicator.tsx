@@ -20,7 +20,7 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
                                     ? 'bg-[var(--cohe-primary)] text-white'
                                     : isCompleted
                                         ? 'bg-[var(--cohe-primary)] text-white'
-                                        : 'bg-[rgb(var(--cohe-bg-warm))] text-[var(--cohe-text-dark)]'
+                                        : 'bg-[var(--cohe-bg-warm)] text-[var(--cohe-text-dark)]'
                             }`}
                         >
                             {isCompleted ? '✓' : step}
@@ -37,7 +37,7 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
                         {step < totalSteps && (
                             <div
                                 className={`w-12 h-0.5 mx-2 ${
-                                    isCompleted ? 'bg-[var(--cohe-primary)]' : 'bg-[rgb(var(--cohe-bg-warm))]'
+                                    isCompleted ? 'bg-[var(--cohe-primary)]' : 'bg-[var(--cohe-bg-warm)]'
                                 }`}
                             />
                         )}

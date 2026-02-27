@@ -43,7 +43,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
             {/* Date and Host info */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-bold text-[var(--cohe-primary)]">
                             {booking.host.displayName[0] || '?'}
                         </span>

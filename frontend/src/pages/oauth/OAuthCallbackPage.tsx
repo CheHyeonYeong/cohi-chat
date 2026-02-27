@@ -24,7 +24,7 @@ export default function OAuthCallbackPage() {
     }, [code, error, provider, state, navigate, loginMutation]);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[rgb(var(--cohe-bg-warm))]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
             {loginMutation.isError ? (
                 <p className="text-red-500 text-sm">로그인에 실패했습니다. 다시 시도해주세요.</p>
             ) : (
