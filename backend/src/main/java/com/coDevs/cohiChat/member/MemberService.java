@@ -9,7 +9,6 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
-import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -29,6 +28,7 @@ import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -63,6 +63,7 @@ public class MemberService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
 	private final TokenService tokenService;
+	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
@@ -236,6 +237,11 @@ public class MemberService {
 	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
 
+		if (accessToken == null || accessToken.isBlank()) {
+			log.debug("Access Token이 비어 있어 블랙리스트 등록을 생략합니다.");
+			return;
+		}
+
 		try {
 			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
 			if (remainingSeconds <= 0) {
@@ -281,12 +287,14 @@ public class MemberService {
 
 		// RT Rotation: grace window 적용
 		if (!storedToken.getToken().equals(tokenHash)) {
-			// 이전 토큰과 일치하고 grace window 기간 내라면 무시 (중복 요청 허용)
-			if (tokenHash.equals(storedToken.getPreviousToken()) &&
-				storedToken.getRotatedAt() != null &&
-				(System.currentTimeMillis() - storedToken.getRotatedAt() < RT_GRACE_WINDOW_MS)) {
-				log.info("Refresh Token grace window hit: username={}", verifiedUsername);
-				throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+			// grace window 내의 불일치는 탈취로 단정하지 않고 세션은 유지한다.
+			// (중복 요청/재시도/경쟁 상태를 고려)
+			long nowMillis = clock.millis();
+			boolean withinGraceWindow = storedToken.getRotatedAt() != null
+				&& (nowMillis - storedToken.getRotatedAt() < RT_GRACE_WINDOW_MS);
+			if (withinGraceWindow) {
+				log.info("Refresh Token grace window hit (session kept): username={}", verifiedUsername);
+				throw new CustomException(ErrorCode.GRACE_WINDOW_HIT);
 			}
 
 			// 그 외의 경우 (완전 불일치 혹은 grace window 초과)는 탈취로 간주하여 전체 세션 무효화
@@ -303,7 +311,6 @@ public class MemberService {
 		String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
 
-		// tokenService.hashToken() 또는 TokenHashUtil.hash() 사용 (프로젝트 컨벤션에 맞춤)
 		storedToken.rotate(tokenService.hashToken(newRefreshTokenValue), refreshTokenExpirationMs);
 		refreshTokenRepository.save(storedToken);
 

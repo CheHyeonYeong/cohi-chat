@@ -212,6 +212,20 @@ class MemberControllerIntegrationTest {
 		}
 
 		@Test
+		@DisplayName("Grace Window 히트 시 401 + GRACE_WINDOW_HIT 반환")
+		void refreshWithGraceWindowHit_returns401WithGraceCode() throws Exception {
+			when(memberService.refreshAccessToken(anyString()))
+				.thenThrow(new CustomException(ErrorCode.GRACE_WINDOW_HIT));
+
+			mockMvc.perform(post(REFRESH_ENDPOINT)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"refreshToken\": \"grace-window-token\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("GRACE_WINDOW_HIT"));
+		}
+
+		@Test
 		@DisplayName("RT 미포함(빈 값) 요청 시 400 Bad Request 반환")
 		void refreshWithBlankToken_returns400() throws Exception {
 			mockMvc.perform(post(REFRESH_ENDPOINT)

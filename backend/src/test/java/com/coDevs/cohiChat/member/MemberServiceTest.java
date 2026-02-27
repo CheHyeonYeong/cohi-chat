@@ -37,6 +37,7 @@ import io.jsonwebtoken.JwtException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -93,6 +94,9 @@ class MemberServiceTest {
 
 	@Mock
 	private TokenService tokenService;
+
+	@Mock
+	private Clock clock;
 
 	@Mock
 	private RateLimitService rateLimitService;
@@ -387,18 +391,19 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패: 이미 사용된 RT(이전 토큰)가 Grace Window 내에 들어오면 INVALID_REFRESH_TOKEN 반환 (재발급 안함)")
+	@DisplayName("실패: 이미 사용된 RT(이전 토큰)가 Grace Window 내에 들어오면 GRACE_WINDOW_HIT 반환 (세션 유지)")
 	void refreshAccessTokenGraceWindow() {
 		String oldRefreshToken = "old-refresh-token";
 		String oldHash = "old-hash";
 		String currentHash = "current-hash";
+		given(clock.millis()).willReturn(100_000L);
 		
 		// 이미 한 번 회전된 상태의 저장된 토큰
 		RefreshToken storedToken = RefreshToken.builder()
 			.username(TEST_USERNAME)
 			.token(currentHash)
 			.previousToken(oldHash)
-			.rotatedAt(System.currentTimeMillis() - 5000) // 5초 전 회전
+			.rotatedAt(95_000L) // now(100000) - 5000
 			.expiration(604800000L)
 			.build();
 
@@ -408,9 +413,38 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(oldRefreshToken))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GRACE_WINDOW_HIT);
 		
 		verify(refreshTokenRepository, never()).deleteById(anyString());
+	}
+
+	@Test
+	@DisplayName("실패: Grace Window 내 불일치 토큰은 세션 유지 + GRACE_WINDOW_HIT 반환")
+	void refreshAccessTokenGraceWindowWithNonPreviousToken() {
+		String mismatchedToken = "mismatched-token";
+		String mismatchHash = "mismatch-hash";
+		String currentHash = "current-hash";
+		String previousHash = "previous-hash";
+		given(clock.millis()).willReturn(100_000L);
+
+		RefreshToken storedToken = RefreshToken.builder()
+			.username(TEST_USERNAME)
+			.token(currentHash)
+			.previousToken(previousHash)
+			.rotatedAt(95_000L) // now(100000) - 5000
+			.expiration(604800000L)
+			.build();
+
+		given(jwtTokenProvider.getUsernameFromToken(mismatchedToken)).willReturn(TEST_USERNAME);
+		given(tokenService.hashToken(mismatchedToken)).willReturn(mismatchHash);
+		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
+
+		assertThatThrownBy(() -> memberService.refreshAccessToken(mismatchedToken))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GRACE_WINDOW_HIT);
+
+		verify(refreshTokenRepository, never()).deleteById(anyString());
+		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
 	}
 
 	@Test
@@ -419,13 +453,14 @@ class MemberServiceTest {
 		String oldRefreshToken = "old-refresh-token";
 		String oldHash = "old-hash";
 		String currentHash = "current-hash";
+		given(clock.millis()).willReturn(100_000L);
 		
 		// 30초(Grace Window) 이상 지난 토큰
 		RefreshToken storedToken = RefreshToken.builder()
 			.username(TEST_USERNAME)
 			.token(currentHash)
 			.previousToken(oldHash)
-			.rotatedAt(System.currentTimeMillis() - 40000) // 40초 전 회전
+			.rotatedAt(60_000L) // now(100000) - 40000
 			.expiration(604800000L)
 			.build();
 
