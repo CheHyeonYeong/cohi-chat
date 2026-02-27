@@ -4,7 +4,7 @@ import { cn } from "~/libs/cn";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant: "primary" | "secondary" | "outline";
-    size?: "md" | "lg";
+    size?: "sm" | "md" | "lg";
     loading?: boolean;
     asChild?: boolean;
     className?: string;
@@ -12,6 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const sizeStyles = {
+    sm: "px-3 py-1.5 text-sm font-medium",
     md: "px-4 py-2 text-base font-medium",
     lg: "px-6 py-3 text-lg font-semibold",
 };
