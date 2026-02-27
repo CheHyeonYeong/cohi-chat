@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { generate as generateKoreanName } from 'korean-name-generator';
+import { newRandomNick } from 'random-korean-nickname';
 import Button from '~/components/button/Button';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
@@ -82,14 +82,14 @@ export function SignupForm() {
     );
 
     const handleRandomName = () => {
-        const randomName = generateKoreanName();
+        const randomName = newRandomNick();
         setDisplayName(randomName);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const finalDisplayName = displayName.trim() || generateKoreanName();
+        const finalDisplayName = displayName.trim() || newRandomNick();
 
         const values: SignupFormValues = {
             username: username.trim(),

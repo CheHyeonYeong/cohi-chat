@@ -26,12 +26,12 @@ importers:
       add:
         specifier: ^2.0.6
         version: 2.0.6
-      korean-name-generator:
-        specifier: ^1.0.4
-        version: 1.0.4
       pnpm:
         specifier: ^9.14.2
         version: 9.15.1
+      random-korean-nickname:
+        specifier: ^1.1.3
+        version: 1.1.3
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1711,6 +1711,11 @@ packages:
   copy-anything@2.0.6:
     resolution: {integrity: sha512-1j20GZTsvKNkc4BY3NpMOM8tt///wY3FpIzozTOFO2ffuZcV61nojHXVKIy3WM+7ADCy5FVhdZYHYDdgTU0yJw==}
 
+  cross-env@7.0.3:
+    resolution: {integrity: sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==}
+    engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
+    hasBin: true
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -2355,9 +2360,6 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  korean-name-generator@1.0.4:
-    resolution: {integrity: sha512-iIxlar4KRYg+wVsfDs6HIrAD8Z4UkCPtIzINckNXzE4paABXYDZQx4GeTA4YxU6zHxD9d+WLS7NdykqzKj/8Xw==}
-
   language-subtag-registry@0.3.23:
     resolution: {integrity: sha512-0K65Lea881pHotoGEa5gDlMxt3pctLi2RplBb7Ezh4rRdLEOtgi7n4EwK9lamnUCkKBqaeKRVebTq6BAxSkpXQ==}
 
@@ -2878,6 +2880,9 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  random-korean-nickname@1.1.3:
+    resolution: {integrity: sha512-e7nlqQl0H3+d3N9x9c+I3CWlLNXmkhPkXnkZdWQlb1A1ksqDaw6orJXUDuY1JzVsRYXhslZda1Y03xzXQKNxMQ==}
 
   react-dom@18.3.1:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
@@ -4936,6 +4941,10 @@ snapshots:
     dependencies:
       is-what: 3.14.1
 
+  cross-env@7.0.3:
+    dependencies:
+      cross-spawn: 7.0.6
+
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -5685,8 +5694,6 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  korean-name-generator@1.0.4: {}
-
   language-subtag-registry@0.3.23: {}
 
   language-tags@1.0.9:
@@ -6235,6 +6242,10 @@ snapshots:
   querystringify@2.2.0: {}
 
   queue-microtask@1.2.3: {}
+
+  random-korean-nickname@1.1.3:
+    dependencies:
+      cross-env: 7.0.3
 
   react-dom@18.3.1(react@18.3.1):
     dependencies:
