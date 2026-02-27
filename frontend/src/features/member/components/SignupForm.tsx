@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { generate as generateKoreanName } from 'korean-name-generator';
 import Button from '~/components/button/Button';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
@@ -80,13 +81,20 @@ export function SignupForm() {
         [handleBlur]
     );
 
+    const handleRandomName = () => {
+        const randomName = generateKoreanName();
+        setDisplayName(randomName);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const finalDisplayName = displayName.trim() || generateKoreanName();
 
         const values: SignupFormValues = {
             username: username.trim(),
             email: email.trim(),
-            displayName: displayName.trim(),
+            displayName: finalDisplayName,
             password,
             passwordAgain,
         };
@@ -99,7 +107,7 @@ export function SignupForm() {
             {
                 username: username.trim(),
                 email: email.trim(),
-                displayName: displayName.trim() || undefined,
+                displayName: finalDisplayName,
                 password,
             },
             {
@@ -162,23 +170,43 @@ export function SignupForm() {
                         {fields.email?.touched && fields.email.error && (
                             <span className="text-xs text-red-500 mt-1">{fields.email.error}</span>
                         )}
+                        {fields.email?.touched && fields.email.isValid && (
+                            <span className="text-xs text-green-500 mt-1 flex items-center gap-1" data-testid="email-valid-indicator">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                이메일 형식이 올바릅니다
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label htmlFor="displayName" className="text-sm text-[var(--cohe-text-dark)]">
                             표시 이름 (선택)
                         </label>
-                        <input
-                            type="text"
-                            id="displayName"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            onBlur={() => onBlur('displayName', displayName)}
-                            disabled={isPending}
-                            maxLength={20}
-                            placeholder="(2-20자)"
-                            className={getInputClassName('displayName', baseInputClass)}
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="displayName"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                onBlur={() => onBlur('displayName', displayName)}
+                                disabled={isPending}
+                                maxLength={20}
+                                placeholder="(2-20자)"
+                                className={getInputClassName('displayName', baseInputClass)}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleRandomName}
+                                disabled={isPending}
+                                className="whitespace-nowrap flex-shrink-0"
+                                data-testid="random-name-button"
+                            >
+                                랜덤 생성
+                            </Button>
+                        </div>
                         {fields.displayName?.touched && fields.displayName.error && (
                             <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
                         )}
