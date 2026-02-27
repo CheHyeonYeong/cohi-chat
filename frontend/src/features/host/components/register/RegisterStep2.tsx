@@ -63,7 +63,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
     useEffect(() => {
         getServiceAccountEmail()
             .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => {/* 이메일 미표시 */});
+            .catch(() => {/* service account email is optional */});
     }, []);
 
     const handleCopyEmail = async () => {
@@ -72,7 +72,8 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
             await navigator.clipboard.writeText(serviceAccountEmail);
             setEmailCopied(true);
             setTimeout(() => setEmailCopied(false), 2000);
-        } catch {
+        } catch (error) {
+            console.warn('clipboard copy failed', error);
             // clipboard API 미지원 시 무시
         }
     };
@@ -83,7 +84,8 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
             onChange({ googleCalendarId: text.trim() });
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
+        } catch (error) {
+            console.warn('clipboard read failed', error);
             // clipboard API 미지원 시 무시
         }
     };

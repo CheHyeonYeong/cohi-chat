@@ -73,7 +73,9 @@ describe('WeeklySchedulePreview', () => {
             const { container } = render(<WeeklySchedulePreview entries={entries} />);
 
             // 하이라이트가 없어야 함 (유효하지 않은 범위이므로)
-            const highlightedCells = container.querySelectorAll('[style*="background-color"]');
+            const highlightedCells = Array.from(container.querySelectorAll('div')).filter((el) =>
+                el.className.includes('bg-[var(--cohi-primary)]'),
+            );
             expect(highlightedCells.length).toBe(0);
         });
     });
@@ -133,7 +135,9 @@ describe('WeeklySchedulePreview', () => {
             expect(cells.length).toBeGreaterThan(0);
 
             // 09:00~18:00 범위의 셀이 하이라이트돼야 함
-            const highlightedCells = container.querySelectorAll('[style*="background-color"]');
+            const highlightedCells = Array.from(container.querySelectorAll('div')).filter((el) =>
+                el.className.includes('bg-[var(--cohi-primary)]'),
+            );
             expect(highlightedCells.length).toBeGreaterThan(0);
         });
     });
