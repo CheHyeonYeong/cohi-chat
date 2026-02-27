@@ -59,6 +59,7 @@ dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-lettuce:8.14.0'
 
     runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'
     testRuntimeOnly 'com.h2database:h2'
 
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'

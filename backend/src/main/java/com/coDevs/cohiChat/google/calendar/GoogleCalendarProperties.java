@@ -13,4 +13,10 @@ public class GoogleCalendarProperties {
     private String credentialsPath;
     private String defaultCalendarId;
     private String timezone = "Asia/Seoul";
+
+    /**
+     * AWS Secrets Manager secret name for Google Calendar credentials.
+     * Used when credentials file is not found locally.
+     */
+    private String credentialsSecretName;
 }
