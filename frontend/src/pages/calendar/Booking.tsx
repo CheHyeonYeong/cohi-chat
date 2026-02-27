@@ -510,7 +510,7 @@ export default function Booking() {
                         {fileOrder.length > 0 && (
                             <div className="space-y-2">
                                 <p className="text-sm font-medium text-gray-600">첨부된 파일</p>
-                                <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다.</p>
+                                <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다. (현재 세션에서만 유지됨)</p>
                                 <DndContext
                                     sensors={sensors}
                                     collisionDetection={closestCenter}

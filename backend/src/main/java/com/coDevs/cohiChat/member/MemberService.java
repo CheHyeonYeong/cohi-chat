@@ -260,10 +260,6 @@ public class MemberService {
                         throw new CustomException(ErrorCode.ACCESS_DENIED);
                 }
 
-                if (member.getRole() != Role.HOST) {
-                        throw new CustomException(ErrorCode.ACCESS_DENIED);
-                }
-
                 member.updateProfile(req.getJob(), req.getProfileImageUrl());
                 long chatCount = bookingRepository.countAttendedByHostId(member.getId(), AttendanceStatus.ATTENDED);
                 return HostResponseDTO.from(member, chatCount);
