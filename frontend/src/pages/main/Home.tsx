@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
 import { Header } from '~/components/header';
@@ -21,6 +22,14 @@ function HostCard({
     profileImageUrl?: string;
 }) {
     const now = new Date();
+    const [imgError, setImgError] = useState(false);
+
+    // XSS 방지를 위한 URL 프로토콜 체크
+    const isSafeUrl = (url?: string) => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase().trim();
+        return lowerUrl.startsWith('http://') || lowerUrl.startsWith('https://');
+    };
 
     return (
         <Link
@@ -29,9 +38,14 @@ function HostCard({
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
-                {profileImageUrl ? (
-                    <img src={profileImageUrl} alt={displayName} className='w-full h-full object-cover' />
+            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
+                {isSafeUrl(profileImageUrl) && !imgError ? (
+                    <img
+                        src={profileImageUrl}
+                        alt={displayName}
+                        className='w-full h-full object-cover'
+                        onError={() => setImgError(true)}
+                    />
                 ) : (
                     <span className='text-lg font-semibold text-[var(--cohi-primary)]'>
                         {displayName.charAt(0)}
@@ -39,8 +53,8 @@ function HostCard({
                 )}
             </div>
             <div className='flex flex-col min-w-0'>
-                <span className='font-semibold text-[var(--cohi-text-dark)] truncate'>{displayName}</span>
-                <span className='text-sm text-gray-500 truncate'>{job ?? 'Host'}</span>
+                <span className='font-semibold text-[var(--cohe-text-dark)] truncate'>{displayName}</span>
+                <span className='text-sm text-gray-500 truncate'>{job ?? '호스트'}</span>
                 {chatCount > 0 && (
                     <span className='text-xs text-[var(--cohi-primary)]'>커피챗 {chatCount}회</span>
                 )}
@@ -75,7 +89,7 @@ export default function Home() {
                                 호스트 대시보드
                             </LinkButton>
                         ) : (
-                            <LinkButton variant="outline" to='/host/register' className="hidden">
+                            <LinkButton variant="outline" to='/host/register'>
                                 호스트 등록하기
                             </LinkButton>
                         )
@@ -96,8 +110,8 @@ export default function Home() {
                         <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--cohi-text-dark)] leading-tight'>
                             부담 없는 대화로 진짜 정보를
                         </h1>
-                        <p className='text-lg md:text-xl text-[var(--cohi-text-dark)]/80'>
-                            현직자 · 채용담당자와 1:1 커피쳇
+                        <p className='text-lg md:text-xl text-[var(--cohe-text-dark)]/80'>
+                            현직자·채용담당자와 1:1 커피챗
                         </p>
 
                         {/* Tags */}
