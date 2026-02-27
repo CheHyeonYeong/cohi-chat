@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Button from '~/components/button/Button';
+import LinkButton from '~/components/button/LinkButton';
 import { Header } from '~/components/header';
 import RegisterStep1 from '~/features/host/components/register/RegisterStep1';
 import RegisterStep2 from '~/features/host/components/register/RegisterStep2';
@@ -67,6 +68,35 @@ export default function CalendarSettings() {
         return (
             <div className="w-full min-h-screen flex items-center justify-center">
                 <p className="text-red-500">정보를 불러오지 못했습니다.</p>
+            </div>
+        );
+    }
+
+    if (!calendar) {
+        return (
+            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+                <Header
+                    center={
+                        <nav className="text-sm text-gray-500">
+                            <span>호스트 대시보드</span>
+                            <span className="mx-1.5">&gt;</span>
+                            <span className="text-[var(--cohe-text-dark)] font-medium">캘린더 설정</span>
+                        </nav>
+                    }
+                    right={<div className="w-9 h-9"></div>}
+                />
+                <div className="flex flex-col items-center justify-center py-20 px-6">
+                    <div className="bg-white p-10 rounded-2xl shadow-sm text-center max-w-md space-y-6">
+                        <div className="text-5xl">📅</div>
+                        <h2 className="text-xl font-bold text-[var(--cohe-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <p className="text-gray-600">
+                            미팅 예약을 받으려면 먼저 Google 캘린더를 연동해야 합니다.
+                        </p>
+                        <LinkButton variant="primary" to="/host/register" size="lg" className="w-full">
+                            캘린더 연동하러 가기
+                        </LinkButton>
+                    </div>
+                </div>
             </div>
         );
     }

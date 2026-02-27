@@ -9,6 +9,12 @@ import * as hostHooks from '~/features/host/hooks';
 // Mock dependencies
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
+    createLink: (component: any) => {
+        return (props: any) => {
+            const { to, ...rest } = props;
+            return React.createElement(component, { href: to, ...rest });
+        };
+    },
     Link: ({ children, to }: { children: React.ReactNode; to: string }) => 
         React.createElement('a', { href: to }, children),
 }));
@@ -134,6 +140,20 @@ describe('CalendarSettings', () => {
 
         render(<CalendarSettings />, { wrapper: createWrapper() });
         expect(screen.getByText(/정보를 불러오지 못했습니다/i)).toBeInTheDocument();
+    });
+
+    it('연동된 캘린더가 없을 때 등록 유도 UI를 표시해야 한다', () => {
+        vi.spyOn(hostHooks, 'useMyCalendar').mockReturnValue({
+            data: null,
+            isLoading: false,
+            error: null,
+        } as unknown as ReturnType<typeof hostHooks.useMyCalendar>);
+
+        render(<CalendarSettings />, { wrapper: createWrapper() });
+        
+        expect(screen.getByText(/연동된 캘린더가 없습니다/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /캘린더 연동하러 가기/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /캘린더 연동하러 가기/i })).toHaveAttribute('href', '/host/register');
     });
 
     it('저장 중일 때 버튼이 비활성화되고 텍스트가 변경되어야 한다', async () => {
