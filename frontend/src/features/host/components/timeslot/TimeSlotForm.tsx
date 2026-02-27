@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { isDuplicateEntry } from './dragUtils';
 
@@ -23,6 +23,7 @@ interface TimeSlotFormProps {
     onChange: (entries: TimeSlotEntry[]) => void;
     onSave: () => void;
     onDelete?: (existingId: number) => void;
+    onOverlapDetected?: () => void;
     isPending: boolean;
     deletingId?: number | null;
     errors: Record<string, string>;
@@ -52,7 +53,16 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     return `${String(h).padStart(2, '0')}:${m}`;
 });
 
-export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPending, deletingId, errors }: TimeSlotFormProps) {
+export default function TimeSlotForm({
+    entries,
+    onChange,
+    onSave,
+    onDelete,
+    onOverlapDetected,
+    isPending,
+    deletingId,
+    errors,
+}: TimeSlotFormProps) {
     const [expandedIndex, setExpandedIndex] = useState(0);
     const savedDatesRef = useRef<Record<number, { startDate: string; endDate: string }>>({});
 
@@ -73,6 +83,23 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
             return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
         });
     }, [entries]);
+
+    const hasOverlapError = overlapErrors.some(Boolean);
+    const didMountRef = useRef(false);
+    const hadOverlapRef = useRef(false);
+
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            hadOverlapRef.current = hasOverlapError;
+            return;
+        }
+
+        if (hasOverlapError && !hadOverlapRef.current) {
+            onOverlapDetected?.();
+        }
+        hadOverlapRef.current = hasOverlapError;
+    }, [hasOverlapError, onOverlapDetected]);
 
     const updateEntry = (index: number, patch: Partial<TimeSlotEntry>) => {
         const updated = entries.map((e, i) => (i === index ? { ...e, ...patch } : e));

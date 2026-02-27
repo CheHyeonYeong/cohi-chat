@@ -13,11 +13,12 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
+import { appendEntryIfNotDuplicate, computeEntryFromDrag, computeDragHighlights } from './dragUtils';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: () => void;
 }
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -184,7 +185,7 @@ function WeeklyGrid({
     );
 }
 
-export default function WeeklySchedulePreview({ entries, onChange }: WeeklySchedulePreviewProps) {
+export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -231,9 +232,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
         const endId = (event.over?.id as string) ?? dragStartId;
         if (onChange && dragStartId && endId) {
             const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            if (entry && !isDuplicateEntry(entries, entry)) {
-                onChange([...entries, entry]);
-            }
+            appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
         }
         setDragStartId(null);
         setDragOverId(null);
