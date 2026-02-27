@@ -9,6 +9,8 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -44,6 +46,7 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
+import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -72,6 +75,8 @@ class MemberServiceTest {
 		given(memberRepository.existsByEmail(anyString())).willReturn(false);
 		given(passwordEncoder.encode(anyString())).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+		given(smtpEmailValidator.validateEmailExists(anyString()))
+			.willReturn(CompletableFuture.completedFuture(true));
 	}
 
 	private Member member;
@@ -102,6 +107,9 @@ class MemberServiceTest {
 
 	@Mock
 	private ApplicationEventPublisher eventPublisher;
+
+	@Mock
+	private SmtpEmailValidator smtpEmailValidator;
 
 	@InjectMocks
 	private MemberService memberService;
