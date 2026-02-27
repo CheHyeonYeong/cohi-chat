@@ -157,6 +157,13 @@ public class Member {
 		}
 	}
 
+	public void updatePassword(String encodedPassword) {
+		if (encodedPassword == null || encodedPassword.isBlank()) {
+			throw new CustomException(ErrorCode.INVALID_PASSWORD);
+		}
+		this.hashedPassword = encodedPassword;
+	}
+
 	public void updateDisplayName(String displayName) {
 		if (displayName == null || displayName.isBlank()) {
 			throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);

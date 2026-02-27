@@ -29,4 +29,6 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	Optional<Member> findByProviderAndProviderId(Provider provider, String providerId);
 
+	Optional<Member> findByEmailAndIsDeletedFalse(String email);
+
 }

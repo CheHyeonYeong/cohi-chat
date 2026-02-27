@@ -33,7 +33,8 @@ public class SecurityConfig {
 		"/swagger-ui/**", "/hello", "/api/hello",
 		"/members/v1/signup", "/members/v1/login", "/members/v1/refresh",
 		"/members/v1/hosts", "/timeslot/v1/hosts/**", "/oauth/v1/**",
-		"/calendar/v1/service-account"
+		"/calendar/v1/service-account",
+		"/auth/password-reset/**"
 	};
 
 	private final JwtTokenProvider jwtTokenProvider;
