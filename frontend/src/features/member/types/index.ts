@@ -67,3 +67,8 @@ export interface UpdateProfilePayload {
     job?: string;
     profileImageUrl?: string;
 }
+
+export interface UpdateMemberPayload {
+    displayName?: string;
+    password?: string;
+}
