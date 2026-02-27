@@ -6,6 +6,7 @@ export { useLogout } from './hooks/useLogout';
 export { useSignup } from './hooks/useSignup';
 export { useUpdateProfile } from './hooks/useUpdateProfile';
 export { useUpdateMember } from './hooks/useUpdateMember';
+export { useRequestPasswordReset, useVerifyResetToken, useConfirmPasswordReset } from './hooks/usePasswordReset';
 
 // components
 export { LoginForm } from './components/LoginForm';

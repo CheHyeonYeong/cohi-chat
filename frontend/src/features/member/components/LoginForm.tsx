@@ -136,6 +136,11 @@ export function LoginForm() {
                         {fields.password?.touched && fields.password.error && (
                             <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
                         )}
+                        <div className="text-right">
+                            <Link to="/forgot-password" className="text-xs text-[var(--cohe-secondary)] hover:underline">
+                                비밀번호를 잊으셨나요?
+                            </Link>
+                        </div>
                     </div>
 
                     {loginMutation.isError && (
