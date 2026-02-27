@@ -17,7 +17,7 @@ export default function Terms() {
                     <section>
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">제1조 (목적)</h2>
                         <p className="text-gray-600 leading-relaxed">
-                            이 약관은 coheChat(이하 "서비스")이 제공하는 1:1 미팅 예약 서비스의 이용조건 및
+                            이 약관은 cohiChat(이하 "서비스")이 제공하는 1:1 미팅 예약 서비스의 이용조건 및
                             절차에 관한 사항을 규정함을 목적으로 합니다.
                         </p>
                     </section>
@@ -25,7 +25,7 @@ export default function Terms() {
                     <section>
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">제2조 (정의)</h2>
                         <ul className="list-disc list-inside text-gray-600 space-y-2">
-                            <li>"서비스"란 coheChat이 제공하는 미팅 예약 및 일정 관리 서비스를 말합니다.</li>
+                            <li>"서비스"란 cohiChat이 제공하는 미팅 예약 및 일정 관리 서비스를 말합니다.</li>
                             <li>"회원"이란 서비스에 가입하여 이용하는 자를 말합니다.</li>
                             <li>"호스트"란 미팅 일정을 공개하고 예약을 받는 회원을 말합니다.</li>
                             <li>"게스트"란 호스트의 일정에 예약을 신청하는 회원을 말합니다.</li>

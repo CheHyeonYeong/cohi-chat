@@ -17,10 +17,10 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
                         <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                                 isActive
-                                    ? 'bg-[var(--cohe-primary)] text-white'
+                                    ? 'bg-[var(--cohi-primary)] text-white'
                                     : isCompleted
-                                        ? 'bg-[var(--cohe-primary)] text-white'
-                                        : 'bg-[var(--cohe-bg-warm)] text-[var(--cohe-text-dark)]'
+                                        ? 'bg-[var(--cohi-primary)] text-white'
+                                        : 'bg-[var(--cohi-bg-warm)] text-[var(--cohi-text-dark)]'
                             }`}
                         >
                             {isCompleted ? '✓' : step}
@@ -28,7 +28,7 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
 
                         {/* Label for active step */}
                         {isActive && (
-                            <span className="ml-2 text-sm font-semibold text-[var(--cohe-text-dark)]">
+                            <span className="ml-2 text-sm font-semibold text-[var(--cohi-text-dark)]">
                                 호스트 등록 ({currentStep}/{totalSteps})
                             </span>
                         )}
@@ -37,7 +37,7 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
                         {step < totalSteps && (
                             <div
                                 className={`w-12 h-0.5 mx-2 ${
-                                    isCompleted ? 'bg-[var(--cohe-primary)]' : 'bg-[var(--cohe-bg-warm)]'
+                                    isCompleted ? 'bg-[var(--cohi-primary)]' : 'bg-[var(--cohi-bg-warm)]'
                                 }`}
                             />
                         )}

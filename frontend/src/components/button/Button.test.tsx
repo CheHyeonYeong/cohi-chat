@@ -7,22 +7,22 @@ import Button from './Button';
 
 describe('Button', () => {
     describe('variant', () => {
-        it('should apply cohe-btn-primary for primary variant', () => {
+        it('should apply cohi-btn-primary for primary variant', () => {
             const { container } = render(<Button variant="primary">Primary</Button>);
             const button = container.querySelector('button');
-            expect(button?.className).toContain('cohe-btn-primary');
+            expect(button?.className).toContain('cohi-btn-primary');
         });
 
-        it('should apply cohe-btn-secondary for secondary variant', () => {
+        it('should apply cohi-btn-secondary for secondary variant', () => {
             const { container } = render(<Button variant="secondary">Secondary</Button>);
             const button = container.querySelector('button');
-            expect(button?.className).toContain('cohe-btn-secondary');
+            expect(button?.className).toContain('cohi-btn-secondary');
         });
 
-        it('should apply cohe-btn-outline for outline variant', () => {
+        it('should apply cohi-btn-outline for outline variant', () => {
             const { container } = render(<Button variant="outline">Outline</Button>);
             const button = container.querySelector('button');
-            expect(button?.className).toContain('cohe-btn-outline');
+            expect(button?.className).toContain('cohi-btn-outline');
         });
     });
 
@@ -82,7 +82,7 @@ describe('Button', () => {
         it('should keep variant class when disabled (CSS handles :disabled style)', () => {
             const { container } = render(<Button variant="primary" disabled>Test</Button>);
             const button = container.querySelector('button');
-            expect(button?.className).toContain('cohe-btn-primary');
+            expect(button?.className).toContain('cohi-btn-primary');
         });
     });
 
@@ -95,7 +95,7 @@ describe('Button', () => {
             );
             const anchor = container.querySelector('a');
             expect(anchor).not.toBeNull();
-            expect(anchor?.className).toContain('cohe-btn-primary');
+            expect(anchor?.className).toContain('cohi-btn-primary');
             expect(container.querySelector('button')).toBeNull();
         });
 
@@ -120,7 +120,7 @@ describe('Button', () => {
         it('should keep variant class when loading (CSS handles :disabled style)', () => {
             const { container } = render(<Button variant="primary" loading>Loading</Button>);
             const button = container.querySelector('button');
-            expect(button?.className).toContain('cohe-btn-primary');
+            expect(button?.className).toContain('cohi-btn-primary');
         });
     });
 });

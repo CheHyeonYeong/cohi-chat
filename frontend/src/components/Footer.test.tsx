@@ -24,7 +24,7 @@ describe('Footer', () => {
 
         const copyrightText = container.textContent;
         expect(copyrightText).toContain(`${currentYear}`);
-        expect(copyrightText).toContain('coheChat');
+        expect(copyrightText).toContain('cohiChat');
         expect(copyrightText).toContain('All rights reserved');
     });
 

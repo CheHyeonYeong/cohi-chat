@@ -11,10 +11,10 @@ interface HeaderProps {
 
 export default function Header({ center, right, className }: HeaderProps) {
     return (
-        <header className={cn('w-full px-6 py-4 flex justify-between items-center bg-[var(--cohe-bg-warm)]/80 backdrop-blur-sm', className)}>
+        <header className={cn('w-full px-6 py-4 flex justify-between items-center bg-[var(--cohi-bg-warm)]/80 backdrop-blur-sm', className)}>
             <Link to='/' className="flex items-center gap-2">
-                <CoffeeCupIcon className="w-8 h-8 text-[var(--cohe-primary)]" />
-                <span className="text-xl font-bold text-[var(--cohe-text-dark)]">coheChat</span>
+                <CoffeeCupIcon className="w-8 h-8 text-[var(--cohi-primary)]" />
+                <span className="text-xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
             </Link>
             {center}
             {right}

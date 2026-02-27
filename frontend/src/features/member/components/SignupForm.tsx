@@ -122,14 +122,14 @@ export function SignupForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)] py-8">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)] py-8">
             {/* Signup Card */}
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-center text-[var(--cohe-text-dark)] mb-6">회원가입</h2>
+                <h2 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">회원가입</h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="username" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
                             아이디 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -151,7 +151,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="email" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
                             이메일 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -172,7 +172,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="displayName" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
                             표시 이름 <span className="text-red-500">*</span>
                         </label>
                         <div className="flex gap-2">
@@ -205,7 +205,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="password" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
                             비밀번호 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -227,7 +227,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="passwordAgain" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
                             비밀번호 확인 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -265,9 +265,9 @@ export function SignupForm() {
                     </Button>
                 </form>
 
-                <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">
+                <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
                     이미 계정이 있으신가요?{' '}
-                    <Link to="/login" className="text-[var(--cohe-primary)] font-semibold hover:underline">
+                    <Link to="/login" className="text-[var(--cohi-primary)] font-semibold hover:underline">
                         로그인
                     </Link>
                 </div>
