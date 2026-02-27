@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
+import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -11,8 +12,6 @@ interface RegisterStep2Props {
     onChange: (data: Step2Data) => void;
     errors: Record<string, string>;
 }
-
-export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._-]+@group\.calendar\.google\.com$/;
 
 function CalendarIcon({ className = '' }: { className?: string }) {
     return (
@@ -183,7 +182,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     {/* Step 3 & 4 side by side */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Step 3 */}
-                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl">
+                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     3
@@ -198,13 +197,13 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                     <p>📋 캘린더 설정 화면</p>
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 leading-relaxed">
                                 내 캘린더 &gt; <strong>⋮</strong> &gt; <strong>설정 및 공유</strong>
                             </p>
                         </div>
 
                         {/* Step 4 */}
-                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl">
+                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     4
@@ -219,7 +218,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                     <p>📋 캘린더 통합 화면</p>
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 leading-relaxed">
                                 캘린더 통합 섹션에서 캘린더 ID를 찾아 복사 버튼을 클릭하세요.
                             </p>
                         </div>
