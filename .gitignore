@@ -104,3 +104,9 @@ uploads/
 *.REMOTE.*
 application-local-secret.properties
 backend/src/main/resources/application-local-secret.properties
+
+# Local DB seed file
+backend/src/main/resources/data.sql
+
+# Supabase local workspace
+supabase/
