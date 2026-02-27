@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
+import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -11,8 +12,6 @@ interface RegisterStep2Props {
     onChange: (data: Step2Data) => void;
     errors: Record<string, string>;
 }
-
-export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._-]+@group\.calendar\.google\.com$/;
 
 function CalendarIcon({ className = '' }: { className?: string }) {
     return (

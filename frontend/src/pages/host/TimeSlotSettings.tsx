@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
-import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
-import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
+import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
 import { useAuth, useUpdateProfile } from '~/features/member';
 import { useHost } from '~/hooks/useHost';
@@ -26,7 +25,6 @@ function formatWeekdaySummary(weekdays: number[]): string {
     return names.join(', ');
 }
 
-/** "HH:mm:ss" | "HH:mm" → "HH:mm" */
 function normalizeTime(time: string): string {
     return time.slice(0, 5);
 }
@@ -54,12 +52,9 @@ export default function TimeSlotSettings() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
-    const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
-    const [emailCopied, setEmailCopied] = useState(false);
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
-    // TODO: 전체 호스트 목록에서 필터링하는 비효율 구조 — 추후 GET /members/v1/me/profile 전용 API로 교체 필요
     const { data: hostProfile } = useHost(user?.username ?? '');
     const [job, setJob] = useState('');
     const [profileImageUrl, setProfileImageUrl] = useState('');
@@ -97,32 +92,9 @@ export default function TimeSlotSettings() {
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
-    const { data: myCalendar } = useMyCalendar();
-    const calendarInaccessible = myCalendar?.calendarAccessible === false;
-
-    useEffect(() => {
-        if (!calendarInaccessible) return;
-        getServiceAccountEmail()
-            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => {});
-    }, [calendarInaccessible]);
-
-    const handleCopyEmail = async () => {
-        if (!serviceAccountEmail) return;
-        try {
-            await navigator.clipboard.writeText(serviceAccountEmail);
-            setEmailCopied(true);
-            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
-            emailCopiedTimerRef.current = setTimeout(() => setEmailCopied(false), COPY_SUCCESS_DURATION);
-        } catch {
-            // clipboard API 미지원 시 무시
-        }
-    };
-
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
-    // 서버 데이터를 폼에 반영 (초기 로드 및 mutation 후 재동기화)
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
@@ -150,15 +122,15 @@ export default function TimeSlotSettings() {
         }
         newEntries.forEach((entry, i) => {
             if (entry.weekdays.length === 0) {
-                newErrors[`weekdays_${i}`] = `새 시간대: 요일을 최소 1개 이상 선택해주세요.`;
+                newErrors['weekdays_' + i] = '새 시간대: 요일을 최소 1개 이상 선택해주세요.';
             }
             if (entry.startTime >= entry.endTime) {
-                newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
+                newErrors['time_' + i] = '새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.';
             }
             if ((entry.startDate && !entry.endDate) || (!entry.startDate && entry.endDate)) {
-                newErrors[`date_${i}`] = `새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.`;
+                newErrors['date_' + i] = '새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.';
             } else if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
-                newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
+                newErrors['date_' + i] = '새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.';
             }
         });
         setErrors(newErrors);
@@ -171,21 +143,23 @@ export default function TimeSlotSettings() {
         const results = await Promise.allSettled(
             newEntries.map((entry) =>
                 createTimeslotMutation.mutateAsync({
-                    startTime: `${entry.startTime}:00`,
-                    endTime: `${entry.endTime}:00`,
+                    startTime: entry.startTime + ':00',
+                    endTime: entry.endTime + ':00',
                     weekdays: entry.weekdays,
                     ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
                 })
             )
         );
+        
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
             .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
+            
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
-                const label = `${f.entry.startTime}~${f.entry.endTime}`;
+                const label = f.entry.startTime + '~' + f.entry.endTime;
                 const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
-                return `[${label}] ${msg}`;
+                return '[' + label + '] ' + msg;
             });
             setErrors({ save: reasons.join(', ') });
         } else {
@@ -214,7 +188,7 @@ export default function TimeSlotSettings() {
     };
 
     const summaryText = entries
-        .map((e) => `${formatWeekdaySummary(e.weekdays)}, ${e.startTime} - ${e.endTime}`)
+        .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
         .join(' / ');
 
     const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
@@ -242,7 +216,6 @@ export default function TimeSlotSettings() {
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
-            {/* Header */}
             <Header
                 center={
                     <nav className="text-sm text-gray-500">
@@ -258,41 +231,8 @@ export default function TimeSlotSettings() {
                 }
             />
 
-            {/* Calendar access warning banner */}
-            {calendarInaccessible && (
-                <div className="w-full bg-amber-50 border-b border-amber-200 px-6 py-4">
-                    <div className="max-w-6xl mx-auto">
-                        <p className="font-semibold text-amber-800 mb-1">
-                            ⚠️ Google Calendar 연동이 완료되지 않았습니다.
-                        </p>
-                        <p className="text-sm text-amber-700 mb-2">
-                            아래 서비스 어카운트 이메일을 캘린더 편집자로 공유해야 예약 시 Google Calendar에 이벤트가 등록됩니다.
-                        </p>
-                        <div className="flex items-center gap-2 bg-white rounded-lg border border-amber-200 px-3 py-2 max-w-lg">
-                            <span className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
-                                {serviceAccountEmail || '불러오는 중...'}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={handleCopyEmail}
-                                disabled={!serviceAccountEmail}
-                                className="flex-shrink-0 text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-40 text-xs font-medium"
-                                title="이메일 복사"
-                            >
-                                {emailCopied ? '✅ 복사됨' : '복사'}
-                            </button>
-                        </div>
-                        <p className="text-xs text-amber-600 mt-2">
-                            Google Calendar 설정 &gt; 특정 사용자와 공유 &gt; 위 이메일 추가 &gt; 변경 및 이벤트 관리(편집자) 권한 선택
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Content */}
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto space-y-8">
-                    {/* 프로필 편집 */}
                     <section className="bg-white rounded-2xl p-6 shadow-sm">
                         <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">내 프로필</h2>
                         <div className="flex flex-col sm:flex-row gap-4">
@@ -336,7 +276,6 @@ export default function TimeSlotSettings() {
                         )}
                     </section>
 
-                    {/* 타임슬롯 설정 */}
                     <div className="flex flex-col lg:flex-row gap-8">
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
@@ -356,7 +295,6 @@ export default function TimeSlotSettings() {
                 </div>
             </main>
 
-            {/* Bottom status bar */}
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">
                     <span>현재 설정: {summaryText}</span>
