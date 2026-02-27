@@ -217,7 +217,9 @@ class MemberControllerIntegrationTest {
 			mockMvc.perform(post(REFRESH_ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"\"}"))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
 		}
 	}
 

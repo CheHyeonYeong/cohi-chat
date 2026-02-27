@@ -362,13 +362,14 @@ class MemberServiceTest {
 	void refreshAccessTokenSuccess() {
 		String validRefreshToken = "valid-refresh-token";
 		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
+		String newRefreshToken = "new-refresh-token";
 		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
-		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn(newRefreshToken);
 		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
@@ -376,7 +377,7 @@ class MemberServiceTest {
 		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
 
 		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
-		assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+		assertThat(response.getRefreshToken()).isEqualTo(newRefreshToken);
 		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 		verify(refreshTokenRepository).save(any(RefreshToken.class));
