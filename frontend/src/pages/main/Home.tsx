@@ -7,7 +7,19 @@ import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
 import { useMyCalendar } from '~/features/host';
 
-function HostCard({ displayName, username }: { displayName: string; username: string }) {
+function HostCard({
+    displayName,
+    username,
+    job,
+    chatCount,
+    profileImageUrl,
+}: {
+    displayName: string;
+    username: string;
+    job?: string;
+    chatCount: number;
+    profileImageUrl?: string;
+}) {
     const now = new Date();
 
     return (
@@ -17,14 +29,21 @@ function HostCard({ displayName, username }: { displayName: string; username: st
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center'>
-                <span className='text-lg font-semibold text-[var(--cohe-primary)]'>
-                    {displayName.charAt(0)}
-                </span>
+            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
+                {profileImageUrl ? (
+                    <img src={profileImageUrl} alt={displayName} className='w-full h-full object-cover' />
+                ) : (
+                    <span className='text-lg font-semibold text-[var(--cohe-primary)]'>
+                        {displayName.charAt(0)}
+                    </span>
+                )}
             </div>
-            <div className='flex flex-col'>
-                <span className='font-semibold text-[var(--cohe-text-dark)]'>{displayName}</span>
-                <span className='text-sm text-gray-500'>Host</span>
+            <div className='flex flex-col min-w-0'>
+                <span className='font-semibold text-[var(--cohe-text-dark)] truncate'>{displayName}</span>
+                <span className='text-sm text-gray-500 truncate'>{job ?? 'Host'}</span>
+                {chatCount > 0 && (
+                    <span className='text-xs text-[var(--cohe-primary)]'>커피챗 {chatCount}회</span>
+                )}
             </div>
         </Link>
     );
@@ -156,6 +175,9 @@ export default function Home() {
                                     key={host.username}
                                     displayName={host.displayName}
                                     username={host.username}
+                                    job={host.job}
+                                    chatCount={host.chatCount}
+                                    profileImageUrl={host.profileImageUrl}
                                 />
                             ))}
                         </div>

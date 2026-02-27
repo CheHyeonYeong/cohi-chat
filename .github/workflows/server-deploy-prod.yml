@@ -1,4 +1,4 @@
-name: Server Deploy Production
+﻿name: Server Deploy Production
 
 on:
   push:
@@ -54,6 +54,10 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -64,26 +68,24 @@ jobs:
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
-            set -e
 
-            if [ ! -d ~/cohi-chat ]; then
-              git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
-            fi
+            # 공통 설정 스크립트 로드 및 실행
+            source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
+              # 스크립트가 없으면 먼저 저장소 동기화
+              set -euo pipefail
+              if [ ! -d ~/cohi-chat ]; then
+                git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
+              fi
+              cd ~/cohi-chat
+              git fetch origin
+              git reset --hard origin/${{ github.ref_name }}
+              source ~/cohi-chat/scripts/ec2-deploy-common.sh
+            }
 
-            cd ~/cohi-chat
+            run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
-            git fetch origin
-            git reset --hard origin/${{ github.ref_name }}
-
-            # Secrets Manager에서 환경변수 가져오기
-            aws secretsmanager get-secret-value --secret-id cohi-chat/prod --query SecretString --output text | \
-              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
-
+            # Backend 배포
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
-
-            # Free up disk space before build
-            # Note: docker image prune만 사용 - 빌드 캐시 보호
-            docker image prune -af || true
 
             docker-compose -f docker-compose.prod.yml build backend
             docker-compose -f docker-compose.prod.yml up -d redis backend
@@ -93,3 +95,4 @@ jobs:
 
             docker-compose -f docker-compose.prod.yml ps
             docker-compose -f docker-compose.prod.yml logs --tail=50 backend
+            log_deploy_success

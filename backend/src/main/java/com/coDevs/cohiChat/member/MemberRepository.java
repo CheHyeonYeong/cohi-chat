@@ -27,4 +27,6 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	Optional<Member> findByProviderAndProviderIdAndIsDeletedFalse(Provider provider, String providerId);
 
+	Optional<Member> findByProviderAndProviderId(Provider provider, String providerId);
+
 }

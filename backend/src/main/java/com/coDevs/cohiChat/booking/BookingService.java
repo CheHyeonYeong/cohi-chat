@@ -15,12 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -45,6 +47,7 @@ public class BookingService {
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
+    private final NoShowHistoryRepository noShowHistoryRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
 
@@ -152,7 +155,7 @@ public class BookingService {
         boolean exists = bookingRepository.existsDuplicateBooking(
             timeSlot,
             bookingDate,
-            AttendanceStatus.getCancelledStatuses(),
+            AttendanceStatus.getExcludedFromDuplicateCheck(),
             excludedId
         );
         if (exists) {
@@ -383,6 +386,78 @@ public class BookingService {
         upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
 
         return toBookingResponseDTO(booking);
+    }
+
+    private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {
+        if (booking.getGoogleEventId() == null) {
+            return;
+        }
+
+        UUID hostId = timeSlot.getUserId();
+        calendarRepository.findById(hostId).ifPresent(calendar -> {
+            Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
+            Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
+
+            boolean updated = googleCalendarService.updateEvent(
+                booking.getGoogleEventId(),
+                request.getTopic(),
+                request.getDescription(),
+                startDateTime,
+                endDateTime,
+                calendar.getGoogleCalendarId()
+            );
+
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
+        });
+    }
+
+    @Transactional
+    public BookingResponseDTO reportHostNoShow(Long bookingId, UUID guestId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateGuestAccess(booking, guestId);
+        validateMeetingStarted(booking);
+
+        if (!booking.getAttendanceStatus().isGuestReportable()) {
+            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
+        }
+
+        if (noShowHistoryRepository.existsByBookingId(bookingId)) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
+
+        booking.reportHostNoShow(Instant.now());
+
+        UUID hostId = booking.getTimeSlot().getUserId();
+        NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
+        noShowHistoryRepository.save(history);
+
+        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
+
+        return toBookingResponseDTO(booking);
+    }
+
+    private void validateMeetingStarted(Booking booking) {
+        String timezone = googleCalendarProperties.getTimezone();
+        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+
+        LocalDate bookingDate = booking.getBookingDate();
+        LocalTime startTime = booking.getTimeSlot().getStartTime();
+        Instant meetingStart = bookingDate.atTime(startTime).atZone(zoneId).toInstant();
+
+        if (Instant.now().isBefore(meetingStart)) {
+            throw new CustomException(ErrorCode.MEETING_NOT_STARTED);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
+        return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
+            .map(NoShowHistoryResponseDTO::from)
+            .toList();
     }
 
     @Transactional(readOnly = true)
