@@ -91,7 +91,7 @@ export function LoginForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[rgb(var(--cohe-bg-warm))]">
             {/* Logo */}
             <Link to='/' className="flex items-center gap-2 mb-8">
                 <CoffeeCupIcon className="w-10 h-10 text-[var(--cohe-primary)]" />

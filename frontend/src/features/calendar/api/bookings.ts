@@ -75,6 +75,17 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
 export async function getBooking(id: number): Promise<IBookingDetail> {
     const [b, files] = await Promise.all([
         httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`),
+<<<<<<< khs_316
+        httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`),
+    ]);
+    const detail = toBookingDetail(b);
+    return { ...detail, files };
+}
+
+export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingDetail> {
+    const url = `${API_URL}/bookings/${id}/files`;
+    const data: IBookingDetail = await httpClient<IBookingDetail>(url, {
+=======
         httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`)
     ]);
     return toBookingDetail(b, files);
@@ -83,6 +94,7 @@ export async function getBooking(id: number): Promise<IBookingDetail> {
 export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingFile> {
     const url = `${API_URL}/bookings/${id}/files`;
     const data: IBookingFile = await httpClient<IBookingFile>(url, {
+>>>>>>> main
         method: 'POST',
         body: files,
     });

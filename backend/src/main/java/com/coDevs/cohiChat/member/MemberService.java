@@ -4,26 +4,31 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.global.config.RateLimitService;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
-import com.coDevs.cohiChat.member.entity.RefreshToken;
+import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
+import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateProfileRequestDTO;
+import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
-import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,13 +39,6 @@ import java.util.stream.Collectors;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-
-import com.coDevs.cohiChat.global.config.RateLimitService;
-import com.coDevs.cohiChat.global.exception.CustomException;
-import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.global.util.TokenHashUtil;
-import com.coDevs.cohiChat.member.entity.Member;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -338,38 +336,24 @@ public class MemberService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RateLimitService rateLimitService;
 	private final TokenService tokenService;
+	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
-	public SignupResponseDTO signup(SignupRequestDTO request){
-
+	public SignupResponseDTO signup(SignupRequestDTO request) {
 		validateDuplicate(request.getUsername(), request.getEmail());
-
-		String displayName = request.getDisplayName();
-
+		String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
+			? generateDefaultDisplayName() : request.getDisplayName();
 		Role role = (request.getRole() != null) ? request.getRole() : Role.GUEST;
-
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
-
 		Member member = Member.create(
-			request.getUsername(),
-			displayName,
-			request.getEmail().toLowerCase(),
-			encodedPassword,
-			role
+			request.getUsername(), displayName, request.getEmail().toLowerCase(), encodedPassword, role
 		);
-
 		memberRepository.save(member);
-
-		return new SignupResponseDTO(
-			member.getId(),
-			member.getUsername(),
-			member.getDisplayName()
-		);
+		return new SignupResponseDTO(member.getId(), member.getUsername(), member.getDisplayName());
 	}
 
 	private void validateDuplicate(String username, String email) {
-
 		if (memberRepository.existsByUsernameAndIsDeletedFalse(username)) {
 			throw new CustomException(ErrorCode.DUPLICATED_USERNAME);
 		}
@@ -378,50 +362,48 @@ public class MemberService {
 		}
 	}
 
+	private String generateDefaultDisplayName() {
+		return new RandomStringGenerator.Builder()
+			.withinRange('0', 'z')
+			.filteredBy(Character::isLetterOrDigit)
+			.build()
+			.generate(8);
+	}
+
 	@Transactional
-	public LoginResponseDTO login(LoginRequestDTO request){
+	public LoginResponseDTO login(LoginRequestDTO request) {
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 		if (member.getProvider() != Provider.LOCAL) {
 			throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
 		}
+
 		if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
 			throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
 		}
-
 		return tokenService.issueTokens(member);
 	}
 
 	public Member getMember(String username) {
-
 		return memberRepository.findByUsernameAndIsDeletedFalse(username)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
 
-	/**
-	 * 사용자 조회 (Optional 반환).
-	 * 공개 API에서 사용자 열거 방지가 필요한 경우 사용.
-	 */
 	public Optional<Member> findMember(String username) {
 		return memberRepository.findByUsernameAndIsDeletedFalse(username);
 	}
 
 	@Transactional
 	public MemberResponseDTO updateMember(String username, UpdateMemberRequestDTO request) {
-
 		if ((request.getDisplayName() == null || request.getDisplayName().isBlank())
 			&& (request.getPassword() == null || request.getPassword().isBlank())) {
 			throw new CustomException(ErrorCode.NO_UPDATE_FIELDS);
 		}
-
 		Member member = getMember(username);
-
 		String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
 			? passwordEncoder.encode(request.getPassword()) : null;
-
 		member.updateInfo(request.getDisplayName(), hashPw);
-
 		return MemberResponseDTO.from(member);
 	}
 
@@ -521,24 +503,24 @@ public class MemberService {
 	public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
 		Member member = getMember(username);
 		member.updateProfile(req.getJob(), req.getProfileImageUrl());
-		long chatCount = bookingRepository
-			.countAttendedByHostIds(List.of(member.getId()), AttendanceStatus.ATTENDED)
-			.stream()
-			.findFirst()
-			.map(HostChatCount::getCount)
-			.orElse(0L);
+		long chatCount = bookingRepository.countAttendedByHostId(member.getId(), AttendanceStatus.ATTENDED);
 		return HostResponseDTO.from(member, chatCount);
 	}
 
 	public void logout(String username, String accessToken) {
 		refreshTokenRepository.deleteById(username);
 
+		if (accessToken == null || accessToken.isBlank()) {
+			log.debug("Access Token이 비어 있어 블랙리스트 등록을 생략합니다.");
+			return;
+		}
+
 		try {
 			long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
 			if (remainingSeconds <= 0) {
 				return;
 			}
-			String tokenHash = TokenHashUtil.hash(accessToken);
+			String tokenHash = tokenService.hashToken(accessToken);
 			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
 			accessTokenBlacklistRepository.save(blacklist);
 		} catch (ExpiredJwtException e) {
@@ -568,21 +550,42 @@ public class MemberService {
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
-		refreshTokenRepository.findByToken(tokenHash)
-			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+		Optional<RefreshToken> storedTokenOpt = refreshTokenRepository.findById(verifiedUsername);
+
+		if (storedTokenOpt.isEmpty()) {
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		RefreshToken storedToken = storedTokenOpt.get();
+
+		// RT Rotation: grace window 적용
+		if (!storedToken.getToken().equals(tokenHash)) {
+			// grace window 내의 불일치는 탈취로 단정하지 않고 세션은 유지한다.
+			// (중복 요청/재시도/경쟁 상태를 고려)
+			long nowMillis = clock.millis();
+			boolean withinGraceWindow = storedToken.getRotatedAt() != null
+				&& (nowMillis - storedToken.getRotatedAt() < RT_GRACE_WINDOW_MS);
+			if (withinGraceWindow) {
+				log.info("Refresh Token grace window hit (session kept): username={}", verifiedUsername);
+				throw new CustomException(ErrorCode.GRACE_WINDOW_HIT);
+			}
+
+			// 그 외의 경우 (완전 불일치 혹은 grace window 초과)는 탈취로 간주하여 전체 세션 무효화
+			log.warn("리프레시 토큰 재사용 감지 - 세션 무효화 처리: username={}, tokenHash={}", verifiedUsername, tokenHash);
+			refreshTokenRepository.deleteById(verifiedUsername);
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
 
 		// 4. 사용자 정보 조회
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(verifiedUsername)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-		// 5. RT Rotation: 기존 RT 삭제 + 새 RT 발급
-		refreshTokenRepository.deleteById(member.getUsername());
+		// 5. RT Rotation: 새 RT 발급 및 회전
 		String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		RefreshToken newRefreshToken = RefreshToken.create(
-			TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
-		);
-		refreshTokenRepository.save(newRefreshToken);
+
+		storedToken.rotate(tokenService.hashToken(newRefreshTokenValue), refreshTokenExpirationMs);
+		refreshTokenRepository.save(storedToken);
 
 		// 6. 새 AT 발급
 		String newAccessToken = jwtTokenProvider.createAccessToken(

@@ -1,3 +1,7 @@
+<<<<<<< khs_316
+import { Link, useSearch } from '@tanstack/react-router';
+import { useState, useEffect } from 'react';
+=======
 import { useEffect, useState } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
@@ -17,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import LinkButton from '~/components/button/LinkButton';
 import PageHeader from '~/components/PageHeader';
+>>>>>>> main
 import Pagination from '~/components/Pagination';
 import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
@@ -139,6 +144,10 @@ export default function MyBookings() {
             console.error(getErrorMessage(err, '파일 다운로드 실패'));
         }
     };
+
+    useEffect(() => {
+        setCurrentPage(page);
+    }, [page]);
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">

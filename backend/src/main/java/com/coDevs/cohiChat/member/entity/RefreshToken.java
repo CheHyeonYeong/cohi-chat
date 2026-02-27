@@ -23,13 +23,19 @@ public class RefreshToken {
     @Indexed
     private String token;
 
+    private String previousToken;
+
+    private Long rotatedAt;
+
     @TimeToLive(unit = TimeUnit.MILLISECONDS)
     private Long expiration;
 
     @Builder
-    private RefreshToken(String username, String token, Long expiration) {
+    private RefreshToken(String username, String token, String previousToken, Long rotatedAt, Long expiration) {
         this.username = username;
         this.token = token;
+        this.previousToken = previousToken;
+        this.rotatedAt = rotatedAt;
         this.expiration = expiration;
     }
 
@@ -39,5 +45,12 @@ public class RefreshToken {
             .token(token)
             .expiration(expirationMs)
             .build();
+    }
+
+    public void rotate(String newToken, Long expirationMs) {
+        this.previousToken = this.token;
+        this.token = newToken;
+        this.rotatedAt = System.currentTimeMillis();
+        this.expiration = expirationMs;
     }
 }

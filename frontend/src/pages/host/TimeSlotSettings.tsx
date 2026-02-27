@@ -46,6 +46,8 @@ const defaultEntry: TimeSlotEntry = {
     endTime: '18:00',
 };
 
+const SUCCESS_MESSAGE_DURATION = 3000;
+
 export default function TimeSlotSettings() {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([{ ...defaultEntry }]);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -224,7 +226,7 @@ export default function TimeSlotSettings() {
                     </nav>
                 }
                 right={
-                    <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center">
                         <span className="text-sm text-[var(--cohe-primary)]">👤</span>
                     </div>
                 }
