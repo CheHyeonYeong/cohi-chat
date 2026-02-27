@@ -1,5 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import * as Toast from '@radix-ui/react-toast';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -11,9 +10,8 @@ import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-const DAY_NAMES: Record<number, string> = { 0: '??, 1: '??, 2: '??, 3: '??, 4: '紐?, 5: '湲?, 6: '?? };
+const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
-const DUPLICATE_TIMESLOT_TOAST = '?대? 媛숈? ?쒓컙?媛 議댁옱?⑸땲??;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -64,6 +62,15 @@ export default function TimeSlotSettings() {
     const [toastMessage, setToastMessage] = useState('');
     const [toastKey, setToastKey] = useState(0);
     const updateProfileMutation = useUpdateProfile();
+    const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (hostProfile) {
@@ -85,7 +92,8 @@ export default function TimeSlotSettings() {
                 profileImageUrl: profileImageUrl || undefined,
             });
             setProfileSaved(true);
-            setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
         } catch {
             // ?먮윭??updateProfileMutation.isError / error濡??쒖떆
         }
@@ -110,7 +118,7 @@ export default function TimeSlotSettings() {
         syncedRef.current = true;
     }, [existingTimeslots]);
 
-    const newEntries = entries.filter((e) => e.existingId == null);
+    const newEntries = useMemo(() => entries.filter((e) => e.existingId == null), [entries]);
     const hasNewEntries = newEntries.length > 0;
 
     const validate = (): boolean => {
