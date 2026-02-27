@@ -20,6 +20,7 @@ import Privacy from '~/pages/legal/Privacy'
 // DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
 // - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
 // - 프로덕션 번들에서 router-devtools 코드 미포함 확인됨 (빌드 후 grep 검증 완료)
+/* eslint-disable react-refresh/only-export-components */
 const TanStackRouterDevtools = import.meta.env.DEV
     ? lazy(() =>
         import('@tanstack/router-devtools').then((mod) => ({
@@ -27,6 +28,7 @@ const TanStackRouterDevtools = import.meta.env.DEV
         }))
     )
     : () => null
+/* eslint-enable react-refresh/only-export-components */
 
 const RootRoute = createRootRoute({
     component: () => {

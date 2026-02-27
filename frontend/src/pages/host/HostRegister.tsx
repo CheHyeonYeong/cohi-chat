@@ -197,7 +197,7 @@ export default function HostRegister() {
                                         className={`w-2.5 h-2.5 rounded-full transition-colors ${
                                             i + 1 === currentStep
                                                 ? 'bg-[var(--cohe-primary)]'
-                                                : 'bg-[var(--cohe-bg-warm)]'
+                                                : 'bg-[rgb(var(--cohe-bg-warm))]'
                                         }`}
                                     />
                                 ))}

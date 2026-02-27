@@ -229,12 +229,7 @@ public class MemberService {
 	public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
 		Member member = getMember(username);
 		member.updateProfile(req.getJob(), req.getProfileImageUrl());
-		long chatCount = bookingRepository
-			.countAttendedByHostIds(List.of(member.getId()), AttendanceStatus.ATTENDED)
-			.stream()
-			.findFirst()
-			.map(HostChatCount::getCount)
-			.orElse(0L);
+		long chatCount = bookingRepository.countAttendedByHostId(member.getId(), AttendanceStatus.ATTENDED);
 		return HostResponseDTO.from(member, chatCount);
 	}
 

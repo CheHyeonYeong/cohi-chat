@@ -1,6 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
 import type { StringTime, ISO8601String } from '~/types/base';
-import type { AttendanceStatus, IBooking, IBookingDetail, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
@@ -73,12 +73,16 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
 }
 
 export async function getBooking(id: number): Promise<IBookingDetail> {
-    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`);
-    return toBookingDetail(b);
+    const [b, files] = await Promise.all([
+        httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`),
+        httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`),
+    ]);
+    const detail = toBookingDetail(b);
+    return { ...detail, files };
 }
 
 export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingDetail> {
-    const url = `${API_URL}/bookings/${id}/upload`;
+    const url = `${API_URL}/bookings/${id}/files`;
     const data: IBookingDetail = await httpClient<IBookingDetail>(url, {
         method: 'POST',
         body: files,

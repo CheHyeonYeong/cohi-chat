@@ -80,6 +80,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     /**
+     * 특정 호스트의 커피챗 횟수 단일 집계
+     */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.timeSlot.userId = :hostId AND b.attendanceStatus = :status")
+    long countAttendedByHostId(@Param("hostId") UUID hostId, @Param("status") AttendanceStatus status);
+
+    /**
      * 호스트 ID 목록의 커피챗 횟수 배치 집계 (N+1 방지)
      */
     @Query("""

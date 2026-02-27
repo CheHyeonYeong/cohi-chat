@@ -546,7 +546,8 @@ class MemberServiceTest {
 		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
 		verify(accessTokenBlacklistRepository).save(captor.capture());
 		AccessTokenBlacklist saved = captor.getValue();
-		assertThat(saved.getTokenHash()).isNotEqualTo(accessToken); // 해시되어 저장
+		// TokenHashUtil.hash(accessToken) 결과를 직접 검증
+		assertThat(saved.getTokenHash()).isEqualTo(com.coDevs.cohiChat.global.util.TokenHashUtil.hash(accessToken));
 		assertThat(saved.getExpirationSeconds()).isEqualTo(1800L);
 	}
 
@@ -562,7 +563,11 @@ class MemberServiceTest {
 
 		// then
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-		verify(accessTokenBlacklistRepository).save(any(AccessTokenBlacklist.class));
+		
+		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
+		verify(accessTokenBlacklistRepository).save(captor.capture());
+		AccessTokenBlacklist saved = captor.getValue();
+		assertThat(saved.getTokenHash()).isEqualTo(com.coDevs.cohiChat.global.util.TokenHashUtil.hash(accessToken));
 	}
 
 	@Test

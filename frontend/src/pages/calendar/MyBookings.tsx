@@ -1,5 +1,5 @@
 import { Link, useSearch } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Pagination from '~/components/Pagination';
 import { useMyBookings } from '~/features/calendar';
 import { getErrorMessage } from '~/libs/errorUtils';
@@ -8,6 +8,10 @@ export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
     const [currentPage, setCurrentPage] = useState<number>(page);
     const { data: bookings, isLoading, error } = useMyBookings({ page: currentPage, pageSize });
+
+    useEffect(() => {
+        setCurrentPage(page);
+    }, [page]);
 
     return (
         <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">

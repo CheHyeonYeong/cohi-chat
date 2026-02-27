@@ -115,7 +115,7 @@ export function SignupForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)] py-8">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[rgb(var(--cohe-bg-warm))] py-8">
             {/* Signup Card */}
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-center text-[var(--cohe-text-dark)] mb-6">회원가입</h2>

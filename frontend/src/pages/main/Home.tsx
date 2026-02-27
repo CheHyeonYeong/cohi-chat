@@ -29,7 +29,7 @@ function HostCard({
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
+            <div className='w-12 h-12 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center overflow-hidden flex-shrink-0'>
                 {profileImageUrl ? (
                     <img src={profileImageUrl} alt={displayName} className='w-full h-full object-cover' />
                 ) : (

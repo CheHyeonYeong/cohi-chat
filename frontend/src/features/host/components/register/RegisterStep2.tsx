@@ -183,7 +183,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     {/* Step 3 & 4 side by side */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Step 3 */}
-                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl">
+                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     3
@@ -204,7 +204,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                         </div>
 
                         {/* Step 4 */}
-                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl">
+                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     4
