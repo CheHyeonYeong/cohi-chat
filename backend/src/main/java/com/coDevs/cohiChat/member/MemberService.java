@@ -53,6 +53,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberService {
 
+	private static final long RT_GRACE_WINDOW_MS = 30000; // 30 seconds
+
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
@@ -274,21 +276,41 @@ public class MemberService {
 
 		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
-		refreshTokenRepository.findByToken(tokenHash)
-			.orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
+		Optional<RefreshToken> storedTokenOpt = refreshTokenRepository.findById(verifiedUsername);
+
+		if (storedTokenOpt.isEmpty()) {
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
+
+		RefreshToken storedToken = storedTokenOpt.get();
+
+		// RT Rotation: grace window 적용
+		if (!storedToken.getToken().equals(tokenHash)) {
+			// 이전 토큰과 일치하고 grace window 기간 내라면 무시 (중복 요청 허용)
+			if (tokenHash.equals(storedToken.getPreviousToken()) &&
+				storedToken.getRotatedAt() != null &&
+				(System.currentTimeMillis() - storedToken.getRotatedAt() < RT_GRACE_WINDOW_MS)) {
+				log.info("Refresh Token grace window hit: username={}", verifiedUsername);
+				throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+			}
+
+			// 그 외의 경우 (완전 불일치 혹은 grace window 초과)는 탈취로 간주하여 전체 세션 무효화
+			log.warn("리프레시 토큰 재사용 감지 - 세션 무효화 처리: username={}, tokenHash={}", verifiedUsername, tokenHash);
+			refreshTokenRepository.deleteById(verifiedUsername);
+			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+		}
 
 		// 4. 사용자 정보 조회
 		Member member = memberRepository.findByUsernameAndIsDeletedFalse(verifiedUsername)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-		// 5. RT Rotation: 기존 RT 삭제 + 새 RT 발급
-		refreshTokenRepository.deleteById(member.getUsername());
+		// 5. RT Rotation: 새 RT 발급 및 회전
 		String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
 		long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
-		RefreshToken newRefreshToken = RefreshToken.create(
-			TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
-		);
-		refreshTokenRepository.save(newRefreshToken);
+
+		// tokenService.hashToken() 또는 TokenHashUtil.hash() 사용 (프로젝트 컨벤션에 맞춤)
+		storedToken.rotate(tokenService.hashToken(newRefreshTokenValue), refreshTokenExpirationMs);
+		refreshTokenRepository.save(storedToken);
 
 		// 6. 새 AT 발급
 		String newAccessToken = jwtTokenProvider.createAccessToken(
