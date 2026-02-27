@@ -94,6 +94,11 @@ export default function Home() {
                             </LinkButton>
                         )
                     )}
+                    {isAuthenticated && (
+                        <LinkButton variant="outline" to='/settings'>
+                            설정
+                        </LinkButton>
+                    )}
                     {isAuthenticated
                         ? <LogoutButton />
                         : <LinkButton variant="outline" to='/login'>
