@@ -34,6 +34,10 @@ import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import java.security.Principal;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,89 +45,96 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
+@Tag(name = "Member", description = "회원 관련 API")
 public class MemberController {
 
-	private final MemberService memberService;
+        private final MemberService memberService;
 
-	@PostMapping("/v1/signup")
-	public ResponseEntity<ApiResponseDTO<SignupResponseDTO>> signupLocal(
-		@Valid @RequestBody SignupRequestDTO request) {
+        @PostMapping("/v1/signup")
+        public ResponseEntity<ApiResponseDTO<SignupResponseDTO>> signupLocal(
+                @Valid @RequestBody SignupRequestDTO request) {
 
-		SignupResponseDTO response = memberService.signup(request);
+                SignupResponseDTO response = memberService.signup(request);
 
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
-	}
+                return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
+        }
 
-	@PostMapping("/v1/login")
-	public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(
-		@Valid @RequestBody LoginRequestDTO request) {
+        @PostMapping("/v1/login")
+        public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(
+                @Valid @RequestBody LoginRequestDTO request) {
 
-		LoginResponseDTO response = memberService.login(request);
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+                LoginResponseDTO response = memberService.login(request);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 
-	@PostMapping("/v1/refresh")
-	public ResponseEntity<ApiResponseDTO<RefreshTokenResponseDTO>> refreshToken(
-		@Valid @RequestBody RefreshTokenRequestDTO request) {
+        @PostMapping("/v1/refresh")
+        public ResponseEntity<ApiResponseDTO<RefreshTokenResponseDTO>> refreshToken(
+                @Valid @RequestBody RefreshTokenRequestDTO request) {
 
-		RefreshTokenResponseDTO response = memberService.refreshAccessToken(request.getRefreshToken());
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+                RefreshTokenResponseDTO response = memberService.refreshAccessToken(request.getRefreshToken());
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 
-	@DeleteMapping("/v1/logout")
-	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal, HttpServletRequest request) {
-		String accessToken = TokenUtil.resolveToken(request);
-		if (accessToken == null) {
-			throw new CustomException(ErrorCode.INVALID_TOKEN);
-		}
-		memberService.logout(principal.getName(), accessToken);
-		return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
-	}
+        @DeleteMapping("/v1/logout")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal, HttpServletRequest request) {
+                String accessToken = TokenUtil.resolveToken(request);
+                if (accessToken == null) {
+                        throw new CustomException(ErrorCode.INVALID_TOKEN);
+                }
+                memberService.logout(principal.getName(), accessToken);
+                return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
+        }
 
-	@GetMapping("/v1/{username}")
-	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getMember(@PathVariable(name = "username") String username) {
-		Member member = memberService.getMember(username);
-		MemberResponseDTO response = MemberResponseDTO.from(member);
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+        @GetMapping("/v1/{username}")
+        @PreAuthorize("isAuthenticated() and #username == authentication.name")
+        public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getMember(@PathVariable(name = "username") String username) {
+                Member member = memberService.getMember(username);
+                MemberResponseDTO response = MemberResponseDTO.from(member);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 
-	@PatchMapping("/v1/{username}")
-	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> updateMember(
-		@PathVariable(name = "username") String username,
-		@Valid @RequestBody UpdateMemberRequestDTO request) {
+        @PatchMapping("/v1/{username}")
+        @PreAuthorize("isAuthenticated() and #username == authentication.name")
+        public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> updateMember(
+                @PathVariable(name = "username") String username,
+                @Valid @RequestBody UpdateMemberRequestDTO request) {
 
-		MemberResponseDTO response = memberService.updateMember(username, request);
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+                MemberResponseDTO response = memberService.updateMember(username, request);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 
-	@DeleteMapping("/v1/{username}")
-	@PreAuthorize("isAuthenticated() and #username == authentication.name")
-	public ResponseEntity<Void> deleteMember(@PathVariable(name = "username") String username) {
-		memberService.deleteMember(username);
-		return ResponseEntity.noContent().build();
-	}
+        @DeleteMapping("/v1/{username}")
+        @PreAuthorize("isAuthenticated() and #username == authentication.name")
+        public ResponseEntity<Void> deleteMember(@PathVariable(name = "username") String username) {
+                memberService.deleteMember(username);
+                return ResponseEntity.noContent().build();
+        }
 
-	@GetMapping("/v1/me/withdrawal-check")
-	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<ApiResponseDTO<WithdrawalCheckResponseDTO>> checkWithdrawal(Principal principal) {
-		WithdrawalCheckResponseDTO response = memberService.checkWithdrawal(principal.getName());
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+        @GetMapping("/v1/me/withdrawal-check")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<ApiResponseDTO<WithdrawalCheckResponseDTO>> checkWithdrawal(Principal principal) {
+                WithdrawalCheckResponseDTO response = memberService.checkWithdrawal(principal.getName());
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 
-	@GetMapping("/v1/hosts")
-	public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> getHosts() {
-		return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
-	}
+        @GetMapping("/v1/hosts")
+        public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> getHosts() {
+                return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
+        }
 
-	@PatchMapping("/v1/me/profile")
-	@PreAuthorize("hasRole('HOST')")
-	public ResponseEntity<ApiResponseDTO<HostResponseDTO>> updateProfile(
-		@Valid @RequestBody UpdateProfileRequestDTO request,
-		Principal principal) {
-		HostResponseDTO response = memberService.updateProfile(principal.getName(), request);
-		return ResponseEntity.ok(ApiResponseDTO.success(response));
-	}
+        @Operation(summary = "호스트 프로필 수정", description = "호스트가 자신의 프로필 정보(직업, 이미지 등)를 수정합니다.")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "프로필 수정 성공"),
+                @ApiResponse(responseCode = "401", description = "인증 필요"),
+                @ApiResponse(responseCode = "403", description = "호스트 권한 필요")
+        })
+        @PatchMapping("/v1/me/profile")
+        @PreAuthorize("hasRole('HOST')")
+        public ResponseEntity<ApiResponseDTO<HostResponseDTO>> updateProfile(
+                @Valid @RequestBody UpdateProfileRequestDTO request,
+                Principal principal) {
+                HostResponseDTO response = memberService.updateProfile(principal.getName(), request);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
@@ -11,6 +11,7 @@ import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
+const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -60,6 +61,15 @@ export default function TimeSlotSettings() {
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
+    const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (hostProfile) {
@@ -75,7 +85,8 @@ export default function TimeSlotSettings() {
                 profileImageUrl: profileImageUrl || undefined,
             });
             setProfileSaved(true);
-            setTimeout(() => setProfileSaved(false), SUCCESS_MESSAGE_DURATION);
+            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
+            profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
         } catch {
             // 에러는 updateProfileMutation.isError / error로 표시
         }
@@ -100,7 +111,7 @@ export default function TimeSlotSettings() {
         syncedRef.current = true;
     }, [existingTimeslots]);
 
-    const newEntries = entries.filter((e) => e.existingId == null);
+    const newEntries = useMemo(() => entries.filter((e) => e.existingId == null), [entries]);
     const hasNewEntries = newEntries.length > 0;
 
     const validate = (): boolean => {

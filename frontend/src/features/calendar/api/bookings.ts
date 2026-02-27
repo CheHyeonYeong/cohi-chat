@@ -25,13 +25,13 @@ interface BookingFlatResponse {
     hostDisplayName: string | null;
 }
 
-/** 날짜 전용 문자열("YYYY-MM-DD")을 로컬 자정으로 파싱. UTC 기반 파싱으로 인한 날짜 오차 방지. */
+/** ?? ?? ???("YYYY-MM-DD")? ?? ???? ??. UTC ?? ???? ?? ?? ?? ??. */
 function parseDateLocal(dateStr: string): Date {
     const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
     return new Date(year, month - 1, day);
 }
 
-function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
+function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail {
     return {
         id: b.id,
         when: parseDateLocal(b.when),
@@ -52,7 +52,7 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
             username: b.hostUsername ?? '',
             displayName: b.hostDisplayName ?? '',
         },
-        files: [],
+        files,
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
         attendanceStatus: b.attendanceStatus as AttendanceStatus,
@@ -63,7 +63,7 @@ function toBookingDetail(b: BookingFlatResponse): IBookingDetail {
 
 export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
     const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
-    const bookings = list.map(toBookingDetail);
+    const bookings = list.map(b => toBookingDetail(b));
 
     const start = (page - 1) * pageSize;
     return {
@@ -75,6 +75,7 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
 export async function getBooking(id: number): Promise<IBookingDetail> {
     const [b, files] = await Promise.all([
         httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`),
+<<<<<<< khs_316
         httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`),
     ]);
     const detail = toBookingDetail(b);
@@ -84,6 +85,16 @@ export async function getBooking(id: number): Promise<IBookingDetail> {
 export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingDetail> {
     const url = `${API_URL}/bookings/${id}/files`;
     const data: IBookingDetail = await httpClient<IBookingDetail>(url, {
+=======
+        httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`)
+    ]);
+    return toBookingDetail(b, files);
+}
+
+export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingFile> {
+    const url = `${API_URL}/bookings/${id}/files`;
+    const data: IBookingFile = await httpClient<IBookingFile>(url, {
+>>>>>>> main
         method: 'POST',
         body: files,
     });
@@ -91,13 +102,20 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
 }
 
 export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
-    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
-        method: 'POST',
-        body: reason && reason.trim() !== '' ? { reason } : undefined,
-    });
-    return toBookingDetail(b);
+    const [b, files] = await Promise.all([
+        httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
+            method: 'POST',
+            body: reason && reason.trim() !== '' ? { reason } : undefined,
+        }),
+        httpClient<IBookingFile[]>(`${API_URL}/bookings/${bookingId}/files`)
+    ]);
+    return toBookingDetail(b, files);
 }
 
 export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
     return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
+}
+
+export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
+    return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
 }
