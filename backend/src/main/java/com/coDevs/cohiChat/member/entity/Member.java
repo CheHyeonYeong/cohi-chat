@@ -165,8 +165,12 @@ public class Member {
         }
 
         public void updateProfile(String job, String profileImageUrl) {
-                if (job != null && !job.isBlank()) this.job = job;
-                if (profileImageUrl != null && !profileImageUrl.isBlank()) this.profileImageUrl = profileImageUrl;
+                if (job != null) {
+                        this.job = job.isBlank() ? null : job;
+                }
+                if (profileImageUrl != null) {
+                        this.profileImageUrl = profileImageUrl.isBlank() ? null : profileImageUrl;
+                }
         }
 
         public void softDelete() {

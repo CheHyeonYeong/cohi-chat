@@ -273,7 +273,7 @@ export default function Booking() {
 
     /* -- Loading / error states -------------------------------------------- */
 
-    if (isLoading || !booking) {
+    if (isLoading) {
         return (
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
@@ -285,6 +285,14 @@ export default function Booking() {
         return (
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
+            </div>
+        );
+    }
+
+    if (!booking) {
+        return (
+            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+                <p className="text-gray-500">예약 정보를 찾을 수 없습니다.</p>
             </div>
         );
     }
