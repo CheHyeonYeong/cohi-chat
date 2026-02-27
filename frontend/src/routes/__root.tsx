@@ -13,6 +13,7 @@ import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
+import CalendarSettingsGuarded from '~/pages/host/CalendarSettingsGuarded'
 import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
@@ -20,6 +21,7 @@ import Privacy from '~/pages/legal/Privacy'
 // DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
 // - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
 // - 프로덕션 번들에서 router-devtools 코드 미포함 확인됨 (빌드 후 grep 검증 완료)
+/* eslint-disable react-refresh/only-export-components */
 const TanStackRouterDevtools = import.meta.env.DEV
     ? lazy(() =>
         import('@tanstack/router-devtools').then((mod) => ({
@@ -27,6 +29,7 @@ const TanStackRouterDevtools = import.meta.env.DEV
         }))
     )
     : () => null
+/* eslint-enable react-refresh/only-export-components */
 
 const RootRoute = createRootRoute({
     component: () => {
@@ -100,6 +103,12 @@ const hostTimeslotsRoute = createRoute({
     component: TimeSlotSettingsGuarded,
 })
 
+const hostCalendarSettingsRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/host/settings',
+    component: CalendarSettingsGuarded,
+})
+
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/calendar/$slug',
@@ -145,6 +154,7 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
+    hostCalendarSettingsRoute,
     oAuthCallbackRoute,
     termsRoute,
     privacyRoute,
