@@ -93,13 +93,13 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
             {/* Title */}
             <div className="mb-8">
                 <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohe-text-dark)]">
+                    <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)]">
                         Google Calendar 연동하기
                     </h2>
-                    <CalendarIcon className="w-7 h-7 text-[var(--cohe-primary)]" />
+                    <CalendarIcon className="w-7 h-7 text-[var(--cohi-primary)]" />
                 </div>
-                <p className="text-[var(--cohe-text-dark)]/70">
-                    원활한 예약 관리를 위해 Google 캘린더를 coheChat과 연동해주세요.
+                <p className="text-[var(--cohi-text-dark)]/70">
+                    원활한 예약 관리를 위해 Google 캘린더를 cohiChat과 연동해주세요.
                 </p>
             </div>
 
@@ -110,27 +110,27 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     <div className="bg-white rounded-2xl p-5 shadow-sm">
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     1
                                 </span>
                             </div>
                             <div className="flex-1">
                                 <p className="text-xs text-gray-500 mb-1">1단계</p>
-                                <h3 className="font-bold text-[var(--cohe-text-dark)] mb-3">
+                                <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
                                     서비스 어카운트를 캘린더 편집자로 공유
                                 </h3>
                                 <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                                    coheChat이 캘린더에 예약을 등록하려면, 아래 이메일을 캘린더 편집자로 추가해야 합니다.
+                                    cohiChat이 캘린더에 예약을 등록하려면, 아래 이메일을 캘린더 편집자로 추가해야 합니다.
                                 </p>
-                                <div className="flex items-center gap-2 bg-[var(--cohe-bg-light)] rounded-lg px-3 py-2 mb-3">
-                                    <span className="flex-1 text-sm font-mono text-[var(--cohe-text-dark)] break-all select-all">
+                                <div className="flex items-center gap-2 bg-[var(--cohi-bg-light)] rounded-lg px-3 py-2 mb-3">
+                                    <span className="flex-1 text-sm font-mono text-[var(--cohi-text-dark)] break-all select-all">
                                         {serviceAccountEmail || '설정 중...'}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={handleCopyEmail}
                                         disabled={!serviceAccountEmail}
-                                        className="flex-shrink-0 text-gray-400 hover:text-[var(--cohe-primary)] transition-colors disabled:opacity-40"
+                                        className="flex-shrink-0 text-gray-400 hover:text-[var(--cohi-primary)] transition-colors disabled:opacity-40"
                                         title="이메일 복사"
                                     >
                                         {emailCopied ? (
@@ -153,20 +153,20 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     <div className="bg-white rounded-2xl p-5 shadow-sm">
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     2
                                 </span>
                             </div>
                             <div className="flex-1">
                                 <p className="text-xs text-gray-500 mb-1">2단계</p>
-                                <h3 className="font-bold text-[var(--cohe-text-dark)] mb-3">
+                                <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
                                     Google Calendar 접속
                                 </h3>
                                 <a
                                     href="https://calendar.google.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)] text-sm font-medium hover:bg-[var(--cohe-bg-warm)] transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)] text-sm font-medium hover:bg-[var(--cohi-bg-warm)] transition-colors"
                                 >
                                     calendar.google.com 열기
                                     <ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -182,14 +182,14 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     {/* Step 3 & 4 side by side */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Step 3 */}
-                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
+                        <div className="bg-[var(--cohi-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     3
                                 </span>
                                 <div>
                                     <p className="text-xs text-gray-500">3단계</p>
-                                    <h3 className="font-bold text-[var(--cohe-text-dark)]">캘린더 설정 열기</h3>
+                                    <h3 className="font-bold text-[var(--cohi-text-dark)]">캘린더 설정 열기</h3>
                                 </div>
                             </div>
                             <div className="bg-white/60 rounded-xl p-4 mb-3 h-32 flex items-center justify-center">
@@ -203,14 +203,14 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                         </div>
 
                         {/* Step 4 */}
-                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
+                        <div className="bg-[var(--cohi-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     4
                                 </span>
                                 <div>
                                     <p className="text-xs text-gray-500">4단계</p>
-                                    <h3 className="font-bold text-[var(--cohe-text-dark)]">캘린더 ID 복사</h3>
+                                    <h3 className="font-bold text-[var(--cohi-text-dark)]">캘린더 ID 복사</h3>
                                 </div>
                             </div>
                             <div className="bg-white/60 rounded-xl p-4 mb-3 h-32 flex items-center justify-center">
@@ -228,7 +228,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                 {/* Right: Calendar ID input */}
                 <div className="w-full lg:w-80 flex-shrink-0">
                     <div className="bg-white rounded-2xl p-6 shadow-sm">
-                        <h3 className="font-bold text-[var(--cohe-text-dark)] text-lg mb-4">
+                        <h3 className="font-bold text-[var(--cohi-text-dark)] text-lg mb-4">
                             Calendar ID 입력
                         </h3>
 
@@ -238,19 +238,19 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                 value={data.googleCalendarId}
                                 onChange={(e) => { setConfirmed(false); onChange({ googleCalendarId: e.target.value.trim() }); }}
                                 placeholder="your-id@group.calendar.google.com"
-                                className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-[var(--cohe-text-dark)] placeholder-gray-400 focus:outline-none focus:ring-1 ${
+                                className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-[var(--cohi-text-dark)] placeholder-gray-400 focus:outline-none focus:ring-1 ${
                                     hasInput && isValid
                                         ? 'border-green-400 focus:border-green-400 focus:ring-green-400'
                                         : hasInput && !isValid
                                             ? 'border-red-300 focus:border-red-300 focus:ring-red-300'
-                                            : 'border-gray-300 focus:border-[var(--cohe-primary)] focus:ring-[var(--cohe-primary)]'
+                                            : 'border-gray-300 focus:border-[var(--cohi-primary)] focus:ring-[var(--cohi-primary)]'
                                 }`}
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                 <button
                                     type="button"
                                     onClick={handlePaste}
-                                    className="text-gray-400 hover:text-[var(--cohe-primary)] transition-colors"
+                                    className="text-gray-400 hover:text-[var(--cohi-primary)] transition-colors"
                                     title="붙여넣기"
                                 >
                                     {copied ? (
