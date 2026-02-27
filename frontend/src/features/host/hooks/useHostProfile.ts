@@ -7,14 +7,15 @@ import type { ICalendar, ITimeSlot } from '~/features/calendar';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export function useHostProfile(username: string) {
-    return useQuery<HostResponseDTO>({
-        queryKey: ['host', 'profile', username],
-        queryFn: async () => {
-            const hosts = await httpClient<HostResponseDTO[]>(`${API_BASE}/members/v1/hosts`);
-            const host = hosts?.find((h) => h.username === username);
+    return useQuery<HostResponseDTO[], Error, HostResponseDTO>({
+        queryKey: ['hosts'],
+        queryFn: () => httpClient<HostResponseDTO[]>(`${API_BASE}/members/v1/hosts`),
+        select: (hosts) => {
+            const host = hosts.find((h) => h.username === username);
             if (!host) throw new Error('호스트를 찾을 수 없습니다.');
             return host;
         },
+        staleTime: 5 * 60 * 1000,
         enabled: !!username,
     });
 }
