@@ -90,3 +90,18 @@ export function isDuplicateEntry(entries: TimeSlotEntry[], newEntry: TimeSlotEnt
             e.weekdays.some((wd) => newEntry.weekdays.includes(wd)),
     );
 }
+
+export function appendEntryIfNotDuplicate(
+    entries: TimeSlotEntry[],
+    newEntry: TimeSlotEntry | null,
+    onAppend: (nextEntries: TimeSlotEntry[]) => void,
+    onDuplicateBlocked?: () => void,
+): boolean {
+    if (!newEntry) return false;
+    if (isDuplicateEntry(entries, newEntry)) {
+        onDuplicateBlocked?.();
+        return false;
+    }
+    onAppend([...entries, newEntry]);
+    return true;
+}

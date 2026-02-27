@@ -18,6 +18,7 @@ import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from '.
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
 }
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -184,7 +185,37 @@ function WeeklyGrid({
     );
 }
 
-export default function WeeklySchedulePreview({ entries, onChange }: WeeklySchedulePreviewProps) {
+interface CommitDraggedEntryParams {
+    entries: TimeSlotEntry[];
+    onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
+    dragStartId: string | null;
+    endId: string | null;
+    startHour: number;
+}
+
+export function commitDraggedEntry({
+    entries,
+    onChange,
+    onDuplicateBlocked,
+    dragStartId,
+    endId,
+    startHour,
+}: CommitDraggedEntryParams): void {
+    if (!onChange || !dragStartId || !endId) return;
+
+    const entry = computeEntryFromDrag(dragStartId, endId, startHour);
+    if (!entry) return;
+
+    if (isDuplicateEntry(entries, entry)) {
+        onDuplicateBlocked?.(entry);
+        return;
+    }
+
+    onChange([...entries, entry]);
+}
+
+export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -229,12 +260,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
 
     const handleDragEnd = (event: DragEndEvent) => {
         const endId = (event.over?.id as string) ?? dragStartId;
-        if (onChange && dragStartId && endId) {
-            const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            if (entry && !isDuplicateEntry(entries, entry)) {
-                onChange([...entries, entry]);
-            }
-        }
+        commitDraggedEntry({ entries, onChange, onDuplicateBlocked, dragStartId, endId, startHour });
         setDragStartId(null);
         setDragOverId(null);
     };
