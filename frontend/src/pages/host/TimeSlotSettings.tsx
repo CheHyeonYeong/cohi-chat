@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
-import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
+import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
+import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
 import type { TimeSlotResponse } from '~/features/host';
 import { useAuth, useUpdateProfile } from '~/features/member';
 import { useHost } from '~/hooks/useHost';
@@ -12,6 +13,8 @@ import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
+const COPY_SUCCESS_DURATION = 2000;
+const DUPLICATE_BLOCKED_TOAST_DURATION = 2500;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -24,6 +27,7 @@ function formatWeekdaySummary(weekdays: number[]): string {
     return names.join(', ');
 }
 
+/** "HH:mm:ss" | "HH:mm" → "HH:mm" */
 function normalizeTime(time: string): string {
     return time.slice(0, 5);
 }
@@ -51,24 +55,27 @@ export default function TimeSlotSettings() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
+    const [emailCopied, setEmailCopied] = useState(false);
+    const [duplicateBlockedToastVisible, setDuplicateBlockedToastVisible] = useState(false);
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
+    // TODO: 전체 호스트 목록에서 필터링하는 비효율 구조 — 추후 GET /members/v1/me/profile 전용 API로 교체 필요
     const { data: hostProfile } = useHost(user?.username ?? '');
     const [job, setJob] = useState('');
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [profileSaved, setProfileSaved] = useState(false);
-    const [toastOpen, setToastOpen] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
-    const [toastKey, setToastKey] = useState(0);
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const duplicateBlockedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
             if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+            if (duplicateBlockedToastTimerRef.current) clearTimeout(duplicateBlockedToastTimerRef.current);
         };
     }, []);
 
@@ -78,12 +85,6 @@ export default function TimeSlotSettings() {
             setProfileImageUrl(hostProfile.profileImageUrl ?? '');
         }
     }, [hostProfile]);
-
-    const showDuplicateTimeslotToast = useCallback(() => {
-        setToastMessage(DUPLICATE_TIMESLOT_TOAST);
-        setToastKey((prev) => prev + 1);
-        setToastOpen(true);
-    }, []);
 
     const handleProfileSave = async () => {
         try {
@@ -95,14 +96,46 @@ export default function TimeSlotSettings() {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
             profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
         } catch {
-            // ?먮윭??updateProfileMutation.isError / error濡??쒖떆
+            // 에러는 updateProfileMutation.isError / error로 표시
         }
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
+    const { data: myCalendar } = useMyCalendar();
+    const calendarInaccessible = myCalendar?.calendarAccessible === false;
+
+    useEffect(() => {
+        if (!calendarInaccessible) return;
+        getServiceAccountEmail()
+            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
+            .catch(() => {});
+    }, [calendarInaccessible]);
+
+    const handleCopyEmail = async () => {
+        if (!serviceAccountEmail) return;
+        try {
+            await navigator.clipboard.writeText(serviceAccountEmail);
+            setEmailCopied(true);
+            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
+            emailCopiedTimerRef.current = setTimeout(() => setEmailCopied(false), COPY_SUCCESS_DURATION);
+        } catch {
+            // clipboard API 미지원 시 무시
+        }
+    };
+
+    const handleDuplicateBlocked = () => {
+        setDuplicateBlockedToastVisible(true);
+        if (duplicateBlockedToastTimerRef.current) clearTimeout(duplicateBlockedToastTimerRef.current);
+        duplicateBlockedToastTimerRef.current = setTimeout(
+            () => setDuplicateBlockedToastVisible(false),
+            DUPLICATE_BLOCKED_TOAST_DURATION,
+        );
+    };
+
     const createTimeslotMutation = useCreateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
+    // 서버 데이터를 폼에 반영 (초기 로드 및 mutation 후 재동기화)
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
@@ -124,21 +157,21 @@ export default function TimeSlotSettings() {
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
         if (!hasNewEntries) {
-            newErrors.general = '??ν븷 ???쒓컙?媛 ?놁뒿?덈떎.';
+            newErrors.general = '저장할 새 시간대가 없습니다.';
             setErrors(newErrors);
             return false;
         }
         newEntries.forEach((entry, i) => {
             if (entry.weekdays.length === 0) {
-                newErrors['weekdays_' + i] = '???쒓컙?: ?붿씪??理쒖냼 1媛??댁긽 ?좏깮?댁＜?몄슂.';
+                newErrors[`weekdays_${i}`] = `새 시간대: 요일을 최소 1개 이상 선택해주세요.`;
             }
             if (entry.startTime >= entry.endTime) {
-                newErrors['time_' + i] = '???쒓컙?: ?쒖옉 ?쒓컙? 醫낅즺 ?쒓컙蹂대떎 鍮⑤씪???⑸땲??';
+                newErrors[`time_${i}`] = `새 시간대: 시작 시간은 종료 시간보다 빨라야 합니다.`;
             }
             if ((entry.startDate && !entry.endDate) || (!entry.startDate && entry.endDate)) {
-                newErrors['date_' + i] = '???쒓컙?: ?쒖옉 ?좎쭨? 醫낅즺 ?좎쭨瑜?紐⑤몢 ?낅젰?섍굅??紐⑤몢 鍮꾩썙?먯꽭??';
+                newErrors[`date_${i}`] = `새 시간대: 시작 날짜와 종료 날짜를 모두 입력하거나 모두 비워두세요.`;
             } else if (entry.startDate && entry.endDate && entry.startDate > entry.endDate) {
-                newErrors['date_' + i] = '???쒓컙?: ?쒖옉 ?좎쭨??醫낅즺 ?좎쭨蹂대떎 鍮⑤씪???⑸땲??';
+                newErrors[`date_${i}`] = `새 시간대: 시작 날짜는 종료 날짜보다 빨라야 합니다.`;
             }
         });
         setErrors(newErrors);
@@ -151,23 +184,21 @@ export default function TimeSlotSettings() {
         const results = await Promise.allSettled(
             newEntries.map((entry) =>
                 createTimeslotMutation.mutateAsync({
-                    startTime: entry.startTime + ':00',
-                    endTime: entry.endTime + ':00',
+                    startTime: `${entry.startTime}:00`,
+                    endTime: `${entry.endTime}:00`,
                     weekdays: entry.weekdays,
                     ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
                 })
             )
         );
-        
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
             .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
-            
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
-                const label = f.entry.startTime + '~' + f.entry.endTime;
-                const msg = f.result.reason instanceof Error ? f.result.reason.message : '?????녿뒗 ?ㅻ쪟';
-                return '[' + label + '] ' + msg;
+                const label = `${f.entry.startTime}~${f.entry.endTime}`;
+                const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
+                return `[${label}] ${msg}`;
             });
             setErrors({ save: reasons.join(', ') });
         } else {
@@ -189,14 +220,14 @@ export default function TimeSlotSettings() {
             });
             syncedRef.current = false;
         } catch (err) {
-            setErrors({ delete: getErrorMessage(err, '??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.') });
+            setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
             setDeletingId(null);
         }
     };
 
     const summaryText = entries
-        .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
+        .map((e) => `${formatWeekdaySummary(e.weekdays)}, ${e.startTime} - ${e.endTime}`)
         .join(' / ');
 
     const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
@@ -204,7 +235,7 @@ export default function TimeSlotSettings() {
     if (isLoading) {
         return (
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
-                <p className="text-gray-500">遺덈윭?ㅻ뒗 以?..</p>
+                <p className="text-gray-500">불러오는 중...</p>
             </div>
         );
     }
@@ -213,9 +244,9 @@ export default function TimeSlotSettings() {
         return (
             <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
                 <div className="text-center space-y-4">
-                    <p className="text-lg text-gray-700">罹섎┛?붾? 癒쇱? ?곕룞?댁빞 ?쒓컙?瑜??ㅼ젙?????덉뒿?덈떎.</p>
+                    <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
                     <LinkButton variant="primary" to="/host/register">
-                        罹섎┛???곕룞?섍린
+                        캘린더 연동하기
                     </LinkButton>
                 </div>
             </div>
@@ -223,41 +254,74 @@ export default function TimeSlotSettings() {
     }
 
     return (
-        <Toast.Provider swipeDirection="right">
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+            {/* Header */}
             <Header
                 center={
                     <nav className="text-sm text-gray-500">
-                        <span>?몄뒪????쒕낫??/span>
+                        <span>호스트 대시보드</span>
                         <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">?쒓컙? ?ㅼ젙</span>
+                        <span className="text-[var(--cohe-text-dark)] font-medium">시간대 설정</span>
                     </nav>
                 }
                 right={
                     <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
-                        <span className="text-sm text-[var(--cohe-primary)]">?뫀</span>
+                        <span className="text-sm text-[var(--cohe-primary)]">👤</span>
                     </div>
                 }
             />
 
+            {/* Calendar access warning banner */}
+            {calendarInaccessible && (
+                <div className="w-full bg-amber-50 border-b border-amber-200 px-6 py-4">
+                    <div className="max-w-6xl mx-auto">
+                        <p className="font-semibold text-amber-800 mb-1">
+                            ⚠️ Google Calendar 연동이 완료되지 않았습니다.
+                        </p>
+                        <p className="text-sm text-amber-700 mb-2">
+                            아래 서비스 어카운트 이메일을 캘린더 편집자로 공유해야 예약 시 Google Calendar에 이벤트가 등록됩니다.
+                        </p>
+                        <div className="flex items-center gap-2 bg-white rounded-lg border border-amber-200 px-3 py-2 max-w-lg">
+                            <span className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
+                                {serviceAccountEmail || '불러오는 중...'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleCopyEmail}
+                                disabled={!serviceAccountEmail}
+                                className="flex-shrink-0 text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-40 text-xs font-medium"
+                                title="이메일 복사"
+                            >
+                                {emailCopied ? '✅ 복사됨' : '복사'}
+                            </button>
+                        </div>
+                        <p className="text-xs text-amber-600 mt-2">
+                            Google Calendar 설정 &gt; 특정 사용자와 공유 &gt; 위 이메일 추가 &gt; 변경 및 이벤트 관리(편집자) 권한 선택
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Content */}
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto space-y-8">
+                    {/* 프로필 편집 */}
                     <section className="bg-white rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">???꾨줈??/h2>
+                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">내 프로필</h2>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">吏곸뾽 / ?뚭컻</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
                                 <input
                                     type="text"
                                     value={job}
                                     onChange={(e) => setJob(e.target.value)}
-                                    placeholder="?? 諛깆뿏??媛쒕컻??@ ?ㅽ??몄뾽"
+                                    placeholder="예: 백엔드 개발자 @ 스타트업"
                                     maxLength={100}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohe-primary)]/30 focus:border-[var(--cohe-primary)]"
                                 />
                             </div>
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">?꾨줈???대?吏 URL</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
                                 <input
                                     type="url"
                                     value={profileImageUrl}
@@ -273,9 +337,10 @@ export default function TimeSlotSettings() {
                                     onClick={handleProfileSave}
                                     loading={updateProfileMutation.isPending}
                                 >
-                                    ???                                </Button>
+                                    저장
+                                </Button>
                                 {profileSaved && (
-                                    <span className="text-sm text-green-600 whitespace-nowrap">??λ릱?댁슂!</span>
+                                    <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
                                 )}
                             </div>
                         </div>
@@ -284,6 +349,7 @@ export default function TimeSlotSettings() {
                         )}
                     </section>
 
+                    {/* 타임슬롯 설정 */}
                     <div className="flex flex-col lg:flex-row gap-8">
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
@@ -291,7 +357,6 @@ export default function TimeSlotSettings() {
                                 onChange={setEntries}
                                 onSave={handleSave}
                                 onDelete={handleDelete}
-                                onOverlapDetected={showDuplicateTimeslotToast}
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
@@ -301,40 +366,31 @@ export default function TimeSlotSettings() {
                             <WeeklySchedulePreview
                                 entries={entries}
                                 onChange={setEntries}
-                                onDuplicateBlocked={showDuplicateTimeslotToast}
+                                onDuplicateBlocked={handleDuplicateBlocked}
                             />
                         </div>
                     </div>
                 </div>
             </main>
 
+            {duplicateBlockedToastVisible && (
+                <div className="fixed bottom-20 right-6 z-40 rounded-lg bg-[var(--cohe-text-dark)] px-4 py-2 text-sm text-white shadow-lg">
+                    이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.
+                </div>
+            )}
+
+            {/* Bottom status bar */}
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">
-                    <span>?꾩옱 ?ㅼ젙: {summaryText}</span>
+                    <span>현재 설정: {summaryText}</span>
                     {lastSaved && (
                         <span>
-                            留덉?留???? {lastSaved.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}{' '}
+                            마지막 저장: {lastSaved.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}{' '}
                             {lastSaved.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     )}
                 </div>
             </footer>
-            </div>
-
-            <Toast.Root
-                key={toastKey}
-                open={toastOpen}
-                onOpenChange={setToastOpen}
-                duration={2500}
-                className="rounded-lg border border-red-200 bg-white px-4 py-3 shadow-lg"
-            >
-                <Toast.Description className="text-sm font-medium text-red-600">
-                    {toastMessage}
-                </Toast.Description>
-            </Toast.Root>
-            <Toast.Viewport className="fixed bottom-6 right-6 z-50 m-0 flex w-[360px] max-w-[calc(100vw-24px)] list-none flex-col gap-2 p-0 outline-none" />
-        </Toast.Provider>
+        </div>
     );
 }
-
-

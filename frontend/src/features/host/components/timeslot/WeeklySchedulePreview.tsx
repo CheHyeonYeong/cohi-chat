@@ -13,12 +13,12 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { appendEntryIfNotDuplicate, computeEntryFromDrag, computeDragHighlights } from './dragUtils';
+import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
-    onDuplicateBlocked?: () => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
 }
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -185,6 +185,36 @@ function WeeklyGrid({
     );
 }
 
+interface CommitDraggedEntryParams {
+    entries: TimeSlotEntry[];
+    onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
+    dragStartId: string | null;
+    endId: string | null;
+    startHour: number;
+}
+
+export function commitDraggedEntry({
+    entries,
+    onChange,
+    onDuplicateBlocked,
+    dragStartId,
+    endId,
+    startHour,
+}: CommitDraggedEntryParams): void {
+    if (!onChange || !dragStartId || !endId) return;
+
+    const entry = computeEntryFromDrag(dragStartId, endId, startHour);
+    if (!entry) return;
+
+    if (isDuplicateEntry(entries, entry)) {
+        onDuplicateBlocked?.(entry);
+        return;
+    }
+
+    onChange([...entries, entry]);
+}
+
 export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -230,10 +260,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
 
     const handleDragEnd = (event: DragEndEvent) => {
         const endId = (event.over?.id as string) ?? dragStartId;
-        if (onChange && dragStartId && endId) {
-            const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
-        }
+        commitDraggedEntry({ entries, onChange, onDuplicateBlocked, dragStartId, endId, startHour });
         setDragStartId(null);
         setDragOverId(null);
     };

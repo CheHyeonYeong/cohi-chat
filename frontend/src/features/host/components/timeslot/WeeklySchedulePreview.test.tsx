@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import WeeklySchedulePreview from './WeeklySchedulePreview';
+import WeeklySchedulePreview, { commitDraggedEntry } from './WeeklySchedulePreview';
 import type { TimeSlotEntry } from './TimeSlotForm';
 
 describe('WeeklySchedulePreview', () => {
@@ -136,5 +136,52 @@ describe('WeeklySchedulePreview', () => {
             const highlightedCells = container.querySelectorAll('[style*="background-color"]');
             expect(highlightedCells.length).toBeGreaterThan(0);
         });
+    });
+});
+
+describe('commitDraggedEntry', () => {
+    it('기존 시간대와 겹치면 onDuplicateBlocked를 호출하고 onChange는 호출하지 않아야 한다', () => {
+        const entries: TimeSlotEntry[] = [{ weekdays: [1], startTime: '09:00', endTime: '10:00' }];
+        const onChange = vi.fn();
+        const onDuplicateBlocked = vi.fn();
+
+        commitDraggedEntry({
+            entries,
+            onChange,
+            onDuplicateBlocked,
+            dragStartId: 'cell-0-2',
+            endId: 'cell-0-3',
+            startHour: 8,
+        });
+
+        expect(onChange).not.toHaveBeenCalled();
+        expect(onDuplicateBlocked).toHaveBeenCalledTimes(1);
+        expect(onDuplicateBlocked).toHaveBeenCalledWith({
+            weekdays: [1],
+            startTime: '09:00',
+            endTime: '10:00',
+        });
+    });
+
+    it('겹치지 않으면 onChange로 새 시간대를 추가해야 한다', () => {
+        const entries: TimeSlotEntry[] = [{ weekdays: [1], startTime: '09:00', endTime: '10:00' }];
+        const onChange = vi.fn();
+        const onDuplicateBlocked = vi.fn();
+
+        commitDraggedEntry({
+            entries,
+            onChange,
+            onDuplicateBlocked,
+            dragStartId: 'cell-0-4',
+            endId: 'cell-0-5',
+            startHour: 8,
+        });
+
+        expect(onDuplicateBlocked).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange).toHaveBeenCalledWith([
+            ...entries,
+            { weekdays: [1], startTime: '10:00', endTime: '11:00' },
+        ]);
     });
 });
