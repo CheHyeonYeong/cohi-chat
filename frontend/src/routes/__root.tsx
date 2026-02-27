@@ -13,6 +13,7 @@ import MyBookings from '~/pages/calendar/MyBookings'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
+import CalendarSettingsGuarded from '~/pages/host/CalendarSettingsGuarded'
 import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
@@ -102,6 +103,12 @@ const hostTimeslotsRoute = createRoute({
     component: TimeSlotSettingsGuarded,
 })
 
+const hostCalendarSettingsRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/host/settings',
+    component: CalendarSettingsGuarded,
+})
+
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/calendar/$slug',
@@ -147,6 +154,7 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
+    hostCalendarSettingsRoute,
     oAuthCallbackRoute,
     termsRoute,
     privacyRoute,
