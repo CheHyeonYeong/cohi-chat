@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { newRandomNick } from 'random-korean-nickname';
 import Button from '~/components/button/Button';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
@@ -39,7 +40,8 @@ const createValidationRules = (
     },
     displayName: (value: string) => {
         const trimmed = value.trim();
-        if (trimmed && (trimmed.length < 2 || trimmed.length > 20)) {
+        if (!trimmed) return '표시 이름을 입력해주세요.';
+        if (trimmed.length < 2 || trimmed.length > 20) {
             return '표시 이름은 2~20자여야 합니다.';
         }
         return null;
@@ -63,7 +65,7 @@ const createValidationRules = (
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [displayName, setDisplayName] = useState('');
+    const [displayName, setDisplayName] = useState(() => newRandomNick());
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
     const navigate = useNavigate();
@@ -79,6 +81,11 @@ export function SignupForm() {
         },
         [handleBlur]
     );
+
+    const handleRandomName = () => {
+        const randomName = newRandomNick();
+        setDisplayName(randomName);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,7 +106,7 @@ export function SignupForm() {
             {
                 username: username.trim(),
                 email: email.trim(),
-                displayName: displayName.trim() || undefined,
+                displayName: displayName.trim(),
                 password,
             },
             {
@@ -166,19 +173,32 @@ export function SignupForm() {
 
                     <div className="flex flex-col gap-1">
                         <label htmlFor="displayName" className="text-sm text-[var(--cohe-text-dark)]">
-                            표시 이름 (선택)
+                            표시 이름 <span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            id="displayName"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            onBlur={() => onBlur('displayName', displayName)}
-                            disabled={isPending}
-                            maxLength={20}
-                            placeholder="(2-20자)"
-                            className={getInputClassName('displayName', baseInputClass)}
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="displayName"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                onBlur={() => onBlur('displayName', displayName)}
+                                disabled={isPending}
+                                required
+                                maxLength={20}
+                                placeholder="(2-20자)"
+                                className={getInputClassName('displayName', baseInputClass)}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleRandomName}
+                                disabled={isPending}
+                                className="whitespace-nowrap flex-shrink-0"
+                                data-testid="random-name-button"
+                            >
+                                랜덤 생성
+                            </Button>
+                        </div>
                         {fields.displayName?.touched && fields.displayName.error && (
                             <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
                         )}
