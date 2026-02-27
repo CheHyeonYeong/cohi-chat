@@ -104,7 +104,7 @@ public class MemberService {
                 }
         }
 
-        private String generateDefaultDisplayName() {
+        private String generateDefaultDisplayName() {   
 
                 return new RandomStringGenerator.Builder()
                         .withinRange('0', 'z')
@@ -128,7 +128,7 @@ public class MemberService {
                 return tokenService.issueTokens(member);
         }
 
-        public Member getMember(String username) {
+        public Member getMember(String username) {      
 
                 return memberRepository.findByUsernameAndIsDeletedFalse(username)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -150,14 +150,14 @@ public class MemberService {
                         throw new CustomException(ErrorCode.NO_UPDATE_FIELDS);
                 }
 
-                Member member = getMember(username);
+                Member member = getMember(username);    
 
                 String hashPw = (request.getPassword() != null && !request.getPassword().isBlank())
                         ? passwordEncoder.encode(request.getPassword()) : null;
 
                 member.updateInfo(request.getDisplayName(), hashPw);
 
-                return MemberResponseDTO.from(member);
+                return MemberResponseDTO.from(member);  
         }
 
         /**
@@ -165,9 +165,9 @@ public class MemberService {
          * DB 트랜잭션 커밋 후 이벤트 리스너에서 Google Calendar 이벤트를 삭제하여 일관성 보장.
          */
         @Transactional
-        public void deleteMember(String username) {
-                Member member = getMember(username);
-                LocalDate today = LocalDate.now();
+        public void deleteMember(String username) {     
+                Member member = getMember(username);    
+                LocalDate today = LocalDate.now();      
 
                 // 1. 미래 예약 조회 (GCal 삭제 이벤트용)
                 List<Booking> hostBookings = findFutureHostBookings(member, today);
@@ -199,35 +199,35 @@ public class MemberService {
          */
         @Transactional(readOnly = true)
         public WithdrawalCheckResponseDTO checkWithdrawal(String username) {
-                Member member = getMember(username);
-                LocalDate today = LocalDate.now();
+                Member member = getMember(username);    
+                LocalDate today = LocalDate.now();      
                 List<AffectedBookingDTO> affectedBookings = new ArrayList<>();
 
                 // 호스트인 경우: 호스트로서의 미래 예약 조회
-                findFutureHostBookings(member, today)
-                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));
+                findFutureHostBookings(member, today)   
+                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));       
 
                 // 모든 사용자: 게스트로서의 미래 예약 조회
-                findFutureGuestBookings(member, today)
-                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));
+                findFutureGuestBookings(member, today)  
+                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));      
 
                 return WithdrawalCheckResponseDTO.of(affectedBookings);
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.builder()
-                        .bookingId(booking.getId())
+                return AffectedBookingDTO.builder()     
+                        .bookingId(booking.getId())     
                         .bookingDate(booking.getBookingDate())
                         .startTime(booking.getTimeSlot().getStartTime())
                         .endTime(booking.getTimeSlot().getEndTime())
-                        .topic(booking.getTopic())
+                        .topic(booking.getTopic())      
                         .role(role)
                         .build();
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
-                if (member.getRole() != Role.HOST) {
-                        return Collections.emptyList();
+                if (member.getRole() != Role.HOST) {    
+                        return Collections.emptyList(); 
                 }
                 return bookingRepository.findFutureBookingsByHostId(
                         member.getId(), today, AttendanceStatus.SCHEDULED);
@@ -239,9 +239,9 @@ public class MemberService {
         }
 
         @Transactional(readOnly = true)
-        public List<HostResponseDTO> getActiveHosts() {
+        public List<HostResponseDTO> getActiveHosts() { 
                 List<Member> hosts = memberRepository.findByRoleAndIsDeletedFalse(Role.HOST);
-                if (hosts.isEmpty()) return List.of();
+                if (hosts.isEmpty()) return List.of();  
                 List<UUID> hostIds = hosts.stream().map(Member::getId).toList();
                 Map<UUID, Long> chatCounts = bookingRepository
                         .countAttendedByHostIds(hostIds, AttendanceStatus.ATTENDED)
@@ -254,7 +254,7 @@ public class MemberService {
 
         @Transactional
         public HostResponseDTO updateProfile(String username, UpdateProfileRequestDTO req) {
-                Member member = getMember(username);
+                Member member = getMember(username);    
 
                 if (member.getRole() != Role.HOST) {
                         throw new CustomException(ErrorCode.ACCESS_DENIED);
@@ -270,16 +270,16 @@ public class MemberService {
 
                 try {
                         long remainingSeconds = jwtTokenProvider.getExpirationSeconds(accessToken);
-                        if (remainingSeconds <= 0) {
+                        if (remainingSeconds <= 0) {    
                                 return;
                         }
                         String tokenHash = TokenHashUtil.hash(accessToken);
                         AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
                         accessTokenBlacklistRepository.save(blacklist);
-                } catch (ExpiredJwtException e) {
+                } catch (ExpiredJwtException e) {       
                         log.debug("이미 만료된 토큰, 블랙리스트 등록 생략: {}", e.getMessage());
                 } catch (Exception e) {
-                        log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());
+                        log.warn("Access Token 블랙리스트 등록 실패 (best-effort): {}", e.getMessage());       
                 }
         }
 
@@ -289,7 +289,7 @@ public class MemberService {
                 String verifiedUsername;
                 try {
                         verifiedUsername = jwtTokenProvider.getUsernameFromToken(refreshTokenValue);
-                } catch (ExpiredJwtException e) {
+                } catch (ExpiredJwtException e) {       
                         throw new CustomException(ErrorCode.EXPIRED_REFRESH_TOKEN);
                 } catch (JwtException | IllegalArgumentException e) {
                         throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
@@ -312,7 +312,7 @@ public class MemberService {
 
                 // 5. RT Rotation: 기존 RT 삭제 + 새 RT 발급
                 refreshTokenRepository.deleteById(member.getUsername());
-                String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());
+                String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());        
                 long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
                 RefreshToken newRefreshToken = RefreshToken.create(
                         TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
@@ -326,7 +326,7 @@ public class MemberService {
                 long expiredInSeconds = jwtTokenProvider.getExpirationSeconds(newAccessToken);
 
                 return RefreshTokenResponseDTO.builder()
-                        .accessToken(newAccessToken)
+                        .accessToken(newAccessToken)    
                         .refreshToken(newRefreshTokenValue)
                         .expiredInMinutes((long) Math.ceil((double) expiredInSeconds / 60))
                         .build();
