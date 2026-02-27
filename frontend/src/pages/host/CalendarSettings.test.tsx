@@ -9,7 +9,9 @@ import * as hostHooks from '~/features/host/hooks';
 // Mock dependencies
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createLink: (component: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (props: any) => {
             const { to, ...rest } = props;
             return React.createElement(component, { href: to, ...rest });
