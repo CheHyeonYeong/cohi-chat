@@ -241,7 +241,7 @@ public class MemberService {
 			if (remainingSeconds <= 0) {
 				return;
 			}
-			String tokenHash = TokenHashUtil.hash(accessToken);
+			String tokenHash = tokenService.hashToken(accessToken);
 			AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
 			accessTokenBlacklistRepository.save(blacklist);
 		} catch (ExpiredJwtException e) {

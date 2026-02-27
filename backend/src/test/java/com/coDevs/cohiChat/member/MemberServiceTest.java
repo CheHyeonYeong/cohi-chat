@@ -535,7 +535,9 @@ class MemberServiceTest {
 	void logoutSuccess() {
 		// given
 		String accessToken = "test-access-token";
+		String hashedToken = "hashed-access-token";
 		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1800L);
+		given(tokenService.hashToken(accessToken)).willReturn(hashedToken);
 
 		// when
 		memberService.logout(TEST_USERNAME, accessToken);
@@ -546,8 +548,7 @@ class MemberServiceTest {
 		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
 		verify(accessTokenBlacklistRepository).save(captor.capture());
 		AccessTokenBlacklist saved = captor.getValue();
-		// TokenHashUtil.hash(accessToken) 결과를 직접 검증
-		assertThat(saved.getTokenHash()).isEqualTo(com.coDevs.cohiChat.global.util.TokenHashUtil.hash(accessToken));
+		assertThat(saved.getTokenHash()).isEqualTo(hashedToken);
 		assertThat(saved.getExpirationSeconds()).isEqualTo(1800L);
 	}
 
@@ -556,7 +557,9 @@ class MemberServiceTest {
 	void logoutWithNearExpiredToken() {
 		// given
 		String accessToken = "near-expired-token";
+		String hashedToken = "hashed-near-expired-token";
 		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1L);
+		given(tokenService.hashToken(accessToken)).willReturn(hashedToken);
 
 		// when
 		memberService.logout(TEST_USERNAME, accessToken);
@@ -567,7 +570,7 @@ class MemberServiceTest {
 		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
 		verify(accessTokenBlacklistRepository).save(captor.capture());
 		AccessTokenBlacklist saved = captor.getValue();
-		assertThat(saved.getTokenHash()).isEqualTo(com.coDevs.cohiChat.global.util.TokenHashUtil.hash(accessToken));
+		assertThat(saved.getTokenHash()).isEqualTo(hashedToken);
 	}
 
 	@Test
