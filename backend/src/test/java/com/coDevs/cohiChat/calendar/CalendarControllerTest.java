@@ -379,4 +379,90 @@ class CalendarControllerTest {
             .andExpect(jsonPath("$.error.message").exists());
     }
 
+    @Test
+    @DisplayName("성공: 개인 캘린더 ID (이메일 형식)로 캘린더 생성")
+    void createCalendarWithPersonalCalendarId() throws Exception {
+        // given
+        String personalCalendarId = "myemail@gmail.com";
+        CalendarCreateRequestDTO request = CalendarCreateRequestDTO.builder()
+            .topics(TEST_TOPICS)
+            .description(TEST_DESCRIPTION)
+            .googleCalendarId(personalCalendarId)
+            .build();
+
+        CalendarResponseDTO response = CalendarResponseDTO.builder()
+            .userId(UUID.randomUUID())
+            .topics(TEST_TOPICS)
+            .description(TEST_DESCRIPTION)
+            .googleCalendarId(personalCalendarId)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
+
+        when(calendarService.createCalendar(any(Member.class), any(CalendarCreateRequestDTO.class)))
+            .thenReturn(response);
+
+        // when & then
+        mockMvc.perform(post("/calendar/v1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.googleCalendarId").value(personalCalendarId));
+    }
+
+    @Test
+    @DisplayName("성공: 개인 캘린더 ID (이메일 형식)로 캘린더 수정")
+    void updateCalendarWithPersonalCalendarId() throws Exception {
+        // given
+        String personalCalendarId = "myemail@gmail.com";
+        CalendarUpdateRequestDTO request = CalendarUpdateRequestDTO.builder()
+            .topics(TEST_TOPICS)
+            .description(TEST_DESCRIPTION)
+            .googleCalendarId(personalCalendarId)
+            .build();
+
+        CalendarResponseDTO response = CalendarResponseDTO.builder()
+            .userId(UUID.randomUUID())
+            .topics(TEST_TOPICS)
+            .description(TEST_DESCRIPTION)
+            .googleCalendarId(personalCalendarId)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
+
+        when(calendarService.updateCalendar(any(Member.class), any(CalendarUpdateRequestDTO.class)))
+            .thenReturn(response);
+
+        // when & then
+        mockMvc.perform(put("/calendar/v1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.googleCalendarId").value(personalCalendarId));
+    }
+
+    @Test
+    @DisplayName("실패: 잘못된 Calendar ID 형식이면 400 Bad Request")
+    void createCalendarFailWhenInvalidCalendarIdFormat() throws Exception {
+        // given
+        CalendarCreateRequestDTO request = CalendarCreateRequestDTO.builder()
+            .topics(TEST_TOPICS)
+            .description(TEST_DESCRIPTION)
+            .googleCalendarId("invalid-calendar-id")
+            .build();
+
+        // when & then
+        mockMvc.perform(post("/calendar/v1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.message").exists());
+    }
+
 }

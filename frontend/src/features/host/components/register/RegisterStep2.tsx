@@ -12,7 +12,7 @@ interface RegisterStep2Props {
     errors: Record<string, string>;
 }
 
-export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._-]+@group\.calendar\.google\.com$/;
+export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 function CalendarIcon({ className = '' }: { className?: string }) {
     return (
@@ -238,7 +238,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                 type="text"
                                 value={data.googleCalendarId}
                                 onChange={(e) => { setConfirmed(false); onChange({ googleCalendarId: e.target.value.trim() }); }}
-                                placeholder="your-id@group.calendar.google.com"
+                                placeholder="your-email@gmail.com"
                                 className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-[var(--cohe-text-dark)] placeholder-gray-400 focus:outline-none focus:ring-1 ${
                                     hasInput && isValid
                                         ? 'border-green-400 focus:border-green-400 focus:ring-green-400'
