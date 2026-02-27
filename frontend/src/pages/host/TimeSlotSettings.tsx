@@ -12,7 +12,6 @@ import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
-const COPY_SUCCESS_DURATION = 2000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);

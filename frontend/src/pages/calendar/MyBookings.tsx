@@ -58,7 +58,7 @@ function SortableBookingCard({
 export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
-    const { data: bookings, isLoading, error } = useMyBookings({ page, pageSize });
+    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [sortedIds, setSortedIds] = useState<number[]>([]);
@@ -70,7 +70,7 @@ export default function MyBookings() {
     }, [bookings]);
 
     // 선택된 예약 full detail (파일 포함)
-    const { data: selectedBooking } = useBooking(selectedId);
+    const { data: selectedBooking, refetch: refetchSelectedBooking } = useBooking(selectedId);
     const { mutateAsync: uploadFileAsync, isPending: isUploading } = useUploadBookingFile(selectedId ?? 0);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -116,6 +116,7 @@ export default function MyBookings() {
             formData.append('file', file);
             await uploadFileAsync(formData);
         }
+        await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {

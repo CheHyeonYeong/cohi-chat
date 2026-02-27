@@ -32,6 +32,7 @@ import {
 import { getErrorMessage } from '~/libs/errorUtils';
 import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
+import { canUploadMoreFiles } from './bookingUploadUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -298,7 +299,7 @@ export default function Booking() {
     }
 
     const when = new Date(booking.when);
-    const canUploadMore = (fileOrder.length + selectedFiles.length) < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+    const canUploadMore = canUploadMoreFiles(fileOrder.length);
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
