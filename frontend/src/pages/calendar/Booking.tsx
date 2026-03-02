@@ -302,7 +302,7 @@ export default function Booking() {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
             </div>
         );
@@ -310,7 +310,7 @@ export default function Booking() {
 
     if (error) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
             </div>
         );
@@ -318,7 +318,7 @@ export default function Booking() {
 
     if (!booking) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 찾을 수 없습니다.</p>
             </div>
         );
@@ -328,7 +328,7 @@ export default function Booking() {
     const canUploadMore = canUploadMoreFiles(fileOrder.length);
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <PageHeader />
 
             <main className="w-full px-6 py-8 pb-16">
@@ -336,7 +336,7 @@ export default function Booking() {
                     {/* Back link */}
                     <Link
                         to="/my-bookings"
-                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohe-primary)]"
+                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohi-primary)]"
                     >
                         &larr; 내 예약 목록으로
                     </Link>
@@ -345,13 +345,13 @@ export default function Booking() {
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg font-semibold text-[var(--cohe-primary)]">
+                                <div className="w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
+                                    <span className="text-lg font-semibold text-[var(--cohi-primary)]">
                                         {booking.host.displayName[0] ?? '?'}
                                     </span>
                                 </div>
                                 <div>
-                                    <h1 className="text-xl font-bold text-[var(--cohe-text-dark)]">
+                                    <h1 className="text-xl font-bold text-[var(--cohi-text-dark)]">
                                         {booking.host.displayName}님과의 커피챗
                                     </h1>
                                     <p className="text-sm text-gray-500 mt-0.5">
@@ -459,7 +459,7 @@ export default function Booking() {
 
                     {/* File section */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
-                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)]">파일 첨부</h2>
+                        <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)]">파일 첨부</h2>
 
                         {/* Capacity info */}
                         <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
@@ -480,8 +480,8 @@ export default function Booking() {
                                     className={cn(
                                         'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                                         isDraggingOver
-                                            ? 'border-[var(--cohe-primary)] bg-[var(--cohe-primary)]/5'
-                                            : 'border-gray-200 hover:border-[var(--cohe-primary)]/50 hover:bg-gray-50',
+                                            ? 'border-[var(--cohi-primary)] bg-[var(--cohi-primary)]/5'
+                                            : 'border-gray-200 hover:border-[var(--cohi-primary)]/50 hover:bg-gray-50',
                                     )}
                                 >
                                     <span className="text-2xl select-none" aria-hidden="true">&#8679;</span>
@@ -491,7 +491,7 @@ export default function Booking() {
                                             : '파일을 드래그하거나 클릭해서 선택'}
                                     </p>
                                     {selectedFiles.length > 0 && (
-                                        <p className="text-sm text-[var(--cohe-primary)] font-medium">
+                                        <p className="text-sm text-[var(--cohi-primary)] font-medium">
                                             {selectedFiles.map((f) => f.name).join(', ')}
                                         </p>
                                     )}

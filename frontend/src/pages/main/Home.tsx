@@ -38,7 +38,7 @@ function HostCard({
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
+            <div className='w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
                 {isSafeUrl(profileImageUrl) && !imgError ? (
                     <img
                         src={profileImageUrl}
@@ -53,7 +53,7 @@ function HostCard({
                 )}
             </div>
             <div className='flex flex-col min-w-0'>
-                <span className='font-semibold text-[var(--cohe-text-dark)] truncate'>{displayName}</span>
+                <span className='font-semibold text-[var(--cohi-text-dark)] truncate'>{displayName}</span>
                 <span className='text-sm text-gray-500 truncate'>{job ?? '호스트'}</span>
                 {chatCount > 0 && (
                     <span className='text-xs text-[var(--cohi-primary)]'>커피챗 {chatCount}회</span>
@@ -110,7 +110,7 @@ export default function Home() {
                         <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--cohi-text-dark)] leading-tight'>
                             부담 없는 대화로 진짜 정보를
                         </h1>
-                        <p className='text-lg md:text-xl text-[var(--cohe-text-dark)]/80'>
+                        <p className='text-lg md:text-xl text-[var(--cohi-text-dark)]/80'>
                             현직자·채용담당자와 1:1 커피챗
                         </p>
 
