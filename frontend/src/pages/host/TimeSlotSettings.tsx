@@ -46,8 +46,6 @@ const defaultEntry: TimeSlotEntry = {
     endTime: '18:00',
 };
 
-const SUCCESS_MESSAGE_DURATION = 3000;
-
 export default function TimeSlotSettings() {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([{ ...defaultEntry }]);
     const [errors, setErrors] = useState<Record<string, string>>({});
