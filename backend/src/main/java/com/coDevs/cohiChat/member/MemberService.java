@@ -38,7 +38,6 @@ import com.coDevs.cohiChat.member.entity.Member;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -65,7 +64,7 @@ public class MemberService {
 		validateDuplicate(request.getUsername(), request.getEmail());
 
 		String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
-			? generateDefaultDisplayName() : request.getDisplayName();
+			? request.getUsername() : request.getDisplayName();
 
 		Role role = (request.getRole() != null) ? request.getRole() : Role.GUEST;
 
@@ -96,15 +95,6 @@ public class MemberService {
 		if (memberRepository.existsByEmail(email.toLowerCase())) {
 			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
 		}
-	}
-
-	private String generateDefaultDisplayName() {
-
-		return new RandomStringGenerator.Builder()
-			.withinRange('0', 'z')
-			.filteredBy(Character::isLetterOrDigit)
-			.build()
-			.generate(8);
 	}
 
 	@Transactional
