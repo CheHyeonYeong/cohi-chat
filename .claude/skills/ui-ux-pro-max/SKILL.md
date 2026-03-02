@@ -68,22 +68,3 @@
 4. 반응형 레이아웃 적용
 5. 접근성 검증
 ```
-
-## Project Conventions (cohiChat)
-
-### 버튼
-- 표준 버튼: `<Button>` 컴포넌트 (`~/components/button`)
-- 라우터 링크 + 버튼 스타일: `<LinkButton>` (`~/components/button/LinkButton`)
-- 비동기 작업: `loading` prop 사용 (자동 disabled 처리)
-- raw `<button>`: 아이콘 전용, 토글, 특수 목적만 허용
-- `type` 기본값 `"button"`, 폼 제출 시 `type="submit"` 명시
-
-### 헤더
-- 페이지 상단 네비게이션: 반드시 `<Header>` 컴포넌트 (`~/components/header`)
-  - `center` prop: 중앙 영역 (StepIndicator, 브레드크럼 등)
-  - `right` prop: 우측 영역 (인증 버튼, 아바타 등)
-- `<header>` + 로고 직접 작성 금지
-
-### CSS 유틸리티
-- 클래스 조합: `cn()` 함수 사용 (`~/libs/cn`) — clsx + tailwind-merge
-- `clsx`, `twMerge` 직접 사용 금지

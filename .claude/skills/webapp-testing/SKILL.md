@@ -24,15 +24,9 @@
 
 ## Selector Priority
 
-Testing Library 쿼리 우선순위:
-1. `getByRole` (가장 권장 - 접근성 기반)
-2. `getByText` (텍스트 기반)
-3. `getByTestId` (`data-testid` 속성)
-4. `querySelector('[data-testid="..."]')` (마지막 수단)
-
-**CSS 클래스(`.cursor-pointer`, `.text-xs` 등)를 셀렉터로 사용 금지**
-- 반드시 `data-testid` 속성으로 요소를 선택한다
-- 컴포넌트에 `data-testid`가 없으면 컴포넌트 소스에 추가한 후 테스트 작성
+1. Text-based selectors (most readable)
+2. Role-based selectors (accessibility)
+3. CSS selectors (fallback)
 
 ## Server Management
 
