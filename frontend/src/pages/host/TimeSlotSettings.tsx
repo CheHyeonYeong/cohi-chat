@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
+import { Toast } from '~/components/toast/Toast';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots, useMyCalendar } from '~/features/host';
@@ -57,7 +58,8 @@ export default function TimeSlotSettings() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
     const [emailCopied, setEmailCopied] = useState(false);
-    const [duplicateBlockedToastVisible, setDuplicateBlockedToastVisible] = useState(false);
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastKey, setToastKey] = useState(0);
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
@@ -69,13 +71,11 @@ export default function TimeSlotSettings() {
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const duplicateBlockedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
             if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
-            if (duplicateBlockedToastTimerRef.current) clearTimeout(duplicateBlockedToastTimerRef.current);
         };
     }, []);
 
@@ -124,12 +124,8 @@ export default function TimeSlotSettings() {
     };
 
     const handleDuplicateBlocked = () => {
-        setDuplicateBlockedToastVisible(true);
-        if (duplicateBlockedToastTimerRef.current) clearTimeout(duplicateBlockedToastTimerRef.current);
-        duplicateBlockedToastTimerRef.current = setTimeout(
-            () => setDuplicateBlockedToastVisible(false),
-            DUPLICATE_BLOCKED_TOAST_DURATION,
-        );
+        setToastKey((k) => k + 1);
+        setToastOpen(true);
     };
 
     const createTimeslotMutation = useCreateTimeslot();
@@ -357,6 +353,7 @@ export default function TimeSlotSettings() {
                                 onChange={setEntries}
                                 onSave={handleSave}
                                 onDelete={handleDelete}
+                                onOverlapDetected={handleDuplicateBlocked}
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
@@ -373,11 +370,13 @@ export default function TimeSlotSettings() {
                 </div>
             </main>
 
-            {duplicateBlockedToastVisible && (
-                <div className="fixed bottom-20 right-6 z-40 rounded-lg bg-[var(--cohe-text-dark)] px-4 py-2 text-sm text-white shadow-lg">
-                    이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.
-                </div>
-            )}
+            <Toast
+                open={toastOpen}
+                onOpenChange={setToastOpen}
+                description="이미 존재하는 시간대와 겹쳐서 추가되지 않았어요."
+                duration={DUPLICATE_BLOCKED_TOAST_DURATION}
+                toastKey={toastKey}
+            />
 
             {/* Bottom status bar */}
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">

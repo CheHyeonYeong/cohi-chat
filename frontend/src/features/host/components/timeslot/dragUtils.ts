@@ -95,11 +95,11 @@ export function appendEntryIfNotDuplicate(
     entries: TimeSlotEntry[],
     newEntry: TimeSlotEntry | null,
     onAppend: (nextEntries: TimeSlotEntry[]) => void,
-    onDuplicateBlocked?: () => void,
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void,
 ): boolean {
     if (!newEntry) return false;
     if (isDuplicateEntry(entries, newEntry)) {
-        onDuplicateBlocked?.();
+        onDuplicateBlocked?.(newEntry);
         return false;
     }
     onAppend([...entries, newEntry]);
