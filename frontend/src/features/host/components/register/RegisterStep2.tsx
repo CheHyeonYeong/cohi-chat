@@ -166,7 +166,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                     href="https://calendar.google.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)] text-sm font-medium hover:bg-[rgb(var(--cohe-bg-warm))] transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)] text-sm font-medium hover:bg-[var(--cohe-bg-warm)] transition-colors"
                                 >
                                     calendar.google.com 열기
                                     <ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -182,7 +182,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                     {/* Step 3 & 4 side by side */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Step 3 */}
-                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl p-5">
+                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     3
@@ -203,7 +203,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                         </div>
 
                         {/* Step 4 */}
-                        <div className="bg-[rgb(var(--cohe-bg-warm))]/50 rounded-2xl p-5">
+                        <div className="bg-[var(--cohe-bg-warm)]/50 rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-7 h-7 rounded-full bg-[var(--cohe-primary)] text-white text-sm font-bold flex items-center justify-center">
                                     4

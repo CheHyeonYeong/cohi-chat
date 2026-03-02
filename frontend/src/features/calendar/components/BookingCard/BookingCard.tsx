@@ -25,7 +25,7 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
         >
             {/* Host info */}
             <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[rgb(var(--cohe-bg-warm))] flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-semibold text-[var(--cohe-primary)]">
                         {booking.host?.displayName?.[0] ?? '?'}
                     </span>
