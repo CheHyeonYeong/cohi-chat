@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.booking;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,16 +17,26 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /**
      * 게스트 ID로 예약 목록 조회 (예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지
+     * timeSlot FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot
+        WHERE b.guestId = :guestId
+        ORDER BY b.bookingDate DESC
+        """)
     List<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
 
     /**
      * 호스트 ID로 예약 목록 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지
+     * timeSlot FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE t.userId = :hostId
+        ORDER BY b.bookingDate DESC
+        """)
     List<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 
     /**
@@ -40,7 +51,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
               AND b.attendanceStatus NOT IN :excludedStatuses
               AND (:excludedId IS NULL OR b.id <> :excludedId)
         )
-    """)
+        """)
     boolean existsDuplicateBooking(
         @Param("timeSlotId") Long timeSlotId,
         @Param("bookingDate") LocalDate bookingDate,
@@ -49,10 +60,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     /**
-     * 호스트의 월별 예약 목록 조회 (날짜 범위 필터링)
-     * FETCH JOIN으로 N+1 문제 방지
+     * 호스트의 월별 예약 목록 조회 (날짜 범위 필터링, endDate 미포함)
+     * timeSlot FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId AND b.bookingDate >= :startDate AND b.bookingDate < :endDate ORDER BY b.bookingDate")
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE t.userId = :hostId
+          AND b.bookingDate >= :startDate
+          AND b.bookingDate < :endDate
+        ORDER BY b.bookingDate
+        """)
     List<Booking> findByHostIdAndDateRange(
         @Param("hostId") UUID hostId,
         @Param("startDate") LocalDate startDate,
@@ -60,9 +78,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     /**
-     * 호스트의 미래 예정된 예약 조회 (취소되지 않은 예약)
+     * 호스트의 미래 예정된 예약 조회
+     * timeSlot FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId AND b.bookingDate >= :today AND b.attendanceStatus = :status ORDER BY b.bookingDate")
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE t.userId = :hostId
+          AND b.bookingDate >= :today
+          AND b.attendanceStatus = :status
+        ORDER BY b.bookingDate
+        """)
     List<Booking> findFutureBookingsByHostId(
         @Param("hostId") UUID hostId,
         @Param("today") LocalDate today,
@@ -70,9 +96,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     /**
-     * 게스트의 미래 예정된 예약 조회 (취소되지 않은 예약)
+     * 게스트의 미래 예정된 예약 조회
+     * timeSlot FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE b.guestId = :guestId AND b.bookingDate >= :today AND b.attendanceStatus = :status ORDER BY b.bookingDate")
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE b.guestId = :guestId
+          AND b.bookingDate >= :today
+          AND b.attendanceStatus = :status
+        ORDER BY b.bookingDate
+        """)
     List<Booking> findFutureBookingsByGuestId(
         @Param("guestId") UUID guestId,
         @Param("today") LocalDate today,
@@ -82,7 +116,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /**
      * 특정 호스트의 커피챗 횟수 단일 집계
      */
-    @Query("SELECT COUNT(b) FROM Booking b JOIN b.timeSlot t WHERE t.userId = :hostId AND b.attendanceStatus = :status")
+    @Query("""
+        SELECT COUNT(b) FROM Booking b
+        JOIN b.timeSlot t
+        WHERE t.userId = :hostId
+          AND b.attendanceStatus = :status
+        """)
     long countAttendedByHostId(@Param("hostId") UUID hostId, @Param("status") AttendanceStatus status);
 
     /**
@@ -94,7 +133,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         WHERE t.userId IN :hostIds
           AND b.attendanceStatus = :status
         GROUP BY t.userId
-    """)
+        """)
     List<HostChatCount> countAttendedByHostIds(
         @Param("hostIds") Collection<UUID> hostIds,
         @Param("status") AttendanceStatus status
@@ -103,7 +142,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /**
      * 단건 조회 시 timeSlot을 함께 로드 (지연 로딩 방지)
      */
-    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot WHERE b.id = :id")
-    java.util.Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot
+        WHERE b.id = :id
+        """)
+    Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
 }

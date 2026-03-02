@@ -56,7 +56,7 @@ class MemberControllerIntegrationTest {
 	private static final String OTHER_USERNAME = "otheruser";
 
 	@Test
-	@DisplayName("인증 없이 로그아웃 호출 시 401 또는 403 반환")
+	@DisplayName("인증 없이 로그아웃 호출 시 403 Forbidden 반환")
 	void logoutWithoutAuthReturnsForbidden() throws Exception {
 		mockMvc.perform(delete("/members/v1/logout"))
 			.andExpect(status().isForbidden());

@@ -130,8 +130,8 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 표시명이 없으면(null) 무작위 문자열 8글자 생성")
-	void signupWithRandomDisplayName() {
+	@DisplayName("성공: 표시명이 없으면(null) username으로 대체")
+	void signupWithUsernameAsDefaultDisplayName() {
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
 			.username(TEST_USERNAME)
 			.password(TEST_PASSWORD)
@@ -143,8 +143,7 @@ class MemberServiceTest {
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
 
-		assertThat(signupResponseDTO.getDisplayName()).isNotNull();
-		assertThat(signupResponseDTO.getDisplayName().length()).isEqualTo(8);
+		assertThat(signupResponseDTO.getDisplayName()).isEqualTo(TEST_USERNAME);
 	}
 
 	@Test
@@ -391,13 +390,13 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패: 이미 사용된 RT(이전 토큰)가 Grace Window 내에 들어오면 GRACE_WINDOW_HIT 반환 (세션 유지)")
+	@DisplayName("실패: 이미 사용된 RT(이전 토큰)가 Grace Window 내에 들어오면 GRACE_WINDOW_HIT 반환 (세션 무효화)")
 	void refreshAccessTokenGraceWindow() {
 		String oldRefreshToken = "old-refresh-token";
 		String oldHash = "old-hash";
 		String currentHash = "current-hash";
 		given(clock.millis()).willReturn(100_000L);
-		
+
 		// 이미 한 번 회전된 상태의 저장된 토큰
 		RefreshToken storedToken = RefreshToken.builder()
 			.username(TEST_USERNAME)
@@ -414,8 +413,9 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.refreshAccessToken(oldRefreshToken))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GRACE_WINDOW_HIT);
-		
-		verify(refreshTokenRepository, never()).deleteById(anyString());
+
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
 	}
 
 	@Test
