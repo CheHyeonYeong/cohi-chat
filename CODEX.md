@@ -1,8 +1,12 @@
 ﻿# CODEX.md
 
 Codex 작업 기준 운영 문서입니다.
-공통으로 지켜야 할 규칙은 `CLAUDE.md`를 따릅니다.
-이 문서는 Codex 사용 시 필요한 실행 흐름만 보완합니다.
+
+## 문서 기준
+
+- Claude 기준 운영 문서: `CLAUDE.md`
+- 공통 사용 흐름: `README.md`
+- 공통으로 지켜야 할 모든 정책은 `CLAUDE.md`를 따른다.
 
 ## 기본 원칙
 
@@ -10,7 +14,6 @@ Codex 작업 기준 운영 문서입니다.
 - 작업 브랜치 생성 후 작업 (`{이니셜}_{이슈번호}`)
 - 변경은 목적 중심으로 최소화
 - 변경 후 검증 명령 실행 및 결과 기록
-- 공통 정책, 코딩 규칙, 브랜치 전략은 `CLAUDE.md` 기준으로 준수
 
 ## 표준 작업 절차
 
@@ -39,7 +42,7 @@ pnpm lint
 pnpm test
 ```
 
-4. main 기준 리베이스(필요 시)
+4. 필요 시 main 기준 리베이스
 ```bash
 git fetch origin
 git rebase origin/main
