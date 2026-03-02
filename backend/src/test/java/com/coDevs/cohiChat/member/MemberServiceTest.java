@@ -419,7 +419,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패: Grace Window 내 불일치 토큰은 세션 유지 + GRACE_WINDOW_HIT 반환")
+	@DisplayName("실패: Grace Window 내라도 previousToken이 아닌 완전히 낯선 토큰은 즉시 세션 무효화")
 	void refreshAccessTokenGraceWindowWithNonPreviousToken() {
 		String mismatchedToken = "mismatched-token";
 		String mismatchHash = "mismatch-hash";
@@ -441,9 +441,9 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(mismatchedToken))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GRACE_WINDOW_HIT);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
 
-		verify(refreshTokenRepository, never()).deleteById(anyString());
+		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
 	}
 

@@ -47,10 +47,10 @@ public class RefreshToken {
             .build();
     }
 
-    public void rotate(String newToken, Long expirationMs) {
+    public void rotate(String newToken, Long expirationMs, long nowMillis) {
         this.previousToken = this.token;
         this.token = newToken;
-        this.rotatedAt = System.currentTimeMillis();
+        this.rotatedAt = nowMillis;
         this.expiration = expirationMs;
     }
 }

@@ -86,6 +86,8 @@ dependencies {
     implementation 'com.google.auth:google-auth-library-oauth2-http:1.29.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
+
+    implementation 'org.apache.commons:commons-text:1.15.0'
 }
 
 tasks.named('test') {

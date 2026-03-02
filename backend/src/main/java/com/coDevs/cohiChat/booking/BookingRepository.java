@@ -100,14 +100,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("status") AttendanceStatus status
     );
 
-    @Query("""
-        SELECT COUNT(b)
-        FROM Booking b
-        WHERE b.timeSlot.userId = :hostId
-          AND b.attendanceStatus = :status
-    """)
-    long countAttendedByHostId(
-        @Param("hostId") UUID hostId,
-        @Param("status") AttendanceStatus status
-    );
 }
