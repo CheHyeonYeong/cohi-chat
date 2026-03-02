@@ -27,8 +27,8 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
-import java.time.LocalDate;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +42,6 @@ import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -70,7 +69,7 @@ public class MemberService {
 	public SignupResponseDTO signup(SignupRequestDTO request) {
 		validateDuplicate(request.getUsername(), request.getEmail());
 		String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
-			? generateDefaultDisplayName() : request.getDisplayName();
+			? request.getUsername() : request.getDisplayName();
 		Role role = (request.getRole() != null) ? request.getRole() : Role.GUEST;
 		String encodedPassword = passwordEncoder.encode(request.getPassword());
 		Member member = Member.create(
@@ -87,14 +86,6 @@ public class MemberService {
 		if (memberRepository.existsByEmail(email.toLowerCase())) {
 			throw new CustomException(ErrorCode.DUPLICATED_EMAIL);
 		}
-	}
-
-	private String generateDefaultDisplayName() {
-		return new RandomStringGenerator.Builder()
-			.withinRange('0', 'z')
-			.filteredBy(Character::isLetterOrDigit)
-			.build()
-			.generate(8);
 	}
 
 	@Transactional
@@ -284,7 +275,7 @@ public class MemberService {
 		}
 		rateLimitService.checkRateLimit("refresh:" + verifiedUsername);
 
-		// 3. Redis에서 해시된 토큰으로 존재 확인 (만료된 토큰은 Redis TTL로 자동 삭제됨)
+		// 3. Redis에서 username 기준으로 현재 세션 조회
 		String tokenHash = tokenService.hashToken(refreshTokenValue);
 		Optional<RefreshToken> storedTokenOpt = refreshTokenRepository.findById(verifiedUsername);
 
@@ -294,7 +285,7 @@ public class MemberService {
 
 		RefreshToken storedToken = storedTokenOpt.get();
 
-		// RT Rotation: grace window 적용
+		// RT Rotation: 현재 토큰과 불일치 시 재사용 감지 처리
 		if (!storedToken.getToken().equals(tokenHash)) {
 			long nowMillis = clock.millis();
 			// grace window는 구 RT(previousToken)를 재제출한 경우에만 적용한다.
@@ -304,7 +295,9 @@ public class MemberService {
 				&& storedToken.getRotatedAt() != null
 				&& (nowMillis - storedToken.getRotatedAt() < RT_GRACE_WINDOW_MS);
 			if (withinGraceWindow) {
-				log.info("Refresh Token grace window hit (session kept): username={}", verifiedUsername);
+				// 보안 우선: grace window 내 재시도도 탈취 가능성이 있으므로 세션 무효화
+				log.warn("Refresh Token grace window 히트 - 세션 무효화: username={}", verifiedUsername);
+				refreshTokenRepository.deleteById(verifiedUsername);
 				throw new CustomException(ErrorCode.GRACE_WINDOW_HIT);
 			}
 
