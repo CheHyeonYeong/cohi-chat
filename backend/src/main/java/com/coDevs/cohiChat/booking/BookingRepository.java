@@ -18,7 +18,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * 게스트 ID로 예약 목록 조회 (예약 날짜 내림차순)
      * FETCH JOIN으로 N+1 문제 방지
      */
-    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
     List<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
 
     /**
@@ -35,14 +35,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
         SELECT EXISTS (
             SELECT 1 FROM Booking b
-            WHERE b.timeSlot = :timeSlot
+            WHERE b.timeSlot.id = :timeSlotId
               AND b.bookingDate = :bookingDate
               AND b.attendanceStatus NOT IN :excludedStatuses
               AND (:excludedId IS NULL OR b.id <> :excludedId)
         )
     """)
     boolean existsDuplicateBooking(
-        @Param("timeSlot") com.coDevs.cohiChat.timeslot.entity.TimeSlot timeSlot,
+        @Param("timeSlotId") Long timeSlotId,
         @Param("bookingDate") LocalDate bookingDate,
         @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,
         @Param("excludedId") Long excludedId
@@ -82,22 +82,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /**
      * 특정 호스트의 커피챗 횟수 단일 집계
      */
-    @Query("SELECT COUNT(b) FROM Booking b WHERE b.timeSlot.userId = :hostId AND b.attendanceStatus = :status")
+    @Query("SELECT COUNT(b) FROM Booking b JOIN b.timeSlot t WHERE t.userId = :hostId AND b.attendanceStatus = :status")
     long countAttendedByHostId(@Param("hostId") UUID hostId, @Param("status") AttendanceStatus status);
 
     /**
      * 호스트 ID 목록의 커피챗 횟수 배치 집계 (N+1 방지)
      */
     @Query("""
-        SELECT b.timeSlot.userId AS hostId, COUNT(b) AS count
-        FROM Booking b
-        WHERE b.timeSlot.userId IN :hostIds
+        SELECT t.userId AS hostId, COUNT(b) AS count
+        FROM Booking b JOIN b.timeSlot t
+        WHERE t.userId IN :hostIds
           AND b.attendanceStatus = :status
-        GROUP BY b.timeSlot.userId
+        GROUP BY t.userId
     """)
     List<HostChatCount> countAttendedByHostIds(
         @Param("hostIds") Collection<UUID> hostIds,
         @Param("status") AttendanceStatus status
     );
+
+    /**
+     * 단건 조회 시 timeSlot을 함께 로드 (지연 로딩 방지)
+     */
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot WHERE b.id = :id")
+    java.util.Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
 }
