@@ -52,7 +52,7 @@ export default function FileDropZone({ onFilesDropped, disabled = false, classNa
             className={cn(
                 'flex items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors text-sm',
                 isDragging
-                    ? 'border-[var(--cohe-primary)] bg-[var(--cohe-bg-light)] text-[var(--cohe-primary)]'
+                    ? 'border-[var(--cohi-primary)] bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)]'
                     : 'border-gray-200 text-gray-400',
                 disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                 className,

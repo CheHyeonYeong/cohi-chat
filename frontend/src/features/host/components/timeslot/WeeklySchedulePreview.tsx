@@ -60,8 +60,7 @@ function timeToRow(time: string, startHour: number): number {
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
-            className="h-6"
-            style={isHighlighted ? { backgroundColor: 'var(--cohe-primary)', opacity: 0.2 } : undefined}
+            className={isHighlighted ? 'h-6 bg-[var(--cohi-primary)] opacity-20' : 'h-6'}
         />
     );
 }
@@ -98,13 +97,12 @@ function DraggableCell({
             {...listeners}
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
-            className="h-6 transition-colors"
-            style={{
-                backgroundColor: isHighlighted ? 'var(--cohe-primary)' : undefined,
-                opacity: isHighlighted ? (isInDragRange ? 0.4 : 0.2) : undefined,
-                cursor: 'crosshair',
-                touchAction: 'none',
-            }}
+            className={[
+                'h-6 transition-colors cursor-crosshair',
+                isHighlighted ? 'bg-[var(--cohi-primary)]' : '',
+                isHighlighted ? (isInDragRange ? 'opacity-40' : 'opacity-20') : '',
+            ].join(' ')}
+            style={{ touchAction: 'none' }}
         />
     );
 }
@@ -253,7 +251,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
 
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-[var(--cohe-text-dark)] mb-4">주간 스케줄 미리보기</h3>
+            <h3 className="font-bold text-[var(--cohi-text-dark)] mb-4">주간 스케줄 미리보기</h3>
 
             <div className="overflow-x-auto">
                 <div className="min-w-[420px]">
@@ -261,7 +259,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
                     <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
                         <div />
                         {DAY_LABELS.map((label) => (
-                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohe-text-dark)] py-1">
+                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
                                 {label}
                             </div>
                         ))}
