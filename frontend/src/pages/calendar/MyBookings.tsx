@@ -141,12 +141,12 @@ export default function MyBookings() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <PageHeader />
 
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-6xl mx-auto">
-                    <h1 className="text-2xl font-bold text-[var(--cohe-text-dark)] mb-6">내 예약 목록</h1>
+                    <h1 className="text-2xl font-bold text-[var(--cohi-text-dark)] mb-6">내 예약 목록</h1>
 
                     {isLoading && (
                         <div className="text-center py-16 text-gray-500">내 예약 목록을 불러오고 있습니다...</div>

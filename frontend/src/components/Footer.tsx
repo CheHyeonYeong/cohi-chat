@@ -10,7 +10,7 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Brand Section */}
                     <div>
-                        <h3 className="text-white font-bold text-lg mb-4">coheChat</h3>
+                        <h3 className="text-white font-bold text-lg mb-4">cohiChat</h3>
                         <p className="text-gray-400 text-sm leading-relaxed">
                             1:1 미팅 예약을 간편하게.<br />
                             Google Calendar와 연동하여<br />
@@ -77,7 +77,7 @@ export default function Footer() {
             <div className="border-t border-slate-700">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <p className="text-center text-gray-500 text-sm">
-                        &copy; {currentYear} coheChat. All rights reserved.
+                        &copy; {currentYear} cohiChat. All rights reserved.
                     </p>
                 </div>
             </div>

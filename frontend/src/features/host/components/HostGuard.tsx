@@ -23,7 +23,7 @@ export default function HostGuard({ children }: HostGuardProps) {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">확인 중...</p>
             </div>
         );

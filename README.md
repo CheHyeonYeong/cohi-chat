@@ -1,4 +1,4 @@
-# coheChat - 1:1 미팅 예약 서비스
+# cohiChat - 1:1 미팅 예약 서비스
 
 호스트와 게스트 간의 미팅 예약을 관리하는 웹 서비스입니다. Google Calendar와 연동하여 자동으로 일정을 관리합니다.
 
@@ -45,15 +45,17 @@ docker-compose up -d
 ## 프로젝트 구조
 
 ```
-coheChat/
+cohiChat/
 ├── backend/          # Spring Boot 백엔드
 ├── frontend/         # React 프론트엔드
 │   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── hooks/
-│       ├── routes/
-│       └── libs/
+│       ├── components/   # 재사용 컴포넌트
+│       ├── features/     # 도메인별 기능 모듈 (member, calendar, host)
+│       ├── pages/        # 페이지
+│       ├── hooks/        # Custom Hooks
+│       ├── routes/       # 라우트 정의
+│       ├── libs/         # 유틸리티
+│       └── types/        # 공통 타입 정의
 ├── docs/             # 문서
 └── docker-compose.yml
 ```

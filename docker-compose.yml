@@ -11,6 +11,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-devpassword}
+      - JWT_SECRET=${JWT_SECRET}
       # Supabase PostgreSQL
       - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
       - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
