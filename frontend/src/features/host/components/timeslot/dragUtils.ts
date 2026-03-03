@@ -105,3 +105,25 @@ export function appendEntryIfNotDuplicate(
     onAppend([...entries, newEntry]);
     return true;
 }
+
+export interface CommitDraggedEntryParams {
+    entries: TimeSlotEntry[];
+    onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
+    dragStartId: string | null;
+    endId: string | null;
+    startHour: number;
+}
+
+export function commitDraggedEntry({
+    entries,
+    onChange,
+    onDuplicateBlocked,
+    dragStartId,
+    endId,
+    startHour,
+}: CommitDraggedEntryParams): void {
+    if (!onChange || !dragStartId || !endId) return;
+    const entry = computeEntryFromDrag(dragStartId, endId, startHour);
+    appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
+}

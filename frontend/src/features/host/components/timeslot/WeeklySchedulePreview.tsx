@@ -13,7 +13,7 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeEntryFromDrag, computeDragHighlights, appendEntryIfNotDuplicate } from './dragUtils';
+import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
@@ -185,27 +185,6 @@ function WeeklyGrid({
     );
 }
 
-interface CommitDraggedEntryParams {
-    entries: TimeSlotEntry[];
-    onChange?: (entries: TimeSlotEntry[]) => void;
-    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
-    dragStartId: string | null;
-    endId: string | null;
-    startHour: number;
-}
-
-export function commitDraggedEntry({
-    entries,
-    onChange,
-    onDuplicateBlocked,
-    dragStartId,
-    endId,
-    startHour,
-}: CommitDraggedEntryParams): void {
-    if (!onChange || !dragStartId || !endId) return;
-    const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-    appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
-}
 
 export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);

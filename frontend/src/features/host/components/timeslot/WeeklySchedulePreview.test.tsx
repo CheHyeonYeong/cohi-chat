@@ -3,7 +3,8 @@
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import WeeklySchedulePreview, { commitDraggedEntry } from './WeeklySchedulePreview';
+import WeeklySchedulePreview from './WeeklySchedulePreview';
+import { commitDraggedEntry } from './dragUtils';
 import type { TimeSlotEntry } from './TimeSlotForm';
 
 describe('WeeklySchedulePreview', () => {
