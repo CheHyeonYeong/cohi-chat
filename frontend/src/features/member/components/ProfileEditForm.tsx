@@ -2,23 +2,8 @@ import { useState } from 'react';
 import Button from '~/components/button/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
-import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
+import { useProfileValidation, type ProfileFormValues } from '../hooks/useProfileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
-
-interface ProfileFormValues {
-    displayName: string;
-}
-
-const validationRules: Record<keyof ProfileFormValues, ValidationRule<string>> = {
-    displayName: (value: string) => {
-        const trimmed = value.trim();
-        if (!trimmed) return '표시 이름을 입력해주세요.';
-        if (trimmed.length < 2 || trimmed.length > 20) {
-            return '표시 이름은 2~20자여야 합니다.';
-        }
-        return null;
-    },
-};
 
 export function ProfileEditForm() {
     const { data: user } = useAuth();
@@ -27,7 +12,7 @@ export function ProfileEditForm() {
     const mutation = useUpdateMember(user?.username ?? '');
 
     const { fields, handleBlur, validateAll, getInputClassName } =
-        useFormValidation<ProfileFormValues>(validationRules);
+        useProfileValidation();
 
     const baseInputClass =
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
