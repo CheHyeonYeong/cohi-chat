@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
-import { useToast } from '~/components/toast/ToastProvider';
+import { useToast } from '~/components/toast/useToast';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
