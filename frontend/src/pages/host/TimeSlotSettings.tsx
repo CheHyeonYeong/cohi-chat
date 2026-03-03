@@ -61,12 +61,10 @@ export default function TimeSlotSettings() {
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
         };
     }, []);
 
