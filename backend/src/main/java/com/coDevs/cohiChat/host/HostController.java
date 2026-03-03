@@ -21,9 +21,14 @@ import com.coDevs.cohiChat.host.response.HostProfileResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "Host", description = "호스트 관리 API")
 @RestController
 @RequestMapping("/hosts")
 @RequiredArgsConstructor
@@ -33,6 +38,14 @@ public class HostController {
 	private final CalendarService calendarService;
 	private final MemberService memberService;
 
+	@Operation(summary = "호스트 등록", description = "인증된 회원을 호스트로 등록합니다. 호스트로 등록하면 타임슬롯을 생성하고 커피챗 예약을 받을 수 있습니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "201", description = "호스트 등록 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요"),
+		@ApiResponse(responseCode = "403", description = "권한 없음"),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
+		@ApiResponse(responseCode = "409", description = "이미 호스트로 등록됨")
+	})
 	@PostMapping("/v1/register")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponseDTO<HostProfileResponseDTO>> register(Principal principal) {
@@ -40,6 +53,13 @@ public class HostController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
 	}
 
+	@Operation(summary = "호스트 프로필 조회", description = "인증된 호스트의 프로필 정보를 조회합니다. 캘린더 연결 상태도 함께 반환됩니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요"),
+		@ApiResponse(responseCode = "403", description = "호스트 권한 필요"),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+	})
 	@GetMapping("/v1/me")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponseDTO<HostProfileResponseDTO>> getProfile(Principal principal) {
@@ -47,6 +67,14 @@ public class HostController {
 		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
+	@Operation(summary = "호스트 프로필 수정", description = "호스트의 닉네임 정보를 수정합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "프로필 수정 성공"),
+		@ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)"),
+		@ApiResponse(responseCode = "401", description = "인증 필요"),
+		@ApiResponse(responseCode = "403", description = "호스트 권한 필요"),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+	})
 	@PutMapping("/v1/me")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponseDTO<HostProfileResponseDTO>> updateProfile(
@@ -57,6 +85,16 @@ public class HostController {
 		return ResponseEntity.ok(ApiResponseDTO.success(response));
 	}
 
+	@Operation(summary = "캘린더 연결", description = "호스트의 Google Calendar를 연결합니다. 주제, 설명, Google Calendar ID를 입력하여 커피챗 예약을 받을 캘린더를 설정합니다. 게스트 권한인 경우 자동으로 호스트로 승격됩니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "201", description = "캘린더 연결 성공"),
+		@ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)"),
+		@ApiResponse(responseCode = "401", description = "인증 필요"),
+		@ApiResponse(responseCode = "403", description = "호스트 권한 필요 (게스트는 자동 승격)"),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
+		@ApiResponse(responseCode = "409", description = "이미 캘린더가 연결됨"),
+		@ApiResponse(responseCode = "503", description = "Google Calendar 서비스 불가")
+	})
 	@PostMapping("/v1/me/calendar/connect")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponseDTO<CalendarResponseDTO>> connectCalendar(
