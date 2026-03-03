@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,8 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
+import jakarta.persistence.EntityManager;
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class BookingServiceTest {
@@ -58,6 +61,9 @@ class BookingServiceTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
+
+    @Mock
+    private EntityManager entityManager;
 
     @Mock
     private BookingRepository bookingRepository;
@@ -324,8 +330,8 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
-        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
-            .willReturn(List.of(booking2, booking1));
+        given(bookingRepository.streamByGuestIdOrderByBookingDateDesc(GUEST_ID))
+            .willReturn(Stream.of(booking2, booking1));
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByGuestId(GUEST_ID);
@@ -340,8 +346,8 @@ class BookingServiceTest {
     @DisplayName("성공: 게스트 예약이 없으면 빈 목록 반환")
     void getBookingsByGuestIdEmptyList() {
         // given
-        given(bookingRepository.findByGuestIdOrderByBookingDateDesc(GUEST_ID))
-            .willReturn(List.of());
+        given(bookingRepository.streamByGuestIdOrderByBookingDateDesc(GUEST_ID))
+            .willReturn(Stream.empty());
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByGuestId(GUEST_ID);
@@ -359,8 +365,8 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
-        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
-            .willReturn(List.of(booking2, booking1));
+        given(bookingRepository.streamByHostIdOrderByBookingDateDesc(HOST_ID))
+            .willReturn(Stream.of(booking2, booking1));
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(HOST_ID);
@@ -375,8 +381,8 @@ class BookingServiceTest {
     @DisplayName("성공: 호스트 예약이 없으면 빈 목록 반환")
     void getBookingsByHostIdEmptyList() {
         // given
-        given(bookingRepository.findByHostIdOrderByBookingDateDesc(HOST_ID))
-            .willReturn(List.of());
+        given(bookingRepository.streamByHostIdOrderByBookingDateDesc(HOST_ID))
+            .willReturn(Stream.empty());
 
         // when
         List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(HOST_ID);
