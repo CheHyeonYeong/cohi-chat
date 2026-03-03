@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
-import { Toast } from '~/components/toast/Toast';
+import { useToast } from '~/components/toast/ToastProvider';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
@@ -13,7 +13,6 @@ import { getErrorMessage } from '~/libs/errorUtils';
 
 const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
-const DUPLICATE_BLOCKED_TOAST_DURATION = 2500;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -53,8 +52,6 @@ export default function TimeSlotSettings() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
-    const [toastOpen, setToastOpen] = useState(false);
-    const [toastKey, setToastKey] = useState(0);
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
@@ -94,9 +91,9 @@ export default function TimeSlotSettings() {
         }
     };
 
+    const { showToast } = useToast();
     const handleDuplicateBlocked = () => {
-        setToastKey((k) => k + 1);
-        setToastOpen(true);
+        showToast('이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.');
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
@@ -307,14 +304,6 @@ export default function TimeSlotSettings() {
                     </div>
                 </div>
             </main>
-
-            <Toast
-                open={toastOpen}
-                onOpenChange={setToastOpen}
-                description="이미 존재하는 시간대와 겹쳐서 추가되지 않았어요."
-                duration={DUPLICATE_BLOCKED_TOAST_DURATION}
-                toastKey={toastKey}
-            />
 
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">
