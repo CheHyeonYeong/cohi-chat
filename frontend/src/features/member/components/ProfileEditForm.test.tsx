@@ -12,7 +12,13 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 const mockMutate = vi.fn();
-const mockMutation = {
+const mockMutation: {
+    mutate: typeof mockMutate;
+    isPending: boolean;
+    isError: boolean;
+    isSuccess: boolean;
+    error: Error | null;
+} = {
     mutate: mockMutate,
     isPending: false,
     isError: false,
