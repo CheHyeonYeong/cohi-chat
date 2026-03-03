@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-file-change.sh\"",
+            "timeout": 120,
+            "statusMessage": "파일 변경 감지 → lint/test 실행 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
