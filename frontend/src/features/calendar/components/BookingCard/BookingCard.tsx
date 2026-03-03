@@ -18,19 +18,19 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
             className={cn(
                 'w-full text-left bg-white rounded-2xl p-5 shadow-sm border transition-all cursor-pointer hover:shadow-md',
                 isSelected
-                    ? 'border-[var(--cohe-primary)] shadow-md'
+                    ? 'border-[var(--cohi-primary)] shadow-md'
                     : 'border-gray-100',
                 className,
             )}
         >
             {/* Host info */}
             <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-semibold text-[var(--cohe-primary)]">
+                <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-semibold text-[var(--cohi-primary)]">
                         {booking.host?.displayName?.[0] ?? '?'}
                     </span>
                 </div>
-                <p className="font-semibold text-[var(--cohe-text-dark)]">{booking.host.displayName}님과</p>
+                <p className="font-semibold text-[var(--cohi-text-dark)]">{booking.host.displayName}님과</p>
             </div>
 
             {/* Topic */}

@@ -17,7 +17,7 @@ describe('FileDropZone', () => {
         const { getByTestId } = render(<FileDropZone onFilesDropped={vi.fn()} />);
         const zone = getByTestId('file-drop-zone');
         fireEvent.dragOver(zone, { dataTransfer: { types: ['Files'] } });
-        expect(zone.className).toContain('border-[var(--cohe-primary)]');
+        expect(zone.className).toContain('border-[var(--cohi-primary)]');
     });
 
     it('dragleave 시 활성화 스타일이 제거돼야 한다', () => {
@@ -25,7 +25,7 @@ describe('FileDropZone', () => {
         const zone = getByTestId('file-drop-zone');
         fireEvent.dragOver(zone, { dataTransfer: { types: ['Files'] } });
         fireEvent.dragLeave(zone);
-        expect(zone.className).not.toContain('border-[var(--cohe-primary)]');
+        expect(zone.className).not.toContain('border-[var(--cohi-primary)]');
     });
 
     it('drop 시 onFilesDropped 콜백이 FileList와 함께 호출돼야 한다', () => {
@@ -44,7 +44,7 @@ describe('FileDropZone', () => {
         const { getByTestId } = render(<FileDropZone onFilesDropped={vi.fn()} disabled />);
         const zone = getByTestId('file-drop-zone');
         fireEvent.dragOver(zone, { dataTransfer: { types: ['Files'] } });
-        expect(zone.className).not.toContain('border-[var(--cohe-primary)]');
+        expect(zone.className).not.toContain('border-[var(--cohi-primary)]');
     });
 
     it('파일 선택(change) 시 onFilesDropped 콜백이 호출돼야 한다', () => {

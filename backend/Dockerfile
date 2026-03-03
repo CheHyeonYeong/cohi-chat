@@ -3,14 +3,11 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Install wget for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user for security
-RUN groupadd -r spring && useradd -r -g spring spring
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data && chown -R spring:spring /app
+# Install wget, create non-root user, and setup directories in single layer
+RUN apt-get update && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r spring && useradd -r -g spring spring \
+    && mkdir -p /app/data && chown -R spring:spring /app
 
 # Copy pre-built JAR (uploaded from CI) with proper ownership
 COPY --chown=spring:spring app.jar app.jar

@@ -110,7 +110,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
 
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-[var(--cohe-text-dark)] text-lg mb-5 flex items-center gap-2">
+            <h3 className="font-bold text-[var(--cohi-text-dark)] text-lg mb-5 flex items-center gap-2">
                 <span className="text-xl">📅</span> 예약 가능 시간 설정
             </h3>
 
@@ -119,7 +119,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                     <div
                         key={index}
                         className={`rounded-xl border transition-colors ${
-                            expandedIndex === index ? 'border-[var(--cohe-primary)]/30 bg-[var(--cohe-bg-light)]/50' : 'border-gray-200'
+                            expandedIndex === index ? 'border-[var(--cohi-primary)]/30 bg-[var(--cohi-bg-light)]/50' : 'border-gray-200'
                         } p-4`}
                     >
                         <div
@@ -128,7 +128,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                             onClick={() => setExpandedIndex(index)}
                         >
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-[var(--cohe-text-dark)]">
+                                <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
                                     시간대 {index + 1}
                                 </span>
                                 {entry.existingId != null && (
@@ -177,7 +177,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     disabled={entry.existingId != null}
                                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
                                                         selected
-                                                            ? 'bg-[var(--cohe-primary)] text-white'
+                                                            ? 'bg-[var(--cohi-primary)] text-white'
                                                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                                     } ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 >
@@ -196,7 +196,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             value={entry.startTime}
                                             onChange={(e) => updateEntry(index, { startTime: e.target.value })}
                                             disabled={entry.existingId != null}
-                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             {TIME_OPTIONS.map((t) => (
                                                 <option key={t} value={t}>{t}</option>
@@ -209,7 +209,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                             value={entry.endTime}
                                             onChange={(e) => updateEntry(index, { endTime: e.target.value })}
                                             disabled={entry.existingId != null}
-                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             {TIME_OPTIONS.map((t) => (
                                                 <option key={t} value={t}>{t}</option>
@@ -261,7 +261,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     onChange={(e) => updateEntry(index, { startDate: e.target.value })}
                                                     disabled={entry.existingId != null}
                                                     min={toLocalDateString(new Date())}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                             <div>
@@ -272,7 +272,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                                     onChange={(e) => updateEntry(index, { endDate: e.target.value })}
                                                     disabled={entry.existingId != null}
                                                     min={entry.startDate}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohe-text-dark)] focus:outline-none focus:border-[var(--cohe-primary)] focus:ring-1 focus:ring-[var(--cohe-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                         </div>
@@ -306,7 +306,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
             <button
                 type="button"
                 onClick={addEntry}
-                className="mt-4 text-sm font-medium text-[var(--cohe-primary)] hover:text-[var(--cohe-primary-dark)] transition-colors"
+                className="mt-4 text-sm font-medium text-[var(--cohi-primary)] hover:text-[var(--cohi-primary-dark)] transition-colors"
             >
                 + 시간대 추가
             </button>
