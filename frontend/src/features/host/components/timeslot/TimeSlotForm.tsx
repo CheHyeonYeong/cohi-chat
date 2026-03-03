@@ -85,20 +85,13 @@ export default function TimeSlotForm({
     }, [entries]);
 
     const hasOverlapError = overlapErrors.some(Boolean);
-    const didMountRef = useRef(false);
-    const hadOverlapRef = useRef(false);
+    const prevHasOverlapRef = useRef(hasOverlapError);
 
     useEffect(() => {
-        if (!didMountRef.current) {
-            didMountRef.current = true;
-            hadOverlapRef.current = hasOverlapError;
-            return;
-        }
-
-        if (hasOverlapError && !hadOverlapRef.current) {
+        if (hasOverlapError && !prevHasOverlapRef.current) {
             onOverlapDetected?.();
         }
-        hadOverlapRef.current = hasOverlapError;
+        prevHasOverlapRef.current = hasOverlapError;
     }, [hasOverlapError, onOverlapDetected]);
 
     const updateEntry = (index: number, patch: Partial<TimeSlotEntry>) => {
