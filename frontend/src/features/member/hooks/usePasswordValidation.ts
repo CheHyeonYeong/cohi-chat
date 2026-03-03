@@ -1,6 +1,5 @@
 import { useFormValidation, type ValidationRule } from './useFormValidation';
-
-const PASSWORD_PATTERN = /^[a-zA-Z0-9!@#$%^&*._-]{8,20}$/;
+import { PASSWORD_PATTERN } from '../constants';
 
 export interface PasswordFormValues {
     newPassword: string;
