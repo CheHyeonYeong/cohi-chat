@@ -49,11 +49,13 @@ cohiChat/
 ├── backend/          # Spring Boot 백엔드
 ├── frontend/         # React 프론트엔드
 │   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── hooks/
-│       ├── routes/
-│       └── libs/
+│       ├── components/   # 재사용 컴포넌트
+│       ├── features/     # 도메인별 기능 모듈 (member, calendar, host)
+│       ├── pages/        # 페이지
+│       ├── hooks/        # Custom Hooks
+│       ├── routes/       # 라우트 정의
+│       ├── libs/         # 유틸리티
+│       └── types/        # 공통 타입 정의
 ├── docs/             # 문서
 └── docker-compose.yml
 ```

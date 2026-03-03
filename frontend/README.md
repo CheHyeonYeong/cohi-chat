@@ -33,9 +33,17 @@ pnpm lint
 
 ```
 src/
-├── components/   # 재사용 컴포넌트
-├── pages/        # 페이지 컴포넌트
-├── hooks/        # Custom Hooks
-├── routes/       # 라우트 정의
-└── libs/         # 유틸리티
+├── components/       # 재사용 컴포넌트
+├── features/         # 도메인별 기능 모듈
+│   └── {feature}/    # Bulletproof React 패턴
+│       ├── api/          # API 요청
+│       ├── components/   # 스코프 컴포넌트
+│       ├── hooks/        # 스코프 훅
+│       ├── types/        # 타입 정의
+│       ├── utils/        # 유틸리티 (상수, 검증 등)
+│       └── index.ts      # 배럴 파일
+├── pages/            # 페이지 컴포넌트
+├── hooks/            # 공통 Custom Hooks
+├── routes/           # 라우트 정의
+└── libs/             # 공통 유틸리티
 ```

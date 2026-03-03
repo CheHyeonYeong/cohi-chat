@@ -1,6 +1,6 @@
 import { useMutation, UseMutationResult } from '@tanstack/react-query';
 import { oAuthCallbackApi } from '../api/oAuthApi';
-import { dispatchAuthChange } from '../utils/authEvent';
+import { saveAuthTokens } from '../utils/authStorage';
 import type { LoginResponse } from '../types';
 
 interface OAuthLoginParams {
@@ -13,13 +13,7 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
     return useMutation<LoginResponse, Error, OAuthLoginParams>({
         mutationFn: async ({ provider, code, state }) => {
             const response = await oAuthCallbackApi(provider, code, state);
-
-            localStorage.setItem('auth_token', response.accessToken);
-            localStorage.setItem('refresh_token', response.refreshToken);
-            localStorage.setItem('username', response.username);
-
-            dispatchAuthChange();
-
+            saveAuthTokens(response);
             return response;
         },
         onError: (error) => {
