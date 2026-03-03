@@ -18,7 +18,7 @@ createRoot(document.getElementById('root')!).render(
                     <ToastProvider>
                         <RouterProvider router={router} />
                     </ToastProvider>
-                    <RadixToast.Viewport className="fixed bottom-36 right-6 z-40 flex flex-col gap-2" />
+                    <RadixToast.Viewport className="fixed top-20 right-6 z-40 flex flex-col gap-2" />
                 </RadixToast.Provider>
             </QueryClientProvider>
         </Suspense>
