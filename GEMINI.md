@@ -12,7 +12,7 @@ Gemini CLI 전용 운영 가이드임.
 
 - **PowerShell 활용**: Windows 환경(`win32`)에 맞춰 `run_shell_command` 시 PowerShell 문법을 사용함.
 - **최소 변경 원칙**: 코드 수정 시 `replace` 툴을 사용하여 정확한 위치를 최소 단위로 수정함.
-- **검증 필수**: 변경 사항 적용 전후로 Backend(`./gradlew test`) 또는 Frontend(`pnpm test`) 테스트를 수행함.
+- **검증 필수**: 변경 사항 적용 전후로 Backend(`./gradlew test`) 또는 Frontend(`pnpm lint && pnpm test`)를 실행함. Claude Code 사용 시 `.claude/hooks/post-file-change.sh`가 자동 실행되며, Gemini는 수동으로 실행해야 함.
 - **히스토리 준수**: `.claude/` 내의 이슈 로그와 규칙(`rules/`)을 작업 전 확인함.
 
 ## 표준 작업 절차
@@ -25,6 +25,7 @@ Gemini CLI 전용 운영 가이드임.
 3. **구현 및 검증**:
    - Backend: `cd backend; ./gradlew test`
    - Frontend: `cd frontend; pnpm lint; pnpm test`
+   - ※ Claude Code 사용 시 `.claude/hooks/post-file-change.sh`가 자동 실행됨
 4. **결과 보고**: `CODEX.md`의 보고 형식을 준수하여 요약 내용을 기록함.
 
 ## 환경 참고

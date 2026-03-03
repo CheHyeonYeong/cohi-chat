@@ -30,6 +30,10 @@ git checkout -b {이니셜}_{이슈번호}
 ```
 
 3. 구현 및 검증
+
+> **Claude Code 사용 시 자동화**: `.claude/hooks/post-file-change.sh` 훅이 파일 변경을
+> 감지해 FE/BE에 따라 lint + test를 자동 실행함. 수동 실행이 필요한 경우 아래 명령 사용.
+
 - Backend 변경 시
 ```bash
 cd backend
