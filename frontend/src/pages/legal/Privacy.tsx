@@ -17,7 +17,7 @@ export default function Privacy() {
                     <section>
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">1. 수집하는 개인정보</h2>
                         <p className="text-gray-600 leading-relaxed mb-4">
-                            coheChat은 서비스 제공을 위해 다음과 같은 개인정보를 수집합니다.
+                            cohiChat은 서비스 제공을 위해 다음과 같은 개인정보를 수집합니다.
                         </p>
                         <ul className="list-disc list-inside text-gray-600 space-y-2">
                             <li>필수항목: 이메일 주소, 이름</li>
@@ -47,7 +47,7 @@ export default function Privacy() {
                     <section>
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">4. 개인정보의 제3자 제공</h2>
                         <p className="text-gray-600 leading-relaxed">
-                            coheChat은 원칙적으로 회원의 개인정보를 제3자에게 제공하지 않습니다.
+                            cohiChat은 원칙적으로 회원의 개인정보를 제3자에게 제공하지 않습니다.
                             다만, 회원의 동의가 있거나 법령에 의한 경우에는 예외로 합니다.
                         </p>
                     </section>
@@ -67,7 +67,7 @@ export default function Privacy() {
                             개인정보 처리에 관한 문의사항은 아래 연락처로 문의해 주시기 바랍니다.
                         </p>
                         <p className="text-gray-600 mt-2">
-                            이메일: support@cohechat.com
+                            이메일: support@cohichat.com
                         </p>
                     </section>
 
