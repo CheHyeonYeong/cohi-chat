@@ -9,14 +9,13 @@ import { useHost } from '~/hooks/useHost';
 import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
-
-const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
+import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
-    const names = sorted.map((d) => DAY_NAMES[d]);
+    const names = sorted.map((d) => DAY_NAMES[d as Weekday]);
     const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
     if (isConsecutive && sorted.length >= 2) {
         return names[0] + '~' + names[names.length - 1];

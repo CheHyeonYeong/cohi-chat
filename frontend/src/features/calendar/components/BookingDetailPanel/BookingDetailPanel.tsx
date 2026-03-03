@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { formatFileSize } from '~/libs/fileValidation';
 import type { IBookingDetail } from '../../types';
+import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 
 interface BookingDetailPanelProps {
     booking: IBookingDetail | null;
@@ -10,8 +11,6 @@ interface BookingDetailPanelProps {
     onDownload?: (fileId: number, fileName: string) => void;
     isUploading: boolean;
 }
-
-const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 export default function BookingDetailPanel({ booking, onUpload, onDownload, isUploading }: BookingDetailPanelProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +28,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
     }
 
     const when = new Date(booking.when);
-    const dayLabel = DAYS_KO[when.getDay()];
+    const dayLabel = DAY_NAMES[when.getDay() as Weekday];
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
