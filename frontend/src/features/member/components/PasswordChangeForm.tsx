@@ -7,10 +7,11 @@ import { getErrorMessage } from '~/libs/errorUtils';
 
 export function PasswordChangeForm() {
     const { data: user } = useAuth();
+    const username = user?.username;
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const mutation = useUpdateMember(user?.username ?? '');
+    const mutation = useUpdateMember(username ?? '');
 
     const { fields, handleBlur, validateAll, getInputClassName } =
         usePasswordValidation(() => newPassword);
@@ -21,6 +22,7 @@ export function PasswordChangeForm() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setSuccessMessage('');
+        if (!username) return;
 
         const values: PasswordFormValues = { newPassword, confirmPassword };
         if (!validateAll(values)) return;
@@ -100,7 +102,7 @@ export function PasswordChangeForm() {
             <Button
                 variant="primary"
                 type="submit"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || !username}
                 className="w-full rounded-lg"
             >
                 {mutation.isPending ? '변경 중...' : '비밀번호 변경'}

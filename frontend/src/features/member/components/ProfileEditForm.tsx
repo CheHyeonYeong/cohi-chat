@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '~/components/button/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
@@ -7,9 +7,14 @@ import { getErrorMessage } from '~/libs/errorUtils';
 
 export function ProfileEditForm() {
     const { data: user } = useAuth();
-    const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+    const username = user?.username;
+    const [displayName, setDisplayName] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const mutation = useUpdateMember(user?.username ?? '');
+    const mutation = useUpdateMember(username ?? '');
+
+    useEffect(() => {
+        setDisplayName(user?.displayName ?? '');
+    }, [user?.displayName]);
 
     const { fields, handleBlur, validateAll, getInputClassName } =
         useProfileValidation();
@@ -20,6 +25,7 @@ export function ProfileEditForm() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setSuccessMessage('');
+        if (!username) return;
 
         const values: ProfileFormValues = { displayName: displayName.trim() };
         if (!validateAll(values)) return;
@@ -74,7 +80,7 @@ export function ProfileEditForm() {
             <Button
                 variant="primary"
                 type="submit"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || !username}
                 className="w-full rounded-lg"
             >
                 {mutation.isPending ? '변경 중...' : '변경하기'}

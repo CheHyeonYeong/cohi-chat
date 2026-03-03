@@ -61,8 +61,10 @@ const createWrapper = () => {
 describe('PasswordChangeForm', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockMutate.mockReset();
         mockMutation.isPending = false;
         mockMutation.isError = false;
+        mockMutation.isSuccess = false;
         mockMutation.error = null;
     });
 
