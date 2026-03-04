@@ -98,7 +98,7 @@ function DraggableCell({
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
             className={[
-                'h-6 transition-colors cursor-crosshair',
+                'h-6 transition-[background-color,opacity] duration-100 cursor-crosshair',
                 isHighlighted ? 'bg-[var(--cohi-primary)]' : '',
                 isHighlighted ? (isInDragRange ? 'opacity-40' : 'opacity-20') : '',
             ].join(' ')}
