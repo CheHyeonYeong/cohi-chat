@@ -50,4 +50,16 @@ export {
     getCalendarEvent,
     getTimeslots,
     getTimeslotsByHostId,
+    // Pre-signed URL
+    getPresignedUploadUrl,
+    getPresignedDownloadUrl,
+    uploadFileToS3,
+    uploadBookingFileWithPresignedUrl,
+    downloadFileWithPresignedUrl,
 } from './api';
+
+// Pre-signed URL Types
+export type {
+    PresignedUploadUrlResponse,
+    PresignedDownloadUrlResponse,
+} from './api/bookings';

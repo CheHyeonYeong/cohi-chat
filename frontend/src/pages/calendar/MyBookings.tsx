@@ -18,15 +18,12 @@ import { CSS } from '@dnd-kit/utilities';
 import LinkButton from '~/components/button/LinkButton';
 import PageHeader from '~/components/PageHeader';
 import Pagination from '~/components/Pagination';
-import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
+import { useMyBookings, useBooking, useUploadBookingFile, getPresignedDownloadUrl } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
-import { getValidToken } from '~/libs/jwt';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/calendar';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Sortable wrapper for BookingCard
 function SortableBookingCard({
@@ -120,21 +117,16 @@ export default function MyBookings() {
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
+        if (!selectedId) return;
         try {
-            const token = getValidToken();
-            const res = await fetch(`${API_URL}/bookings/${selectedId}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('다운로드 실패');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
+            const { url } = await getPresignedDownloadUrl(selectedId, fileId);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (err) {
             console.error(getErrorMessage(err, '파일 다운로드 실패'));
         }

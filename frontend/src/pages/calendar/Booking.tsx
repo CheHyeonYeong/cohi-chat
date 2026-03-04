@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -31,11 +31,8 @@ import {
     type FileValidationError,
 } from '~/libs/fileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
-import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
 import { canUploadMoreFiles } from './bookingUploadUtils';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
     SCHEDULED: '예약됨',
@@ -231,21 +228,14 @@ export default function Booking() {
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
             setDownloadError(null);
-            const token = getValidToken();
-            const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!response.ok) throw new Error('다운로드에 실패했습니다.');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
+            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (err) {
             console.error('Download error:', err);
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
