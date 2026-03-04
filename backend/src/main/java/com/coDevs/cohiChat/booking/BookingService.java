@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.GuestNoShowHistory;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
@@ -27,6 +28,7 @@ import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
@@ -55,6 +57,7 @@ public class BookingService {
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
     private final NoShowHistoryRepository noShowHistoryRepository;
+    private final GuestNoShowHistoryRepository guestNoShowHistoryRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
     private final EntityManager entityManager;
@@ -492,6 +495,35 @@ public class BookingService {
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
             .map(NoShowHistoryResponseDTO::from)
+            .toList();
+    }
+
+    @Transactional
+    public void reportGuestNoShow(Long bookingId, UUID hostId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateHostAccess(booking, hostId);
+
+        if (!booking.getAttendanceStatus().isHostReportable()) {
+            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
+        }
+
+        if (guestNoShowHistoryRepository.existsByBookingId(bookingId)) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
+
+        UUID guestId = booking.getGuestId();
+        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, hostId, reason);
+        guestNoShowHistoryRepository.save(history);
+
+        log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, hostId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GuestNoShowHistoryResponseDTO> getNoShowHistoryByGuestId(UUID guestId) {
+        return guestNoShowHistoryRepository.findByGuestIdOrderByReportedAtDesc(guestId).stream()
+            .map(GuestNoShowHistoryResponseDTO::from)
             .toList();
     }
 
