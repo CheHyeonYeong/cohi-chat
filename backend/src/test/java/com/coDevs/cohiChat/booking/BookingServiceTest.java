@@ -1852,6 +1852,24 @@ class BookingServiceTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
     }
 
+
+    @Test
+    @DisplayName("실패: 미팅이 아직 시작되지 않은 예약에 게스트 노쇼 신고")
+    void reportGuestNoShowFailWhenMeetingNotStarted() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEETING_NOT_STARTED);
+    }
+
     // ===== 게스트 노쇼 이력 조회 테스트 (Issue #372) =====
 
     @Test

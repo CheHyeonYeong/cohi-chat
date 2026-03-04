@@ -206,12 +206,12 @@ public class BookingController {
 
     @Operation(summary = "게스트 노쇼 신고", description = "호스트가 게스트의 노쇼를 신고합니다. NO_SHOW 상태의 예약만 신고 가능합니다.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "노쇼 신고 성공"),
+        @ApiResponse(responseCode = "201", description = "노쇼 신고 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요"),
         @ApiResponse(responseCode = "403", description = "접근 권한 없음 (호스트만 신고 가능)"),
         @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
         @ApiResponse(responseCode = "409", description = "이미 신고된 예약"),
-        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (신고 불가능한 상태)")
+        @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (미팅 시작 전, 신고 불가능한 상태)")
     })
     @PostMapping("/{bookingId}/report-guest-noshow")
     public ResponseEntity<ApiResponseDTO<GuestNoShowHistoryResponseDTO>> reportGuestNoShow(
