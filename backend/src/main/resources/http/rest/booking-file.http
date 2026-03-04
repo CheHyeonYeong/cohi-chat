@@ -32,3 +32,38 @@ Authorization: Bearer {{accessToken}}
 ### 4. 파일 삭제
 DELETE {{baseUrl}}/bookings/{{bookingId}}/files/{{fileId}}
 Authorization: Bearer {{accessToken}}
+
+###############################################
+# Pre-signed URL API (클라이언트 직접 업로드/다운로드)
+###############################################
+
+### 5. Pre-signed 업로드 URL 생성
+# 클라이언트가 S3에 직접 파일을 업로드할 수 있는 URL 생성
+POST {{baseUrl}}/bookings/{{bookingId}}/files/presigned-upload-url
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "fileName": "document.pdf",
+  "contentType": "application/pdf"
+}
+
+> {%
+  client.global.set("presignedUploadUrl", response.body.data.url);
+  client.global.set("objectKey", response.body.data.objectKey);
+%}
+
+### 6. Pre-signed URL로 S3에 직접 업로드 (curl 사용 예시)
+# curl -X PUT "{{presignedUploadUrl}}" -H "Content-Type: application/pdf" --data-binary @./test-files/test-document.pdf
+
+### 7. Pre-signed 다운로드 URL 생성
+# 클라이언트가 S3에서 직접 파일을 다운로드할 수 있는 URL 생성
+GET {{baseUrl}}/bookings/{{bookingId}}/files/{{fileId}}/presigned-download-url
+Authorization: Bearer {{accessToken}}
+
+> {%
+  client.global.set("presignedDownloadUrl", response.body.data.url);
+%}
+
+### 8. Pre-signed URL로 S3에서 직접 다운로드 (브라우저에서 URL 접속)
+# {{presignedDownloadUrl}}

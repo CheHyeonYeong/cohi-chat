@@ -1,5 +1,8 @@
 package com.coDevs.cohiChat.booking;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,8 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.BookingFile;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
 import com.coDevs.cohiChat.global.common.file.FileStorageResult;
 import com.coDevs.cohiChat.global.common.file.FileStorageService;
+import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 
@@ -21,10 +27,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BookingFileService {
 
+    private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(15);
+    private static final int PRESIGNED_URL_EXPIRATION_SECONDS = (int) PRESIGNED_URL_EXPIRATION.toSeconds();
+
     private final BookingRepository bookingRepository;
     private final BookingFileRepository bookingFileRepository;
     private final FileStorageService fileStorageService;
     private final FileUploadValidator fileUploadValidator;
+    private final S3PresignedUrlService s3PresignedUrlService;
 
     @Transactional
     public BookingFileResponseDTO uploadFile(Long bookingId, UUID requesterId, MultipartFile file) {
@@ -108,5 +118,46 @@ public class BookingFileService {
         if (!isGuest && !isHost) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PresignedUploadUrlResponseDTO generatePresignedUploadUrl(
+            Long bookingId, UUID requesterId, String fileName, String contentType) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateBookingAccess(booking, requesterId);
+
+        String objectKey = generateObjectKey(fileName);
+        String presignedUrl = s3PresignedUrlService.generateUploadUrl(
+            objectKey, PRESIGNED_URL_EXPIRATION, contentType
+        );
+
+        return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS);
+    }
+
+    @Transactional(readOnly = true)
+    public PresignedDownloadUrlResponseDTO generatePresignedDownloadUrl(
+            Long bookingId, Long fileId, UUID requesterId) {
+        BookingFile bookingFile = getBookingFileWithAccessCheck(bookingId, fileId, requesterId);
+
+        String presignedUrl = s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath());
+
+        return PresignedDownloadUrlResponseDTO.of(presignedUrl, PRESIGNED_URL_EXPIRATION_SECONDS);
+    }
+
+    private String generateObjectKey(String fileName) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
+        String extension = getExtension(fileName);
+        String storedFileName = UUID.randomUUID().toString() + extension;
+        return datePath + "/" + storedFileName;
+    }
+
+    private String getExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0 && lastDot < fileName.length() - 1) {
+            return "." + fileName.substring(lastDot + 1);
+        }
+        return "";
     }
 }

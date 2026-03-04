@@ -28,8 +28,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.BookingFile;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
 import com.coDevs.cohiChat.global.common.file.FileStorageResult;
 import com.coDevs.cohiChat.global.common.file.FileStorageService;
+import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -51,6 +54,9 @@ class BookingFileServiceTest {
 
     @Mock
     private FileUploadValidator fileUploadValidator;
+
+    @Mock
+    private S3PresignedUrlService s3PresignedUrlService;
 
     private static final Long BOOKING_ID = 1L;
     private static final Long FILE_ID = 1L;
@@ -319,6 +325,161 @@ class BookingFileServiceTest {
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.downloadFile(BOOKING_ID, FILE_ID, OTHER_USER_ID))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    @Nested
+    @DisplayName("Pre-signed 업로드 URL 생성")
+    class GeneratePresignedUploadUrl {
+
+        private static final String FILE_NAME = "document.pdf";
+        private static final String CONTENT_TYPE = "application/pdf";
+        private static final String PRESIGNED_URL = "https://bucket.s3.amazonaws.com/presigned-url";
+        private static final String OBJECT_KEY = "2025/03/uuid-document.pdf";
+
+        @Test
+        @DisplayName("성공: 게스트가 업로드 URL을 생성할 수 있다")
+        void generateUploadUrlByGuestSuccess() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
+                .willReturn(PRESIGNED_URL);
+
+            // when
+            PresignedUploadUrlResponseDTO response = bookingFileService.generatePresignedUploadUrl(
+                BOOKING_ID, GUEST_ID, FILE_NAME, CONTENT_TYPE
+            );
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.url()).isEqualTo(PRESIGNED_URL);
+            assertThat(response.objectKey()).isNotNull();
+            assertThat(response.expiresIn()).isGreaterThan(0);
+        }
+
+        @Test
+        @DisplayName("성공: 호스트가 업로드 URL을 생성할 수 있다")
+        void generateUploadUrlByHostSuccess() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
+                .willReturn(PRESIGNED_URL);
+
+            // when
+            PresignedUploadUrlResponseDTO response = bookingFileService.generatePresignedUploadUrl(
+                BOOKING_ID, HOST_ID, FILE_NAME, CONTENT_TYPE
+            );
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.url()).isEqualTo(PRESIGNED_URL);
+        }
+
+        @Test
+        @DisplayName("실패: 예약을 찾을 수 없음")
+        void generateUploadUrlFailsWhenBookingNotFound() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.generatePresignedUploadUrl(
+                BOOKING_ID, GUEST_ID, FILE_NAME, CONTENT_TYPE
+            ))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.BOOKING_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 URL 생성 불가")
+        void generateUploadUrlFailsWhenAccessDenied() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.generatePresignedUploadUrl(
+                BOOKING_ID, OTHER_USER_ID, FILE_NAME, CONTENT_TYPE
+            ))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    @Nested
+    @DisplayName("Pre-signed 다운로드 URL 생성")
+    class GeneratePresignedDownloadUrl {
+
+        private static final String PRESIGNED_URL = "https://bucket.s3.amazonaws.com/presigned-download-url";
+
+        @Test
+        @DisplayName("성공: 게스트가 다운로드 URL을 생성할 수 있다")
+        void generateDownloadUrlByGuestSuccess() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
+            given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
+                .willReturn(PRESIGNED_URL);
+
+            // when
+            PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(
+                BOOKING_ID, FILE_ID, GUEST_ID
+            );
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.url()).isEqualTo(PRESIGNED_URL);
+            assertThat(response.expiresIn()).isGreaterThan(0);
+        }
+
+        @Test
+        @DisplayName("성공: 호스트가 다운로드 URL을 생성할 수 있다")
+        void generateDownloadUrlByHostSuccess() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
+            given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
+                .willReturn(PRESIGNED_URL);
+
+            // when
+            PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(
+                BOOKING_ID, FILE_ID, HOST_ID
+            );
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.url()).isEqualTo(PRESIGNED_URL);
+        }
+
+        @Test
+        @DisplayName("실패: 파일을 찾을 수 없음")
+        void generateDownloadUrlFailsWhenFileNotFound() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.generatePresignedDownloadUrl(
+                BOOKING_ID, FILE_ID, GUEST_ID
+            ))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FILE_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 URL 생성 불가")
+        void generateDownloadUrlFailsWhenAccessDenied() {
+            // given
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.generatePresignedDownloadUrl(
+                BOOKING_ID, FILE_ID, OTHER_USER_ID
+            ))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ACCESS_DENIED);
