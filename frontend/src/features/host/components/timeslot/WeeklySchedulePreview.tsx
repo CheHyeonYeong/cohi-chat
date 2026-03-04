@@ -60,6 +60,7 @@ function timeToRow(time: string, startHour: number): number {
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
+            data-highlighted={isHighlighted || undefined}
             className={isHighlighted ? 'h-6 bg-[var(--cohi-timeslot-existing)]' : 'h-6'}
         />
     );
@@ -97,6 +98,7 @@ function DraggableCell({
             {...listeners}
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
+            data-highlighted={isHighlighted || undefined}
             className={[
                 'h-6 transition-colors duration-100 cursor-crosshair',
                 isInDragRange ? 'bg-[var(--cohi-timeslot-drag)]' : isHighlighted ? 'bg-[var(--cohi-timeslot-existing)]' : '',
@@ -110,13 +112,11 @@ function WeeklyGrid({
     hours,
     highlights,
     dragHighlights,
-    isDragging,
     isInteractive,
 }: {
     hours: number[];
     highlights: Map<number, { start: number; end: number }[]>;
     dragHighlights: Set<string>;
-    isDragging: boolean;
     isInteractive: boolean;
 }) {
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
@@ -157,13 +157,13 @@ function WeeklyGrid({
                                                 col={colIdx}
                                                 halfRow={topHalfRow}
                                                 isHighlighted={topExisting || topInRange}
-                                                isInDragRange={isDragging && topInRange}
+                                                isInDragRange={topInRange}
                                             />
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={bottomHalfRow}
                                                 isHighlighted={bottomExisting || bottomInRange}
-                                                isInDragRange={isDragging && bottomInRange}
+                                                isInDragRange={bottomInRange}
                                             />
                                         </>
                                     ) : (
@@ -214,8 +214,10 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
         return map;
     }, [entries, startHour]);
 
-    const dragHighlights = computeDragHighlights(dragStartId, dragOverId);
-    const isDragging = dragStartId !== null;
+    const dragHighlights = useMemo(
+        () => computeDragHighlights(dragStartId, dragOverId),
+        [dragStartId, dragOverId],
+    );
 
     const handleDragStart = (event: DragStartEvent) => {
         setDragStartId(event.active.id as string);
@@ -243,7 +245,6 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
             hours={hours}
             highlights={highlights}
             dragHighlights={dragHighlights}
-            isDragging={isDragging}
             isInteractive={!!onChange}
         />
     );
