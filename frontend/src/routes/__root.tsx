@@ -9,7 +9,7 @@ import Calendar from '../pages/calendar/Calendar'
 import { LoginForm, SignupForm } from '~/features/member'
 import Home from '~/pages/main/Home'
 import OAuthCallbackPage from '~/pages/oauth/OAuthCallbackPage'
-import MyBookings from '~/pages/calendar/MyBookings'
+import MyBookingsGuarded from '~/pages/calendar/MyBookingsGuarded'
 import Booking from '~/pages/calendar/Booking'
 import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
@@ -61,7 +61,7 @@ const homeRoute = createRoute({
 const myBookingsRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/my-bookings',
-    component: MyBookings,
+    component: MyBookingsGuarded,
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
         pageSize: z.number().min(1).optional().default(() => 10),
