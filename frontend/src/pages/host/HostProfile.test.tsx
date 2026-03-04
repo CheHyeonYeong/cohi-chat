@@ -9,7 +9,7 @@ vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
     Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
         React.createElement('a', { href: to, ...props }, children),
-    createLink: (component: any) => (props: any) => {
+    createLink: (component: React.ComponentType) => (props: Record<string, unknown>) => {
         const { to, ...rest } = props;
         return React.createElement(component, { href: to, ...rest });
     },
