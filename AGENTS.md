@@ -8,6 +8,12 @@
 - 이 문서는 모델별 실행 최적화 가이드만 추가로 제공합니다.
 - `AGENTS.md`와 `CLAUDE.md` 계열 문서가 중복되거나 충돌하면 `CLAUDE.md`와 `.claude/rules/`를 따릅니다.
 
+## 강제 실행 규칙 (Hard Enforcement)
+
+- 최적화 지침을 제외한 모든 실행 판단(브랜치, 커밋, 리뷰, 이슈/PR, 배포, Git 원격 작업)은 반드시 `CLAUDE.md`와 `.claude/rules/`를 따릅니다.
+- `git push`, `gh pr merge` 등 원격 Git 작업은 `CLAUDE.md`/`.claude/rules/git.md` 범위에서만 수행합니다.
+- `AGENTS.md`는 `CLAUDE.md` 계열 규칙을 완화하거나 우회하는 근거로 사용할 수 없습니다.
+
 ## 모델별 최적화 지침
 
 ### Codex 최적화
