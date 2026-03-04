@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
-import com.coDevs.cohiChat.global.config.RateLimitService;
+import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
@@ -60,7 +60,7 @@ public class MemberService {
         private final BookingRepository bookingRepository;
         private final PasswordEncoder passwordEncoder;
         private final JwtTokenProvider jwtTokenProvider;
-        private final RateLimitService rateLimitService;
+        private final RateLimitServiceBase rateLimitService;
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
 
