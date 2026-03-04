@@ -15,6 +15,7 @@ concurrency:
 
 env:
   AWS_REGION: ap-northeast-2
+  S3_BUCKET: cohi-chat-config
   S3_FRONTEND_DIST: s3://cohi-chat-config/frontend/dist
   CLOUDFRONT_DISTRIBUTION_ID: E2TSEBMG1RADEW
 
@@ -60,6 +61,16 @@ jobs:
       - name: Upload frontend dist to S3
         run: |
           aws s3 sync frontend/dist ${{ env.S3_FRONTEND_DIST }} --delete
+          # Keep bucket root in sync as well, so CloudFront works
+          # whether OriginPath is empty or /frontend/dist.
+          aws s3 sync frontend/dist s3://${{ env.S3_BUCKET }}
+          # Prevent stale index.html in browser cache from referencing old hashed assets.
+          aws s3 cp frontend/dist/index.html ${{ env.S3_FRONTEND_DIST }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
+          aws s3 cp frontend/dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
 
       - name: Invalidate CloudFront cache
         run: |
