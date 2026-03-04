@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from './Home';
@@ -8,10 +8,12 @@ vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
     Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
         React.createElement('a', { href: to, ...props }, children),
-    createLink: (component: React.ComponentType) => (props: Record<string, unknown>) => {
-        const { to, ...rest } = props;
-        return React.createElement(component, { href: to, ...rest });
-    },
+    createLink:
+        (component: React.ComponentType<Record<string, unknown>>) =>
+            (props: Record<string, unknown>) => {
+                const { to, ...rest } = props;
+                return React.createElement(component, { href: to, ...rest });
+            },
 }));
 
 const mockUseHosts = vi.fn();

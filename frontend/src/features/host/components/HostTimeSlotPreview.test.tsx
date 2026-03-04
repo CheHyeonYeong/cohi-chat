@@ -8,8 +8,8 @@ const mockTimeslots: ITimeSlot[] = [
     {
         id: 1,
         userId: 'user1',
-        startTime: '10:00:00',
-        endTime: '11:00:00',
+        startTime: '10:00',
+        endTime: '11:00',
         weekdays: [1, 3, 5],
         startDate: null,
         endDate: null,
@@ -19,8 +19,8 @@ const mockTimeslots: ITimeSlot[] = [
     {
         id: 2,
         userId: 'user1',
-        startTime: '14:00:00',
-        endTime: '15:30:00',
+        startTime: '14:00',
+        endTime: '15:30',
         weekdays: [2, 4],
         startDate: null,
         endDate: null,
