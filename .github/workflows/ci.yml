@@ -6,8 +6,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        # workflow_dispatch는 변경 감지 불가 → 전체 실행
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
   backend:
     name: Backend Build & Test
+    needs: changes
+    # PR: 백엔드 변경 시에만 / workflow_dispatch: 항상 실행
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -38,6 +60,9 @@ jobs:
 
   frontend:
     name: Frontend Build, Lint & Test
+    needs: changes
+    # PR: 프론트엔드 변경 시에만 / workflow_dispatch: 항상 실행
+    if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
 
     steps:
