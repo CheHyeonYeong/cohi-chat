@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Header } from '~/components/header';
 import { Card } from '~/components/card';
@@ -14,6 +14,7 @@ const DEFAULT_TOPICS = ['개발 커리어', '이직 준비', '기술 면접', '�
 
 export default function HostProfile() {
     const { hostId } = useParams({ from: '/host/$hostId' });
+    useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const { data: host, isLoading: isHostLoading, error: hostError } = useHostProfile(hostId);
