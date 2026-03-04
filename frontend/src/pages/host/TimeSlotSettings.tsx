@@ -91,7 +91,7 @@ export default function TimeSlotSettings() {
 
     const { showToast } = useToast();
     const handleDuplicateBlocked = () => {
-        showToast('이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.');
+        showToast('이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.', 'duplicate-timeslot');
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();

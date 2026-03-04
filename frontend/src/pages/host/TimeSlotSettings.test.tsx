@@ -112,7 +112,7 @@ describe('TimeSlotSettings duplicate blocked toast', () => {
         fireEvent.click(screen.getByRole('button', { name: 'trigger-grid-duplicate' }));
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
-        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE);
+        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE, 'duplicate-timeslot');
     });
 
     it('폼 편집 겹침 감지 시 토스트를 호출한다', () => {
@@ -121,6 +121,6 @@ describe('TimeSlotSettings duplicate blocked toast', () => {
         fireEvent.click(screen.getByRole('button', { name: 'trigger-form-overlap' }));
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
-        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE);
+        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE, 'duplicate-timeslot');
     });
 });
