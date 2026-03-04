@@ -42,10 +42,10 @@ export function ProfileEditForm() {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" data-testid="profile-edit-form">
-            <h3 className="text-lg font-semibold text-[var(--cohe-text-dark)]">표시 이름 변경</h3>
+            <h3 className="text-lg font-semibold text-[var(--cohi-text-dark)]">표시 이름 변경</h3>
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="displayName" className="text-sm text-[var(--cohe-text-dark)]">
+                <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
                     표시 이름
                 </label>
                 <input

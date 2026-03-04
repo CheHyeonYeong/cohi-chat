@@ -1,4 +1,5 @@
 import { cn } from '~/libs/cn';
+import { Card } from '~/components/card';
 import type { HostResponseDTO } from '~/features/member';
 
 interface HostProfileCardProps {
@@ -8,13 +9,15 @@ interface HostProfileCardProps {
 
 export default function HostProfileCard({ host, className }: HostProfileCardProps) {
     return (
-        <div
+        <Card
+            variant="elevated"
+            size="lg"
             data-testid="host-profile-card"
-            className={cn('bg-white rounded-2xl shadow-md p-8 flex flex-col items-center text-center', className)}
+            className={cn('flex flex-col items-center text-center', className)}
         >
             <div
                 data-testid="host-profile-avatar"
-                className="w-20 h-20 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden"
+                className="w-20 h-20 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center overflow-hidden"
             >
                 {host.profileImageUrl ? (
                     <img
@@ -23,7 +26,7 @@ export default function HostProfileCard({ host, className }: HostProfileCardProp
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <span className="text-3xl font-bold text-[var(--cohe-primary)]">
+                    <span className="text-3xl font-bold text-[var(--cohi-primary)]">
                         {host.displayName.charAt(0)}
                     </span>
                 )}
@@ -31,7 +34,7 @@ export default function HostProfileCard({ host, className }: HostProfileCardProp
 
             <h1
                 data-testid="host-profile-name"
-                className="mt-4 text-2xl font-bold text-[var(--cohe-text-dark)]"
+                className="mt-4 text-2xl font-bold text-[var(--cohi-text-dark)]"
             >
                 {host.displayName}
             </h1>
@@ -39,7 +42,7 @@ export default function HostProfileCard({ host, className }: HostProfileCardProp
             {host.job && (
                 <p
                     data-testid="host-profile-job"
-                    className="mt-1 text-[var(--cohe-secondary)]"
+                    className="mt-1 text-[var(--cohi-secondary)]"
                 >
                     {host.job}
                 </p>
@@ -48,11 +51,11 @@ export default function HostProfileCard({ host, className }: HostProfileCardProp
             {host.chatCount > 0 && (
                 <span
                     data-testid="host-profile-chat-count"
-                    className="mt-3 inline-flex items-center px-3 py-1 bg-[var(--cohe-primary)]/10 text-[var(--cohe-primary)] rounded-full text-sm font-medium"
+                    className="mt-3 inline-flex items-center px-3 py-1 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
                 >
                     커피챗 {host.chatCount}회
                 </span>
             )}
-        </div>
+        </Card>
     );
 }

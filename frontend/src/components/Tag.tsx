@@ -11,18 +11,18 @@ interface TagProps {
 const variantColorStyles: Record<string, string> = {
     // filled: Ant Design default 스타일 — 따뜻한 배경 + 1px 보더
     'filled-primary':
-        'bg-[var(--cohe-bg-warm)] border border-[var(--cohe-primary)]/20 text-[var(--cohe-primary-dark)]',
+        'bg-[var(--cohi-bg-warm)] border border-[var(--cohi-primary)]/20 text-[var(--cohi-primary-dark)]',
     'filled-secondary':
-        'bg-[var(--cohe-secondary)]/8 border border-[var(--cohe-secondary)]/20 text-[var(--cohe-secondary)]',
-    'filled-default': 'bg-gray-50 border border-gray-200 text-[var(--cohe-text-dark)]',
+        'bg-[var(--cohi-secondary)]/8 border border-[var(--cohi-secondary)]/20 text-[var(--cohi-secondary)]',
+    'filled-default': 'bg-gray-50 border border-gray-200 text-[var(--cohi-text-dark)]',
     // outlined: 보더만, 배경 없음
-    'outlined-primary': 'border border-[var(--cohe-primary)]/40 text-[var(--cohe-primary)]',
-    'outlined-secondary': 'border border-[var(--cohe-secondary)]/40 text-[var(--cohe-secondary)]',
-    'outlined-default': 'border border-gray-300 text-[var(--cohe-text-dark)]',
+    'outlined-primary': 'border border-[var(--cohi-primary)]/40 text-[var(--cohi-primary)]',
+    'outlined-secondary': 'border border-[var(--cohi-secondary)]/40 text-[var(--cohi-secondary)]',
+    'outlined-default': 'border border-gray-300 text-[var(--cohi-text-dark)]',
     // borderless: 텍스트만
-    'borderless-primary': 'text-[var(--cohe-primary)]',
-    'borderless-secondary': 'text-[var(--cohe-secondary)]',
-    'borderless-default': 'text-[var(--cohe-text-dark)]',
+    'borderless-primary': 'text-[var(--cohi-primary)]',
+    'borderless-secondary': 'text-[var(--cohi-secondary)]',
+    'borderless-default': 'text-[var(--cohi-text-dark)]',
 };
 
 const sizeStyles: Record<string, string> = {

@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import Button from '~/components/button/Button';
+import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
@@ -129,11 +130,7 @@ export default function TimeSlotForm({
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-[var(--cohi-text-dark)] text-lg mb-5 flex items-center gap-2">
-                <span className="text-xl">📅</span> 예약 가능 시간 설정
-            </h3>
-
+        <Card size="sm" title="📅 예약 가능 시간 설정">
             <div className="space-y-4">
                 {entries.map((entry, index) => (
                     <div
@@ -354,6 +351,6 @@ export default function TimeSlotForm({
             >
                 {isPending ? '저장 중...' : '저장하기'}
             </Button>
-        </div>
+        </Card>
     );
 }

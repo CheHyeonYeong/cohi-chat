@@ -113,7 +113,7 @@ export default function HostRegister() {
                 right={<div className="w-24"></div>}
             />
 
-            <main className="w-full px-6 py-10 md:py-16 pb-28">
+            <main className="w-full max-w-5xl mx-auto px-6 py-10 md:py-16 pb-28">
                 {currentStep === 1 && (
                     <RegisterStep1
                         data={data.step1}

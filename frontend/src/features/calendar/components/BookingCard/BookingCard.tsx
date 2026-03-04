@@ -1,4 +1,5 @@
 import { cn } from '~/libs/cn';
+import { Card } from '~/components/card';
 import type { IBookingDetail } from '../../types';
 
 interface BookingCardProps {
@@ -12,16 +13,20 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
     const when = new Date(booking.when);
 
     return (
-        <button
-            type="button"
-            onClick={() => onSelect?.(booking.id)}
+        <Card
+            asChild
+            size="sm"
             className={cn(
-                'w-full text-left bg-white rounded-2xl p-5 shadow-sm border transition-all cursor-pointer hover:shadow-md',
+                'border transition-all cursor-pointer hover:shadow-md',
                 isSelected
                     ? 'border-[var(--cohi-primary)] shadow-md'
                     : 'border-gray-100',
                 className,
             )}
+        >
+        <button
+            type="button"
+            onClick={() => onSelect?.(booking.id)}
         >
             {/* Host info */}
             <div className="flex items-center gap-3 mb-4">
@@ -59,5 +64,6 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
                 </div>
             )}
         </button>
+        </Card>
     );
 }

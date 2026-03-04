@@ -41,10 +41,10 @@ export function PasswordChangeForm() {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" data-testid="password-change-form">
-            <h3 className="text-lg font-semibold text-[var(--cohe-text-dark)]">비밀번호 변경</h3>
+            <h3 className="text-lg font-semibold text-[var(--cohi-text-dark)]">비밀번호 변경</h3>
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="newPassword" className="text-sm text-[var(--cohe-text-dark)]">
+                <label htmlFor="newPassword" className="text-sm text-[var(--cohi-text-dark)]">
                     새 비밀번호
                 </label>
                 <input
@@ -66,7 +66,7 @@ export function PasswordChangeForm() {
             </div>
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="confirmPassword" className="text-sm text-[var(--cohe-text-dark)]">
+                <label htmlFor="confirmPassword" className="text-sm text-[var(--cohi-text-dark)]">
                     비밀번호 확인
                 </label>
                 <input

@@ -43,7 +43,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         return (
             <div ref={ref} className={cardClassName} {...props}>
                 {title && (
-                    <h3 className="font-semibold text-lg text-[var(--cohe-text-dark)] mb-4">{title}</h3>
+                    <h3 className="font-semibold text-lg text-[var(--cohi-text-dark)] mb-4">{title}</h3>
                 )}
                 {children}
             </div>

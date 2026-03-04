@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Header } from '~/components/header';
+import { Card } from '~/components/card';
 import LinkButton from '~/components/button/LinkButton';
 import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
@@ -45,7 +46,7 @@ export default function HostProfile() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <Header
                 right={
                     <div className="flex items-center gap-3">
@@ -83,23 +84,20 @@ export default function HostProfile() {
 
                             {description && (
                                 <section data-testid="host-profile-description">
-                                    <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-3">소개</h2>
+                                    <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-3">소개</h2>
                                     <p className="text-gray-700 leading-relaxed">{description}</p>
                                 </section>
                             )}
 
                             <section data-testid="host-profile-topics">
-                                <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-3">토픽</h2>
+                                <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-3">토픽</h2>
                                 <HostTopicTags topics={topics} />
                             </section>
                         </div>
 
                         <div className="flex-1 min-w-0">
                             <section data-testid="host-profile-calendar">
-                                <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">
-                                    예약 가능한 시간
-                                </h2>
-                                <div className="bg-white rounded-2xl shadow-md p-6">
+                                <Card variant="elevated" title="예약 가능한 시간">
                                     <Navigator
                                         slug={host.username}
                                         year={year}
@@ -117,7 +115,7 @@ export default function HostProfile() {
                                             onSelectDay={handleSelectDay}
                                         />
                                     </div>
-                                </div>
+                                </Card>
                                 <div className="mt-6 flex justify-end">
                                     <LinkButton
                                         variant="primary"
