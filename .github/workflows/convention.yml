@@ -3,10 +3,13 @@ name: Convention Check
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  issues:
+    types: [opened, edited]
 
 jobs:
   branch-convention:
     name: Branch Naming Convention
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check branch name
@@ -37,6 +40,7 @@ jobs:
 
   pr-title-convention:
     name: PR Title Convention
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title
@@ -55,6 +59,31 @@ jobs:
             echo "올바른 형식: {type}: #{이슈번호} {설명}"
             echo "예시: feat: #354 CI/CD 파이프라인 추가"
             echo "허용 type: feat, fix, refactor, test, docs, chore, style, perf, ci"
+            echo "============================================"
+            exit 1
+          fi
+
+  issue-title-convention:
+    name: Issue Title Convention
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue title
+        run: |
+          TITLE="${{ github.event.issue.title }}"
+          echo "이슈 타이틀: $TITLE"
+
+          # 패턴: [FEAT|BUG|REFACTOR] {설명}
+          if [[ "$TITLE" =~ ^\[(FEAT|BUG|REFACTOR)\]\ .+ ]]; then
+            echo "✅ 이슈 타이틀 컨벤션 통과: $TITLE"
+          else
+            echo ""
+            echo "============================================"
+            echo "❌ 이슈 타이틀 컨벤션 위반: $TITLE"
+            echo ""
+            echo "올바른 형식: [타입] {설명}"
+            echo "예시: [FEAT] CI/CD 파이프라인 추가"
+            echo "허용 타입: FEAT, BUG, REFACTOR"
             echo "============================================"
             exit 1
           fi
