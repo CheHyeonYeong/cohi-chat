@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import Button from '~/components/button/Button';
+import Tag from '~/components/Tag';
 
 export interface MeetingInfoFormData {
     topics: string[];
@@ -73,10 +74,7 @@ export default function MeetingInfoForm({ data, onChange, errors }: MeetingInfoF
                 {data.topics.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                         {data.topics.map((topic, index) => (
-                            <span
-                                key={topic}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
-                            >
+                            <Tag key={topic} className="gap-1">
                                 {topic}
                                 <button
                                     type="button"
@@ -85,7 +83,7 @@ export default function MeetingInfoForm({ data, onChange, errors }: MeetingInfoF
                                 >
                                     ×
                                 </button>
-                            </span>
+                            </Tag>
                         ))}
                     </div>
                 )}
