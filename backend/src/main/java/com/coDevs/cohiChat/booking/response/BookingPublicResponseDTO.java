@@ -11,7 +11,7 @@ import lombok.Getter;
 
 /**
  * 공개 API용 예약 응답 DTO.
- * 민감 정보(id) 제외.
+ * SSE 스트리밍 중복 제거를 위해 id 포함.
  * startedAt/endedAt: ISO 8601 full datetime (날짜+시간+타임존).
  */
 @Getter
@@ -19,6 +19,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class BookingPublicResponseDTO {
 
+    private long id;
     private OffsetDateTime startedAt;
     private OffsetDateTime endedAt;
 
@@ -38,6 +39,7 @@ public class BookingPublicResponseDTO {
             .toOffsetDateTime();
 
         return BookingPublicResponseDTO.builder()
+            .id(booking.getId())
             .startedAt(startedAt)
             .endedAt(endedAt)
             .build();

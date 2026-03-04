@@ -32,9 +32,9 @@ function parseDateTime(dateTimeStr: string): Date {
 /** ISO 8601 datetime 문자열에서 "HH:mm" 형식의 시간 문자열 추출. */
 function extractTime(dateTimeStr: string): `${number}:${number}` {
     const date = new Date(dateTimeStr);
-    const h = date.getHours();
-    const m = date.getMinutes();
-    return `${h}:${String(m).padStart(2, '0')}` as `${number}:${number}`;
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}` as `${number}:${number}`;
 }
 
 function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail {

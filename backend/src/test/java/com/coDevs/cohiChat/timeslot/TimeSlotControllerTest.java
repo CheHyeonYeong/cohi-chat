@@ -77,8 +77,8 @@ class TimeSlotControllerTest {
     void createTimeSlotSuccess() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -134,8 +134,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenInvalidWeekdaysNegative() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(List.of(-1, 0, 1))
             .build();
 
@@ -154,8 +154,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenInvalidWeekdaysOverSix() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(List.of(5, 6, 7))
             .build();
 
@@ -174,8 +174,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenWeekdaysEmpty() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(List.of())
             .build();
 
@@ -194,8 +194,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenOverlapping() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -217,8 +217,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenGuest() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -240,8 +240,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenCalendarNotFound() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startedAt(TEST_START_TIME)
-            .endedAt(TEST_END_TIME)
+            .startTime(TEST_START_TIME)
+            .endTime(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
