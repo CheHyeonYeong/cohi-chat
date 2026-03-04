@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
+import { useToast } from '~/components/toast/useToast';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
@@ -59,12 +60,10 @@ export default function TimeSlotSettings() {
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
         };
     }, []);
 
@@ -87,6 +86,11 @@ export default function TimeSlotSettings() {
         } catch {
             // 에러는 updateProfileMutation.isError / error로 표시
         }
+    };
+
+    const { showToast } = useToast();
+    const handleDuplicateBlocked = () => {
+        showToast('이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.', 'duplicate-timeslot');
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
@@ -148,11 +152,11 @@ export default function TimeSlotSettings() {
                 })
             )
         );
-        
+
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
             .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
-            
+
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
                 const label = f.entry.startTime + '~' + f.entry.endTime;
@@ -281,13 +285,18 @@ export default function TimeSlotSettings() {
                                 onChange={setEntries}
                                 onSave={handleSave}
                                 onDelete={handleDelete}
+                                onOverlapDetected={handleDuplicateBlocked}
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
                             />
                         </div>
                         <div className="flex-1">
-                            <WeeklySchedulePreview entries={entries} onChange={setEntries} />
+                            <WeeklySchedulePreview
+                                entries={entries}
+                                onChange={setEntries}
+                                onDuplicateBlocked={handleDuplicateBlocked}
+                            />
                         </div>
                     </div>
                 </div>

@@ -13,12 +13,13 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
+import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
 import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
 }
 
 
@@ -58,7 +59,8 @@ function timeToRow(time: string, startHour: number): number {
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
-            className={isHighlighted ? 'h-6 bg-[var(--cohi-primary)] opacity-20' : 'h-6'}
+            data-highlighted={isHighlighted || undefined}
+            className={isHighlighted ? 'h-6 bg-[var(--cohi-timeslot-existing)]' : 'h-6'}
         />
     );
 }
@@ -95,10 +97,10 @@ function DraggableCell({
             {...listeners}
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
+            data-highlighted={isHighlighted || undefined}
             className={[
-                'h-6 transition-colors cursor-crosshair',
-                isHighlighted ? 'bg-[var(--cohi-primary)]' : '',
-                isHighlighted ? (isInDragRange ? 'opacity-40' : 'opacity-20') : '',
+                'h-6 transition-colors duration-100 cursor-crosshair',
+                isInDragRange ? 'bg-[var(--cohi-timeslot-drag)]' : isHighlighted ? 'bg-[var(--cohi-timeslot-existing)]' : '',
             ].join(' ')}
             style={{ touchAction: 'none' }}
         />
@@ -109,13 +111,11 @@ function WeeklyGrid({
     hours,
     highlights,
     dragHighlights,
-    isDragging,
     isInteractive,
 }: {
     hours: number[];
     highlights: Map<number, { start: number; end: number }[]>;
     dragHighlights: Set<string>;
-    isDragging: boolean;
     isInteractive: boolean;
 }) {
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
@@ -156,13 +156,13 @@ function WeeklyGrid({
                                                 col={colIdx}
                                                 halfRow={topHalfRow}
                                                 isHighlighted={topExisting || topInRange}
-                                                isInDragRange={isDragging && topInRange}
+                                                isInDragRange={topInRange}
                                             />
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={bottomHalfRow}
                                                 isHighlighted={bottomExisting || bottomInRange}
-                                                isInDragRange={isDragging && bottomInRange}
+                                                isInDragRange={bottomInRange}
                                             />
                                         </>
                                     ) : (
@@ -181,7 +181,8 @@ function WeeklyGrid({
     );
 }
 
-export default function WeeklySchedulePreview({ entries, onChange }: WeeklySchedulePreviewProps) {
+
+export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -212,8 +213,10 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
         return map;
     }, [entries, startHour]);
 
-    const dragHighlights = computeDragHighlights(dragStartId, dragOverId);
-    const isDragging = dragStartId !== null;
+    const dragHighlights = useMemo(
+        () => computeDragHighlights(dragStartId, dragOverId),
+        [dragStartId, dragOverId],
+    );
 
     const handleDragStart = (event: DragStartEvent) => {
         setDragStartId(event.active.id as string);
@@ -226,12 +229,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
 
     const handleDragEnd = (event: DragEndEvent) => {
         const endId = (event.over?.id as string) ?? dragStartId;
-        if (onChange && dragStartId && endId) {
-            const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            if (entry && !isDuplicateEntry(entries, entry)) {
-                onChange([...entries, entry]);
-            }
-        }
+        commitDraggedEntry({ entries, onChange, onDuplicateBlocked, dragStartId, endId, startHour });
         setDragStartId(null);
         setDragOverId(null);
     };
@@ -246,7 +244,6 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
             hours={hours}
             highlights={highlights}
             dragHighlights={dragHighlights}
-            isDragging={isDragging}
             isInteractive={!!onChange}
         />
     );
