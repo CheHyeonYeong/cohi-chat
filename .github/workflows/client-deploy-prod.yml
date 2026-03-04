@@ -18,6 +18,7 @@ env:
   S3_BUCKET: cohi-chat-config
   S3_FRONTEND_DIST: s3://cohi-chat-config/frontend/dist
   CLOUDFRONT_DISTRIBUTION_ID: E2TSEBMG1RADEW
+  PROD_DOMAIN: www.cohi-chat.com
 
 jobs:
   build-and-deploy:
@@ -77,3 +78,38 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
+        - name: Wait for CloudFront invalidation
+          run: |
+            INVALIDATION_ID=$(aws cloudfront create-invalidation \
+              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --paths "/*" \
+              --query 'Invalidation.Id' --output text)
+            aws cloudfront wait invalidation-completed \
+              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+              --id "$INVALIDATION_ID"
+      - name: Verify public domain serves latest frontend assets
+        run: |
+          EXPECTED_JS=$(grep -o 'assets/index-[^"]*\.js' frontend/dist/index.html | head -1)
+          EXPECTED_CSS=$(grep -o 'assets/index-[^"]*\.css' frontend/dist/index.html | head -1)
+
+          if [ -z "$EXPECTED_JS" ] || [ -z "$EXPECTED_CSS" ]; then
+            echo "Failed to parse expected asset hashes from built index.html"
+            exit 1
+          fi
+
+          echo "Expected JS: $EXPECTED_JS"
+          echo "Expected CSS: $EXPECTED_CSS"
+
+          for i in {1..12}; do
+            BODY=$(curl -fsSL -H "Cache-Control: no-cache, no-store" "https://${{ env.PROD_DOMAIN }}" || true)
+            if echo "$BODY" | grep -q "$EXPECTED_JS" && echo "$BODY" | grep -q "$EXPECTED_CSS"; then
+              echo "Public domain is serving latest assets."
+              exit 0
+            fi
+
+            echo "Attempt $i/12: latest assets not visible yet, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "Deployment verification failed: ${EXPECTED_JS}/${EXPECTED_CSS} not served from https://${{ env.PROD_DOMAIN }}"
+          exit 1
