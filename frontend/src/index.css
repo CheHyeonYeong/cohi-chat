@@ -23,6 +23,8 @@
   --cohi-text-light: #FFFFFF;
   --cohi-card-bg: #FFFFFF;
   --cohi-card-shadow: rgba(139, 105, 20, 0.1);
+  --cohi-timeslot-existing: rgba(139, 105, 20, 0.2);
+  --cohi-timeslot-drag: rgba(139, 105, 20, 0.4);
 }
 
 a {

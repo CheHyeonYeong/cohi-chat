@@ -60,7 +60,7 @@ function timeToRow(time: string, startHour: number): number {
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
-            className={isHighlighted ? 'h-6 bg-[var(--cohi-primary)] opacity-20' : 'h-6'}
+            className={isHighlighted ? 'h-6 bg-[var(--cohi-timeslot-existing)]' : 'h-6'}
         />
     );
 }
@@ -98,9 +98,8 @@ function DraggableCell({
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
             className={[
-                'h-6 transition-[background-color,opacity] duration-100 cursor-crosshair',
-                isHighlighted ? 'bg-[var(--cohi-primary)]' : '',
-                isHighlighted ? (isInDragRange ? 'opacity-40' : 'opacity-20') : '',
+                'h-6 transition-colors duration-100 cursor-crosshair',
+                isInDragRange ? 'bg-[var(--cohi-timeslot-drag)]' : isHighlighted ? 'bg-[var(--cohi-timeslot-existing)]' : '',
             ].join(' ')}
             style={{ touchAction: 'none' }}
         />
