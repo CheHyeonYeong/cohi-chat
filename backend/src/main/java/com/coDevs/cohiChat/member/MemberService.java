@@ -24,6 +24,8 @@ import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -205,12 +207,21 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.builder()     
-                        .bookingId(booking.getId())     
-                        .bookingDate(booking.getBookingDate())
-                        .startTime(booking.getTimeSlot().getStartTime())
-                        .endTime(booking.getTimeSlot().getEndTime())
-                        .topic(booking.getTopic())      
+                ZoneId zoneId = ZoneId.of("Asia/Seoul");
+                OffsetDateTime startedAt = booking.getBookingDate()
+                        .atTime(booking.getTimeSlot().getStartTime())
+                        .atZone(zoneId)
+                        .toOffsetDateTime();
+                OffsetDateTime endedAt = booking.getBookingDate()
+                        .atTime(booking.getTimeSlot().getEndTime())
+                        .atZone(zoneId)
+                        .toOffsetDateTime();
+
+                return AffectedBookingDTO.builder()
+                        .bookingId(booking.getId())
+                        .startedAt(startedAt)
+                        .endedAt(endedAt)
+                        .topic(booking.getTopic())
                         .role(role)
                         .build();
         }

@@ -1,4 +1,4 @@
-import type { DateString, ISO8601String, StringTime } from '~/types/base';
+import type { ISO8601String, ISO8601DateTimeString, StringTime } from '~/types/base';
 import type { IUserSimple } from '~/types/user';
 
 export type AttendanceStatus =
@@ -13,8 +13,8 @@ export type AttendanceStatus =
 export interface ITimeSlot {
     id: number;
     userId: string;
-    startTime: StringTime;
-    endTime: StringTime;
+    startedAt: StringTime;
+    endedAt: StringTime;
     weekdays: number[];
     startDate: string | null;
     endDate: string | null;
@@ -24,19 +24,20 @@ export interface ITimeSlot {
 
 export interface IBooking {
     id: number;
-    when: DateString;
-    timeSlot: ITimeSlot;
+    startedAt: ISO8601DateTimeString;
+    endedAt: ISO8601DateTimeString;
 }
 
 export interface ICalendarEvent {
     id: string;
-    when: DateString;
-    timeSlot: ITimeSlot;
+    startedAt: ISO8601DateTimeString;
+    endedAt: ISO8601DateTimeString;
 }
 
 export interface IBookingDetail {
     id: number;
-    when: Date;
+    startedAt: Date;
+    endedAt: Date;
     topic: string;
     description: string;
     timeSlot: ITimeSlot;
@@ -56,12 +57,13 @@ export interface INoShowHistoryItem {
     reportedBy: string;
     reason: string | null;
     reportedAt: string;
-    bookingDate: string;
+    bookingStartedAt: string;
+    bookingEndedAt: string;
     bookingTopic: string;
 }
 
 export interface IBookingPayload {
-    when: DateString;
+    when: string;
     topic: string;
     description: string;
     timeSlotId: number;

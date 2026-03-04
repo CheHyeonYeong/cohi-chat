@@ -1,7 +1,8 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
@@ -21,10 +22,25 @@ public class NoShowHistoryResponseDTO {
     private UUID reportedBy;
     private String reason;
     private Instant reportedAt;
-    private LocalDate bookingDate;
+    private OffsetDateTime bookingStartedAt;
+    private OffsetDateTime bookingEndedAt;
     private String bookingTopic;
 
     public static NoShowHistoryResponseDTO from(NoShowHistory history) {
+        return from(history, ZoneId.of("Asia/Seoul"));
+    }
+
+    public static NoShowHistoryResponseDTO from(NoShowHistory history, ZoneId zoneId) {
+        OffsetDateTime bookingStartedAt = history.getBooking().getBookingDate()
+            .atTime(history.getBooking().getTimeSlot().getStartTime())
+            .atZone(zoneId)
+            .toOffsetDateTime();
+
+        OffsetDateTime bookingEndedAt = history.getBooking().getBookingDate()
+            .atTime(history.getBooking().getTimeSlot().getEndTime())
+            .atZone(zoneId)
+            .toOffsetDateTime();
+
         return NoShowHistoryResponseDTO.builder()
             .id(history.getId())
             .bookingId(history.getBooking().getId())
@@ -32,7 +48,8 @@ public class NoShowHistoryResponseDTO {
             .reportedBy(history.getReportedBy())
             .reason(history.getReason())
             .reportedAt(history.getReportedAt())
-            .bookingDate(history.getBooking().getBookingDate())
+            .bookingStartedAt(bookingStartedAt)
+            .bookingEndedAt(bookingEndedAt)
             .bookingTopic(history.getBooking().getTopic())
             .build();
     }

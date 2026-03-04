@@ -1,10 +1,9 @@
 package com.coDevs.cohiChat.booking.response;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.timeslot.response.TimeSlotPublicResponseDTO;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,22 +11,35 @@ import lombok.Getter;
 
 /**
  * 공개 API용 예약 응답 DTO.
- * 민감 정보(id) 제외, TimeSlotPublicResponseDTO 사용.
+ * 민감 정보(id) 제외.
+ * startedAt/endedAt: ISO 8601 full datetime (날짜+시간+타임존).
  */
 @Getter
 @Builder
 @AllArgsConstructor
 public class BookingPublicResponseDTO {
 
-    @JsonProperty("when")
-    private LocalDate bookingDate;
-
-    private TimeSlotPublicResponseDTO timeSlot;
+    private OffsetDateTime startedAt;
+    private OffsetDateTime endedAt;
 
     public static BookingPublicResponseDTO from(Booking booking) {
+        return from(booking, ZoneId.of("Asia/Seoul"));
+    }
+
+    public static BookingPublicResponseDTO from(Booking booking, ZoneId zoneId) {
+        OffsetDateTime startedAt = booking.getBookingDate()
+            .atTime(booking.getTimeSlot().getStartTime())
+            .atZone(zoneId)
+            .toOffsetDateTime();
+
+        OffsetDateTime endedAt = booking.getBookingDate()
+            .atTime(booking.getTimeSlot().getEndTime())
+            .atZone(zoneId)
+            .toOffsetDateTime();
+
         return BookingPublicResponseDTO.builder()
-            .bookingDate(booking.getBookingDate())
-            .timeSlot(TimeSlotPublicResponseDTO.from(booking.getTimeSlot()))
+            .startedAt(startedAt)
+            .endedAt(endedAt)
             .build();
     }
 }

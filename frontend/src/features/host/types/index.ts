@@ -35,8 +35,8 @@ export interface TimeSlotCreatePayload {
 export interface TimeSlotResponse {
     id: number;
     userId: string;
-    startTime: StringTime;
-    endTime: StringTime;
+    startedAt: StringTime;
+    endedAt: StringTime;
     weekdays: number[];
     startDate: string | null;
     endDate: string | null;

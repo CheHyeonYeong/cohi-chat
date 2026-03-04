@@ -77,16 +77,16 @@ class TimeSlotControllerTest {
     void createTimeSlotSuccess() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
         TimeSlotResponseDTO response = TimeSlotResponseDTO.builder()
             .id(1L)
             .userId(TEST_USER_ID)
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
@@ -103,8 +103,8 @@ class TimeSlotControllerTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.id").value(1))
-            .andExpect(jsonPath("$.data.startTime").value("10:00:00"))
-            .andExpect(jsonPath("$.data.endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data.startedAt").value("10:00:00"))
+            .andExpect(jsonPath("$.data.endedAt").value("11:00:00"))
             .andExpect(jsonPath("$.data.weekdays[0]").value(0))
             .andExpect(jsonPath("$.error").value(nullValue()));
     }
@@ -134,8 +134,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenInvalidWeekdaysNegative() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(List.of(-1, 0, 1))
             .build();
 
@@ -154,8 +154,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenInvalidWeekdaysOverSix() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(List.of(5, 6, 7))
             .build();
 
@@ -174,8 +174,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenWeekdaysEmpty() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(List.of())
             .build();
 
@@ -194,8 +194,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenOverlapping() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -217,8 +217,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenGuest() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -240,8 +240,8 @@ class TimeSlotControllerTest {
     void createTimeSlotFailWhenCalendarNotFound() throws Exception {
         // given
         TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
-            .startTime(TEST_START_TIME)
-            .endTime(TEST_END_TIME)
+            .startedAt(TEST_START_TIME)
+            .endedAt(TEST_END_TIME)
             .weekdays(TEST_WEEKDAYS)
             .build();
 
@@ -265,8 +265,8 @@ class TimeSlotControllerTest {
         TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
             .id(1L)
             .userId(TEST_USER_ID)
-            .startTime(LocalTime.of(10, 0))
-            .endTime(LocalTime.of(11, 0))
+            .startedAt(LocalTime.of(10, 0))
+            .endedAt(LocalTime.of(11, 0))
             .weekdays(List.of(0))
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
@@ -275,8 +275,8 @@ class TimeSlotControllerTest {
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
             .id(2L)
             .userId(TEST_USER_ID)
-            .startTime(LocalTime.of(14, 0))
-            .endTime(LocalTime.of(15, 0))
+            .startedAt(LocalTime.of(14, 0))
+            .endedAt(LocalTime.of(15, 0))
             .weekdays(List.of(1))
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
@@ -303,8 +303,8 @@ class TimeSlotControllerTest {
         TimeSlotResponseDTO response1 = TimeSlotResponseDTO.builder()
             .id(1L)
             .userId(TEST_USER_ID)
-            .startTime(LocalTime.of(10, 0))
-            .endTime(LocalTime.of(11, 0))
+            .startedAt(LocalTime.of(10, 0))
+            .endedAt(LocalTime.of(11, 0))
             .weekdays(List.of(0, 1, 2))
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
@@ -313,8 +313,8 @@ class TimeSlotControllerTest {
         TimeSlotResponseDTO response2 = TimeSlotResponseDTO.builder()
             .id(2L)
             .userId(TEST_USER_ID)
-            .startTime(LocalTime.of(14, 0))
-            .endTime(LocalTime.of(15, 0))
+            .startedAt(LocalTime.of(14, 0))
+            .endedAt(LocalTime.of(15, 0))
             .weekdays(List.of(3, 4))
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
@@ -329,8 +329,8 @@ class TimeSlotControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].id").value(1))
-            .andExpect(jsonPath("$.data[0].startTime").value("10:00:00"))
-            .andExpect(jsonPath("$.data[0].endTime").value("11:00:00"))
+            .andExpect(jsonPath("$.data[0].startedAt").value("10:00:00"))
+            .andExpect(jsonPath("$.data[0].endedAt").value("11:00:00"))
             .andExpect(jsonPath("$.data[0].weekdays[0]").value(0))
             .andExpect(jsonPath("$.data[1].id").value(2))
             .andExpect(jsonPath("$.error").value(nullValue()));
