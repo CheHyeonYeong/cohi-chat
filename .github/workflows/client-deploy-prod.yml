@@ -93,7 +93,7 @@ jobs:
           echo "Expected CSS: $EXPECTED_CSS"
 
           for i in {1..12}; do
-            BODY=$(curl -fsSL "https://${{ env.PROD_DOMAIN }}/?v=$(date +%s)" || true)
+            BODY=$(curl -fsSL -H "Cache-Control: no-cache, no-store" "https://${{ env.PROD_DOMAIN }}" || true)
             if echo "$BODY" | grep -q "$EXPECTED_JS" && echo "$BODY" | grep -q "$EXPECTED_CSS"; then
               echo "Public domain is serving latest assets."
               exit 0
