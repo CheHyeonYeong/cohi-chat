@@ -60,6 +60,7 @@ export interface INoShowHistoryItem {
     bookingTopic: string;
 }
 
+
 export interface IGuestNoShowHistoryItem {
     id: number;
     bookingId: number;

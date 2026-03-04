@@ -20,11 +20,14 @@ import PageHeader from '~/components/PageHeader';
 import Pagination from '~/components/Pagination';
 import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
+import BookingActionMenu from '~/features/calendar/components/BookingCard/BookingActionMenu';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
+import { useAuth } from '~/features/member';
 import { getValidToken } from '~/libs/jwt';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/calendar';
+import type { AuthUser } from '~/features/member';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -33,10 +36,12 @@ function SortableBookingCard({
     booking,
     isSelected,
     onSelect,
+    currentUser,
 }: {
     booking: IBookingDetail;
     isSelected: boolean;
     onSelect: (id: number) => void;
+    currentUser: AuthUser | undefined;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: booking.id,
@@ -49,8 +54,14 @@ function SortableBookingCard({
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative">
             <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} />
+            <div
+                className="absolute top-3 right-3"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <BookingActionMenu booking={booking} currentUser={currentUser} />
+            </div>
         </div>
     );
 }
@@ -59,6 +70,7 @@ export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
     const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
+    const { data: currentUser } = useAuth();
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [sortedIds, setSortedIds] = useState<number[]>([]);
@@ -184,6 +196,7 @@ export default function MyBookings() {
                                                 booking={booking}
                                                 isSelected={selectedId === booking.id}
                                                 onSelect={handleCardSelect}
+                                                currentUser={currentUser}
                                             />
                                         ))}
                                     </SortableContext>
