@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { isDuplicateEntry } from './dragUtils';
+import { WEEKDAYS } from '~/libs/constants/days';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -36,15 +37,6 @@ const toLocalDateString = (date: Date): string => {
     return `${y}-${m}-${d}`;
 };
 
-const DAYS = [
-    { label: '일', value: 0 },
-    { label: '월', value: 1 },
-    { label: '화', value: 2 },
-    { label: '수', value: 3 },
-    { label: '목', value: 4 },
-    { label: '금', value: 5 },
-    { label: '토', value: 6 },
-];
 
 // 00:00 ~ 23:30, 30분 단위
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -187,7 +179,7 @@ export default function TimeSlotForm({
                                 <div>
                                     <label className="block text-sm text-gray-500 mb-2">요일</label>
                                     <div className="flex gap-1.5">
-                                        {DAYS.map((day) => {
+                                        {WEEKDAYS.map((day) => {
                                             const selected = entry.weekdays.includes(day.value);
                                             return (
                                                 <button
