@@ -1,21 +1,23 @@
-import * as RadixToast from '@radix-ui/react-toast';
+import { cn } from '~/libs/cn';
 
 interface ToastProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+    visible: boolean;
     description: string;
 }
 
-export function Toast({ open, onOpenChange, description }: ToastProps) {
+export function Toast({ visible, description }: ToastProps) {
     return (
-        <RadixToast.Root
-            open={open}
-            onOpenChange={onOpenChange}
-            duration={Infinity}
-            className="rounded-md bg-[var(--cohi-primary)] px-4 py-2 text-sm font-medium text-[var(--cohi-text-light)] shadow-lg"
+        <div
+            role="status"
+            aria-live="polite"
             data-testid="toast-root"
+            className={cn(
+                'rounded-md bg-[var(--cohi-primary)] px-4 py-2 text-sm font-medium text-[var(--cohi-text-light)] shadow-lg',
+                'transition-opacity duration-200',
+                visible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+            )}
         >
-            <RadixToast.Description data-testid="toast-description">{description}</RadixToast.Description>
-        </RadixToast.Root>
+            <span data-testid="toast-description">{description}</span>
+        </div>
     );
 }
