@@ -113,6 +113,14 @@ vi.mock('~/features/calendar/components/FileDropZone', () => ({
     ),
 }));
 
+vi.mock('~/features/member', () => ({
+    useAuth: () => ({ data: undefined }),
+}));
+
+vi.mock('~/features/calendar/components/BookingCard/BookingActionMenu', () => ({
+    default: () => null,
+}));
+
 vi.mock('~/features/calendar', () => ({
     useMyBookings: () => ({
         data: myBookingsResponse,
