@@ -214,14 +214,14 @@ public class BookingController {
         @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (신고 불가능한 상태)")
     })
     @PostMapping("/{bookingId}/report-guest-noshow")
-    public ResponseEntity<ApiResponseDTO<Void>> reportGuestNoShow(
+    public ResponseEntity<ApiResponseDTO<GuestNoShowHistoryResponseDTO>> reportGuestNoShow(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long bookingId,
             @Valid @RequestBody NoShowReportRequestDTO request
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
-        bookingService.reportGuestNoShow(bookingId, member.getId(), request.getReason());
-        return ResponseEntity.ok(ApiResponseDTO.success(null));
+        GuestNoShowHistoryResponseDTO response = bookingService.reportGuestNoShow(bookingId, member.getId(), request.getReason());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
     }
 
     @Operation(

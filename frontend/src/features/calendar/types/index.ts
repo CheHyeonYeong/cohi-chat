@@ -60,6 +60,17 @@ export interface INoShowHistoryItem {
     bookingTopic: string;
 }
 
+export interface IGuestNoShowHistoryItem {
+    id: number;
+    bookingId: number;
+    guestId: string;
+    reportedBy: string;
+    reason: string | null;
+    reportedAt: string;
+    bookingDate: string;
+    bookingTopic: string;
+}
+
 export interface IBookingPayload {
     when: DateString;
     topic: string;

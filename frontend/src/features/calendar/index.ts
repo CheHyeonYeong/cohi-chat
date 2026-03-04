@@ -18,6 +18,8 @@ export {
     useBookingsSSEQuery,
     useNoShowHistory,
     useReportHostNoShow,
+    useGuestNoShowHistory,
+    useReportGuestNoShow,
 } from './hooks';
 
 // Utils
@@ -35,6 +37,7 @@ export type {
     ICalendar,
     ICalendarDetail,
     INoShowHistoryItem,
+    IGuestNoShowHistoryItem,
     AttendanceStatus,
 } from './types';
 

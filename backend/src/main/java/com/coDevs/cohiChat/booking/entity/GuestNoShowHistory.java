@@ -18,7 +18,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -46,7 +45,6 @@ public class GuestNoShowHistory {
     @Column(name = "reported_by", nullable = false, columnDefinition = "uuid")
     private UUID reportedBy;
 
-    @Size(max = 255)
     @Column(name = "reason", length = 255)
     private String reason;
 

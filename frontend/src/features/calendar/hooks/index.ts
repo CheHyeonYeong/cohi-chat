@@ -6,3 +6,5 @@ export { useBookings, useMyBookings, useBooking, useUploadBookingFile, useBookin
 export { useBookingsSSEQuery } from './useBookingsSSE';
 export { useReportHostNoShow } from './useReportHostNoShow';
 export { useNoShowHistory } from './useNoShowHistory';
+export { useReportGuestNoShow } from './useReportGuestNoShow';
+export { useGuestNoShowHistory } from './useGuestNoShowHistory';

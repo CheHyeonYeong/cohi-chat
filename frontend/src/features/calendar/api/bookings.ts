@@ -1,6 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
 import type { StringTime, ISO8601String } from '~/types/base';
-import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, IGuestNoShowHistoryItem, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
@@ -106,4 +106,15 @@ export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryIt
 
 export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
     return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
+}
+
+export async function reportGuestNoShow(bookingId: number, reason?: string): Promise<IGuestNoShowHistoryItem> {
+    return await httpClient<IGuestNoShowHistoryItem>(`${API_URL}/bookings/${bookingId}/report-guest-noshow`, {
+        method: 'POST',
+        body: reason && reason.trim() !== '' ? { reason } : undefined,
+    });
+}
+
+export async function getGuestNoShowHistory(guestId: string): Promise<IGuestNoShowHistoryItem[]> {
+    return await httpClient<IGuestNoShowHistoryItem[]>(`${API_URL}/bookings/guest/${guestId}/noshow-history`);
 }

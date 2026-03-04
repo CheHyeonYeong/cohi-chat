@@ -499,7 +499,7 @@ public class BookingService {
     }
 
     @Transactional
-    public void reportGuestNoShow(Long bookingId, UUID hostId, String reason) {
+    public GuestNoShowHistoryResponseDTO reportGuestNoShow(Long bookingId, UUID hostId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
@@ -518,6 +518,7 @@ public class BookingService {
         guestNoShowHistoryRepository.save(history);
 
         log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, hostId);
+        return GuestNoShowHistoryResponseDTO.from(history);
     }
 
     @Transactional(readOnly = true)

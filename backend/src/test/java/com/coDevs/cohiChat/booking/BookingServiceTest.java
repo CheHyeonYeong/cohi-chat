@@ -10,6 +10,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import org.mockito.ArgumentCaptor;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -1778,7 +1780,10 @@ class BookingServiceTest {
         bookingService.reportGuestNoShow(bookingId, HOST_ID, reason);
 
         // then
-        verify(guestNoShowHistoryRepository).save(any(GuestNoShowHistory.class));
+        ArgumentCaptor<GuestNoShowHistory> captor = ArgumentCaptor.forClass(GuestNoShowHistory.class);
+        verify(guestNoShowHistoryRepository).save(captor.capture());
+        assertThat(captor.getValue().getGuestId()).isEqualTo(GUEST_ID);
+        assertThat(captor.getValue().getReportedBy()).isEqualTo(HOST_ID);
     }
 
     @Test

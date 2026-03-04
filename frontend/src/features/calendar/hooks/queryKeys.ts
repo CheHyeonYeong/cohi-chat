@@ -6,4 +6,5 @@ export const calendarKeys = {
     timeslots: (hostname: string, hostId?: string) => ['timeslots', hostname, hostId] as const,
     calendarEvent: (slug: string) => ['calendar-event', slug] as const,
     noShowHistory: (hostId: string) => ['noshow-history', hostId] as const,
+    guestNoShowHistory: (guestId: string) => ['guest-noshow-history', guestId] as const,
 };
