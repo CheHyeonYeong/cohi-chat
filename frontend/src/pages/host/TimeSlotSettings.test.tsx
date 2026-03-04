@@ -103,12 +103,24 @@ beforeEach(() => {
     } as unknown as ReturnType<typeof useDeleteTimeslot>);
 });
 
+const DUPLICATE_TOAST_MESSAGE = '이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.';
+
 describe('TimeSlotSettings duplicate blocked toast', () => {
-    it('calls toast when duplicate slot creation is blocked', () => {
+    it('DnD 겹침 차단 시 토스트를 호출한다', () => {
         render(<TimeSlotSettings />);
 
         fireEvent.click(screen.getByRole('button', { name: 'trigger-grid-duplicate' }));
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
+        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE);
+    });
+
+    it('폼 편집 겹침 감지 시 토스트를 호출한다', () => {
+        render(<TimeSlotSettings />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'trigger-form-overlap' }));
+
+        expect(mockShowToast).toHaveBeenCalledTimes(1);
+        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE);
     });
 });
