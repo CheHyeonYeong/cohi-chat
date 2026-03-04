@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import TimeSlotForm, { type TimeSlotEntry } from './TimeSlotForm';
 
 describe('TimeSlotForm', () => {
@@ -43,6 +43,17 @@ describe('TimeSlotForm', () => {
 
             const warningText = container.textContent;
             expect(warningText).toContain('시작 시간은 종료 시간보다 이전이어야 합니다');
+        });
+
+        it('시작 시간이 종료 시간보다 늦거나 같으면 저장 버튼이 비활성화되어야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 2, 3, 4, 5], startTime: '18:00', endTime: '09:00' },
+            ];
+
+            render(<TimeSlotForm {...defaultProps} entries={entries} />);
+
+            const saveButton = screen.getByRole('button', { name: '저장하기' });
+            expect(saveButton).toBeDisabled();
         });
 
         it('유효한 시간 범위에서는 인라인 경고를 표시하지 않아야 한다', () => {
@@ -141,6 +152,51 @@ describe('TimeSlotForm', () => {
 
             const saveButton = getByRole('button', { name: '저장하기' });
             expect(saveButton).toBeDisabled();
+        });
+
+        it('기존 entry(existingId)는 요일/시간 입력이 비활성화되어야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '18:00', existingId: 101 },
+            ];
+
+            const { getByRole, getAllByRole } = render(
+                <TimeSlotForm {...defaultProps} entries={entries} />,
+            );
+
+            const mondayButton = getByRole('button', { name: '월' });
+            expect(mondayButton).toBeDisabled();
+
+            const selects = getAllByRole('combobox');
+            expect(selects[0]).toBeDisabled();
+            expect(selects[1]).toBeDisabled();
+        });
+
+        it('겹침 상태로 전환되면 onOverlapDetected를 1회 호출해야 한다', async () => {
+            const onOverlapDetected = vi.fn();
+
+            const { rerender } = render(
+                <TimeSlotForm
+                    {...defaultProps}
+                    entries={[
+                        { weekdays: [1], startTime: '09:00', endTime: '12:00' },
+                        { weekdays: [2], startTime: '10:00', endTime: '11:00' },
+                    ]}
+                    onOverlapDetected={onOverlapDetected}
+                />,
+            );
+
+            rerender(
+                <TimeSlotForm
+                    {...defaultProps}
+                    entries={[
+                        { weekdays: [1], startTime: '09:00', endTime: '12:00' },
+                        { weekdays: [1], startTime: '10:00', endTime: '11:00' },
+                    ]}
+                    onOverlapDetected={onOverlapDetected}
+                />,
+            );
+
+            await waitFor(() => expect(onOverlapDetected).toHaveBeenCalledTimes(1));
         });
     });
 });
