@@ -93,7 +93,6 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
     };
 
     const removeEntry = (index: number) => {
-        if (entries.length <= 1) return;
         // 삭제된 항목 이후 인덱스를 당겨서 savedDatesRef 재구성
         const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
         Object.entries(savedDatesRef.current).forEach(([key, value]) => {
@@ -105,7 +104,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
         savedDatesRef.current = newSavedDates;
         const updated = entries.filter((_, i) => i !== index);
         onChange(updated);
-        if (expandedIndex >= updated.length) setExpandedIndex(updated.length - 1);
+        setExpandedIndex(updated.length > 0 && expandedIndex >= updated.length ? updated.length - 1 : -1);
     };
 
     return (
@@ -125,7 +124,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                         <div
                             data-testid="entry-header"
                             className="flex justify-between items-center cursor-pointer"
-                            onClick={() => setExpandedIndex(index)}
+                            onClick={() => setExpandedIndex(expandedIndex === index ? -1 : index)}
                         >
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
@@ -147,7 +146,7 @@ export default function TimeSlotForm({ entries, onChange, onSave, onDelete, isPe
                                 >
                                     {deletingId === entry.existingId ? '삭제 중...' : '삭제'}
                                 </button>
-                            ) : entries.length > 1 && !entry.existingId ? (
+                            ) : !entry.existingId ? (
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); removeEntry(index); }}
