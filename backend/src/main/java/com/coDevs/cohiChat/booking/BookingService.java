@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -504,6 +505,7 @@ public class BookingService {
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateHostAccess(booking, hostId);
+        validateMeetingStarted(booking);
 
         if (!booking.getAttendanceStatus().isHostReportable()) {
             throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
@@ -515,7 +517,11 @@ public class BookingService {
 
         UUID guestId = booking.getGuestId();
         GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, hostId, reason);
-        guestNoShowHistoryRepository.save(history);
+        try {
+            guestNoShowHistoryRepository.save(history);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
 
         log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, hostId);
         return GuestNoShowHistoryResponseDTO.from(history);

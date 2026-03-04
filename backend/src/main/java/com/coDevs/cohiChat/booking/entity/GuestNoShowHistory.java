@@ -18,15 +18,20 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "guest_noshow_history", indexes = {
-    @Index(name = "idx_guest_noshow_history_guest_id", columnList = "guest_id")
-})
+@Table(
+    name = "guest_noshow_history",
+    uniqueConstraints = @UniqueConstraint(name = "uq_guest_noshow_history_booking_id", columnNames = "booking_id"),
+    indexes = {
+        @Index(name = "idx_guest_noshow_history_guest_id", columnList = "guest_id")
+    }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GuestNoShowHistory {

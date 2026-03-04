@@ -1807,10 +1807,11 @@ class BookingServiceTest {
     void reportGuestNoShowFailWhenNotNoShowStatus() {
         // given
         Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
-        // SCHEDULED 상태 (NO_SHOW 아님)
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        // SCHEDULED 상태 (NO_SHOW 아님) — 미팅은 이미 지났으므로 validateMeetingStarted 통과
         given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
 
         // when & then
