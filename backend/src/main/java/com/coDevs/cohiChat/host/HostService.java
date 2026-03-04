@@ -44,6 +44,10 @@ public class HostService {
 		return HostProfileResponseDTO.from(member, calendarConnected);
 	}
 
+	// TODO: [#220 정책 검토] GUEST_ACCESS_DENIED 에러코드 명확화 여부 팀 논의 필요
+	//  - 현재: GUEST_ACCESS_DENIED (403) - "게스트 권한으로는 이용할 수 없는 기능입니다."
+	//  - 대안: HOST_ROLE_REQUIRED 같은 명칭으로 변경하면 "호스트 역할이 필요하다"는 의미가 더 명확
+	//  - CalendarService.validateHostPermission()에서도 동일 에러코드 사용 중이므로 일괄 변경 필요
 	private void validateHostRole(Member member) {
 		if (member.getRole() != Role.HOST) {
 			throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);

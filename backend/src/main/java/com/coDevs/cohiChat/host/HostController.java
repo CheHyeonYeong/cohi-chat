@@ -36,6 +36,12 @@ public class HostController {
 
 	private final HostService hostService;
 	private final CalendarService calendarService;
+	// TODO: [#220 정책 검토] MemberService 직접 의존 제거 필요성 팀 논의 필요
+	//  - 현재: connectCalendar()에서 memberService.getMember()를 직접 호출하여 Member 엔티티를 조회
+	//  - 대안 1: CalendarService.createCalendar(username, request) 시그니처로 변경하여
+	//    CalendarService 내부에서 Member 조회 처리 (Controller -> Service 간 엔티티 전달 제거)
+	//  - 대안 2: HostService에 캘린더 연결 파사드 메서드를 추가하여 HostController가 HostService만 의존
+	//  - CalendarService가 이미 MemberService를 의존하고 있으므로 대안 1이 자연스러움
 	private final MemberService memberService;
 
 	@Operation(summary = "호스트 등록", description = "인증된 회원을 호스트로 등록합니다. 호스트로 등록하면 타임슬롯을 생성하고 커피챗 예약을 받을 수 있습니다.")

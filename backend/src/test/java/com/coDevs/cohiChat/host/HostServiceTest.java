@@ -5,7 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -86,6 +90,19 @@ class HostServiceTest {
 				() -> hostService.registerAsHost(TEST_USERNAME));
 			assertEquals(ErrorCode.USER_NOT_FOUND, ex.getErrorCode());
 		}
+
+		@Test
+		@DisplayName("호스트 등록 직후 calendarConnected는 false")
+		void registerAsHostCalendarNotConnected() {
+			Member guest = createGuestMember();
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
+
+			HostProfileResponseDTO result = hostService.registerAsHost(TEST_USERNAME);
+
+			assertFalse(result.isCalendarConnected());
+			assertNotNull(result.getHostRegisteredAt());
+			assertEquals("test@test.com", result.getEmail());
+		}
 	}
 
 	@Nested
@@ -116,6 +133,31 @@ class HostServiceTest {
 				() -> hostService.getHostProfile(TEST_USERNAME));
 			assertEquals(ErrorCode.GUEST_ACCESS_DENIED, ex.getErrorCode());
 		}
+
+		@Test
+		@DisplayName("캘린더 미연결 호스트의 calendarConnected는 false")
+		void hostWithoutCalendarReturnsFalse() {
+			Member host = createHostMember();
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
+			when(calendarRepository.existsByUserId(host.getId())).thenReturn(false);
+
+			HostProfileResponseDTO result = hostService.getHostProfile(TEST_USERNAME);
+
+			assertFalse(result.isCalendarConnected());
+			assertEquals(TEST_USERNAME, result.getUsername());
+		}
+
+		@Test
+		@DisplayName("GUEST 조회 시 calendarRepository를 호출하지 않는다")
+		void guestAccessDeniedDoesNotCheckCalendar() {
+			Member guest = createGuestMember();
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
+
+			assertThrows(CustomException.class,
+				() -> hostService.getHostProfile(TEST_USERNAME));
+
+			verify(calendarRepository, never()).existsByUserId(guest.getId());
+		}
 	}
 
 	@Nested
@@ -144,6 +186,31 @@ class HostServiceTest {
 			CustomException ex = assertThrows(CustomException.class,
 				() -> hostService.updateHostProfile(TEST_USERNAME, "NewName"));
 			assertEquals(ErrorCode.GUEST_ACCESS_DENIED, ex.getErrorCode());
+		}
+
+		@Test
+		@DisplayName("캘린더 연결된 호스트의 프로필 수정 시 calendarConnected는 true")
+		void updateHostProfileWithCalendarConnected() {
+			Member host = createHostMember();
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
+			when(calendarRepository.existsByUserId(host.getId())).thenReturn(true);
+
+			HostProfileResponseDTO result = hostService.updateHostProfile(TEST_USERNAME, "UpdatedName");
+
+			assertEquals("UpdatedName", result.getDisplayName());
+			assertTrue(result.isCalendarConnected());
+		}
+
+		@Test
+		@DisplayName("GUEST 수정 시 calendarRepository를 호출하지 않는다")
+		void guestUpdateDoesNotCheckCalendar() {
+			Member guest = createGuestMember();
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(guest);
+
+			assertThrows(CustomException.class,
+				() -> hostService.updateHostProfile(TEST_USERNAME, "NewName"));
+
+			verify(calendarRepository, never()).existsByUserId(guest.getId());
 		}
 	}
 }
