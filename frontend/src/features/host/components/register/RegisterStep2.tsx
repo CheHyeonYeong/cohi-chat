@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
 import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
+import calendarSettingsGuide from '~/assets/images/host-register/calendar-settings-guide.png';
+import calendarShareGuide from '~/assets/images/host-register/calendar-share-guide.png';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -108,7 +110,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Left: Instruction cards */}
                 <div className="flex-1 space-y-4">
-                    {/* Step 1 — 서비스 어카운트 공유 설정 */}
+                    {/* Step 1 — Google Calendar 접속 */}
                     <div className="bg-white rounded-2xl p-5 shadow-sm">
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
@@ -118,6 +120,36 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                             </div>
                             <div className="flex-1">
                                 <p className="text-xs text-gray-500 mb-1">1단계</p>
+                                <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
+                                    Google Calendar 접속
+                                </h3>
+                                <a
+                                    href="https://calendar.google.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)] text-sm font-medium hover:bg-[var(--cohi-bg-warm)] transition-colors"
+                                >
+                                    calendar.google.com 열기
+                                    <ExternalLinkIcon className="w-3.5 h-3.5" />
+                                </a>
+                                <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+                                    웹 브라우저에서 Google Calendar를 열어주세요.
+                                    아직 로그인하지 않았다면 Google 계정으로 로그인해주세요.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 2 — 서비스 어카운트 공유 설정 */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                    2
+                                </span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1">2단계</p>
                                 <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
                                     서비스 어카운트를 캘린더 편집자로 공유
                                 </h3>
@@ -142,87 +174,31 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                                         )}
                                     </button>
                                 </div>
-                                <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                                <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside mb-4">
                                     <li>Google Calendar 설정 &gt; <strong>특정 사용자와 공유</strong></li>
                                     <li>위 이메일 주소 입력 후 추가</li>
-                                    <li>권한을 <strong>변경 및 이벤트 관리</strong>(편집자)로 설정</li>
+                                    <li>권한을 <strong>변경 및 공유 관리</strong>로 설정</li>
                                 </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Step 2 */}
-                    <div className="bg-white rounded-2xl p-5 shadow-sm">
-                        <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
-                                    2
-                                </span>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-500 mb-1">2단계</p>
-                                <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
-                                    Google Calendar 접속
-                                </h3>
-                                <a
-                                    href="https://calendar.google.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)] text-sm font-medium hover:bg-[var(--cohi-bg-warm)] transition-colors"
-                                >
-                                    calendar.google.com 열기
-                                    <ExternalLinkIcon className="w-3.5 h-3.5" />
-                                </a>
-                                <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-                                    웹 브라우저에서 Google Calendar를 열어주세요.
-                                    아직 로그인하지 않았다면 Google 계정으로 로그인해주세요.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Step 3 & 4 side by side */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Step 3 */}
-                        <div className="bg-[var(--cohi-bg-warm)]/50 rounded-2xl p-5">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
-                                    3
-                                </span>
-                                <div>
-                                    <p className="text-xs text-gray-500">3단계</p>
-                                    <h3 className="font-bold text-[var(--cohi-text-dark)]">캘린더 설정 열기</h3>
+                                {/* 이미지 가이드 */}
+                                <div className="space-y-4">
+                                    <div className="bg-[var(--cohi-bg-warm)]/50 rounded-xl overflow-hidden">
+                                        <img
+                                            src={calendarSettingsGuide}
+                                            alt="캘린더 설정 열기"
+                                            className="w-full h-auto"
+                                        />
+                                        <p className="text-sm text-gray-600 text-center py-2">설정 및 공유 열기</p>
+                                    </div>
+                                    <div className="bg-[var(--cohi-bg-warm)]/50 rounded-xl overflow-hidden">
+                                        <img
+                                            src={calendarShareGuide}
+                                            alt="사용자 추가"
+                                            className="w-full h-auto"
+                                        />
+                                        <p className="text-sm text-gray-600 text-center py-2">특정 사용자와 공유 (변경 및 공유 관리 권한)</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="bg-white/60 rounded-xl p-4 mb-3 h-32 flex items-center justify-center">
-                                <div className="text-center text-gray-400 text-sm">
-                                    <p>📋 캘린더 설정 화면</p>
-                                </div>
-                            </div>
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                내 캘린더 &gt; <strong>⋮</strong> &gt; <strong>설정 및 공유</strong>
-                            </p>
-                        </div>
-
-                        {/* Step 4 */}
-                        <div className="bg-[var(--cohi-bg-warm)]/50 rounded-2xl p-5">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
-                                    4
-                                </span>
-                                <div>
-                                    <p className="text-xs text-gray-500">4단계</p>
-                                    <h3 className="font-bold text-[var(--cohi-text-dark)]">캘린더 ID 복사</h3>
-                                </div>
-                            </div>
-                            <div className="bg-white/60 rounded-xl p-4 mb-3 h-32 flex items-center justify-center">
-                                <div className="text-center text-gray-400 text-sm">
-                                    <p>📋 캘린더 통합 화면</p>
-                                </div>
-                            </div>
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                캘린더 통합 섹션에서 캘린더 ID를 찾아 복사 버튼을 클릭하세요.
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -230,9 +206,15 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                 {/* Right: Calendar ID input */}
                 <div className="w-full lg:w-80 flex-shrink-0">
                     <div className="bg-white rounded-2xl p-6 shadow-sm">
-                        <h3 className="font-bold text-[var(--cohi-text-dark)] text-lg mb-4">
-                            Calendar ID 입력
-                        </h3>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
+                                3
+                            </span>
+                            <div>
+                                <p className="text-xs text-gray-500">3단계</p>
+                                <h3 className="font-bold text-[var(--cohi-text-dark)]">Calendar ID 입력</h3>
+                            </div>
+                        </div>
 
                         <div className="relative mb-2">
                             <input
@@ -268,7 +250,7 @@ export default function RegisterStep2({ data, onChange, errors }: RegisterStep2P
                         </div>
 
                         <p className="text-sm text-gray-500 mb-5">
-                            위 단계를 따라 복사한 ID를 붙여넣으세요.
+                            로그인한 Google 계정의 Gmail 주소를 입력하세요.
                         </p>
 
                         {errors.googleCalendarId && (
