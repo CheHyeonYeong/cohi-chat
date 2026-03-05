@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Button from '~/components/button/Button';
 import { Card } from '~/components/card';
-import { getServiceAccountEmail } from '~/features/host/api/hostCalendarApi';
+import { useServiceAccountEmail } from '~/features/host/hooks/useServiceAccountEmail';
 import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
 import calendarSettingsGuide from '~/assets/images/host-register/calendar-settings-guide.png';
 import calendarShareGuide from '~/assets/images/host-register/calendar-share-guide.png';
@@ -59,17 +59,10 @@ function CheckIcon({ className = '' }: { className?: string }) {
 export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
-    const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
-    const [emailError, setEmailError] = useState(false);
     const [emailCopied, setEmailCopied] = useState(false);
+    const { serviceAccountEmail, isError: emailError } = useServiceAccountEmail();
     const isValid = CALENDAR_ID_REGEX.test(data.googleCalendarId);
     const hasInput = data.googleCalendarId.length > 0;
-
-    useEffect(() => {
-        getServiceAccountEmail()
-            .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => setEmailError(true));
-    }, []);
 
     const handleCopyEmail = async () => {
         if (!serviceAccountEmail) return;
@@ -145,7 +138,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }
                             </p>
                             <div className="flex items-center gap-2 bg-[var(--cohi-bg-light)] rounded-lg px-3 py-2 mb-3">
                                 <span className="flex-1 text-sm font-mono text-[var(--cohi-text-dark)] break-all select-all">
-                                    {emailError ? '이메일을 불러올 수 없습니다' : serviceAccountEmail || '설정 중...'}
+                                    {emailError ? '이메일을 불러올 수 없습니다' : serviceAccountEmail || '불러오는 중...'}
                                 </span>
                                 <button
                                     type="button"
