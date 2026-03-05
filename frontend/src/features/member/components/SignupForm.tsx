@@ -1,15 +1,17 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { newRandomNick } from 'random-korean-nickname';
 import Button from '~/components/button/Button';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
-
-// BE @Pattern과 동일한 검증 규칙
-const USERNAME_PATTERN = /^(?!hosts$)[a-zA-Z0-9._-]{4,12}$/i;
-const PASSWORD_PATTERN = /^[a-zA-Z0-9!@#$%^&*._-]{8,20}$/;
-// RFC 5322 기반 간소화 정규식: 로컬파트@도메인.TLD(2자이상)
-const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+import {
+    validateUsername,
+    validateEmail,
+    validateDisplayName,
+    validatePassword,
+    validatePasswordConfirm,
+} from '../utils/validators';
 
 interface SignupFormValues {
     username: string;
@@ -19,51 +21,20 @@ interface SignupFormValues {
     passwordAgain: string;
 }
 
-// passwordAgain validation에서 password 값 참조를 위한 클로저
 const createValidationRules = (
     getPassword: () => string
 ): Record<keyof SignupFormValues, ValidationRule<string>> => ({
-    username: (value: string) => {
-        if (!value.trim()) return '아이디를 입력해주세요.';
-        if (!USERNAME_PATTERN.test(value.trim())) {
-            return '아이디는 4~12자의 영문, 숫자, 특수문자(._-)만 가능합니다.';
-        }
-        return null;
-    },
-    email: (value: string) => {
-        if (!value.trim()) return '이메일을 입력해주세요.';
-        if (!EMAIL_PATTERN.test(value.trim())) {
-            return '올바른 이메일 형식이 아닙니다.';
-        }
-        return null;
-    },
-    displayName: (value: string) => {
-        const trimmed = value.trim();
-        if (trimmed && (trimmed.length < 2 || trimmed.length > 20)) {
-            return '표시 이름은 2~20자여야 합니다.';
-        }
-        return null;
-    },
-    password: (value: string) => {
-        if (!value) return '비밀번호를 입력해주세요.';
-        if (!PASSWORD_PATTERN.test(value)) {
-            return '비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.';
-        }
-        return null;
-    },
-    passwordAgain: (value: string) => {
-        if (!value) return '비밀번호 확인을 입력해주세요.';
-        if (value !== getPassword()) {
-            return '비밀번호가 일치하지 않습니다.';
-        }
-        return null;
-    },
+    username: validateUsername,
+    email: validateEmail,
+    displayName: validateDisplayName,
+    password: validatePassword(),
+    passwordAgain: validatePasswordConfirm(getPassword),
 });
 
 export function SignupForm() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [displayName, setDisplayName] = useState('');
+    const [displayName, setDisplayName] = useState(() => newRandomNick());
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
     const navigate = useNavigate();
@@ -79,6 +50,11 @@ export function SignupForm() {
         },
         [handleBlur]
     );
+
+    const handleRandomName = () => {
+        const randomName = newRandomNick();
+        setDisplayName(randomName);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,7 +75,7 @@ export function SignupForm() {
             {
                 username: username.trim(),
                 email: email.trim(),
-                displayName: displayName.trim() || undefined,
+                displayName: displayName.trim(),
                 password,
             },
             {
@@ -115,14 +91,14 @@ export function SignupForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)] py-8">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)] py-8">
             {/* Signup Card */}
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-center text-[var(--cohe-text-dark)] mb-6">회원가입</h2>
+                <h2 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">회원가입</h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="username" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
                             아이디 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -144,7 +120,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="email" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
                             이메일 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -165,27 +141,40 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="displayName" className="text-sm text-[var(--cohe-text-dark)]">
-                            표시 이름 (선택)
+                        <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
+                            표시 이름 <span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            id="displayName"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            onBlur={() => onBlur('displayName', displayName)}
-                            disabled={isPending}
-                            maxLength={20}
-                            placeholder="(2-20자)"
-                            className={getInputClassName('displayName', baseInputClass)}
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="displayName"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                onBlur={() => onBlur('displayName', displayName)}
+                                disabled={isPending}
+                                required
+                                maxLength={20}
+                                placeholder="(2-20자)"
+                                className={getInputClassName('displayName', baseInputClass)}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleRandomName}
+                                disabled={isPending}
+                                className="whitespace-nowrap flex-shrink-0"
+                                data-testid="random-name-button"
+                            >
+                                랜덤 생성
+                            </Button>
+                        </div>
                         {fields.displayName?.touched && fields.displayName.error && (
                             <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
                         )}
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="password" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
                             비밀번호 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -207,7 +196,7 @@ export function SignupForm() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="passwordAgain" className="text-sm text-[var(--cohe-text-dark)]">
+                        <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
                             비밀번호 확인 <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -245,9 +234,9 @@ export function SignupForm() {
                     </Button>
                 </form>
 
-                <div className="text-center text-sm mt-6 text-[var(--cohe-text-dark)]">
+                <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
                     이미 계정이 있으신가요?{' '}
-                    <Link to="/login" className="text-[var(--cohe-primary)] font-semibold hover:underline">
+                    <Link to="/login" className="text-[var(--cohi-primary)] font-semibold hover:underline">
                         로그인
                     </Link>
                 </div>

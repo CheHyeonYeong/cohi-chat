@@ -20,15 +20,16 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
     });
 }
 
-export function useBooking(id: number) {
+export function useBooking(id: number | null) {
     return useQuery<IBookingDetail>({
-        queryKey: calendarKeys.booking(id),
-        queryFn: () => getBooking(id),
+        queryKey: calendarKeys.booking(id ?? 0),
+        queryFn: () => getBooking(id!),
+        enabled: id !== null,
     });
 }
 
 export function useUploadBookingFile(id: number) {
-    return useMutation<IBookingDetail, Error, FormData>({
+    return useMutation<import('../types').IBookingFile, Error, FormData>({
         mutationFn: (files: FormData) => uploadBookingFile(id, files),
     });
 }
@@ -78,15 +79,19 @@ export function useBookingsStreamQuery({
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n').filter(Boolean);
                     lines.forEach(line => {
-                        const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
-                        setItems((prevData) => {
-                            const index = prevData.findIndex((item) => item.id === data.id);
-                            if (index === -1) {
-                                return [...prevData, data];
-                            }
-                            return prevData;
-                        });
-                        onMessageRef.current?.(data);
+                        try {
+                            const data = snakeToCamel(JSON.parse(line)) as IBooking | ICalendarEvent;
+                            setItems((prevData) => {
+                                const index = prevData.findIndex((item) => item.id === data.id);
+                                if (index === -1) {
+                                    return [...prevData, data];
+                                }
+                                return prevData;
+                            });
+                            onMessageRef.current?.(data);
+                        } catch {
+                            console.warn('Failed to parse stream chunk:', line);
+                        }
                     });
                 }
             } catch (error) {

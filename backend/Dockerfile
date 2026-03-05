@@ -3,14 +3,11 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Install wget for healthcheck
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user for security
-RUN groupadd -r spring && useradd -r -g spring spring
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data && chown -R spring:spring /app
+# Install wget, create non-root user, and setup directories in single layer
+RUN apt-get update && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r spring && useradd -r -g spring spring \
+    && mkdir -p /app/data && chown -R spring:spring /app
 
 # Copy pre-built JAR (uploaded from CI) with proper ownership
 COPY --chown=spring:spring app.jar app.jar
@@ -24,8 +21,8 @@ EXPOSE 8080
 VOLUME ["/app/data"]
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD wget -q --spider http://localhost:8080/api/hello || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 # Run application with JVM memory settings
-ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]

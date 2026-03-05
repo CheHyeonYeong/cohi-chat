@@ -131,25 +131,6 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("성공: 표시명이 없으면(null) 무작위 문자열 8글자 생성")
-	void signupWithRandomDisplayName() {
-
-		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
-			.username(TEST_USERNAME)
-			.password(TEST_PASSWORD)
-			.email(TEST_EMAIL)
-			.displayName(null)
-			.build();
-
-		givenSuccessfulSignupMocks();
-
-		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
-
-		assertThat(signupResponseDTO.getDisplayName()).isNotNull();
-		assertThat(signupResponseDTO.getDisplayName().length()).isEqualTo(8);
-	}
-
-	@Test
 	@DisplayName("실패: 계정 id가 중복되면 오류")
 	void signupFailWithDuplicateUsername() {
 		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()

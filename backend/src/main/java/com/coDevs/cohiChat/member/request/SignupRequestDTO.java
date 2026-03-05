@@ -30,6 +30,7 @@ public class SignupRequestDTO {
 	@Email(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "올바른 이메일 형식이 아닙니다.")
 	private String email;
 	
+	@NotBlank(message = "표시 이름은 필수입니다.")
 	@Size(min = 2, max = 20)
 	private String displayName;
 

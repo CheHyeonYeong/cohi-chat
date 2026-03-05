@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.oauth;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,10 @@ public class OAuthMemberService {
 
 	private Member registerNewMember(OAuthUserInfo userInfo) {
 		String username = userInfo.getProvider().name().toLowerCase() + "_" + userInfo.getProviderId();
+		if (memberRepository.existsByUsernameAndIsDeletedFalse(username)) {
+			String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+			username = username + "_" + suffix;
+		}
 		String displayName = (userInfo.getDisplayName() != null && !userInfo.getDisplayName().isBlank())
 			? userInfo.getDisplayName() : username;
 

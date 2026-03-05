@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
 import { Header } from '~/components/header';
@@ -21,6 +22,14 @@ function HostCard({
     profileImageUrl?: string;
 }) {
     const now = new Date();
+    const [imgError, setImgError] = useState(false);
+
+    // XSS 방지를 위한 URL 프로토콜 체크
+    const isSafeUrl = (url?: string) => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase().trim();
+        return lowerUrl.startsWith('http://') || lowerUrl.startsWith('https://');
+    };
 
     return (
         <Link
@@ -29,20 +38,25 @@ function HostCard({
             search={{ year: now.getFullYear(), month: now.getMonth() + 1 }}
             className='flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-md hover:shadow-lg transition-shadow cursor-pointer'
         >
-            <div className='w-12 h-12 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
-                {profileImageUrl ? (
-                    <img src={profileImageUrl} alt={displayName} className='w-full h-full object-cover' />
+            <div className='w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center overflow-hidden flex-shrink-0'>
+                {isSafeUrl(profileImageUrl) && !imgError ? (
+                    <img
+                        src={profileImageUrl}
+                        alt={displayName}
+                        className='w-full h-full object-cover'
+                        onError={() => setImgError(true)}
+                    />
                 ) : (
-                    <span className='text-lg font-semibold text-[var(--cohe-primary)]'>
+                    <span className='text-lg font-semibold text-[var(--cohi-primary)]'>
                         {displayName.charAt(0)}
                     </span>
                 )}
             </div>
             <div className='flex flex-col min-w-0'>
-                <span className='font-semibold text-[var(--cohe-text-dark)] truncate'>{displayName}</span>
-                <span className='text-sm text-gray-500 truncate'>{job ?? 'Host'}</span>
+                <span className='font-semibold text-[var(--cohi-text-dark)] truncate'>{displayName}</span>
+                <span className='text-sm text-gray-500 truncate'>{job ?? '호스트'}</span>
                 {chatCount > 0 && (
-                    <span className='text-xs text-[var(--cohe-primary)]'>커피챗 {chatCount}회</span>
+                    <span className='text-xs text-[var(--cohi-primary)]'>커피챗 {chatCount}회</span>
                 )}
             </div>
         </Link>
@@ -65,7 +79,7 @@ export default function Home() {
     };
 
     return (
-        <div className='w-full min-h-screen bg-[var(--cohe-bg-light)]'>
+        <div className='w-full min-h-screen bg-[var(--cohi-bg-light)]'>
             {/* Header */}
             <Header right={
                 <div className='flex items-center gap-3'>
@@ -75,10 +89,15 @@ export default function Home() {
                                 호스트 대시보드
                             </LinkButton>
                         ) : (
-                            <LinkButton variant="outline" to='/host/register' className="hidden">
+                            <LinkButton variant="outline" to='/host/register'>
                                 호스트 등록하기
                             </LinkButton>
                         )
+                    )}
+                    {isAuthenticated && (
+                        <LinkButton variant="outline" to='/settings'>
+                            설정
+                        </LinkButton>
                     )}
                     {isAuthenticated
                         ? <LogoutButton />
@@ -90,19 +109,19 @@ export default function Home() {
             } />
 
             {/* Hero Section */}
-            <section className='w-full cohe-bg-gradient relative overflow-hidden'>
+            <section className='w-full cohi-bg-gradient relative overflow-hidden'>
                 <div className='w-full px-6 py-16 md:py-24'>
                     <div className='text-center space-y-6'>
-                        <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--cohe-text-dark)] leading-tight'>
+                        <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--cohi-text-dark)] leading-tight'>
                             부담 없는 대화로 진짜 정보를
                         </h1>
-                        <p className='text-lg md:text-xl text-[var(--cohe-text-dark)]/80'>
-                            현직자 · 채용담당자와 1:1 커피쳇
+                        <p className='text-lg md:text-xl text-[var(--cohi-text-dark)]/80'>
+                            현직자·채용담당자와 1:1 커피챗
                         </p>
 
                         {/* Tags */}
                         <div className='flex justify-center gap-2 flex-wrap'>
-                            <span className='px-4 py-1.5 bg-[var(--cohe-primary)]/10 text-[var(--cohe-primary)] rounded-full text-sm font-medium'>
+                            <span className='px-4 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium'>
                                 이직 · 커리어 · 네트워킹
                             </span>
                         </div>
@@ -125,20 +144,20 @@ export default function Home() {
                         <div className='relative w-full max-w-2xl h-48 md:h-64'>
                             {/* Left Person */}
                             <div className='absolute left-1/4 bottom-0 w-20 h-32 md:w-24 md:h-40'>
-                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohe-secondary)] mx-auto' />
-                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohe-secondary)]/70 rounded-t-3xl mt-2 mx-auto' />
+                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohi-secondary)] mx-auto' />
+                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohi-secondary)]/70 rounded-t-3xl mt-2 mx-auto' />
                             </div>
 
                             {/* Coffee Table */}
                             <div className='absolute left-1/2 bottom-8 transform -translate-x-1/2'>
-                                <div className='w-24 h-2 md:w-32 md:h-3 bg-[var(--cohe-primary)] rounded-full' />
-                                <div className='w-16 h-8 md:w-20 md:h-10 bg-[var(--cohe-primary)]/80 mx-auto rounded-b-lg' />
+                                <div className='w-24 h-2 md:w-32 md:h-3 bg-[var(--cohi-primary)] rounded-full' />
+                                <div className='w-16 h-8 md:w-20 md:h-10 bg-[var(--cohi-primary)]/80 mx-auto rounded-b-lg' />
                             </div>
 
                             {/* Right Person */}
                             <div className='absolute right-1/4 bottom-0 w-20 h-32 md:w-24 md:h-40'>
-                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohe-primary)]/60 mx-auto' />
-                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohe-primary)]/40 rounded-t-3xl mt-2 mx-auto' />
+                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohi-primary)]/60 mx-auto' />
+                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohi-primary)]/40 rounded-t-3xl mt-2 mx-auto' />
                             </div>
 
                             {/* Decorative Plants */}
@@ -152,7 +171,7 @@ export default function Home() {
             {/* Host List Section */}
             <section id='host-list' className='w-full py-12 md:py-16 px-6'>
                 <div className='w-full max-w-7xl mx-auto'>
-                    <h2 className='text-2xl md:text-3xl font-bold text-[var(--cohe-text-dark)] mb-8'>
+                    <h2 className='text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-8'>
                         호스트 목록
                     </h2>
 

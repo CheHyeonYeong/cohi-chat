@@ -13,15 +13,15 @@ import {
     type DragStartEvent,
 } from '@dnd-kit/core';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeEntryFromDrag, computeDragHighlights, isDuplicateEntry } from './dragUtils';
+import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
+import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
 }
 
-const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
-const DAY_MAP: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
 
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 22;
@@ -59,8 +59,8 @@ function timeToRow(time: string, startHour: number): number {
 function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
-            className="h-6"
-            style={isHighlighted ? { backgroundColor: 'var(--cohe-primary)', opacity: 0.2 } : undefined}
+            data-highlighted={isHighlighted || undefined}
+            className={isHighlighted ? 'h-6 bg-[var(--cohi-timeslot-existing)]' : 'h-6'}
         />
     );
 }
@@ -97,13 +97,12 @@ function DraggableCell({
             {...listeners}
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
-            className="h-6 transition-colors"
-            style={{
-                backgroundColor: isHighlighted ? 'var(--cohe-primary)' : undefined,
-                opacity: isHighlighted ? (isInDragRange ? 0.4 : 0.2) : undefined,
-                cursor: 'crosshair',
-                touchAction: 'none',
-            }}
+            data-highlighted={isHighlighted || undefined}
+            className={[
+                'h-6 transition-colors duration-100 cursor-crosshair',
+                isInDragRange ? 'bg-[var(--cohi-timeslot-drag)]' : isHighlighted ? 'bg-[var(--cohi-timeslot-existing)]' : '',
+            ].join(' ')}
+            style={{ touchAction: 'none' }}
         />
     );
 }
@@ -112,13 +111,11 @@ function WeeklyGrid({
     hours,
     highlights,
     dragHighlights,
-    isDragging,
     isInteractive,
 }: {
     hours: number[];
     highlights: Map<number, { start: number; end: number }[]>;
     dragHighlights: Set<string>;
-    isDragging: boolean;
     isInteractive: boolean;
 }) {
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
@@ -159,13 +156,13 @@ function WeeklyGrid({
                                                 col={colIdx}
                                                 halfRow={topHalfRow}
                                                 isHighlighted={topExisting || topInRange}
-                                                isInDragRange={isDragging && topInRange}
+                                                isInDragRange={topInRange}
                                             />
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={bottomHalfRow}
                                                 isHighlighted={bottomExisting || bottomInRange}
-                                                isInDragRange={isDragging && bottomInRange}
+                                                isInDragRange={bottomInRange}
                                             />
                                         </>
                                     ) : (
@@ -184,7 +181,8 @@ function WeeklyGrid({
     );
 }
 
-export default function WeeklySchedulePreview({ entries, onChange }: WeeklySchedulePreviewProps) {
+
+export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -206,7 +204,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
             if (startRow >= endRow) continue;
 
             for (const wd of entry.weekdays) {
-                const col = DAY_MAP[wd];
+                const col = WEEKDAY_TO_COLUMN[wd as Weekday];
                 if (col === undefined) continue;
                 if (!map.has(col)) map.set(col, []);
                 map.get(col)!.push({ start: startRow, end: endRow });
@@ -215,8 +213,10 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
         return map;
     }, [entries, startHour]);
 
-    const dragHighlights = computeDragHighlights(dragStartId, dragOverId);
-    const isDragging = dragStartId !== null;
+    const dragHighlights = useMemo(
+        () => computeDragHighlights(dragStartId, dragOverId),
+        [dragStartId, dragOverId],
+    );
 
     const handleDragStart = (event: DragStartEvent) => {
         setDragStartId(event.active.id as string);
@@ -229,12 +229,7 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
 
     const handleDragEnd = (event: DragEndEvent) => {
         const endId = (event.over?.id as string) ?? dragStartId;
-        if (onChange && dragStartId && endId) {
-            const entry = computeEntryFromDrag(dragStartId, endId, startHour);
-            if (entry && !isDuplicateEntry(entries, entry)) {
-                onChange([...entries, entry]);
-            }
-        }
+        commitDraggedEntry({ entries, onChange, onDuplicateBlocked, dragStartId, endId, startHour });
         setDragStartId(null);
         setDragOverId(null);
     };
@@ -249,22 +244,21 @@ export default function WeeklySchedulePreview({ entries, onChange }: WeeklySched
             hours={hours}
             highlights={highlights}
             dragHighlights={dragHighlights}
-            isDragging={isDragging}
             isInteractive={!!onChange}
         />
     );
 
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-[var(--cohe-text-dark)] mb-4">주간 스케줄 미리보기</h3>
+            <h3 className="font-bold text-[var(--cohi-text-dark)] mb-4">주간 스케줄 미리보기</h3>
 
             <div className="overflow-x-auto">
                 <div className="min-w-[420px]">
                     {/* Header */}
                     <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
                         <div />
-                        {DAY_LABELS.map((label) => (
-                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohe-text-dark)] py-1">
+                        {WEEKDAY_LABELS.map((label) => (
+                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
                                 {label}
                             </div>
                         ))}

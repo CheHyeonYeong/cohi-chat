@@ -12,27 +12,35 @@ async function performRefresh(): Promise<string | null> {
     if (!refreshToken) return null;
 
     try {
-        // httpClient를 통하지 않고 raw fetch로 호출 (순환 의존성 방지)
         const res = await fetch(`${API_BASE}/members/v1/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),
         });
 
-        if (!res.ok) return null;
-
         const body = await res.json();
+        
+        if (!res.ok) {
+            // Grace Window 히트인 경우 특수 에러 처리
+            if (body?.error?.code === 'GRACE_WINDOW_HIT') {
+                throw new Error('GRACE_WINDOW_HIT');
+            }
+            return null;
+        }
+
         const data = body?.data ?? body;
         if (!data?.accessToken) return null;
 
         localStorage.setItem('auth_token', data.accessToken);
-        // RT Rotation: 새 Refresh Token도 함께 저장
         if (data.refreshToken) {
             localStorage.setItem('refresh_token', data.refreshToken);
         }
         window.dispatchEvent(new Event('auth-change'));
         return data.accessToken;
-    } catch {
+    } catch (err) {
+        if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
+            throw err;
+        }
         return null;
     }
 }
@@ -77,13 +85,22 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
 
     // 401 → refresh 시도 후 원래 요청 1회 재시도
     if (response.status === 401 && !isRetry) {
-        const newToken = await tryRefreshToken();
-        if (newToken) {
-            return doRequest<T>(url, options, true);
+        try {
+            const newToken = await tryRefreshToken();
+            if (newToken) {
+                return doRequest<T>(url, options, true);
+            }
+            // Refresh 실패 (진짜 만료 등)
+            clearAuthTokens();
+            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
+        } catch (err) {
+            if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
+                // Grace Window 상황에서는 로그아웃하지 않고 에러만 던짐 (다른 요청이 토큰을 업데이트했을 것임)
+                throw new Error('토큰 재발급 유예 기간입니다. 다시 시도해주세요.', { cause: 401 });
+            }
+            clearAuthTokens();
+            throw err;
         }
-        // Refresh 실패 → 토큰 삭제 후 auth-change 이벤트 발행 (useAuth가 로그인 페이지로 이동)
-        clearAuthTokens();
-        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
     }
 
     if (!response.ok) {

@@ -1,19 +1,5 @@
 import type { TimeSlotEntry } from './TimeSlotForm';
-
-/**
- * col index → weekday
- * 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
- * 일요일은 weekday 값이 0이므로 sort((a,b)=>a-b) 시 배열 맨 앞에 위치함 — 의도된 동작
- */
-const COL_TO_WEEKDAY: Record<number, number> = {
-    0: 1, // 월
-    1: 2, // 화
-    2: 3, // 수
-    3: 4, // 목
-    4: 5, // 금
-    5: 6, // 토
-    6: 0, // 일
-};
+import { COLUMN_TO_WEEKDAY, type GridColumn } from '~/libs/constants/days';
 
 export function parseCellId(id: string): { col: number; row: number } | null {
     const match = id.match(/^cell-(\d+)-(\d+)$/);
@@ -43,7 +29,7 @@ export function computeEntryFromDrag(
     const maxRow = Math.max(start.row, end.row);
 
     // weekday 0(일)이 sort 후 맨 앞에 오는 것은 정상 — TimeSlotForm 소비 측에서 순서 무관
-    const weekdays = Array.from({ length: maxCol - minCol + 1 }, (_, i) => COL_TO_WEEKDAY[minCol + i])
+    const weekdays = Array.from({ length: maxCol - minCol + 1 }, (_, i) => COLUMN_TO_WEEKDAY[(minCol + i) as GridColumn])
         .sort((a, b) => a - b);
 
     return {
@@ -89,4 +75,41 @@ export function isDuplicateEntry(entries: TimeSlotEntry[], newEntry: TimeSlotEnt
             newEntry.endTime > e.startTime &&
             e.weekdays.some((wd) => newEntry.weekdays.includes(wd)),
     );
+}
+
+export function appendEntryIfNotDuplicate(
+    entries: TimeSlotEntry[],
+    newEntry: TimeSlotEntry | null,
+    onAppend: (nextEntries: TimeSlotEntry[]) => void,
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void,
+): boolean {
+    if (!newEntry) return false;
+    if (isDuplicateEntry(entries, newEntry)) {
+        onDuplicateBlocked?.(newEntry);
+        return false;
+    }
+    onAppend([...entries, newEntry]);
+    return true;
+}
+
+export interface CommitDraggedEntryParams {
+    entries: TimeSlotEntry[];
+    onChange?: (entries: TimeSlotEntry[]) => void;
+    onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
+    dragStartId: string | null;
+    endId: string | null;
+    startHour: number;
+}
+
+export function commitDraggedEntry({
+    entries,
+    onChange,
+    onDuplicateBlocked,
+    dragStartId,
+    endId,
+    startHour,
+}: CommitDraggedEntryParams): void {
+    if (!onChange || !dragStartId || !endId) return;
+    const entry = computeEntryFromDrag(dragStartId, endId, startHour);
+    appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
 }

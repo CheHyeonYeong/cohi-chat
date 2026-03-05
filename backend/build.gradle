@@ -47,11 +47,13 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:secretsmanager'
 
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // Bucket4j Rate Limiting
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
@@ -77,8 +79,6 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'com.github.codemonstur:embedded-redis:1.4.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    implementation 'org.apache.commons:commons-text:1.15.0'
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 

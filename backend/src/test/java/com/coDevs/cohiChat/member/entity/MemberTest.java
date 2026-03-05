@@ -97,4 +97,43 @@ class MemberTest {
 			assertEquals(ErrorCode.ACCESS_DENIED, ex.getErrorCode());
 		}
 	}
+
+	@Nested
+	@DisplayName("프로필 업데이트")
+	class UpdateProfile {
+
+		@Test
+		@DisplayName("프로필 정보를 업데이트한다")
+		void updateProfileSuccess() {
+			Member member = createHostMember();
+			member.updateProfile("Developer", "https://image.com/1.png");
+
+			assertEquals("Developer", member.getJob());
+			assertEquals("https://image.com/1.png", member.getProfileImageUrl());
+		}
+
+		@Test
+		@DisplayName("빈 문자열을 전달하면 프로필 정보가 null로 초기화된다")
+		void updateProfileClearWithEmptyString() {
+			Member member = createHostMember();
+			member.updateProfile("Developer", "https://image.com/1.png");
+
+			member.updateProfile("", "");
+
+			assertNull(member.getJob());
+			assertNull(member.getProfileImageUrl());
+		}
+
+		@Test
+		@DisplayName("null을 전달하면 기존 프로필 정보가 유지된다")
+		void updateProfileKeepWithNull() {
+			Member member = createHostMember();
+			member.updateProfile("Developer", "https://image.com/1.png");
+
+			member.updateProfile(null, null);
+
+			assertEquals("Developer", member.getJob());
+			assertEquals("https://image.com/1.png", member.getProfileImageUrl());
+		}
+	}
 }

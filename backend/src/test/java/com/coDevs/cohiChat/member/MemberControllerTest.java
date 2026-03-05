@@ -335,6 +335,9 @@ class MemberControllerTest {
 
 	static Stream<Arguments> displayNameTestProvider() {
 		return Stream.of(
+			Arguments.of(null, false),
+			Arguments.of("", false),
+			Arguments.of("  ", false),
 			Arguments.of("a", false),
 			Arguments.of("aa", true),
 			Arguments.of("a".repeat(20), true),
