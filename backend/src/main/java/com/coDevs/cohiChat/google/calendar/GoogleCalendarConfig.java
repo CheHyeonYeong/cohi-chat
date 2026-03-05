@@ -144,7 +144,7 @@ public class GoogleCalendarConfig {
             }
         } catch (Exception e) {
             log.error("AWS Secrets Manager error for secret '{}': {}", secretName, e.getMessage());
-            throw e;
+            return null;
         }
     }
 
