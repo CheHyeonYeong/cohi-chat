@@ -130,6 +130,7 @@ export default function CalendarSettings() {
                         data={{ googleCalendarId }}
                         onChange={(data) => setGoogleCalendarId(data.googleCalendarId)}
                         errors={errors}
+                        noShadow
                     />
                 </Card>
 

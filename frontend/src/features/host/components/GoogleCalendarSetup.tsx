@@ -14,6 +14,7 @@ interface GoogleCalendarSetupProps {
     data: GoogleCalendarSetupData;
     onChange: (data: GoogleCalendarSetupData) => void;
     errors: Record<string, string>;
+    noShadow?: boolean;
 }
 
 export function CalendarIcon({ className = '' }: { className?: string }) {
@@ -55,7 +56,7 @@ function CheckIcon({ className = '' }: { className?: string }) {
     );
 }
 
-export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCalendarSetupProps) {
+export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
@@ -97,7 +98,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
             {/* Left: Instruction cards */}
             <div className="flex-1 space-y-4">
                 {/* Step 1 — Google Calendar 접속 */}
-                <Card size="sm">
+                <Card size="sm" noShadow={noShadow}>
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
                             <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
@@ -127,7 +128,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
                 </Card>
 
                 {/* Step 2 — 서비스 어카운트 공유 설정 */}
-                <Card size="sm">
+                <Card size="sm" noShadow={noShadow}>
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
                             <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
@@ -191,7 +192,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
 
             {/* Right: Calendar ID input */}
             <div className="w-full lg:w-80 flex-shrink-0">
-                <Card>
+                <Card noShadow={noShadow}>
                     <div className="flex items-center gap-2 mb-4">
                         <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
                             3

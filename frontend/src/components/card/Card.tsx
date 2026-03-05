@@ -7,6 +7,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     size?: "sm" | "md" | "lg";
     asChild?: boolean;
     noBackground?: boolean;
+    noShadow?: boolean;
     title?: string;
 }
 
@@ -23,11 +24,11 @@ const sizeStyles = {
 };
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-    ({ variant = "default", size = "md", asChild = false, noBackground = false, title, className, children, ...props }, ref) => {
+    ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ...props }, ref) => {
         const cardClassName = cn(
             "rounded-2xl",
             !noBackground && "bg-white",
-            variantStyles[variant],
+            !noShadow && variantStyles[variant],
             sizeStyles[size],
             className,
         );
