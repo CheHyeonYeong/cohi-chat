@@ -5,10 +5,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import jakarta.persistence.EntityManager;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +48,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class BookingService {
 
+    private static final int BATCH_FLUSH_SIZE = 100;
+
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
@@ -50,6 +57,7 @@ public class BookingService {
     private final NoShowHistoryRepository noShowHistoryRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
+    private final EntityManager entityManager;
 
     private volatile ZoneId calendarZoneId;
 
@@ -198,14 +206,41 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getBookingsByGuestId(UUID guestId) {
-        List<Booking> bookings = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId);
-        return toBookingResponseDTOs(bookings);
+        try (Stream<Booking> bookingStream = bookingRepository.streamByGuestIdOrderByBookingDateDesc(guestId)) {
+            return processBookingStreamWithBatchFlush(bookingStream);
+        }
     }
 
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getBookingsByHostId(UUID hostId) {
-        List<Booking> bookings = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId);
-        return toBookingResponseDTOs(bookings);
+        try (Stream<Booking> bookingStream = bookingRepository.streamByHostIdOrderByBookingDateDesc(hostId)) {
+            return processBookingStreamWithBatchFlush(bookingStream);
+        }
+    }
+
+    /**
+     * 예약 스트림을 처리하며 100개 단위로 영속성 컨텍스트에서 detach하여 메모리 효율을 개선합니다.
+     */
+    private List<BookingResponseDTO> processBookingStreamWithBatchFlush(Stream<Booking> bookingStream) {
+        List<Booking> batch = new ArrayList<>(BATCH_FLUSH_SIZE);
+        List<BookingResponseDTO> result = new ArrayList<>();
+        Iterator<Booking> iterator = bookingStream.iterator();
+
+        while (iterator.hasNext()) {
+            batch.add(iterator.next());
+            if (batch.size() >= BATCH_FLUSH_SIZE) {
+                result.addAll(toBookingResponseDTOs(batch));
+                batch.forEach(entityManager::detach);
+                batch.clear();
+            }
+        }
+
+        if (!batch.isEmpty()) {
+            result.addAll(toBookingResponseDTOs(batch));
+            batch.forEach(entityManager::detach);
+        }
+
+        return result;
     }
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {

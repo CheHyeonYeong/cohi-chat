@@ -4,10 +4,16 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.QueryHint;
+
+import static org.hibernate.jpa.HibernateHints.HINT_FETCH_SIZE;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -15,18 +21,20 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /**
-     * 게스트 ID로 예약 목록 조회 (예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지
+     * 게스트 ID로 예약 스트림 조회 (예약 날짜 내림차순)
+     * FETCH JOIN으로 N+1 문제 방지, 100개 단위 배치 조회
      */
+    @QueryHints(@QueryHint(name = HINT_FETCH_SIZE, value = "100"))
     @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
-    List<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
+    Stream<Booking> streamByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
 
     /**
-     * 호스트 ID로 예약 목록 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지
+     * 호스트 ID로 예약 스트림 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
+     * FETCH JOIN으로 N+1 문제 방지, 100개 단위 배치 조회
      */
+    @QueryHints(@QueryHint(name = HINT_FETCH_SIZE, value = "100"))
     @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
-    List<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
+    Stream<Booking> streamByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 
     /**
      * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인
