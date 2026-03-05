@@ -199,4 +199,35 @@ describe('TimeSlotForm', () => {
             await waitFor(() => expect(onOverlapDetected).toHaveBeenCalledTimes(1));
         });
     });
+
+    describe('헤더/삭제 UX', () => {
+        it('단일 신규 시간대도 삭제할 수 있어야 한다', () => {
+            const onChange = vi.fn();
+
+            const { getByRole } = render(
+                <TimeSlotForm {...defaultProps} onChange={onChange} />
+            );
+
+            fireEvent.click(getByRole('button', { name: '삭제' }));
+
+            expect(onChange).toHaveBeenCalledWith([]);
+        });
+
+        it('같은 헤더를 다시 클릭하면 접히고, 한 번 더 클릭하면 펼쳐져야 한다', () => {
+            const { container, queryByText } = render(
+                <TimeSlotForm {...defaultProps} />
+            );
+
+            expect(queryByText('요일')).toBeInTheDocument();
+
+            const header = container.querySelector('[data-testid="entry-header"]');
+            if (!header) throw new Error('entry-header not found');
+
+            fireEvent.click(header);
+            expect(queryByText('요일')).not.toBeInTheDocument();
+
+            fireEvent.click(header);
+            expect(queryByText('요일')).toBeInTheDocument();
+        });
+    });
 });
