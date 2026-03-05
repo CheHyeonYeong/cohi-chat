@@ -39,9 +39,10 @@ export default function HostProfile() {
     };
 
     const handleSelectDay = (date: Date) => {
+        if (!host) return;
         navigate({
             to: '/calendar/$slug',
-            params: { slug: host!.username },
+            params: { slug: host.username },
             search: { year: date.getFullYear(), month: date.getMonth() + 1 },
         });
     };

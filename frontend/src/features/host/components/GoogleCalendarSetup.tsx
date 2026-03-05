@@ -57,6 +57,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [serviceAccountEmail, setServiceAccountEmail] = useState<string>('');
+    const [emailError, setEmailError] = useState(false);
     const [emailCopied, setEmailCopied] = useState(false);
     const isValid = CALENDAR_ID_REGEX.test(data.googleCalendarId);
     const hasInput = data.googleCalendarId.length > 0;
@@ -64,7 +65,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
     useEffect(() => {
         getServiceAccountEmail()
             .then(({ serviceAccountEmail: email }) => setServiceAccountEmail(email))
-            .catch(() => {/* 이메일 미표시 */});
+            .catch(() => setEmailError(true));
     }, []);
 
     const handleCopyEmail = async () => {
@@ -111,7 +112,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors }: GoogleCa
                             </p>
                             <div className="flex items-center gap-2 bg-[var(--cohi-bg-light)] rounded-lg px-3 py-2 mb-3">
                                 <span className="flex-1 text-sm font-mono text-[var(--cohi-text-dark)] break-all select-all">
-                                    {serviceAccountEmail || '설정 중...'}
+                                    {emailError ? '이메일을 불러올 수 없습니다' : serviceAccountEmail || '설정 중...'}
                                 </span>
                                 <button
                                     type="button"
