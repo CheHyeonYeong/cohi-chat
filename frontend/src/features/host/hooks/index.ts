@@ -4,3 +4,4 @@ export { useUpdateCalendar } from './useUpdateCalendar';
 export { useMyTimeslots } from './useMyTimeslots';
 export { useCreateTimeslot } from './useCreateTimeslot';
 export { useDeleteTimeslot } from './useDeleteTimeslot';
+export { useServiceAccountEmail } from './useServiceAccountEmail';
