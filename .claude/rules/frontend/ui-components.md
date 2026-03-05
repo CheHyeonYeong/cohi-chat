@@ -24,5 +24,6 @@ paths: frontend/**/*.{ts,tsx}
   - `title`: 카드 상단에 `<h3>` 제목 자동 삽입
   - `asChild`: Radix Slot 패턴 — 카드 스타일을 자식 요소에 위임 (예: `<button>`)
   - `noBackground`: 흰색 배경 제거
+  - `noShadow`: shadow 제거 (Card 안에 Card가 중첩될 때 사용)
 - 클릭 가능한 카드: `<Card asChild>` + `<button>` 조합 사용
   - 예: `<Card asChild size="sm"><button type="button">{content}</button></Card>`
