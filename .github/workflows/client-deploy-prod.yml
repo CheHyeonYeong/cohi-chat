@@ -73,20 +73,15 @@ jobs:
             --cache-control "no-cache, no-store, must-revalidate" \
             --content-type "text/html; charset=utf-8"
 
-      - name: Invalidate CloudFront cache
+      - name: Invalidate CloudFront cache and wait
         run: |
-          aws cloudfront create-invalidation \
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
             --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
-        - name: Wait for CloudFront invalidation
-          run: |
-            INVALIDATION_ID=$(aws cloudfront create-invalidation \
-              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-              --paths "/*" \
-              --query 'Invalidation.Id' --output text)
-            aws cloudfront wait invalidation-completed \
-              --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
-              --id "$INVALIDATION_ID"
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --id "$INVALIDATION_ID"
       - name: Verify public domain serves latest frontend assets
         run: |
           EXPECTED_JS=$(grep -o 'assets/index-[^"]*\.js' frontend/dist/index.html | head -1)
