@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CALENDAR_ID_REGEX } from './RegisterStep2';
+import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
 
 describe('CALENDAR_ID_REGEX', () => {
     describe('유효한 Calendar ID', () => {
