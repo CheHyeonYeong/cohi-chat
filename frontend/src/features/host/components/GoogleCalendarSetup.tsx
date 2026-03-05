@@ -144,6 +144,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }
                                     type="button"
                                     onClick={handleCopyEmail}
                                     disabled={!serviceAccountEmail}
+                                    aria-label="서비스 계정 이메일 복사"
                                     className="flex-shrink-0 text-gray-400 hover:text-[var(--cohi-primary)] transition-colors disabled:opacity-40"
                                     title="이메일 복사"
                                 >
@@ -214,6 +215,7 @@ export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }
                             <button
                                 type="button"
                                 onClick={handlePaste}
+                                aria-label="캘린더 ID 붙여넣기"
                                 className="text-gray-400 hover:text-[var(--cohi-primary)] transition-colors"
                                 title="붙여넣기"
                             >
