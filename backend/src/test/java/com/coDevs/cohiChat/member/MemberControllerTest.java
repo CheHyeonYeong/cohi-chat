@@ -94,7 +94,7 @@ class MemberControllerTest {
 		}
 
 		@ParameterizedTest
-		@MethodSource("com.coDevs.cohiChat.member.MemberControllerTest#usernameTestProvider")
+		@MethodSource("usernameTestProvider")
 		@DisplayName("아이디 검증 테스트")
 		void signupUsernameTest(String username, boolean shouldSucceed) throws Exception {
 			SignupRequestDTO dto = SignupRequestDTO.builder()
@@ -107,8 +107,29 @@ class MemberControllerTest {
 			performSignupTest(dto, shouldSucceed);
 		}
 
+		static Stream<Arguments> usernameTestProvider() {
+			return Stream.of(
+				Arguments.of(null, false),
+				Arguments.of("aaa", false),
+				Arguments.of("aaaa", true),
+				Arguments.of("a".repeat(12), true),
+				Arguments.of("a".repeat(13), false),
+
+				Arguments.of("test_user", true),
+				Arguments.of("test.user", true),
+				Arguments.of("test-user", true),
+				Arguments.of("test123", true),
+				Arguments.of("TEST", true),
+				Arguments.of("test@user", false),
+				Arguments.of("test user", false),
+				Arguments.of("test#user", false),
+				Arguments.of("테스트", false),
+				Arguments.of("test!user", false)
+			);
+		}
+
 		@ParameterizedTest
-		@MethodSource("com.coDevs.cohiChat.member.MemberControllerTest#passwordTestProvider")
+		@MethodSource("passwordTestProvider")
 		@DisplayName("비밀번호 검증 테스트")
 		void signupPasswordTest(String password, boolean shouldSucceed) throws Exception {
 			SignupRequestDTO dto = SignupRequestDTO.builder()
@@ -121,8 +142,29 @@ class MemberControllerTest {
 			performSignupTest(dto, shouldSucceed);
 		}
 
+		static Stream<Arguments> passwordTestProvider() {
+			return Stream.of(
+				Arguments.of(null, false),
+				Arguments.of("abcdefg", false),
+				Arguments.of("abcdefgh", true),
+				Arguments.of("a".repeat(20), true),
+				Arguments.of("a".repeat(21), false),
+
+				Arguments.of("pass_wrd", true),
+				Arguments.of("pass.wrd", true),
+				Arguments.of("pass-wrd", true),
+				Arguments.of("Pass1234", true),
+				Arguments.of("PASSWORD", true),
+				Arguments.of("pass@wrd", true),
+				Arguments.of("pass wrd", false),
+				Arguments.of("pass#wrd", true),
+				Arguments.of("비밀번호입니다abc", false),
+				Arguments.of("pass!wrd", true)
+			);
+		}
+
 		@ParameterizedTest
-		@MethodSource("com.coDevs.cohiChat.member.MemberControllerTest#displayNameTestProvider")
+		@MethodSource("displayNameTestProvider")
 		@DisplayName("닉네임 검증 테스트")
 		void signupDisplayNameTest(String displayName, boolean shouldSucceed) throws Exception {
 			SignupRequestDTO dto = SignupRequestDTO.builder()
@@ -135,8 +177,20 @@ class MemberControllerTest {
 			performSignupTest(dto, shouldSucceed);
 		}
 
+		static Stream<Arguments> displayNameTestProvider() {
+			return Stream.of(
+				Arguments.of(null, false),
+				Arguments.of("", false),
+				Arguments.of("  ", false),
+				Arguments.of("a", false),
+				Arguments.of("aa", true),
+				Arguments.of("a".repeat(20), true),
+				Arguments.of("a".repeat(21), false)
+			);
+		}
+
 		@ParameterizedTest
-		@MethodSource("com.coDevs.cohiChat.member.MemberControllerTest#emailTestProvider")
+		@MethodSource("emailTestProvider")
 		@DisplayName("이메일 검증 테스트")
 		void signupEmailTest(String email, boolean shouldSucceed) throws Exception {
 			SignupRequestDTO dto = SignupRequestDTO.builder()
@@ -147,6 +201,34 @@ class MemberControllerTest {
 				.build();
 
 			performSignupTest(dto, shouldSucceed);
+		}
+
+		static Stream<Arguments> emailTestProvider() {
+			return Stream.of(
+				// 유효한 이메일
+				Arguments.of("test@example.com", true),
+				Arguments.of("user.name@domain.co.kr", true),
+				Arguments.of("user+tag@example.org", true),
+				Arguments.of("user123@test.io", true),
+				Arguments.of("a.b.c@example.com", true),
+
+				// 무효한 이메일 - 형식 오류
+				Arguments.of(null, false),
+				Arguments.of("", false),
+				Arguments.of("test", false),
+				Arguments.of("test@", false),
+				Arguments.of("@test.com", false),
+				Arguments.of("test@.com", false),
+
+				// 무효한 이메일 - TLD 부족
+				Arguments.of("test@a", false),
+				Arguments.of("test@a.", false),
+				Arguments.of("a@b.c", false),
+
+				// 무효한 이메일 - 잘못된 문자
+				Arguments.of("test @example.com", false),
+				Arguments.of("test<>@example.com", false)
+			);
 		}
 	}
 
@@ -289,88 +371,6 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.data[1].username").value("host2"))
 				.andExpect(jsonPath("$.error").isEmpty());
 		}
-	}
-
-	static Stream<Arguments> usernameTestProvider() {
-		return Stream.of(
-			Arguments.of(null, false),
-			Arguments.of("aaa", false),
-			Arguments.of("aaaa", true),
-			Arguments.of("a".repeat(12), true),
-			Arguments.of("a".repeat(13), false),
-
-			Arguments.of("test_user", true),
-			Arguments.of("test.user", true),
-			Arguments.of("test-user", true),
-			Arguments.of("test123", true),
-			Arguments.of("TEST", true),
-			Arguments.of("test@user", false),
-			Arguments.of("test user", false),
-			Arguments.of("test#user", false),
-			Arguments.of("테스트", false),
-			Arguments.of("test!user", false)
-		);
-	}
-
-	static Stream<Arguments> passwordTestProvider() {
-		return Stream.of(
-			Arguments.of(null, false),
-			Arguments.of("abcdefg", false),
-			Arguments.of("abcdefgh", true),
-			Arguments.of("a".repeat(20), true),
-			Arguments.of("a".repeat(21), false),
-
-			Arguments.of("pass_wrd", true),
-			Arguments.of("pass.wrd", true),
-			Arguments.of("pass-wrd", true),
-			Arguments.of("Pass1234", true),
-			Arguments.of("PASSWORD", true),
-			Arguments.of("pass@wrd", true),
-			Arguments.of("pass wrd", false),
-			Arguments.of("pass#wrd", true),
-			Arguments.of("비밀번호입니다abc", false),
-			Arguments.of("pass!wrd", true)
-		);
-	}
-
-	static Stream<Arguments> displayNameTestProvider() {
-		return Stream.of(
-			Arguments.of(null, false),
-			Arguments.of("", false),
-			Arguments.of("  ", false),
-			Arguments.of("a", false),
-			Arguments.of("aa", true),
-			Arguments.of("a".repeat(20), true),
-			Arguments.of("a".repeat(21), false)
-		);
-	}
-
-	static Stream<Arguments> emailTestProvider() {
-		return Stream.of(
-			// 유효한 이메일
-			Arguments.of("test@example.com", true),
-			Arguments.of("user.name@domain.co.kr", true),
-			Arguments.of("user+tag@example.org", true),
-			Arguments.of("user123@test.io", true),
-			Arguments.of("a.b.c@example.com", true),
-
-			// 무효한 이메일 - 형식 오류
-			Arguments.of(null, false),
-			Arguments.of("", false),
-			Arguments.of("test", false),
-			Arguments.of("test@", false),
-			Arguments.of("@test.com", false),
-			Arguments.of("test@.com", false),
-
-			// 무효한 이메일 - TLD 부족
-			Arguments.of("test@a", false),
-			Arguments.of("test@a.", false),
-			Arguments.of("a@b.c", false),
-
-			// 무효한 이메일 - 잘못된 문자
-			Arguments.of("test @example.com", false),
-			Arguments.of("test<>@example.com", false)
-		);
 	}
 
 }
