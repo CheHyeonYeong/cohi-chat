@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
+import { WEEKDAYS } from '~/libs/constants/days';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -37,15 +38,6 @@ const toLocalDateString = (date: Date): string => {
     return `${y}-${m}-${d}`;
 };
 
-const DAYS = [
-    { label: '일', value: 0 },
-    { label: '월', value: 1 },
-    { label: '화', value: 2 },
-    { label: '수', value: 3 },
-    { label: '목', value: 4 },
-    { label: '금', value: 5 },
-    { label: '토', value: 6 },
-];
 
 // 00:00 ~ 23:30, 30분 단위
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -114,7 +106,6 @@ export default function TimeSlotForm({
     };
 
     const removeEntry = (index: number) => {
-        if (entries.length <= 1) return;
         // 삭제된 항목 이후 인덱스를 당겨서 savedDatesRef 재구성
         const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
         Object.entries(savedDatesRef.current).forEach(([key, value]) => {
@@ -126,7 +117,7 @@ export default function TimeSlotForm({
         savedDatesRef.current = newSavedDates;
         const updated = entries.filter((_, i) => i !== index);
         onChange(updated);
-        if (expandedIndex >= updated.length) setExpandedIndex(updated.length - 1);
+        setExpandedIndex(updated.length > 0 && expandedIndex >= updated.length ? updated.length - 1 : -1);
     };
 
     return (
@@ -142,7 +133,7 @@ export default function TimeSlotForm({
                         <div
                             data-testid="entry-header"
                             className="flex justify-between items-center cursor-pointer"
-                            onClick={() => setExpandedIndex(index)}
+                            onClick={() => setExpandedIndex(expandedIndex === index ? -1 : index)}
                         >
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
@@ -164,7 +155,7 @@ export default function TimeSlotForm({
                                 >
                                     {deletingId === entry.existingId ? '삭제 중...' : '삭제'}
                                 </button>
-                            ) : entries.length > 1 && !entry.existingId ? (
+                            ) : !entry.existingId ? (
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); removeEntry(index); }}
@@ -184,7 +175,7 @@ export default function TimeSlotForm({
                                 <div>
                                     <label className="block text-sm text-gray-500 mb-2">요일</label>
                                     <div className="flex gap-1.5">
-                                        {DAYS.map((day) => {
+                                        {WEEKDAYS.map((day) => {
                                             const selected = entry.weekdays.includes(day.value);
                                             return (
                                                 <button

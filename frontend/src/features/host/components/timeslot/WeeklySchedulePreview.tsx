@@ -15,6 +15,7 @@ import {
 import { Card } from '~/components/card';
 import type { TimeSlotEntry } from './TimeSlotForm';
 import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
+import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
@@ -22,8 +23,6 @@ interface WeeklySchedulePreviewProps {
     onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
 }
 
-const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
-const DAY_MAP: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
 
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 22;
@@ -206,7 +205,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
             if (startRow >= endRow) continue;
 
             for (const wd of entry.weekdays) {
-                const col = DAY_MAP[wd];
+                const col = WEEKDAY_TO_COLUMN[wd as Weekday];
                 if (col === undefined) continue;
                 if (!map.has(col)) map.set(col, []);
                 map.get(col)!.push({ start: startRow, end: endRow });
@@ -257,7 +256,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
                     {/* Header */}
                     <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
                         <div />
-                        {DAY_LABELS.map((label) => (
+                        {WEEKDAY_LABELS.map((label) => (
                             <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
                                 {label}
                             </div>
