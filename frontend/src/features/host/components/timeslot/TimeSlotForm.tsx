@@ -38,22 +38,6 @@ const toLocalDateString = (date: Date): string => {
     return `${y}-${m}-${d}`;
 };
 
-
-// 00:00 ~ 23:30, 30遺??⑥쐞
-const DAY_LABEL_MAP = WEEKDAYS.reduce<Record<number, string>>((acc, day) => {
-    acc[day.value] = day.label;
-    return acc;
-}, {});
-
-function formatEntrySummary(entry: TimeSlotEntry): string {
-    const weekdayLabels = [...entry.weekdays]
-        .sort((a, b) => a - b)
-        .map((weekday) => DAY_LABEL_MAP[weekday])
-        .filter(Boolean);
-    const weekdayText = weekdayLabels.length > 0 ? weekdayLabels.join(', ') : '요일 미선택';
-    return `${weekdayText} · ${entry.startTime} - ${entry.endTime}`;
-}
-
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(i / 2);
     const m = i % 2 === 0 ? '00' : '30';
@@ -120,7 +104,8 @@ export default function TimeSlotForm({
     };
 
     const removeEntry = (index: number) => {
-        // ??젣????ぉ ?댄썑 ?몃뜳?ㅻ? ?밴꺼??savedDatesRef ?ш뎄??        const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
+        // 삭제 후 인덱스를 당겨 savedDatesRef 키를 재정렬한다.
+        const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
         Object.entries(savedDatesRef.current).forEach(([key, value]) => {
             const k = Number(key);
             if (k < index) newSavedDates[k] = value;
@@ -166,7 +151,7 @@ export default function TimeSlotForm({
                                     disabled={deletingId != null}
                                     className="text-sm text-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
                                 >
-                                    {deletingId === entry.existingId ? '??젣 以?..' : '??젣'}
+                                    {deletingId === entry.existingId ? '삭제 중...' : '삭제'}
                                 </button>
                             ) : !entry.existingId ? (
                                 <button
@@ -174,7 +159,7 @@ export default function TimeSlotForm({
                                     onClick={(e) => { e.stopPropagation(); removeEntry(index); }}
                                     className="text-sm text-red-400 hover:text-red-600 transition-colors"
                                 >
-                                    ??젣
+                                    삭제
                                 </button>
                             ) : null}
                         </div>
@@ -186,7 +171,7 @@ export default function TimeSlotForm({
                                 )}
                                 {/* Weekday toggle */}
                                 <div>
-                                    <label className="block text-sm text-gray-500 mb-2">?붿씪</label>
+                                    <label className="block text-sm text-gray-500 mb-2">요일</label>
                                     <div className="flex gap-1.5">
                                         {WEEKDAYS.map((day) => {
                                             const selected = entry.weekdays.includes(day.value);
@@ -274,7 +259,7 @@ export default function TimeSlotForm({
                                     {entry.startDate && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm text-gray-500 mb-1">?쒖옉??/label>
+                                                <label className="block text-sm text-gray-500 mb-1">시작일</label>
                                                 <input
                                                     type="date"
                                                     value={entry.startDate ?? ''}
@@ -285,7 +270,7 @@ export default function TimeSlotForm({
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm text-gray-500 mb-1">醫낅즺??/label>
+                                                <label className="block text-sm text-gray-500 mb-1">종료일</label>
                                                 <input
                                                     type="date"
                                                     value={entry.endDate ?? ''}
