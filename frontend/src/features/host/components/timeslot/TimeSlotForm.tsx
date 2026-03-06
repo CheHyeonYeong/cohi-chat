@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+﻿import { useState, useRef, useMemo, useEffect } from 'react';
 import Button from '~/components/button/Button';
 import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
@@ -12,7 +12,7 @@ export interface TimeSlotEntry {
     endTime: string;
     startDate?: string;
     endDate?: string;
-    /** 서버에서 불러온 기존 타임슬롯의 ID. undefined면 신규. */
+    /** ?쒕쾭?먯꽌 遺덈윭??湲곗〈 ??꾩뒳濡?쓽 ID. undefined硫??좉퇋. */
     existingId?: number;
 }
 
@@ -39,7 +39,21 @@ const toLocalDateString = (date: Date): string => {
 };
 
 
-// 00:00 ~ 23:30, 30분 단위
+// 00:00 ~ 23:30, 30遺??⑥쐞
+const DAY_LABEL_MAP = WEEKDAYS.reduce<Record<number, string>>((acc, day) => {
+    acc[day.value] = day.label;
+    return acc;
+}, {});
+
+function formatEntrySummary(entry: TimeSlotEntry): string {
+    const weekdayLabels = [...entry.weekdays]
+        .sort((a, b) => a - b)
+        .map((weekday) => DAY_LABEL_MAP[weekday])
+        .filter(Boolean);
+    const weekdayText = weekdayLabels.length > 0 ? weekdayLabels.join(', ') : '?붿씪 誘몄꽑??;
+    return `${weekdayText} 쨌 ${entry.startTime} - ${entry.endTime}`;
+}
+
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(i / 2);
     const m = i % 2 === 0 ? '00' : '30';
@@ -63,7 +77,7 @@ export default function TimeSlotForm({
         return entries.map((entry) => {
             if (entry.existingId != null) return null;
             if (isInvalidTimeRange(entry.startTime, entry.endTime)) {
-                return '시작 시간은 종료 시간보다 이전이어야 합니다';
+                return '?쒖옉 ?쒓컙? 醫낅즺 ?쒓컙蹂대떎 ?댁쟾?댁뼱???⑸땲??;
             }
             return null;
         });
@@ -73,7 +87,7 @@ export default function TimeSlotForm({
         return entries.map((entry, index) => {
             if (entry.existingId != null) return null;
             const others = entries.filter((_, i) => i !== index);
-            return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
+            return isDuplicateEntry(others, entry) ? '?ㅻⅨ ?쒓컙?? 寃뱀묩?덈떎' : null;
         });
     }, [entries]);
 
@@ -106,13 +120,12 @@ export default function TimeSlotForm({
     };
 
     const removeEntry = (index: number) => {
-        // 삭제된 항목 이후 인덱스를 당겨서 savedDatesRef 재구성
-        const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
+        // ??젣????ぉ ?댄썑 ?몃뜳?ㅻ? ?밴꺼??savedDatesRef ?ш뎄??        const newSavedDates: Record<number, { startDate: string; endDate: string }> = {};
         Object.entries(savedDatesRef.current).forEach(([key, value]) => {
             const k = Number(key);
             if (k < index) newSavedDates[k] = value;
             else if (k > index) newSavedDates[k - 1] = value;
-            // k === index는 삭제
+            // k === index????젣
         });
         savedDatesRef.current = newSavedDates;
         const updated = entries.filter((_, i) => i !== index);
@@ -121,7 +134,7 @@ export default function TimeSlotForm({
     };
 
     return (
-        <Card size="sm" title="📅 예약 가능 시간 설정">
+        <Card size="sm" title="?뱟 ?덉빟 媛???쒓컙 ?ㅼ젙">
             <div className="space-y-4">
                 {entries.map((entry, index) => (
                     <div
@@ -137,10 +150,10 @@ export default function TimeSlotForm({
                         >
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
-                                    시간대 {index + 1}
+                                    ?쒓컙? {index + 1}
                                 </span>
                                 {entry.existingId != null && (
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">??λ맖</span>
                                 )}
                                 {(timeValidationErrors[index] || overlapErrors[index]) && (
                                     <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
@@ -153,7 +166,7 @@ export default function TimeSlotForm({
                                     disabled={deletingId != null}
                                     className="text-sm text-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
                                 >
-                                    {deletingId === entry.existingId ? '삭제 중...' : '삭제'}
+                                    {deletingId === entry.existingId ? '??젣 以?..' : '??젣'}
                                 </button>
                             ) : !entry.existingId ? (
                                 <button
@@ -161,7 +174,7 @@ export default function TimeSlotForm({
                                     onClick={(e) => { e.stopPropagation(); removeEntry(index); }}
                                     className="text-sm text-red-400 hover:text-red-600 transition-colors"
                                 >
-                                    삭제
+                                    ??젣
                                 </button>
                             ) : null}
                         </div>
@@ -169,11 +182,11 @@ export default function TimeSlotForm({
                         {expandedIndex === index && (
                             <div className="mt-4 space-y-4">
                                 {entry.existingId != null && (
-                                    <p className="text-xs text-gray-400">기존 타임슬롯은 수정할 수 없습니다. 삭제 후 다시 생성해주세요.</p>
+                                    <p className="text-xs text-gray-400">湲곗〈 ??꾩뒳濡?? ?섏젙?????놁뒿?덈떎. ??젣 ???ㅼ떆 ?앹꽦?댁＜?몄슂.</p>
                                 )}
                                 {/* Weekday toggle */}
                                 <div>
-                                    <label className="block text-sm text-gray-500 mb-2">요일</label>
+                                    <label className="block text-sm text-gray-500 mb-2">?붿씪</label>
                                     <div className="flex gap-1.5">
                                         {WEEKDAYS.map((day) => {
                                             const selected = entry.weekdays.includes(day.value);
@@ -199,7 +212,7 @@ export default function TimeSlotForm({
                                 {/* Time range */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm text-gray-500 mb-2">시작 시간</label>
+                                        <label className="block text-sm text-gray-500 mb-2">?쒖옉 ?쒓컙</label>
                                         <select
                                             value={entry.startTime}
                                             onChange={(e) => updateEntry(index, { startTime: e.target.value })}
@@ -212,7 +225,7 @@ export default function TimeSlotForm({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm text-gray-500 mb-2">종료 시간</label>
+                                        <label className="block text-sm text-gray-500 mb-2">醫낅즺 ?쒓컙</label>
                                         <select
                                             value={entry.endTime}
                                             onChange={(e) => updateEntry(index, { endTime: e.target.value })}
@@ -254,15 +267,14 @@ export default function TimeSlotForm({
                                             disabled={entry.existingId != null}
                                             className="rounded border-gray-300"
                                         />
-                                        기간 지정
-                                    </label>
+                                        湲곌컙 吏??                                    </label>
                                     {entry.existingId != null && entry.startDate && (
-                                        <p className="text-xs text-gray-400 mb-2">기존 타임슬롯의 기간은 수정할 수 없습니다.</p>
+                                        <p className="text-xs text-gray-400 mb-2">湲곗〈 ??꾩뒳濡?쓽 湲곌컙? ?섏젙?????놁뒿?덈떎.</p>
                                     )}
                                     {entry.startDate && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm text-gray-500 mb-1">시작일</label>
+                                                <label className="block text-sm text-gray-500 mb-1">?쒖옉??/label>
                                                 <input
                                                     type="date"
                                                     value={entry.startDate ?? ''}
@@ -273,7 +285,7 @@ export default function TimeSlotForm({
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm text-gray-500 mb-1">종료일</label>
+                                                <label className="block text-sm text-gray-500 mb-1">醫낅즺??/label>
                                                 <input
                                                     type="date"
                                                     value={entry.endDate ?? ''}
@@ -316,7 +328,7 @@ export default function TimeSlotForm({
                 onClick={addEntry}
                 className="mt-4 text-sm font-medium text-[var(--cohi-primary)] hover:text-[var(--cohi-primary-dark)] transition-colors"
             >
-                + 시간대 추가
+                + ?쒓컙? 異붽?
             </button>
 
             {/* Errors */}
@@ -324,10 +336,10 @@ export default function TimeSlotForm({
                 <p key={i} className="mt-2 text-sm text-red-500">{msg}</p>
             ))}
 
-            {/* 겹침/시간 오류 요약 */}
+            {/* 寃뱀묠/?쒓컙 ?ㅻ쪟 ?붿빟 */}
             {(timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)) && (
                 <p className="text-sm text-red-500 mt-4 text-center">
-                    저장할 수 없는 시간대가 있습니다. 각 시간대를 확인해주세요.
+                    ??ν븷 ???녿뒗 ?쒓컙?媛 ?덉뒿?덈떎. 媛??쒓컙?瑜??뺤씤?댁＜?몄슂.
                 </p>
             )}
 
@@ -340,8 +352,9 @@ export default function TimeSlotForm({
                 disabled={timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)}
                 className="w-full mt-6 rounded-lg"
             >
-                {isPending ? '저장 중...' : '저장하기'}
+                {isPending ? '???以?..' : '??ν븯湲?}
             </Button>
         </Card>
     );
 }
+
