@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
@@ -11,47 +10,42 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import static com.coDevs.cohiChat.global.util.TimeUtils.toUtcInstant;
+
 @Getter
 @Builder
 @AllArgsConstructor
 public class BookingResponseDTO {
 
-    private Long id;
-    private Long timeSlotId;
-    private UUID guestId;
-    private UUID hostId;
-
-    private Instant startedAt;
-    private Instant endedAt;
-    private String topic;
-    private String description;
-    private AttendanceStatus attendanceStatus;
-    private String googleEventId;
-    private Instant createdAt;
-
-    private String hostUsername;
-    private String hostDisplayName;
+    private final Long id;
+    private final Long timeSlotId;
+    private final UUID guestId;
+    private final UUID hostId;
+    private final Instant startedAt;
+    private final Instant endedAt;
+    private final String topic;
+    private final String description;
+    private final AttendanceStatus attendanceStatus;
+    private final String googleEventId;
+    private final Instant createdAt;
+    private final String hostUsername;
+    private final String hostDisplayName;
 
     public static BookingResponseDTO from(Booking booking) {
         return from(booking, null, null);
     }
 
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
-        Instant startedAt = booking.getBookingDate()
-            .atTime(booking.getTimeSlot().getStartTime())
-            .toInstant(ZoneOffset.UTC);
-
-        Instant endedAt = booking.getBookingDate()
-            .atTime(booking.getTimeSlot().getEndTime())
-            .toInstant(ZoneOffset.UTC);
+        var timeSlot = booking.getTimeSlot();
+        var date = booking.getBookingDate();
 
         return BookingResponseDTO.builder()
             .id(booking.getId())
-            .timeSlotId(booking.getTimeSlot().getId())
+            .timeSlotId(timeSlot.getId())
             .guestId(booking.getGuestId())
-            .hostId(booking.getTimeSlot().getUserId())
-            .startedAt(startedAt)
-            .endedAt(endedAt)
+            .hostId(timeSlot.getUserId())
+            .startedAt(toUtcInstant(date, timeSlot.getStartTime()))
+            .endedAt(toUtcInstant(date, timeSlot.getEndTime()))
             .topic(booking.getTopic())
             .description(booking.getDescription())
             .attendanceStatus(booking.getAttendanceStatus())

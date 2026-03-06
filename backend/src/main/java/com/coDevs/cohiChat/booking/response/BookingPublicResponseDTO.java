@@ -1,13 +1,14 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+
+import static com.coDevs.cohiChat.global.util.TimeUtils.toUtcInstant;
 
 /**
  * 공개 API용 예약 응답 DTO.
@@ -19,23 +20,18 @@ import lombok.Getter;
 @AllArgsConstructor
 public class BookingPublicResponseDTO {
 
-    private long id;
-    private Instant startedAt;
-    private Instant endedAt;
+    private final long id;
+    private final Instant startedAt;
+    private final Instant endedAt;
 
     public static BookingPublicResponseDTO from(Booking booking) {
-        Instant startedAt = booking.getBookingDate()
-            .atTime(booking.getTimeSlot().getStartTime())
-            .toInstant(ZoneOffset.UTC);
-
-        Instant endedAt = booking.getBookingDate()
-            .atTime(booking.getTimeSlot().getEndTime())
-            .toInstant(ZoneOffset.UTC);
+        var timeSlot = booking.getTimeSlot();
+        var date = booking.getBookingDate();
 
         return BookingPublicResponseDTO.builder()
             .id(booking.getId())
-            .startedAt(startedAt)
-            .endedAt(endedAt)
+            .startedAt(toUtcInstant(date, timeSlot.getStartTime()))
+            .endedAt(toUtcInstant(date, timeSlot.getEndTime()))
             .build();
     }
 }
