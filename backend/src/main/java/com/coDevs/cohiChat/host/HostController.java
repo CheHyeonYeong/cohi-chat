@@ -48,11 +48,14 @@ public class HostController {
 	@ApiResponses({
 		@ApiResponse(responseCode = "201", description = "호스트 등록 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요"),
-		@ApiResponse(responseCode = "403", description = "권한 없음"),
+		@ApiResponse(responseCode = "403", description = "권한 없음 (GUEST만 등록 가능)"),
 		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
 		@ApiResponse(responseCode = "409", description = "이미 호스트로 등록됨")
 	})
 	@PostMapping("/v1/register")
+	// hasRole('GUEST') 대신 isAuthenticated() 유지:
+	// promoteToHost()에서 이미 HOST인 경우 409(ALREADY_HOST)를 반환해야 하므로
+	// 역할 검증은 도메인 레이어에 위임한다.
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponseDTO<HostProfileResponseDTO>> register(Principal principal) {
 		HostProfileResponseDTO response = hostService.registerAsHost(principal.getName());
