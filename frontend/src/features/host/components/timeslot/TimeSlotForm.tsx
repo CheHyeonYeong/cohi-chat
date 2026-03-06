@@ -77,7 +77,7 @@ export default function TimeSlotForm({
         return entries.map((entry) => {
             if (entry.existingId != null) return null;
             if (isInvalidTimeRange(entry.startTime, entry.endTime)) {
-                return '?쒖옉 ?쒓컙? 醫낅즺 ?쒓컙蹂대떎 ?댁쟾?댁뼱???⑸땲??;
+                return '시작 시간은 종료 시간보다 이전이어야 합니다';
             }
             return null;
         });
@@ -352,10 +352,11 @@ export default function TimeSlotForm({
                 disabled={timeValidationErrors.some(Boolean) || overlapErrors.some(Boolean)}
                 className="w-full mt-6 rounded-lg"
             >
-                {isPending ? '???以?..' : '??ν븯湲?}
+                {isPending ? '저장 중...' : '저장하기'}
             </Button>
         </Card>
     );
 }
+
 
 
