@@ -40,7 +40,7 @@ const toLocalDateString = (date: Date): string => {
 
 
 // 00:00 ~ 23:30, 30분 단위
-const DAY_LABEL_MAP = DAYS.reduce<Record<number, string>>((acc, day) => {
+const DAY_LABEL_MAP = WEEKDAYS.reduce<Record<number, string>>((acc, day) => {
     acc[day.value] = day.label;
     return acc;
 }, {});
