@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory, useReportGuestNoShow, useGuestNoShowHistory } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useReportHost, useNoShowHistory, useReportGuest, useGuestNoShowHistory } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -110,9 +110,9 @@ export default function Booking() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
     const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
-    const { mutate: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuestNoShow(Number(id), booking?.guestId);
+    const { mutate: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
     const { data: guestNoShowHistory } = useGuestNoShowHistory(booking?.guestId);
 
     // File upload state

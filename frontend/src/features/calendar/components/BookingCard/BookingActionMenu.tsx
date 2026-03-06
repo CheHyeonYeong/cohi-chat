@@ -24,6 +24,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
 
     const showReportHost = !!currentUser && currentUser.id !== booking.hostId;
     const showReportGuest = !!currentUser && currentUser.id !== booking.guestId;
+    const hasAnyAction = showReportHost || showReportGuest;
 
     useEffect(() => {
         if (!open) return;
@@ -39,11 +40,13 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const handleReport = (nickname: string, reason: string) => {
         const combined = [nickname && `[신고 대상: ${nickname}]`, reason].filter(Boolean).join(' ');
         if (reportTarget === 'host') {
-            reportHostMutate(combined || undefined, { onSuccess: () => setReportTarget(null) });
+            reportHostMutate(combined, { onSuccess: () => setReportTarget(null) });
         } else {
-            reportGuestMutate(combined || undefined, { onSuccess: () => setReportTarget(null) });
+            reportGuestMutate(combined, { onSuccess: () => setReportTarget(null) });
         }
     };
+
+    if (!hasAnyAction) return null;
 
     return (
         <div ref={menuRef} className="relative">
