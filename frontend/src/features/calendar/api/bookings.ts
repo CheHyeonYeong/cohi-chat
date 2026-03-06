@@ -108,6 +108,12 @@ export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
     return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
 }
 
+export async function deleteBookingFile(bookingId: number, fileId: number): Promise<void> {
+    await httpClient<void>(`${API_URL}/bookings/${bookingId}/files/${fileId}`, {
+        method: 'DELETE',
+    });
+}
+
 // Pre-signed URL 관련 타입
 export interface PresignedUploadUrlResponse {
     url: string;

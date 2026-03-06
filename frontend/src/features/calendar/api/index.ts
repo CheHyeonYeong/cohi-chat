@@ -4,6 +4,7 @@ export {
     getMyBookings,
     getBooking,
     uploadBookingFile,
+    deleteBookingFile,
     reportHostNoShow,
     getNoShowHistory,
     // Pre-signed URL

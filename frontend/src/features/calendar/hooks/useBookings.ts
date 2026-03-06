@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
 import { snakeToCamel } from '~/libs/utils';
-import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFile } from '../api';
+import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFile, deleteBookingFile } from '../api';
 import type { IBooking, IBookingDetail, ICalendarEvent, IPaginatedBookingDetail } from '../types';
 import { calendarKeys } from './queryKeys';
 
@@ -31,6 +31,12 @@ export function useBooking(id: number | null) {
 export function useUploadBookingFile(id: number) {
     return useMutation<import('../types').IBookingFile, Error, FormData>({
         mutationFn: (files: FormData) => uploadBookingFile(id, files),
+    });
+}
+
+export function useDeleteBookingFile(bookingId: number) {
+    return useMutation<void, Error, number>({
+        mutationFn: (fileId: number) => deleteBookingFile(bookingId, fileId),
     });
 }
 

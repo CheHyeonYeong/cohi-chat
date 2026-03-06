@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -49,9 +49,11 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 interface SortableFileItemProps {
     file: IBookingFile;
     onDownload: (fileId: number, fileName: string) => void;
+    onDelete: (fileId: number) => void;
+    isDeleting: boolean;
 }
 
-function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
+function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFileItemProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: String(file.id),
     });
@@ -96,6 +98,16 @@ function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
             {file.fileSize != null && (
                 <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.fileSize)}</span>
             )}
+
+            {/* Delete button */}
+            <button
+                type="button"
+                onClick={() => onDelete(file.id)}
+                disabled={isDeleting}
+                className="text-xs text-red-500 hover:text-red-700 flex-shrink-0 disabled:opacity-50"
+            >
+                {isDeleting ? '...' : '삭제'}
+            </button>
         </li>
     );
 }
@@ -107,6 +119,7 @@ export default function Booking() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
     const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
 
@@ -217,11 +230,15 @@ export default function Booking() {
                 await uploadFileAsync(formData);
             }
             refetch();
-        } finally {
-            setUploadProgress('');
+            // 성공 시에만 파일 선택 초기화
             setSelectedFiles([]);
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch {
+            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
+            // 파일 선택은 유지하여 사용자가 다른 파일로 재시도 가능
+        } finally {
+            setUploadProgress('');
         }
     };
 
@@ -239,6 +256,15 @@ export default function Booking() {
         } catch (err) {
             console.error('Download error:', err);
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
+        }
+    };
+
+    const handleDelete = async (fileId: number) => {
+        try {
+            await deleteFileAsync(fileId);
+            refetch();
+        } catch (err) {
+            console.error('Delete error:', err);
         }
     };
 
@@ -522,6 +548,8 @@ export default function Booking() {
                                                     key={file.id}
                                                     file={file}
                                                     onDownload={handleDownload}
+                                                    onDelete={handleDelete}
+                                                    isDeleting={isDeleting}
                                                 />
                                             ))}
                                         </ul>
