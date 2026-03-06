@@ -50,8 +50,8 @@ function formatEntrySummary(entry: TimeSlotEntry): string {
         .sort((a, b) => a - b)
         .map((weekday) => DAY_LABEL_MAP[weekday])
         .filter(Boolean);
-    const weekdayText = weekdayLabels.length > 0 ? weekdayLabels.join(', ') : '?붿씪 誘몄꽑??;
-    return `${weekdayText} 쨌 ${entry.startTime} - ${entry.endTime}`;
+    const weekdayText = weekdayLabels.length > 0 ? weekdayLabels.join(', ') : '요일 미선택';
+    return `${weekdayText} · ${entry.startTime} - ${entry.endTime}`;
 }
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -357,4 +357,5 @@ export default function TimeSlotForm({
         </Card>
     );
 }
+
 
