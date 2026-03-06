@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '~/components/header';
+import { useToast } from '~/components/toast/useToast';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
@@ -9,14 +10,13 @@ import { useHost } from '~/hooks/useHost';
 import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
-
-const DAY_NAMES: Record<number, string> = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
+import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
-    const names = sorted.map((d) => DAY_NAMES[d]);
+    const names = sorted.map((d) => DAY_NAMES[d as Weekday]);
     const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
     if (isConsecutive && sorted.length >= 2) {
         return names[0] + '~' + names[names.length - 1];
@@ -60,12 +60,10 @@ export default function TimeSlotSettings() {
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const emailCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return () => {
             if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-            if (emailCopiedTimerRef.current) clearTimeout(emailCopiedTimerRef.current);
         };
     }, []);
 
@@ -88,6 +86,11 @@ export default function TimeSlotSettings() {
         } catch {
             // 에러는 updateProfileMutation.isError / error로 표시
         }
+    };
+
+    const { showToast } = useToast();
+    const handleDuplicateBlocked = () => {
+        showToast('이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.', 'duplicate-timeslot');
     };
 
     const { data: existingTimeslots, isLoading, error: loadError } = useMyTimeslots();
@@ -149,11 +152,11 @@ export default function TimeSlotSettings() {
                 })
             )
         );
-        
+
         const failures = results
             .map((r, i) => ({ result: r, entry: newEntries[i] }))
             .filter((item): item is { result: PromiseRejectedResult; entry: TimeSlotEntry } => item.result.status === 'rejected');
-            
+
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
                 const label = f.entry.startTime + '~' + f.entry.endTime;
@@ -194,7 +197,7 @@ export default function TimeSlotSettings() {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <p className="text-gray-500">불러오는 중...</p>
             </div>
         );
@@ -202,7 +205,7 @@ export default function TimeSlotSettings() {
 
     if (isCalendarMissing) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
                     <LinkButton variant="primary" to="/host/register">
@@ -214,18 +217,18 @@ export default function TimeSlotSettings() {
     }
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <Header
                 center={
                     <nav className="text-sm text-gray-500">
                         <span>호스트 대시보드</span>
                         <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">시간대 설정</span>
+                        <span className="text-[var(--cohi-text-dark)] font-medium">시간대 설정</span>
                     </nav>
                 }
                 right={
-                    <div className="w-9 h-9 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center">
-                        <span className="text-sm text-[var(--cohe-primary)]">👤</span>
+                    <div className="w-9 h-9 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center">
+                        <span className="text-sm text-[var(--cohi-primary)]">👤</span>
                     </div>
                 }
             />
@@ -233,7 +236,7 @@ export default function TimeSlotSettings() {
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto space-y-8">
                     <section className="bg-white rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-[var(--cohe-text-dark)] mb-4">내 프로필</h2>
+                        <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-4">내 프로필</h2>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
@@ -243,7 +246,7 @@ export default function TimeSlotSettings() {
                                     onChange={(e) => setJob(e.target.value)}
                                     placeholder="예: 백엔드 개발자 @ 스타트업"
                                     maxLength={100}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohe-primary)]/30 focus:border-[var(--cohe-primary)]"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
                                 />
                             </div>
                             <div className="flex-1">
@@ -254,7 +257,7 @@ export default function TimeSlotSettings() {
                                     onChange={(e) => setProfileImageUrl(e.target.value)}
                                     placeholder="https://..."
                                     maxLength={500}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohe-primary)]/30 focus:border-[var(--cohe-primary)]"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
                                 />
                             </div>
                             <div className="flex items-end gap-2">
@@ -282,13 +285,18 @@ export default function TimeSlotSettings() {
                                 onChange={setEntries}
                                 onSave={handleSave}
                                 onDelete={handleDelete}
+                                onOverlapDetected={handleDuplicateBlocked}
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
                             />
                         </div>
                         <div className="flex-1">
-                            <WeeklySchedulePreview entries={entries} onChange={setEntries} />
+                            <WeeklySchedulePreview
+                                entries={entries}
+                                onChange={setEntries}
+                                onDuplicateBlocked={handleDuplicateBlocked}
+                            />
                         </div>
                     </div>
                 </div>

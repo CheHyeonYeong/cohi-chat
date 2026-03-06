@@ -1,4 +1,4 @@
-# coheChat - 1:1 미팅 예약 서비스
+# cohiChat - 1:1 미팅 예약 서비스
 
 호스트-게스트 간 미팅 예약 웹 서비스 (Google Calendar 연동)
 
@@ -47,7 +47,7 @@ docker-compose up -d    # 전체 서비스 실행
 ## 프로젝트 구조
 
 ```
-coheChat/
+cohiChat/
 ├── .claude/
 │   ├── commands/         # 커스텀 슬래시 커맨드
 │   └── skills/           # 커스텀 스킬

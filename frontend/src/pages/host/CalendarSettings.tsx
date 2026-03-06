@@ -74,13 +74,13 @@ export default function CalendarSettings() {
 
     if (!calendar) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
                 <Header
                     center={
                         <nav className="text-sm text-gray-500">
                             <span>호스트 대시보드</span>
                             <span className="mx-1.5">&gt;</span>
-                            <span className="text-[var(--cohe-text-dark)] font-medium">캘린더 설정</span>
+                            <span className="text-[var(--cohi-text-dark)] font-medium">캘린더 설정</span>
                         </nav>
                     }
                     right={<div className="w-9 h-9"></div>}
@@ -88,7 +88,7 @@ export default function CalendarSettings() {
                 <div className="flex flex-col items-center justify-center py-20 px-6">
                     <div className="bg-white p-10 rounded-2xl shadow-sm text-center max-w-md space-y-6">
                         <div className="text-5xl">📅</div>
-                        <h2 className="text-xl font-bold text-[var(--cohe-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             미팅 예약을 받으려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>
@@ -102,13 +102,13 @@ export default function CalendarSettings() {
     }
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohe-bg-light)]">
+        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
             <Header
                 center={
                     <nav className="text-sm text-gray-500">
                         <span>호스트 대시보드</span>
                         <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohe-text-dark)] font-medium">캘린더 설정</span>
+                        <span className="text-[var(--cohi-text-dark)] font-medium">캘린더 설정</span>
                     </nav>
                 }
                 right={<div className="w-9 h-9"></div>}
@@ -117,7 +117,7 @@ export default function CalendarSettings() {
             <main className="w-full px-6 py-10 max-w-4xl mx-auto space-y-8">
                 <div className="bg-white p-8 rounded-2xl shadow-sm space-y-10">
                     <section>
-                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohe-text-dark)]">기본 정보 수정</h2>
+                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohi-text-dark)]">기본 정보 수정</h2>
                         <RegisterStep1
                             data={{ topics, description }}
                             onChange={(data) => {
@@ -131,7 +131,7 @@ export default function CalendarSettings() {
                     <div className="h-px bg-gray-100"></div>
 
                     <section>
-                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohe-text-dark)]">연동 캘린더 수정</h2>
+                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohi-text-dark)]">연동 캘린더 수정</h2>
                         <RegisterStep2
                             data={{ googleCalendarId }}
                             onChange={(data) => setGoogleCalendarId(data.googleCalendarId)}

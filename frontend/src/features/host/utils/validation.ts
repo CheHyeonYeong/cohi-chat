@@ -1,4 +1,4 @@
-export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._-]+@group\.calendar\.google\.com$/;
+export const CALENDAR_ID_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export interface CalendarValidationData {
     topics?: string[];
@@ -21,7 +21,7 @@ export function validateCalendarData(data: CalendarValidationData) {
         if (!data.googleCalendarId) {
             errors.googleCalendarId = 'Google Calendar ID를 입력해주세요.';
         } else if (!CALENDAR_ID_REGEX.test(data.googleCalendarId)) {
-            errors.googleCalendarId = 'Google Calendar ID 형식이 올바르지 않습니다. (예: xxx@group.calendar.google.com)';
+            errors.googleCalendarId = 'Google Calendar ID 형식이 올바르지 않습니다. (예: user@gmail.com)';
         }
     }
 

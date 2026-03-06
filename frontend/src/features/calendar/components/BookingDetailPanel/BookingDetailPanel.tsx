@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { formatFileSize } from '~/libs/fileValidation';
 import type { IBookingDetail } from '../../types';
+import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 
 interface BookingDetailPanelProps {
     booking: IBookingDetail | null;
@@ -10,8 +11,6 @@ interface BookingDetailPanelProps {
     onDownload?: (fileId: number, fileName: string) => void;
     isUploading: boolean;
 }
-
-const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 export default function BookingDetailPanel({ booking, onUpload, onDownload, isUploading }: BookingDetailPanelProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,7 +28,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
     }
 
     const when = new Date(booking.when);
-    const dayLabel = DAYS_KO[when.getDay()];
+    const dayLabel = DAY_NAMES[when.getDay() as Weekday];
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -43,20 +42,20 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
             {/* Date and Host info */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--cohe-bg-warm)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-[var(--cohe-primary)]">
+                    <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-[var(--cohi-primary)]">
                             {booking.host.displayName[0] || '?'}
                         </span>
                     </div>
                     <div>
-                        <h2 className="font-bold text-[var(--cohe-text-dark)]">{booking.host.displayName}</h2>
+                        <h2 className="font-bold text-[var(--cohi-text-dark)]">{booking.host.displayName}</h2>
                         <p className="text-xs text-gray-500">Host</p>
                     </div>
                 </div>
                 <Link
                     to="/booking/$id"
                     params={{ id: booking.id }}
-                    className="text-xs font-medium text-[var(--cohe-primary)] hover:underline"
+                    className="text-xs font-medium text-[var(--cohi-primary)] hover:underline"
                 >
                     상세보기 &rarr;
                 </Link>
@@ -68,7 +67,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
             <section className="space-y-3">
                 <div>
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Topic</span>
-                    <p className="text-sm font-semibold text-[var(--cohe-text-dark)] mt-0.5">{booking.topic}</p>
+                    <p className="text-sm font-semibold text-[var(--cohi-text-dark)] mt-0.5">{booking.topic}</p>
                 </div>
                 <div className="flex gap-6">
                     <div>
@@ -141,7 +140,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                                     <button
                                         type="button"
                                         onClick={() => onDownload(file.id, file.originalFileName ?? '이름 없는 파일')}
-                                        className="text-[10px] font-bold text-[var(--cohe-primary)] opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-tighter"
+                                        className="text-[10px] font-bold text-[var(--cohi-primary)] opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-tighter"
                                     >
                                         Download
                                     </button>

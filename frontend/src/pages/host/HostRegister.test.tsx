@@ -94,9 +94,9 @@ describe('HostRegister', () => {
             });
 
             // 2단계 데이터 입력
-            const calendarIdInput = screen.getByPlaceholderText(/your-id@group.calendar.google.com/i);
+            const calendarIdInput = screen.getByPlaceholderText(/your-email@gmail.com/i);
             fireEvent.change(calendarIdInput, {
-                target: { value: 'test@group.calendar.google.com' },
+                target: { value: 'test@gmail.com' },
             });
 
             // 3단계로 이동

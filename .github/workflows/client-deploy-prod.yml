@@ -15,7 +15,10 @@ concurrency:
 
 env:
   AWS_REGION: ap-northeast-2
+  S3_BUCKET: cohi-chat-config
   S3_FRONTEND_DIST: s3://cohi-chat-config/frontend/dist
+  CLOUDFRONT_DISTRIBUTION_ID: E2TSEBMG1RADEW
+  PROD_DOMAIN: www.cohi-chat.com
 
 jobs:
   build-and-deploy:
@@ -59,54 +62,49 @@ jobs:
       - name: Upload frontend dist to S3
         run: |
           aws s3 sync frontend/dist ${{ env.S3_FRONTEND_DIST }} --delete
+          # Keep bucket root in sync as well, so CloudFront works
+          # whether OriginPath is empty or /frontend/dist.
+          aws s3 sync frontend/dist s3://${{ env.S3_BUCKET }}
+          # Prevent stale index.html in browser cache from referencing old hashed assets.
+          aws s3 cp frontend/dist/index.html ${{ env.S3_FRONTEND_DIST }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
+          aws s3 cp frontend/dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          S3_FRONTEND_DIST: ${{ env.S3_FRONTEND_DIST }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_FRONTEND_DIST
-          command_timeout: 40m
-          script: |
-            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-            export AWS_DEFAULT_REGION=$AWS_REGION
-            export S3_FRONTEND_DIST=$S3_FRONTEND_DIST
+      - name: Invalidate CloudFront cache and wait
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --id "$INVALIDATION_ID"
+      - name: Verify public domain serves latest frontend assets
+        run: |
+          EXPECTED_JS=$(grep -o 'assets/index-[^"]*\.js' frontend/dist/index.html | head -1)
+          EXPECTED_CSS=$(grep -o 'assets/index-[^"]*\.css' frontend/dist/index.html | head -1)
 
-            if [ -z "$S3_FRONTEND_DIST" ]; then
-              echo "S3_FRONTEND_DIST is empty"
-              exit 1
+          if [ -z "$EXPECTED_JS" ] || [ -z "$EXPECTED_CSS" ]; then
+            echo "Failed to parse expected asset hashes from built index.html"
+            exit 1
+          fi
+
+          echo "Expected JS: $EXPECTED_JS"
+          echo "Expected CSS: $EXPECTED_CSS"
+
+          for i in {1..12}; do
+            BODY=$(curl -fsSL -H "Cache-Control: no-cache, no-store" "https://${{ env.PROD_DOMAIN }}" || true)
+            if echo "$BODY" | grep -q "$EXPECTED_JS" && echo "$BODY" | grep -q "$EXPECTED_CSS"; then
+              echo "Public domain is serving latest assets."
+              exit 0
             fi
 
-            # 공통 설정 스크립트 로드 및 실행
-            source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
-              # 스크립트가 없으면 먼저 저장소 동기화
-              set -euo pipefail
-              if [ ! -d ~/cohi-chat ]; then
-                git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
-              fi
-              cd ~/cohi-chat
-              git fetch origin
-              git reset --hard origin/${{ github.ref_name }}
-              source ~/cohi-chat/scripts/ec2-deploy-common.sh
-            }
-
-            run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
-
-            # Frontend 배포
-            mkdir -p frontend/dist
-            aws s3 sync "$S3_FRONTEND_DIST" ~/cohi-chat/frontend/dist --delete
-            docker-compose -f docker-compose.prod.yml up -d frontend
-
-            echo "Waiting for frontend to start..."
+            echo "Attempt $i/12: latest assets not visible yet, retrying in 10s..."
             sleep 10
+          done
 
-            docker-compose -f docker-compose.prod.yml ps
-            docker-compose -f docker-compose.prod.yml logs --tail=50 frontend
-            log_deploy_success
+          echo "Deployment verification failed: ${EXPECTED_JS}/${EXPECTED_CSS} not served from https://${{ env.PROD_DOMAIN }}"
+          exit 1

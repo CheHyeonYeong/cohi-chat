@@ -24,11 +24,11 @@ export default function OAuthCallbackPage() {
     }, [code, error, provider, state, navigate, loginMutation]);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohe-bg-warm)]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)]">
             {loginMutation.isError ? (
                 <p className="text-red-500 text-sm">로그인에 실패했습니다. 다시 시도해주세요.</p>
             ) : (
-                <p className="text-[var(--cohe-text-dark)]">로그인 처리 중...</p>
+                <p className="text-[var(--cohi-text-dark)]">로그인 처리 중...</p>
             )}
         </div>
     );

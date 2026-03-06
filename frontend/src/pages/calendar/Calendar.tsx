@@ -76,7 +76,7 @@ function Calendar({ baseDate }: { baseDate?: Date }) {
     if (!calendar) return null;
 
     return (
-        <div className="min-h-screen bg-[var(--cohe-bg-light)] py-8">
+        <div className="min-h-screen bg-[var(--cohi-bg-light)] py-8">
             <div className={cn("flex flex-col w-full max-w-4xl mx-auto px-8 space-y-4")}>
                 <div className='flex flex-row justify-between'>
                     <div className='flex flex-row gap-4'>

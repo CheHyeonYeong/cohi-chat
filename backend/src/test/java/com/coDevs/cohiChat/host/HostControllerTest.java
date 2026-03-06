@@ -155,6 +155,18 @@ class HostControllerTest {
 		}
 
 		@Test
+		@DisplayName("displayName이 50자 초과이면 400 반환")
+		void updateProfileDisplayNameExceeds50Characters() throws Exception {
+			String longDisplayName = "a".repeat(51);
+
+			mockMvc.perform(put("/hosts/v1/me")
+					.principal(() -> "testuser")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"displayName\": \"" + longDisplayName + "\"}"))
+				.andExpect(status().isBadRequest());
+		}
+
+		@Test
 		@DisplayName("GUEST가 프로필 수정 시 403 반환")
 		void guestCannotUpdateProfile() throws Exception {
 			when(hostService.updateHostProfile(anyString(), anyString()))
