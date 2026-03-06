@@ -79,7 +79,7 @@ class PasswordResetServiceTest {
 		assertThat(savedToken.getToken()).isNotBlank();
 		assertThat(savedToken.getExpiresAt()).isAfter(LocalDateTime.now());
 
-		verify(emailService).sendHtmlEmail(eq(TEST_EMAIL), eq("[coheChat] 비밀번호 재설정"), anyString());
+		verify(emailService).sendHtmlEmail(eq(TEST_EMAIL), eq("[cohiChat] 비밀번호 재설정"), anyString());
 	}
 
 	@Test
