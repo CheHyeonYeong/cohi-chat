@@ -371,6 +371,19 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.data[1].username").value("host2"))
 				.andExpect(jsonPath("$.error").isEmpty());
 		}
+
+		@Test
+		@DisplayName("호스트가 없으면 빈 배열 반환")
+		void getHostsEmptyList() throws Exception {
+			when(memberService.getActiveHosts()).thenReturn(List.of());
+
+			mockMvc.perform(get("/members/v1/hosts"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data").isArray())
+				.andExpect(jsonPath("$.data").isEmpty())
+				.andExpect(jsonPath("$.error").isEmpty());
+		}
 	}
 
 }
