@@ -32,7 +32,7 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
                         {booking.host?.displayName?.[0] ?? '?'}
                     </span>
                 </div>
-                <p className="font-semibold text-[var(--cohi-text-dark)] flex-1">{booking.host.displayName}님과</p>
+                <p className="font-semibold text-[var(--cohi-text-dark)] flex-1">{booking.host?.displayName}님과</p>
                 {headerAction && (
                     <div onClick={(e) => e.stopPropagation()}>
                         {headerAction}

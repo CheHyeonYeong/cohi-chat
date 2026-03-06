@@ -22,8 +22,8 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const { data: currentUser } = useAuth();
     const isPending = reportTarget === 'host' ? isReportingHost : isReportingGuest;
 
-    const showReportHost = !!currentUser && currentUser.id !== booking.hostId;
-    const showReportGuest = !!currentUser && currentUser.id !== booking.guestId;
+    const showReportHost = !!currentUser && currentUser.id === booking.guestId;
+    const showReportGuest = !!currentUser && currentUser.id === booking.hostId;
     const hasAnyAction = showReportHost || showReportGuest;
 
     useEffect(() => {
