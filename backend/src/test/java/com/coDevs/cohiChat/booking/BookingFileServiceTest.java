@@ -96,7 +96,7 @@ class BookingFileServiceTest {
                 "uuid-file.pdf", "/uploads/2025/01/uuid-file.pdf", 7L, "application/pdf"
             );
 
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             doNothing().when(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
             given(fileStorageService.store(file)).willReturn(storageResult);
             given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
@@ -123,7 +123,7 @@ class BookingFileServiceTest {
                 "uuid-file.pdf", "/uploads/2025/01/uuid-file.pdf", 7L, "application/pdf"
             );
 
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             doNothing().when(fileUploadValidator).validate(eq(BOOKING_ID), any(MultipartFile.class));
             given(fileStorageService.store(file)).willReturn(storageResult);
             given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
@@ -143,7 +143,7 @@ class BookingFileServiceTest {
             MultipartFile file = new MockMultipartFile(
                 "file", "resume.pdf", "application/pdf", "content".getBytes()
             );
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.empty());
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.uploadFile(BOOKING_ID, GUEST_ID, file))
@@ -159,7 +159,7 @@ class BookingFileServiceTest {
             MultipartFile file = new MockMultipartFile(
                 "file", "resume.pdf", "application/pdf", "content".getBytes()
             );
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.uploadFile(BOOKING_ID, OTHER_USER_ID, file))
@@ -177,7 +177,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 게스트가 파일 목록을 조회할 수 있다")
         void getFilesByGuestSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(BOOKING_ID))
                 .willReturn(List.of(bookingFile));
 
@@ -193,7 +193,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 호스트가 파일 목록을 조회할 수 있다")
         void getFilesByHostSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(BOOKING_ID))
                 .willReturn(List.of(bookingFile));
 
@@ -208,7 +208,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 조회 불가")
         void getFilesFailsWhenAccessDenied() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.getFiles(BOOKING_ID, OTHER_USER_ID))
@@ -226,7 +226,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 게스트가 파일을 삭제할 수 있다")
         void deleteFileByGuestSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
 
             // when
@@ -241,7 +241,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 호스트가 파일을 삭제할 수 있다")
         void deleteFileByHostSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
 
             // when
@@ -256,7 +256,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 파일을 찾을 수 없음")
         void deleteFileFailsWhenFileNotFound() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.empty());
 
             // when & then
@@ -278,7 +278,7 @@ class BookingFileServiceTest {
             );
             ReflectionTestUtils.setField(otherBookingFile, "id", FILE_ID);
 
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(otherBookingFile));
 
             // when & then
@@ -298,7 +298,7 @@ class BookingFileServiceTest {
         void downloadFileByGuestSuccess() {
             // given
             byte[] content = "file content".getBytes();
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(fileStorageService.load(bookingFile.getFilePath())).willReturn(content);
 
@@ -315,7 +315,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 다운로드 불가")
         void downloadFileFailsWhenAccessDenied() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.downloadFile(BOOKING_ID, FILE_ID, OTHER_USER_ID))
