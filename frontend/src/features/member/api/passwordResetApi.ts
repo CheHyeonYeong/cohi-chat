@@ -13,7 +13,9 @@ export async function requestPasswordResetApi(email: string): Promise<{ message:
 }
 
 export async function verifyResetTokenApi(token: string): Promise<{ valid: boolean }> {
-    const response = await httpClient<{ valid: boolean }>(`${PASSWORD_RESET_API}/verify?token=${encodeURIComponent(token)}`);
+    const response = await httpClient<{ valid: boolean }>(`${PASSWORD_RESET_API}/verify?token=${encodeURIComponent(token)}`, {
+        cache: 'no-store',
+    });
     if (!response) throw new Error('토큰 검증에 실패했습니다.');
     return response;
 }

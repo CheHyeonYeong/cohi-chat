@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
+import { Link } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { useConfirmPasswordReset } from '../hooks/usePasswordReset';
 import { validatePassword, validatePasswordConfirm } from '../utils/validators';
-import { getErrorMessage } from '~/libs/errorUtils';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
 
 interface ResetPasswordFieldsValues {
     password: string;
@@ -99,7 +100,15 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
 
             {confirmMutation.isError && (
                 <div className="text-red-600 text-sm">
-                    {getErrorMessage(confirmMutation.error, '비밀번호 재설정에 실패했습니다.')}
+                    <p>{getErrorMessage(confirmMutation.error, '비밀번호 재설정에 실패했습니다.')}</p>
+                    {isHttpError(confirmMutation.error, 401) && (
+                        <Link
+                            to="/forgot-password"
+                            className="block mt-2 text-[var(--cohi-primary)] font-semibold hover:underline"
+                        >
+                            비밀번호 찾기로 이동
+                        </Link>
+                    )}
                 </div>
             )}
 
