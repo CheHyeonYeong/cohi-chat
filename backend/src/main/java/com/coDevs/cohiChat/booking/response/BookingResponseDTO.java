@@ -1,8 +1,7 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
@@ -22,8 +21,8 @@ public class BookingResponseDTO {
     private UUID guestId;
     private UUID hostId;
 
-    private OffsetDateTime startedAt;
-    private OffsetDateTime endedAt;
+    private Instant startedAt;
+    private Instant endedAt;
     private String topic;
     private String description;
     private AttendanceStatus attendanceStatus;
@@ -34,23 +33,17 @@ public class BookingResponseDTO {
     private String hostDisplayName;
 
     public static BookingResponseDTO from(Booking booking) {
-        return from(booking, null, null, ZoneId.of("Asia/Seoul"));
+        return from(booking, null, null);
     }
 
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
-        return from(booking, hostUsername, hostDisplayName, ZoneId.of("Asia/Seoul"));
-    }
-
-    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName, ZoneId zoneId) {
-        OffsetDateTime startedAt = booking.getBookingDate()
+        Instant startedAt = booking.getBookingDate()
             .atTime(booking.getTimeSlot().getStartTime())
-            .atZone(zoneId)
-            .toOffsetDateTime();
+            .toInstant(ZoneOffset.UTC);
 
-        OffsetDateTime endedAt = booking.getBookingDate()
+        Instant endedAt = booking.getBookingDate()
             .atTime(booking.getTimeSlot().getEndTime())
-            .atZone(zoneId)
-            .toOffsetDateTime();
+            .toInstant(ZoneOffset.UTC);
 
         return BookingResponseDTO.builder()
             .id(booking.getId())

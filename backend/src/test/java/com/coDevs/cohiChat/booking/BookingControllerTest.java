@@ -15,11 +15,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -79,10 +78,9 @@ class BookingControllerTest {
     private static final UUID GUEST_ID = UUID.randomUUID();
     private static final Long TIME_SLOT_ID = 1L;
     private static final LocalDate FUTURE_DATE = LocalDate.now().plusDays(7);
-    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
-    private static OffsetDateTime toOffset(LocalDate date, int hour, int minute) {
-        return date.atTime(hour, minute).atZone(ZONE_ID).toOffsetDateTime();
+    private static Instant toInstant(LocalDate date, int hour, int minute) {
+        return date.atTime(hour, minute).toInstant(ZoneOffset.UTC);
     }
 
     @Test
@@ -93,8 +91,8 @@ class BookingControllerTest {
             .id(1L)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(GUEST_ID)
-            .startedAt(toOffset(FUTURE_DATE, 10, 0))
-            .endedAt(toOffset(FUTURE_DATE, 11, 0))
+            .startedAt(toInstant(FUTURE_DATE, 10, 0))
+            .endedAt(toInstant(FUTURE_DATE, 11, 0))
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
@@ -236,8 +234,8 @@ class BookingControllerTest {
             .id(bookingId)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(GUEST_ID)
-            .startedAt(toOffset(FUTURE_DATE, 10, 0))
-            .endedAt(toOffset(FUTURE_DATE, 11, 0))
+            .startedAt(toInstant(FUTURE_DATE, 10, 0))
+            .endedAt(toInstant(FUTURE_DATE, 11, 0))
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
@@ -295,8 +293,8 @@ class BookingControllerTest {
             .id(1L)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(GUEST_ID)
-            .startedAt(toOffset(FUTURE_DATE, 10, 0))
-            .endedAt(toOffset(FUTURE_DATE, 11, 0))
+            .startedAt(toInstant(FUTURE_DATE, 10, 0))
+            .endedAt(toInstant(FUTURE_DATE, 11, 0))
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
@@ -323,8 +321,8 @@ class BookingControllerTest {
             .id(2L)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(UUID.randomUUID())
-            .startedAt(toOffset(FUTURE_DATE, 14, 0))
-            .endedAt(toOffset(FUTURE_DATE, 15, 0))
+            .startedAt(toInstant(FUTURE_DATE, 14, 0))
+            .endedAt(toInstant(FUTURE_DATE, 15, 0))
             .topic("기술 면접")
             .description("백엔드 개발자 면접")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
@@ -373,8 +371,8 @@ class BookingControllerTest {
             .id(bookingId)
             .timeSlotId(newTimeSlotId)
             .guestId(UUID.randomUUID())
-            .startedAt(toOffset(newDate, 14, 0))
-            .endedAt(toOffset(newDate, 15, 0))
+            .startedAt(toInstant(newDate, 14, 0))
+            .endedAt(toInstant(newDate, 15, 0))
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.SCHEDULED)
@@ -486,8 +484,8 @@ class BookingControllerTest {
             .id(bookingId)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(UUID.randomUUID())
-            .startedAt(toOffset(FUTURE_DATE, 10, 0))
-            .endedAt(toOffset(FUTURE_DATE, 11, 0))
+            .startedAt(toInstant(FUTURE_DATE, 10, 0))
+            .endedAt(toInstant(FUTURE_DATE, 11, 0))
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
             .attendanceStatus(AttendanceStatus.ATTENDED)
@@ -660,8 +658,8 @@ class BookingControllerTest {
             .id(bookingId)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(GUEST_ID)
-            .startedAt(toOffset(FUTURE_DATE, 10, 0))
-            .endedAt(toOffset(FUTURE_DATE, 11, 0))
+            .startedAt(toInstant(FUTURE_DATE, 10, 0))
+            .endedAt(toInstant(FUTURE_DATE, 11, 0))
             .topic("프로젝트 상담")
             .description("설명")
             .attendanceStatus(AttendanceStatus.HOST_NO_SHOW)
@@ -748,8 +746,8 @@ class BookingControllerTest {
             .hostId(hostId)
             .reportedBy(GUEST_ID)
             .reason("사유")
-            .bookingStartedAt(toOffset(FUTURE_DATE, 10, 0))
-            .bookingEndedAt(toOffset(FUTURE_DATE, 11, 0))
+            .bookingStartedAt(toInstant(FUTURE_DATE, 10, 0))
+            .bookingEndedAt(toInstant(FUTURE_DATE, 11, 0))
             .bookingTopic("상담")
             .build();
 

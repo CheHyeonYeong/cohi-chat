@@ -1,7 +1,7 @@
 package com.coDevs.cohiChat.booking.response;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 
@@ -12,7 +12,7 @@ import lombok.Getter;
 /**
  * 공개 API용 예약 응답 DTO.
  * SSE 스트리밍 중복 제거를 위해 id 포함.
- * startedAt/endedAt: ISO 8601 full datetime (날짜+시간+타임존).
+ * startedAt/endedAt: UTC 기준 Instant (FE에서 로컬 타임존 변환).
  */
 @Getter
 @Builder
@@ -20,23 +20,17 @@ import lombok.Getter;
 public class BookingPublicResponseDTO {
 
     private long id;
-    private OffsetDateTime startedAt;
-    private OffsetDateTime endedAt;
+    private Instant startedAt;
+    private Instant endedAt;
 
     public static BookingPublicResponseDTO from(Booking booking) {
-        return from(booking, ZoneId.of("Asia/Seoul"));
-    }
-
-    public static BookingPublicResponseDTO from(Booking booking, ZoneId zoneId) {
-        OffsetDateTime startedAt = booking.getBookingDate()
+        Instant startedAt = booking.getBookingDate()
             .atTime(booking.getTimeSlot().getStartTime())
-            .atZone(zoneId)
-            .toOffsetDateTime();
+            .toInstant(ZoneOffset.UTC);
 
-        OffsetDateTime endedAt = booking.getBookingDate()
+        Instant endedAt = booking.getBookingDate()
             .atTime(booking.getTimeSlot().getEndTime())
-            .atZone(zoneId)
-            .toOffsetDateTime();
+            .toInstant(ZoneOffset.UTC);
 
         return BookingPublicResponseDTO.builder()
             .id(booking.getId())

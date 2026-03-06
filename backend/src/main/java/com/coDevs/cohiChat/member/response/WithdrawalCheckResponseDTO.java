@@ -1,6 +1,6 @@
 package com.coDevs.cohiChat.member.response;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -20,8 +20,8 @@ public class WithdrawalCheckResponseDTO {
     @AllArgsConstructor
     public static class AffectedBookingDTO {
         private Long bookingId;
-        private OffsetDateTime startedAt;
-        private OffsetDateTime endedAt;
+        private Instant startedAt;
+        private Instant endedAt;
         private String topic;
         private String role; // "HOST" or "GUEST"
     }
