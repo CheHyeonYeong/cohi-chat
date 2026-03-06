@@ -10,6 +10,7 @@ import MyBookings from './MyBookings';
 const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
 const refetchSelectedBooking = vi.fn().mockResolvedValue(undefined);
 const uploadFileAsync = vi.fn().mockResolvedValue({});
+const deleteFileAsync = vi.fn().mockResolvedValue({});
 
 const booking: IBookingDetail = {
     id: 1,
@@ -126,6 +127,12 @@ vi.mock('~/features/calendar', () => ({
     }),
     useUploadBookingFile: () => ({
         mutateAsync: uploadFileAsync,
+        isPending: false,
+        error: null,
+        reset: vi.fn(),
+    }),
+    useDeleteBookingFile: () => ({
+        mutateAsync: deleteFileAsync,
         isPending: false,
     }),
 }));
