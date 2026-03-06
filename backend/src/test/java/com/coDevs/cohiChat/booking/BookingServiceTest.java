@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -1868,6 +1869,27 @@ class BookingServiceTest {
         assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEETING_NOT_STARTED);
+    }
+
+    @Test
+    @DisplayName("실패: 저장 시 무결성 예외 발생 시 중복 신고로 처리")
+    void reportGuestNoShowFailWhenDataIntegrityViolation() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(guestNoShowHistoryRepository.save(any(GuestNoShowHistory.class)))
+            .willThrow(new DataIntegrityViolationException("unique violation"));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_ALREADY_REPORTED);
     }
 
     // ===== 게스트 노쇼 이력 조회 테스트 (Issue #372) =====

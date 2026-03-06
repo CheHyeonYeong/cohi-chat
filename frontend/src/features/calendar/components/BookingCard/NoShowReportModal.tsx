@@ -21,12 +21,17 @@ export default function NoShowReportModal({ title, isPending, onSubmit, onClose 
             onClick={onClose}
         >
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="noshow-report-title"
                 className="bg-white rounded-2xl p-6 shadow-xl w-full max-w-sm mx-4"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-4">{title}</h2>
+                <h2 id="noshow-report-title" className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-4">{title}</h2>
 
+                <label htmlFor="noshow-reason" className="sr-only">신고 사유</label>
                 <textarea
+                    id="noshow-reason"
                     className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
                     rows={3}
                     placeholder="신고 사유를 입력해주세요 (선택)"

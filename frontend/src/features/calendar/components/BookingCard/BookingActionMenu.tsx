@@ -14,7 +14,13 @@ interface BookingActionMenuProps {
 export default function BookingActionMenu({ booking, currentUser }: BookingActionMenuProps) {
     const [open, setOpen] = useState(false);
     const [reportType, setReportType] = useState<ReportType | null>(null);
+    const [now, setNow] = useState(() => Date.now());
     const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+        return () => window.clearInterval(timer);
+    }, []);
 
     const { mutate: reportHostNoShow, isPending: isReportingHost } = useReportHostNoShow(booking.id);
     const { mutate: reportGuestNoShow, isPending: isReportingGuest } = useReportGuestNoShow(
@@ -34,11 +40,11 @@ export default function BookingActionMenu({ booking, currentUser }: BookingActio
             h,
             m,
         );
-        return Date.now() >= meetingStart.getTime();
-    }, [booking]);
+        return now >= meetingStart.getTime();
+    }, [booking, now]);
 
     const canReportHost = isGuest && booking.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
-    const canReportGuest = isHost && booking.attendanceStatus === 'NO_SHOW';
+    const canReportGuest = isHost && booking.attendanceStatus === 'NO_SHOW' && isMeetingStarted;
 
     useEffect(() => {
         if (!open) return;

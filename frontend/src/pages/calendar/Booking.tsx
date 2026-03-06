@@ -194,7 +194,7 @@ export default function Booking() {
 
     // 현재 사용자가 이 예약의 호스트인지 판단
     const isHost = !!currentUser && currentUser.id === booking?.hostId;
-    const canReportGuest = isHost && booking?.attendanceStatus === 'NO_SHOW';
+    const canReportGuest = isHost && booking?.attendanceStatus === 'NO_SHOW' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileSelect(e.target.files);
