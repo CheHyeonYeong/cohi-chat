@@ -128,6 +128,20 @@ class FileUploadValidatorTest {
                 .doesNotThrowAnyException();
         }
 
+        @Test
+        @DisplayName("성공: 대문자 확장자도 허용된다")
+        void validateUppercaseExtensionSuccess() {
+            given(bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(BOOKING_ID))
+                .willReturn(new ArrayList<>());
+
+            MockMultipartFile file = new MockMultipartFile(
+                "file", "test.GIF", "image/gif", "content".getBytes()
+            );
+
+            assertThatCode(() -> fileUploadValidator.validate(BOOKING_ID, file))
+                .doesNotThrowAnyException();
+        }
+
         @ParameterizedTest
         @ValueSource(strings = {"exe", "bat", "sh", "js", "php"})
         @DisplayName("실패: 차단된 확장자")
@@ -173,6 +187,34 @@ class FileUploadValidatorTest {
     @Nested
     @DisplayName("MIME 타입 검증")
     class MimeTypeValidation {
+
+        @Test
+        @DisplayName("성공: Content-Type 파라미터가 있어도 허용된다")
+        void validateMimeTypeWithParameterSuccess() {
+            given(bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(BOOKING_ID))
+                .willReturn(new ArrayList<>());
+
+            MockMultipartFile file = new MockMultipartFile(
+                "file", "test.txt", "text/plain; charset=UTF-8", "content".getBytes()
+            );
+
+            assertThatCode(() -> fileUploadValidator.validate(BOOKING_ID, file))
+                .doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("성공: 대소문자가 다른 Content-Type도 허용된다")
+        void validateMimeTypeCaseInsensitiveSuccess() {
+            given(bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(BOOKING_ID))
+                .willReturn(new ArrayList<>());
+
+            MockMultipartFile file = new MockMultipartFile(
+                "file", "test.txt", "Text/Plain", "content".getBytes()
+            );
+
+            assertThatCode(() -> fileUploadValidator.validate(BOOKING_ID, file))
+                .doesNotThrowAnyException();
+        }
 
         @Test
         @DisplayName("실패: 잘못된 MIME 타입")

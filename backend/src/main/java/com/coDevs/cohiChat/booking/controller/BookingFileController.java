@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +24,11 @@ import com.coDevs.cohiChat.booking.BookingFileService;
 import com.coDevs.cohiChat.booking.FileDownloadResult;
 import com.coDevs.cohiChat.booking.FileUploadValidator;
 import com.coDevs.cohiChat.booking.FileUploadValidator.FileUploadLimits;
+import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
+import com.coDevs.cohiChat.booking.request.PresignedUploadUrlRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -32,6 +37,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Booking File", description = "예약 파일 관리 API")
@@ -142,5 +148,64 @@ public class BookingFileController {
             @PathVariable Long bookingId
     ) {
         return ResponseEntity.ok(ApiResponseDTO.success(fileUploadValidator.getLimits()));
+    }
+
+    @Operation(summary = "Pre-signed 업로드 URL 생성", description = "클라이언트가 S3에 직접 파일을 업로드할 수 있는 Pre-signed URL을 생성합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "URL 생성 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
+    })
+    @PostMapping("/presigned-upload-url")
+    public ResponseEntity<ApiResponseDTO<PresignedUploadUrlResponseDTO>> getPresignedUploadUrl(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody PresignedUploadUrlRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        PresignedUploadUrlResponseDTO response = bookingFileService.generatePresignedUploadUrl(
+            bookingId, member.getId(), request.getFileName(), request.getContentType()
+        );
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "업로드 완료 확인", description = "S3 직접 업로드 완료 후 파일 정보를 DB에 등록합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "등록 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
+    })
+    @PostMapping("/confirm-upload")
+    public ResponseEntity<ApiResponseDTO<BookingFileResponseDTO>> confirmUpload(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody ConfirmUploadRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingFileResponseDTO response = bookingFileService.confirmUpload(bookingId, member.getId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "Pre-signed 다운로드 URL 생성", description = "클라이언트가 S3에서 직접 파일을 다운로드할 수 있는 Pre-signed URL을 생성합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "URL 생성 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+        @ApiResponse(responseCode = "404", description = "예약 또는 파일을 찾을 수 없음")
+    })
+    @GetMapping("/{fileId}/presigned-download-url")
+    public ResponseEntity<ApiResponseDTO<PresignedDownloadUrlResponseDTO>> getPresignedDownloadUrl(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @PathVariable Long fileId
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(
+            bookingId, fileId, member.getId()
+        );
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 }
