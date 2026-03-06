@@ -67,7 +67,7 @@ const myBookingsRoute = createRoute({
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
         pageSize: z.number().min(1).optional().default(() => 10),
-        tab: z.enum(['guest', 'host']).optional().default(() => 'guest'),
+        tab: z.enum(['guest', 'host']).optional().default('guest'),
     }),
 })
 
