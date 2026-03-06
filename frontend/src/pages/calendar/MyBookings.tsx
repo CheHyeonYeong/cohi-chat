@@ -112,9 +112,7 @@ export default function MyBookings() {
         resetUploadError(); // 이전 에러 초기화
         try {
             for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-                await uploadFileAsync(formData);
+                await uploadFileAsync(file);
             }
             await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
         } catch {

@@ -70,6 +70,43 @@ public class FileUploadValidator {
         validateTotalSize(existingFiles, file);
     }
 
+    public void validateFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new CustomException(ErrorCode.FILE_EXTENSION_NOT_ALLOWED);
+        }
+
+        String extension = getExtension(fileName).toLowerCase();
+
+        if (BLOCKED_EXTENSIONS.contains(extension)) {
+            throw new CustomException(ErrorCode.FILE_EXTENSION_BLOCKED);
+        }
+
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new CustomException(ErrorCode.FILE_EXTENSION_NOT_ALLOWED);
+        }
+    }
+
+    public void validateFileSize(long fileSize) {
+        if (fileSize <= 0) {
+            throw new CustomException(ErrorCode.FILE_EMPTY);
+        }
+        if (fileSize > MAX_FILE_SIZE) {
+            throw new CustomException(ErrorCode.FILE_SIZE_EXCEEDED);
+        }
+    }
+
+    public void validateContentType(String contentType) {
+        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
+            throw new CustomException(ErrorCode.FILE_MIME_TYPE_NOT_ALLOWED);
+        }
+    }
+
+    public void validateBookingLimits(Long bookingId, long fileSize) {
+        List<BookingFile> existingFiles = bookingFileRepository.findByBookingIdOrderByCreatedAtDesc(bookingId);
+        validateFileCount(existingFiles);
+        validateTotalSize(existingFiles, fileSize);
+    }
+
     /**
      * 빈 파일인지 검증합니다.
      */
@@ -93,31 +130,14 @@ public class FileUploadValidator {
      */
     private void validateExtension(MultipartFile file) {
         String filename = file.getOriginalFilename();
-        if (filename == null || filename.isBlank()) {
-            throw new CustomException(ErrorCode.FILE_EXTENSION_NOT_ALLOWED);
-        }
-
-        String extension = getExtension(filename).toLowerCase();
-
-        // 차단 확장자 체크
-        if (BLOCKED_EXTENSIONS.contains(extension)) {
-            throw new CustomException(ErrorCode.FILE_EXTENSION_BLOCKED);
-        }
-
-        // 허용 확장자 체크
-        if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw new CustomException(ErrorCode.FILE_EXTENSION_NOT_ALLOWED);
-        }
+        validateFileName(filename);
     }
 
     /**
      * MIME 타입을 검증합니다.
      */
     private void validateMimeType(MultipartFile file) {
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
-            throw new CustomException(ErrorCode.FILE_MIME_TYPE_NOT_ALLOWED);
-        }
+        validateContentType(file.getContentType());
     }
 
     /**
@@ -133,11 +153,15 @@ public class FileUploadValidator {
      * 예약당 총 파일 용량 제한을 검증합니다.
      */
     private void validateTotalSize(List<BookingFile> existingFiles, MultipartFile file) {
+        validateTotalSize(existingFiles, file.getSize());
+    }
+
+    private void validateTotalSize(List<BookingFile> existingFiles, long fileSize) {
         long totalSize = existingFiles.stream()
             .mapToLong(BookingFile::getFileSize)
             .sum();
 
-        if (totalSize + file.getSize() > MAX_TOTAL_SIZE_PER_BOOKING) {
+        if (totalSize + fileSize > MAX_TOTAL_SIZE_PER_BOOKING) {
             throw new CustomException(ErrorCode.FILE_TOTAL_SIZE_EXCEEDED);
         }
     }

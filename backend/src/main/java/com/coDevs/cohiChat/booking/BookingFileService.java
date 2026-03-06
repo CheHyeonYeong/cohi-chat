@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.BookingFile;
+import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
@@ -127,6 +128,8 @@ public class BookingFileService {
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
+        fileUploadValidator.validateFileName(fileName);
+        fileUploadValidator.validateContentType(contentType);
 
         String objectKey = generateObjectKey(fileName);
         String presignedUrl = s3PresignedUrlService.generateUploadUrl(
@@ -146,6 +149,32 @@ public class BookingFileService {
         return PresignedDownloadUrlResponseDTO.of(presignedUrl, PRESIGNED_URL_EXPIRATION_SECONDS);
     }
 
+    @Transactional
+    public BookingFileResponseDTO confirmUpload(
+            Long bookingId, UUID requesterId, ConfirmUploadRequestDTO request) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateBookingAccess(booking, requesterId);
+
+        fileUploadValidator.validateFileName(request.getOriginalFileName());
+        fileUploadValidator.validateContentType(request.getContentType());
+        fileUploadValidator.validateFileSize(request.getFileSize());
+        fileUploadValidator.validateBookingLimits(bookingId, request.getFileSize());
+
+        BookingFile bookingFile = BookingFile.create(
+            booking,
+            extractFileName(request.getObjectKey()),
+            request.getOriginalFileName(),
+            request.getObjectKey(),
+            request.getFileSize(),
+            request.getContentType()
+        );
+
+        BookingFile savedFile = bookingFileRepository.save(bookingFile);
+        return BookingFileResponseDTO.from(savedFile);
+    }
+
     private String generateObjectKey(String fileName) {
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
         String extension = getExtension(fileName);
@@ -159,5 +188,13 @@ public class BookingFileService {
             return "." + fileName.substring(lastDot + 1);
         }
         return "";
+    }
+
+    private String extractFileName(String objectKey) {
+        int lastSlash = objectKey.lastIndexOf('/');
+        if (lastSlash >= 0 && lastSlash < objectKey.length() - 1) {
+            return objectKey.substring(lastSlash + 1);
+        }
+        return objectKey;
     }
 }

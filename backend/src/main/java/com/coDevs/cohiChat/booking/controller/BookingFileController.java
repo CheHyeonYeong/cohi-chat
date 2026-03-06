@@ -24,6 +24,7 @@ import com.coDevs.cohiChat.booking.BookingFileService;
 import com.coDevs.cohiChat.booking.FileDownloadResult;
 import com.coDevs.cohiChat.booking.FileUploadValidator;
 import com.coDevs.cohiChat.booking.FileUploadValidator.FileUploadLimits;
+import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.request.PresignedUploadUrlRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
@@ -167,6 +168,25 @@ public class BookingFileController {
             bookingId, member.getId(), request.getFileName(), request.getContentType()
         );
         return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "업로드 완료 확인", description = "S3 직접 업로드 완료 후 파일 정보를 DB에 등록합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "등록 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+        @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음")
+    })
+    @PostMapping("/confirm-upload")
+    public ResponseEntity<ApiResponseDTO<BookingFileResponseDTO>> confirmUpload(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody ConfirmUploadRequestDTO request
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        BookingFileResponseDTO response = bookingFileService.confirmUpload(bookingId, member.getId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "Pre-signed 다운로드 URL 생성", description = "클라이언트가 S3에서 직접 파일을 다운로드할 수 있는 Pre-signed URL을 생성합니다.")

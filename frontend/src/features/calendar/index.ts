@@ -54,6 +54,7 @@ export {
     getTimeslotsByHostId,
     // Pre-signed URL
     getPresignedUploadUrl,
+    confirmUpload,
     getPresignedDownloadUrl,
     uploadFileToS3,
     uploadBookingFileWithPresignedUrl,
@@ -64,4 +65,5 @@ export {
 export type {
     PresignedUploadUrlResponse,
     PresignedDownloadUrlResponse,
+    ConfirmUploadRequest,
 } from './api/bookings';

@@ -126,6 +126,13 @@ export interface PresignedDownloadUrlResponse {
     expiresIn: number;
 }
 
+export interface ConfirmUploadRequest {
+    objectKey: string;
+    originalFileName: string;
+    contentType: string;
+    fileSize: number;
+}
+
 /**
  * Pre-signed 업로드 URL 생성
  * 클라이언트가 S3에 직접 파일을 업로드할 수 있는 URL을 생성
@@ -140,6 +147,19 @@ export async function getPresignedUploadUrl(
         {
             method: 'POST',
             body: { fileName, contentType },
+        }
+    );
+}
+
+export async function confirmUpload(
+    bookingId: number,
+    request: ConfirmUploadRequest
+): Promise<IBookingFile> {
+    return await httpClient<IBookingFile>(
+        `${API_URL}/bookings/${bookingId}/files/confirm-upload`,
+        {
+            method: 'POST',
+            body: request,
         }
     );
 }
@@ -164,11 +184,12 @@ export async function uploadFileToS3(
     presignedUrl: string,
     file: File
 ): Promise<void> {
+    const contentType = file.type || 'application/octet-stream';
     const response = await fetch(presignedUrl, {
         method: 'PUT',
         body: file,
         headers: {
-            'Content-Type': file.type,
+            'Content-Type': contentType,
         },
     });
 
@@ -185,7 +206,7 @@ export async function uploadFileToS3(
 export async function uploadBookingFileWithPresignedUrl(
     bookingId: number,
     file: File
-): Promise<{ objectKey: string }> {
+): Promise<IBookingFile> {
     // 1. Pre-signed URL 생성
     const { url, objectKey } = await getPresignedUploadUrl(
         bookingId,
@@ -196,7 +217,13 @@ export async function uploadBookingFileWithPresignedUrl(
     // 2. S3에 직접 업로드
     await uploadFileToS3(url, file);
 
-    return { objectKey };
+    // 3. 업로드 완료 DB 등록
+    return await confirmUpload(bookingId, {
+        objectKey,
+        originalFileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+    });
 }
 
 /**

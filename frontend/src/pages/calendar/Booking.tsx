@@ -225,9 +225,7 @@ export default function Booking() {
         try {
             for (let i = 0; i < selectedFiles.length; i++) {
                 setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
-                const formData = new FormData();
-                formData.append('file', selectedFiles[i]);
-                await uploadFileAsync(formData);
+                await uploadFileAsync(selectedFiles[i]);
             }
             refetch();
             // 성공 시에만 파일 선택 초기화

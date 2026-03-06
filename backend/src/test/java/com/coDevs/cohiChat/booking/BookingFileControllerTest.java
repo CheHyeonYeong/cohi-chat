@@ -328,6 +328,91 @@ class BookingFileControllerTest {
     }
 
     @Nested
+    @DisplayName("업로드 완료 확인")
+    class ConfirmUpload {
+
+        @Test
+        @DisplayName("성공: 업로드 완료 파일 등록 - 201 Created")
+        void confirmUploadSuccess() throws Exception {
+            // given
+            BookingFileResponseDTO response = new BookingFileResponseDTO(
+                FILE_ID,
+                BOOKING_ID,
+                "uuid-file.pdf",
+                "resume.pdf",
+                1234L,
+                "application/pdf",
+                Instant.now()
+            );
+
+            given(bookingFileService.confirmUpload(eq(BOOKING_ID), eq(USER_ID), any()))
+                .willReturn(response);
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "2026/03/uuid-file.pdf",
+                          "originalFileName": "resume.pdf",
+                          "contentType": "application/pdf",
+                          "fileSize": 1234
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(FILE_ID))
+                .andExpect(jsonPath("$.data.originalFileName").value("resume.pdf"))
+                .andExpect(jsonPath("$.error").isEmpty());
+        }
+
+        @Test
+        @DisplayName("실패: 예약을 찾을 수 없음 - 404")
+        void confirmUploadFailsWhenBookingNotFound() throws Exception {
+            // given
+            given(bookingFileService.confirmUpload(eq(BOOKING_ID), eq(USER_ID), any()))
+                .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "2026/03/uuid-file.pdf",
+                          "originalFileName": "resume.pdf",
+                          "contentType": "application/pdf",
+                          "fileSize": 1234
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+
+        @Test
+        @DisplayName("실패: 잘못된 요청 - 400")
+        void confirmUploadFailsWhenValidationError() throws Exception {
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "",
+                          "originalFileName": "",
+                          "contentType": "",
+                          "fileSize": 0
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+    }
+
+    @Nested
     @DisplayName("Pre-signed 다운로드 URL 생성")
     class GetPresignedDownloadUrl {
 

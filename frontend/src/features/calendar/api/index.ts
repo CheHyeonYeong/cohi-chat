@@ -9,6 +9,7 @@ export {
     getNoShowHistory,
     // Pre-signed URL
     getPresignedUploadUrl,
+    confirmUpload,
     getPresignedDownloadUrl,
     uploadFileToS3,
     uploadBookingFileWithPresignedUrl,

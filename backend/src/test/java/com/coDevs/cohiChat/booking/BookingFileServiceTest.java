@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.BookingFile;
+import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
@@ -345,6 +346,8 @@ class BookingFileServiceTest {
         void generateUploadUrlByGuestSuccess() {
             // given
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
+            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
             given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
                 .willReturn(PRESIGNED_URL);
 
@@ -358,6 +361,8 @@ class BookingFileServiceTest {
             assertThat(response.url()).isEqualTo(PRESIGNED_URL);
             assertThat(response.objectKey()).isNotNull();
             assertThat(response.expiresIn()).isGreaterThan(0);
+            verify(fileUploadValidator).validateFileName(FILE_NAME);
+            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
         }
 
         @Test
@@ -365,6 +370,8 @@ class BookingFileServiceTest {
         void generateUploadUrlByHostSuccess() {
             // given
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
+            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
             given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
                 .willReturn(PRESIGNED_URL);
 
@@ -376,6 +383,8 @@ class BookingFileServiceTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.url()).isEqualTo(PRESIGNED_URL);
+            verify(fileUploadValidator).validateFileName(FILE_NAME);
+            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
         }
 
         @Test
@@ -403,6 +412,85 @@ class BookingFileServiceTest {
             assertThatThrownBy(() -> bookingFileService.generatePresignedUploadUrl(
                 BOOKING_ID, OTHER_USER_ID, FILE_NAME, CONTENT_TYPE
             ))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    @Nested
+    @DisplayName("업로드 완료 확인")
+    class ConfirmUpload {
+
+        private static final String OBJECT_KEY = "2026/03/uuid-file.pdf";
+        private static final String FILE_NAME = "resume.pdf";
+        private static final String CONTENT_TYPE = "application/pdf";
+        private static final Long FILE_SIZE = 1024L;
+
+        @Test
+        @DisplayName("성공: 게스트가 업로드 완료 파일을 등록할 수 있다")
+        void confirmUploadByGuestSuccess() {
+            // given
+            ConfirmUploadRequestDTO request = ConfirmUploadRequestDTO.builder()
+                .objectKey(OBJECT_KEY)
+                .originalFileName(FILE_NAME)
+                .contentType(CONTENT_TYPE)
+                .fileSize(FILE_SIZE)
+                .build();
+
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
+            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            doNothing().when(fileUploadValidator).validateFileSize(FILE_SIZE);
+            doNothing().when(fileUploadValidator).validateBookingLimits(BOOKING_ID, FILE_SIZE);
+            given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
+
+            // when
+            BookingFileResponseDTO response = bookingFileService.confirmUpload(BOOKING_ID, GUEST_ID, request);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.originalFileName()).isEqualTo("resume.pdf");
+            verify(fileUploadValidator).validateFileName(FILE_NAME);
+            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            verify(fileUploadValidator).validateFileSize(FILE_SIZE);
+            verify(fileUploadValidator).validateBookingLimits(BOOKING_ID, FILE_SIZE);
+            verify(bookingFileRepository).save(any(BookingFile.class));
+        }
+
+        @Test
+        @DisplayName("실패: 예약을 찾을 수 없음")
+        void confirmUploadFailsWhenBookingNotFound() {
+            // given
+            ConfirmUploadRequestDTO request = ConfirmUploadRequestDTO.builder()
+                .objectKey(OBJECT_KEY)
+                .originalFileName(FILE_NAME)
+                .contentType(CONTENT_TYPE)
+                .fileSize(FILE_SIZE)
+                .build();
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.confirmUpload(BOOKING_ID, GUEST_ID, request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.BOOKING_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 등록 불가")
+        void confirmUploadFailsWhenAccessDenied() {
+            // given
+            ConfirmUploadRequestDTO request = ConfirmUploadRequestDTO.builder()
+                .objectKey(OBJECT_KEY)
+                .originalFileName(FILE_NAME)
+                .contentType(CONTENT_TYPE)
+                .fileSize(FILE_SIZE)
+                .build();
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.confirmUpload(BOOKING_ID, OTHER_USER_ID, request))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ACCESS_DENIED);

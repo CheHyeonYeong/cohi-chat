@@ -152,6 +152,7 @@ describe('MyBookings upload refresh', () => {
 
         await waitFor(() => {
             expect(uploadFileAsync).toHaveBeenCalledTimes(1);
+            expect(uploadFileAsync.mock.calls[0][0]).toBeInstanceOf(File);
             expect(refetchSelectedBooking).toHaveBeenCalledTimes(1);
             expect(refetchMyBookings).toHaveBeenCalledTimes(1);
         });
