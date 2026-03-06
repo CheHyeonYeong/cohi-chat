@@ -41,6 +41,7 @@ export interface IBookingDetail {
     description: string;
     timeSlot: ITimeSlot;
     host: Pick<IUserSimple, 'username' | 'displayName'>;
+    guest: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
@@ -53,6 +54,18 @@ export interface INoShowHistoryItem {
     id: number;
     bookingId: number;
     hostId: string;
+    reportedBy: string;
+    reason: string | null;
+    reportedAt: string;
+    bookingDate: string;
+    bookingTopic: string;
+}
+
+
+export interface IGuestNoShowHistoryItem {
+    id: number;
+    bookingId: number;
+    guestId: string;
     reportedBy: string;
     reason: string | null;
     reportedAt: string;

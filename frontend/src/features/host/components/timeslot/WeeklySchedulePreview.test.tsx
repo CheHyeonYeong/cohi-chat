@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, fireEvent } from '@testing-library/react';
 import WeeklySchedulePreview from './WeeklySchedulePreview';
 import { commitDraggedEntry } from './dragUtils';
 import type { TimeSlotEntry } from './TimeSlotForm';
@@ -136,6 +136,24 @@ describe('WeeklySchedulePreview', () => {
             // 09:00~18:00 범위의 셀이 하이라이트돼야 함
             const highlightedCells = container.querySelectorAll('[data-highlighted]');
             expect(highlightedCells.length).toBeGreaterThan(0);
+        });
+
+        it('하이라이트된 셀 우클릭 후 확인하면 해당 시간대를 삭제해야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1], startTime: '09:00', endTime: '10:00' },
+            ];
+            const onChange = vi.fn();
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+            const { getByTestId } = render(
+                <WeeklySchedulePreview entries={entries} onChange={onChange} />,
+            );
+
+            fireEvent.contextMenu(getByTestId('grid-cell-0-2'));
+
+            expect(confirmSpy).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenCalledWith([]);
+            confirmSpy.mockRestore();
         });
     });
 });

@@ -1,6 +1,6 @@
 import { httpClient } from '~/libs/httpClient';
 import type { StringTime, ISO8601String } from '~/types/base';
-import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, IGuestNoShowHistoryItem, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
 export async function getBookingsByDate(slug: string, date: { year: number; month: number }): Promise<IBooking[]> {
@@ -23,6 +23,8 @@ interface BookingFlatResponse {
     createdAt: ISO8601String;
     hostUsername: string | null;
     hostDisplayName: string | null;
+    guestUsername: string | null;
+    guestDisplayName: string | null;
 }
 
 /** ?? ?? ???("YYYY-MM-DD")? ?? ???? ??. UTC ?? ???? ?? ?? ?? ??. */
@@ -52,6 +54,10 @@ function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IB
             username: b.hostUsername ?? '',
             displayName: b.hostDisplayName ?? '',
         },
+        guest: {
+            username: b.guestUsername ?? '',
+            displayName: b.guestDisplayName ?? '',
+        },
         files,
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
@@ -63,6 +69,17 @@ function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IB
 
 export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
     const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
+    const bookings = list.map(b => toBookingDetail(b));
+
+    const start = (page - 1) * pageSize;
+    return {
+        bookings: bookings.slice(start, start + pageSize),
+        totalCount: bookings.length,
+    };
+}
+
+export async function getMyHostBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/host/me`) ?? [];
     const bookings = list.map(b => toBookingDetail(b));
 
     const start = (page - 1) * pageSize;
@@ -89,7 +106,7 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
     return data;
 }
 
-export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
+export async function reportHost(bookingId: number, reason?: string): Promise<IBookingDetail> {
     const [b, files] = await Promise.all([
         httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
             method: 'POST',
@@ -100,10 +117,27 @@ export async function reportHostNoShow(bookingId: number, reason?: string): Prom
     return toBookingDetail(b, files);
 }
 
+/** @deprecated use reportHost */
+export const reportHostNoShow = reportHost;
+
 export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
     return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
 }
 
 export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
     return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
+}
+
+export async function reportGuest(bookingId: number, reason?: string): Promise<IGuestNoShowHistoryItem> {
+    return await httpClient<IGuestNoShowHistoryItem>(`${API_URL}/bookings/${bookingId}/report-guest-noshow`, {
+        method: 'POST',
+        body: reason && reason.trim() !== '' ? { reason } : undefined,
+    });
+}
+
+/** @deprecated use reportGuest */
+export const reportGuestNoShow = reportGuest;
+
+export async function getGuestNoShowHistory(guestId: string): Promise<IGuestNoShowHistoryItem[]> {
+    return await httpClient<IGuestNoShowHistoryItem[]>(`${API_URL}/bookings/guest/${guestId}/noshow-history`);
 }

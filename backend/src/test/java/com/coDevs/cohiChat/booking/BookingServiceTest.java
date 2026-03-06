@@ -10,6 +10,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import org.mockito.ArgumentCaptor;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,12 +32,14 @@ import org.mockito.quality.Strictness;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.GuestNoShowHistory;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
@@ -85,6 +90,9 @@ class BookingServiceTest {
 
     @Mock
     private NoShowHistoryRepository noShowHistoryRepository;
+
+    @Mock
+    private GuestNoShowHistoryRepository guestNoShowHistoryRepository;
 
     @Mock
     private Member guestMember;
@@ -1747,5 +1755,176 @@ class BookingServiceTest {
         assertThatThrownBy(() -> bookingService.updateBooking(bookingId, GUEST_ID, updateRequest))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOPIC);
+    }
+
+    // ===== 게스트 노쇼 신고 테스트 (Issue #372) =====
+
+    @Test
+    @DisplayName("성공: 호스트가 NO_SHOW 상태 예약에 게스트 노쇼 신고")
+    void reportGuestNoShowSuccess() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        String reason = "게스트가 나타나지 않았습니다.";
+
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(guestNoShowHistoryRepository.save(any(GuestNoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        bookingService.reportGuestNoShow(bookingId, HOST_ID, reason);
+
+        // then
+        ArgumentCaptor<GuestNoShowHistory> captor = ArgumentCaptor.forClass(GuestNoShowHistory.class);
+        verify(guestNoShowHistoryRepository).save(captor.capture());
+        assertThat(captor.getValue().getGuestId()).isEqualTo(GUEST_ID);
+        assertThat(captor.getValue().getReportedBy()).isEqualTo(HOST_ID);
+    }
+
+    @Test
+    @DisplayName("실패: 호스트가 아닌 사용자가 게스트 노쇼 신고 시도")
+    void reportGuestNoShowFailWhenNotHost() {
+        // given
+        Long bookingId = 1L;
+        UUID otherUserId = UUID.randomUUID();
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, otherUserId, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("실패: 예약 상태가 NO_SHOW가 아닐 때 신고 시도")
+    void reportGuestNoShowFailWhenNotNoShowStatus() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        // SCHEDULED 상태 (NO_SHOW 아님) — 미팅은 이미 지났으므로 validateMeetingStarted 통과
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_NOT_REPORTABLE);
+    }
+
+    @Test
+    @DisplayName("실패: 이미 신고된 예약에 중복 신고 시도")
+    void reportGuestNoShowFailWhenAlreadyReported() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_ALREADY_REPORTED);
+    }
+
+    @Test
+    @DisplayName("실패: 존재하지 않는 예약에 게스트 노쇼 신고")
+    void reportGuestNoShowFailWhenBookingNotFound() {
+        // given
+        Long bookingId = 999L;
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+
+    @Test
+    @DisplayName("실패: 미팅이 아직 시작되지 않은 예약에 게스트 노쇼 신고")
+    void reportGuestNoShowFailWhenMeetingNotStarted() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEETING_NOT_STARTED);
+    }
+
+    @Test
+    @DisplayName("실패: 저장 시 무결성 예외 발생 시 중복 신고로 처리")
+    void reportGuestNoShowFailWhenDataIntegrityViolation() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
+        booking.updateStatus(AttendanceStatus.NO_SHOW);
+        given(bookingRepository.findById(bookingId)).willReturn(Optional.of(booking));
+        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(guestNoShowHistoryRepository.save(any(GuestNoShowHistory.class)))
+            .willThrow(new DataIntegrityViolationException("unique violation"));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_ALREADY_REPORTED);
+    }
+
+    // ===== 게스트 노쇼 이력 조회 테스트 (Issue #372) =====
+
+    @Test
+    @DisplayName("성공: 게스트의 노쇼 이력을 조회할 수 있다")
+    void getNoShowHistoryByGuestIdSuccess() {
+        // given
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
+
+        GuestNoShowHistory history1 = GuestNoShowHistory.create(booking1, GUEST_ID, HOST_ID, "사유1");
+        GuestNoShowHistory history2 = GuestNoShowHistory.create(booking2, GUEST_ID, HOST_ID, "사유2");
+
+        given(guestNoShowHistoryRepository.findByGuestIdOrderByReportedAtDesc(GUEST_ID))
+            .willReturn(List.of(history2, history1));
+
+        // when
+        List<GuestNoShowHistoryResponseDTO> responses = bookingService.getNoShowHistoryByGuestId(GUEST_ID);
+
+        // then
+        assertThat(responses).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("성공: 게스트 노쇼 이력이 없으면 빈 목록 반환")
+    void getNoShowHistoryByGuestIdEmptyList() {
+        // given
+        given(guestNoShowHistoryRepository.findByGuestIdOrderByReportedAtDesc(GUEST_ID))
+            .willReturn(List.of());
+
+        // when
+        List<GuestNoShowHistoryResponseDTO> responses = bookingService.getNoShowHistoryByGuestId(GUEST_ID);
+
+        // then
+        assertThat(responses).isEmpty();
     }
 }

@@ -18,12 +18,14 @@ import { CSS } from '@dnd-kit/utilities';
 import LinkButton from '~/components/button/LinkButton';
 import PageHeader from '~/components/PageHeader';
 import Pagination from '~/components/Pagination';
-import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
+import { useMyBookings, useMyHostBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
+import BookingActionMenu from '~/features/calendar/components/BookingCard/BookingActionMenu';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
 import { getValidToken } from '~/libs/jwt';
 import { getErrorMessage } from '~/libs/errorUtils';
+import { cn } from '~/libs/cn';
 import type { IBookingDetail } from '~/features/calendar';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -50,15 +52,25 @@ function SortableBookingCard({
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} />
+            <BookingCard
+                booking={booking}
+                isSelected={isSelected}
+                onSelect={onSelect}
+                headerAction={<BookingActionMenu booking={booking} />}
+            />
         </div>
     );
 }
 
 export default function MyBookings() {
-    const { page, pageSize } = useSearch({ from: '/my-bookings' });
+    const { page, pageSize, tab } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
-    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
+    const { data: guestBookings, isLoading: isGuestLoading, error: guestError, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
+    const { data: hostBookings, isLoading: isHostLoading, error: hostError, refetch: refetchHostBookings } = useMyHostBookings({ page, pageSize });
+    const bookings = tab === 'host' ? hostBookings : guestBookings;
+    const isLoading = tab === 'host' ? isHostLoading : isGuestLoading;
+    const error = tab === 'host' ? hostError : guestError;
+    const refetchActiveBookings = tab === 'host' ? refetchHostBookings : refetchMyBookings;
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [sortedIds, setSortedIds] = useState<number[]>([]);
@@ -75,9 +87,15 @@ export default function MyBookings() {
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
+    const handleTabChange = (newTab: 'guest' | 'host') => {
+        setSelectedId(null);
+        setSortedIds([]);
+        navigate({ to: '/my-bookings', search: { page: 1, pageSize, tab: newTab } });
+    };
+
     const handlePageChange = (newPage: number) => {
         setSelectedId(null);
-        navigate({ to: '/my-bookings', search: { page: newPage, pageSize } });
+        navigate({ to: '/my-bookings', search: { page: newPage, pageSize, tab } });
     };
 
     const handleCardSelect = (id: number) => {
@@ -116,7 +134,7 @@ export default function MyBookings() {
             formData.append('file', file);
             await uploadFileAsync(formData);
         }
-        await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
+        await Promise.all([refetchSelectedBooking(), refetchActiveBookings()]);
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
@@ -147,6 +165,33 @@ export default function MyBookings() {
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-6xl mx-auto">
                     <h1 className="text-2xl font-bold text-[var(--cohi-text-dark)] mb-6">내 예약 목록</h1>
+
+                    <div className="flex gap-1 mb-4 border-b border-gray-200">
+                        <button
+                            type="button"
+                            onClick={() => handleTabChange('guest')}
+                            className={cn(
+                                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                                tab === 'guest'
+                                    ? 'border-[var(--cohi-primary)] text-[var(--cohi-primary)]'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            )}
+                        >
+                            내가 신청한 예약
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleTabChange('host')}
+                            className={cn(
+                                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                                tab === 'host'
+                                    ? 'border-[var(--cohi-primary)] text-[var(--cohi-primary)]'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            )}
+                        >
+                            내가 받은 예약
+                        </button>
+                    </div>
 
                     {isLoading && (
                         <div className="text-center py-16 text-gray-500">내 예약 목록을 불러오고 있습니다...</div>

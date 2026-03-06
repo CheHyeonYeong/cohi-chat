@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useReportHost, useNoShowHistory, useReportGuest, useGuestNoShowHistory } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -110,8 +110,10 @@ export default function Booking() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
     const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
+    const { mutate: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
+    const { data: guestNoShowHistory } = useGuestNoShowHistory(booking?.guestId);
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -124,6 +126,10 @@ export default function Booking() {
     // Host no-show report state
     const [showReportForm, setShowReportForm] = useState(false);
     const [reportReason, setReportReason] = useState('');
+
+    // Guest no-show report state
+    const [showGuestReportForm, setShowGuestReportForm] = useState(false);
+    const [guestReportReason, setGuestReportReason] = useState('');
 
     // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
@@ -185,6 +191,10 @@ export default function Booking() {
     // 현재 사용자가 이 예약의 게스트인지 판단
     const isGuest = !!currentUser && currentUser.id === booking?.guestId;
     const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
+
+    // 현재 사용자가 이 예약의 호스트인지 판단
+    const isHost = !!currentUser && currentUser.id === booking?.hostId;
+    const canReportGuest = isHost && booking?.attendanceStatus === 'NO_SHOW' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileSelect(e.target.files);
@@ -269,6 +279,15 @@ export default function Booking() {
             onSuccess: () => {
                 setShowReportForm(false);
                 setReportReason('');
+            },
+        });
+    };
+
+    const handleGuestReportSubmit = () => {
+        reportGuestNoShow(guestReportReason || undefined, {
+            onSuccess: () => {
+                setShowGuestReportForm(false);
+                setGuestReportReason('');
             },
         });
     };
@@ -413,6 +432,79 @@ export default function Booking() {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Guest No-show report section */}
+                    {canReportGuest && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+                            <h2 className="text-lg font-semibold mb-2 text-amber-900">게스트 노쇼 신고</h2>
+                            {!showGuestReportForm ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-amber-800">게스트가 약속 장소에 나타나지 않았나요? 신고를 통해 이력을 남겨주세요.</p>
+                                    <Button
+                                        type="button"
+                                        variant="primary"
+                                        onClick={() => setShowGuestReportForm(true)}
+                                        className="rounded-xl"
+                                    >
+                                        게스트 노쇼 신고
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col space-y-3">
+                                    <textarea
+                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                        rows={3}
+                                        placeholder="신고 사유를 입력해주세요 (선택)"
+                                        value={guestReportReason}
+                                        onChange={(e) => setGuestReportReason(e.target.value)}
+                                    />
+                                    {guestReportError && (
+                                        <p className="text-red-600 text-sm">{guestReportError.message}</p>
+                                    )}
+                                    <div className="flex flex-row space-x-2">
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            loading={isReportingGuest}
+                                            onClick={handleGuestReportSubmit}
+                                            className="rounded-xl px-6"
+                                        >
+                                            신고하기
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => {
+                                                setShowGuestReportForm(false);
+                                                setGuestReportReason('');
+                                                resetGuestReport();
+                                            }}
+                                            className="rounded-xl px-6"
+                                        >
+                                            취소
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 호스트가 볼 수 있는 게스트 노쇼 이력 */}
+                    {isHost && guestNoShowHistory && guestNoShowHistory.length > 0 && (
+                        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
+                            <h2 className="text-lg font-semibold mb-3 text-red-800">
+                                이 게스트의 노쇼 이력 {guestNoShowHistory.length}건
+                            </h2>
+                            <ul className="space-y-2">
+                                {guestNoShowHistory.map((item) => (
+                                    <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                        {item.bookingDate} 노쇼 발생
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
 
