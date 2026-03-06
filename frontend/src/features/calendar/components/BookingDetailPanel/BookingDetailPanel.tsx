@@ -27,8 +27,8 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
         );
     }
 
-    const when = new Date(booking.when);
-    const dayLabel = DAY_NAMES[when.getDay() as Weekday];
+    const startedAt = new Date(booking.startedAt);
+    const dayLabel = DAY_NAMES[startedAt.getDay() as Weekday];
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -73,12 +73,12 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                     <div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</span>
                         <p className="text-sm text-gray-600 mt-0.5">
-                            {when.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} ({dayLabel})
+                            {startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} ({dayLabel})
                         </p>
                     </div>
                     <div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time</span>
-                        <p className="text-sm text-gray-600 mt-0.5">{booking.timeSlot.startTime} - {booking.timeSlot.endTime}</p>
+                        <p className="text-sm text-gray-600 mt-0.5">{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</p>
                     </div>
                 </div>
             </section>

@@ -32,8 +32,8 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
     if (timeslots.length === 0) return [];
     return timeslots.map((ts) => ({
         weekdays: ts.weekdays,
-        startTime: normalizeTime(ts.startTime),
-        endTime: normalizeTime(ts.endTime),
+        startTime: normalizeTime(ts.startedAt),
+        endTime: normalizeTime(ts.endedAt),
         startDate: ts.startDate ?? undefined,
         endDate: ts.endDate ?? undefined,
         existingId: ts.id,

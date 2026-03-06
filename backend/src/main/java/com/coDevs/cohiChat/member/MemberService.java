@@ -183,36 +183,22 @@ public class MemberService {
         }
 
         /**
-         * 회원 탈퇴 시 영향받는 예약 조회
-         * @param username 사용자명
-         * @return 영향받는 예약 목록
+         * 회원 탈퇴 시 영향받는 예약 조회.
          */
         @Transactional(readOnly = true)
         public WithdrawalCheckResponseDTO checkWithdrawal(String username) {
-                Member member = getMember(username);    
-                LocalDate today = LocalDate.now();      
-                List<AffectedBookingDTO> affectedBookings = new ArrayList<>();
+                var member = getMember(username);
+                var today = LocalDate.now();
 
-                // 호스트인 경우: 호스트로서의 미래 예약 조회
-                findFutureHostBookings(member, today)   
-                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "HOST")));       
+                var hostBookings = findFutureHostBookings(member, today).stream()
+                        .map(booking -> AffectedBookingDTO.from(booking, "HOST"));
 
-                // 모든 사용자: 게스트로서의 미래 예약 조회
-                findFutureGuestBookings(member, today)  
-                        .forEach(booking -> affectedBookings.add(toAffectedBookingDTO(booking, "GUEST")));      
+                var guestBookings = findFutureGuestBookings(member, today).stream()
+                        .map(booking -> AffectedBookingDTO.from(booking, "GUEST"));
+
+                var affectedBookings = java.util.stream.Stream.concat(hostBookings, guestBookings).toList();
 
                 return WithdrawalCheckResponseDTO.of(affectedBookings);
-        }
-
-        private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.builder()     
-                        .bookingId(booking.getId())     
-                        .bookingDate(booking.getBookingDate())
-                        .startTime(booking.getTimeSlot().getStartTime())
-                        .endTime(booking.getTimeSlot().getEndTime())
-                        .topic(booking.getTopic())      
-                        .role(role)
-                        .build();
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {

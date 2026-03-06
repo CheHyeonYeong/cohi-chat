@@ -9,7 +9,7 @@ interface BookingCardProps {
 }
 
 export default function BookingCard({ booking, onSelect, isSelected = false, className }: BookingCardProps) {
-    const when = new Date(booking.when);
+    const startedAt = new Date(booking.startedAt);
 
     return (
         <button
@@ -39,7 +39,7 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
             {/* Date / Time */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
                 <span>
-                    {when.toLocaleDateString('ko-KR', {
+                    {startedAt.toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -47,7 +47,7 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>
-                    {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
+                    {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
                 </span>
             </div>
 

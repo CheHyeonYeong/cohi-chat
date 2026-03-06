@@ -1,78 +1,48 @@
+# Local development docker-compose
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: cohi-chat-backend
-    ports:
-      - "8080:8080"
+  db:
+    image: postgres:17-alpine
+    container_name: cohi-chat-db
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-devpassword}
-      - JWT_SECRET=${JWT_SECRET}
-      # Supabase PostgreSQL
-      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
-      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
-      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
-      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
-      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
-    networks:
-      - cohi-chat-network
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 90s
-    restart: unless-stopped
-
-  redis:
-    image: redis:7.2-alpine
-    container_name: cohi-chat-redis
-    ports:
-      - "127.0.0.1:6379:6379"
+      - POSTGRES_DB=cohichat
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     volumes:
-      - redis-data:/data
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - cohi-chat-network
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devpassword} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpassword}", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
-  # Uncomment if you need a database
-  # db:
-  #   image: postgres:16-alpine
-  #   container_name: cohi-chat-db
-  #   environment:
-  #     - POSTGRES_DB=cohichat
-  #     - POSTGRES_USER=cohichat
-  #     - POSTGRES_PASSWORD=your_password
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   networks:
-  #     - cohi-chat-network
-  #   ports:
-  #     - "5432:5432"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U cohichat"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   restart: unless-stopped
+  redis:
+    image: redis:8.6
+    container_name: cohi-chat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cohi-chat-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   cohi-chat-network:
     driver: bridge
 
 volumes:
+  postgres-data:
+    driver: local
   redis-data:
     driver: local
