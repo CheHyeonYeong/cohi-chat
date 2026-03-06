@@ -28,7 +28,7 @@
 }
 
 ::selection {
-  background: rgba(139, 105, 20, 0.15);
+  background: rgba(139, 105, 20, 0.225);
   color: var(--cohi-text-dark);
 }
 
