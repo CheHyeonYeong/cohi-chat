@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
 import { snakeToCamel } from '~/libs/utils';
-import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFile } from '../api';
+import { API_URL, getBooking, getBookingsByDate, getMyBookings, getMyHostBookings, uploadBookingFile } from '../api';
 import type { IBooking, IBookingDetail, ICalendarEvent, IPaginatedBookingDetail } from '../types';
 import { calendarKeys } from './queryKeys';
 
@@ -17,6 +17,13 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
     return useQuery<IPaginatedBookingDetail>({
         queryKey: calendarKeys.myBookings(page, pageSize),
         queryFn: () => getMyBookings({ page, pageSize }),
+    });
+}
+
+export function useMyHostBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
+    return useQuery<IPaginatedBookingDetail>({
+        queryKey: calendarKeys.myHostBookings(page, pageSize),
+        queryFn: () => getMyHostBookings({ page, pageSize }),
     });
 }
 

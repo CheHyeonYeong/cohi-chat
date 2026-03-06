@@ -35,12 +35,18 @@ public class BookingResponseDTO {
 
     private String hostUsername;
     private String hostDisplayName;
+    private String guestUsername;
+    private String guestDisplayName;
 
     public static BookingResponseDTO from(Booking booking) {
-        return from(booking, null, null);
+        return from(booking, null, null, null, null);
     }
 
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
+        return from(booking, hostUsername, hostDisplayName, null, null);
+    }
+
+    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName, String guestUsername, String guestDisplayName) {
         return BookingResponseDTO.builder()
             .id(booking.getId())
             .timeSlotId(booking.getTimeSlot().getId())
@@ -56,6 +62,8 @@ public class BookingResponseDTO {
             .createdAt(booking.getCreatedAt())
             .hostUsername(hostUsername)
             .hostDisplayName(hostDisplayName)
+            .guestUsername(guestUsername)
+            .guestDisplayName(guestDisplayName)
             .build();
     }
 }

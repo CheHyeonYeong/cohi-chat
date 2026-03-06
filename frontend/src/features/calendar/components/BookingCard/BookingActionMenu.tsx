@@ -1,50 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useReportHostNoShow, useReportGuestNoShow } from '../../hooks';
+import { useEffect, useRef, useState } from 'react';
+import { useReportHost, useReportGuest } from '../../hooks';
 import type { IBookingDetail } from '../../types';
-import type { AuthUser } from '~/features/member';
+import { useAuth } from '~/features/member';
 import NoShowReportModal from './NoShowReportModal';
-
-type ReportType = 'host' | 'guest';
 
 interface BookingActionMenuProps {
     booking: IBookingDetail;
-    currentUser: AuthUser | undefined;
 }
 
-export default function BookingActionMenu({ booking, currentUser }: BookingActionMenuProps) {
+export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const [open, setOpen] = useState(false);
-    const [reportType, setReportType] = useState<ReportType | null>(null);
-    const [now, setNow] = useState(() => Date.now());
+    const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-        return () => window.clearInterval(timer);
-    }, []);
-
-    const { mutate: reportHostNoShow, isPending: isReportingHost } = useReportHostNoShow(booking.id);
-    const { mutate: reportGuestNoShow, isPending: isReportingGuest } = useReportGuestNoShow(
+    const { mutate: reportHostMutate, isPending: isReportingHost } = useReportHost(booking.id);
+    const { mutate: reportGuestMutate, isPending: isReportingGuest } = useReportGuest(
         booking.id,
         booking.guestId,
     );
 
-    const isGuest = !!currentUser && currentUser.id === booking.guestId;
-    const isHost = !!currentUser && currentUser.id === booking.hostId;
+    const { data: currentUser } = useAuth();
+    const isPending = reportTarget === 'host' ? isReportingHost : isReportingGuest;
 
-    const isMeetingStarted = useMemo(() => {
-        const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
-        const meetingStart = new Date(
-            booking.when.getFullYear(),
-            booking.when.getMonth(),
-            booking.when.getDate(),
-            h,
-            m,
-        );
-        return now >= meetingStart.getTime();
-    }, [booking, now]);
-
-    const canReportHost = isGuest && booking.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
-    const canReportGuest = isHost && booking.attendanceStatus === 'NO_SHOW' && isMeetingStarted;
+    const showReportHost = !!currentUser && currentUser.id !== booking.hostId;
+    const showReportGuest = !!currentUser && currentUser.id !== booking.guestId;
 
     useEffect(() => {
         if (!open) return;
@@ -57,13 +36,12 @@ export default function BookingActionMenu({ booking, currentUser }: BookingActio
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
 
-    if (!canReportHost && !canReportGuest) return null;
-
-    const handleReport = (reason?: string) => {
-        if (reportType === 'host') {
-            reportHostNoShow(reason, { onSuccess: () => setReportType(null) });
-        } else if (reportType === 'guest') {
-            reportGuestNoShow(reason, { onSuccess: () => setReportType(null) });
+    const handleReport = (nickname: string, reason: string) => {
+        const combined = [nickname && `[신고 대상: ${nickname}]`, reason].filter(Boolean).join(' ');
+        if (reportTarget === 'host') {
+            reportHostMutate(combined || undefined, { onSuccess: () => setReportTarget(null) });
+        } else {
+            reportGuestMutate(combined || undefined, { onSuccess: () => setReportTarget(null) });
         }
     };
 
@@ -83,42 +61,42 @@ export default function BookingActionMenu({ booking, currentUser }: BookingActio
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10">
-                    {canReportHost && (
+                <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10">
+                    {showReportHost && (
                         <button
                             type="button"
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setReportType('host');
                                 setOpen(false);
+                                setReportTarget('host');
                             }}
                         >
-                            호스트 노쇼 신고
+                            {booking.host.displayName} 신고
                         </button>
                     )}
-                    {canReportGuest && (
+                    {showReportGuest && (
                         <button
                             type="button"
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setReportType('guest');
                                 setOpen(false);
+                                setReportTarget('guest');
                             }}
                         >
-                            게스트 노쇼 신고
+                            {booking.guest.displayName} 신고
                         </button>
                     )}
                 </div>
             )}
 
-            {reportType && (
+            {reportTarget && (
                 <NoShowReportModal
-                    title={reportType === 'host' ? '호스트 노쇼 신고' : '게스트 노쇼 신고'}
-                    isPending={reportType === 'host' ? isReportingHost : isReportingGuest}
+                    isPending={isPending}
+                    defaultNickname={reportTarget === 'host' ? booking.host.displayName : booking.guest.displayName}
                     onSubmit={handleReport}
-                    onClose={() => setReportType(null)}
+                    onClose={() => setReportTarget(null)}
                 />
             )}
         </div>

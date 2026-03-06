@@ -23,6 +23,7 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    guest: { username: 'guest', displayName: '게스트' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -56,17 +57,17 @@ describe('BookingCard', () => {
     });
 
     it('isSelected가 true이면 선택 스타일을 적용해야 한다', () => {
-        const { getByRole } = render(
+        const { container } = render(
             <BookingCard booking={mockBooking} onSelect={vi.fn()} isSelected />,
         );
-        expect(getByRole('button').className).toContain('border-[var(--cohi-primary)]');
+        expect((container.firstChild as HTMLElement).className).toContain('border-[var(--cohi-primary)]');
     });
 
     it('isSelected가 false이면 기본 스타일을 적용해야 한다', () => {
-        const { getByRole } = render(
+        const { container } = render(
             <BookingCard booking={mockBooking} onSelect={vi.fn()} isSelected={false} />,
         );
-        expect(getByRole('button').className).not.toContain('border-[var(--cohi-primary)]');
+        expect((container.firstChild as HTMLElement).className).not.toContain('border-[var(--cohi-primary)]');
     });
 
     it('파일이 있으면 첨부 개수 배지를 표시해야 한다', () => {

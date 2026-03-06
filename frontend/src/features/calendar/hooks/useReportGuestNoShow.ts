@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { reportGuestNoShow } from '../api/bookings';
+import { reportGuest } from '../api/bookings';
 import { calendarKeys } from './queryKeys';
 
-export function useReportGuestNoShow(bookingId: number, guestId?: string) {
+export function useReportGuest(bookingId: number, guestId?: string) {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (reason?: string) => reportGuestNoShow(bookingId, reason),
+        mutationFn: (reason?: string) => reportGuest(bookingId, reason),
         onSuccess: async () => {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: calendarKeys.booking(bookingId) }),
@@ -17,3 +17,6 @@ export function useReportGuestNoShow(bookingId: number, guestId?: string) {
         },
     });
 }
+
+/** @deprecated use useReportGuest */
+export const useReportGuestNoShow = useReportGuest;

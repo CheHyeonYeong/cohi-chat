@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -249,25 +250,32 @@ public class BookingService {
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String username = host != null ? host.getUsername() : null;
-        String displayName = host != null ? host.getDisplayName() : null;
-        return BookingResponseDTO.from(booking, username, displayName);
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        return BookingResponseDTO.from(booking,
+            host != null ? host.getUsername() : null,
+            host != null ? host.getDisplayName() : null,
+            guest != null ? guest.getUsername() : null,
+            guest != null ? guest.getDisplayName() : null);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
-        List<UUID> hostIds = bookings.stream()
-            .map(b -> b.getTimeSlot().getUserId())
+        List<UUID> memberIds = bookings.stream()
+            .flatMap(b -> Stream.of(b.getTimeSlot().getUserId(), b.getGuestId()))
+            .filter(Objects::nonNull)
             .distinct()
             .toList();
-        Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
+        Map<UUID, Member> memberMap = memberRepository.findAllById(memberIds).stream()
             .collect(Collectors.toMap(Member::getId, m -> m));
 
         return bookings.stream()
             .map(b -> {
-                Member host = hostMap.get(b.getTimeSlot().getUserId());
-                String username = host != null ? host.getUsername() : null;
-                String displayName = host != null ? host.getDisplayName() : null;
-                return BookingResponseDTO.from(b, username, displayName);
+                Member host = memberMap.get(b.getTimeSlot().getUserId());
+                Member guest = memberMap.get(b.getGuestId());
+                return BookingResponseDTO.from(b,
+                    host != null ? host.getUsername() : null,
+                    host != null ? host.getDisplayName() : null,
+                    guest != null ? guest.getUsername() : null,
+                    guest != null ? guest.getDisplayName() : null);
             })
             .toList();
     }

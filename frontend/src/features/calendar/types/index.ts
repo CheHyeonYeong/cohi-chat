@@ -41,6 +41,7 @@ export interface IBookingDetail {
     description: string;
     timeSlot: ITimeSlot;
     host: Pick<IUserSimple, 'username' | 'displayName'>;
+    guest: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
     createdAt: ISO8601String;
     updatedAt: ISO8601String;
