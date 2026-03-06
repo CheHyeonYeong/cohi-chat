@@ -27,50 +27,48 @@ export default function Body({ year, month, days, baseDate, timeslots, bookings,
     const now = baseDate ?? new Date();
 
     return (
-        <div className={cn("min-w-[360px] h-[390px]")}>
-            <table
-                className={cn("w-full h-full")}
-            >
-                <thead className="w-full">
-                    <tr className="text-lg font-semibold border-b grid grid-cols-7 gap-4">
-                        <th className="text-center text-red-500">일</th>
-                        <th className="text-center">월</th>
-                        <th className="text-center">화</th>
-                        <th className="text-center">수</th>
-                        <th className="text-center">목</th>
-                        <th className="text-center">금</th>
-                        <th className="text-center text-blue-500">토</th>
-                    </tr>
-                </thead>
+        <div className="w-full">
+            <div className="grid grid-cols-7 text-lg font-semibold border-b pb-2 mb-2">
+                <div className="text-center text-red-500">일</div>
+                <div className="text-center">월</div>
+                <div className="text-center">화</div>
+                <div className="text-center">수</div>
+                <div className="text-center">목</div>
+                <div className="text-center">금</div>
+                <div className="text-center text-blue-500">토</div>
+            </div>
 
-                <tbody role="grid" role-label="calendar-body" className="w-full">
-                    {weeks.map((week, weekIndex) => (
-                        <tr key={weekIndex} className="grid grid-cols-7 gap-4">
-                            {week.map((day, dayIndex) => {
-                                const weekday = dayIndex; // 0=일, 1=월, ..., 6=토 (Date.getDay() 규칙)
-                                const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, year, month, day, weekday);
+            <div role="grid" aria-label="calendar-body">
+                {weeks.map((week, weekIndex) => (
+                    <div key={weekIndex} className="grid grid-cols-7">
+                        {week.map((day, dayIndex) => {
+                            const weekday = dayIndex;
+                            const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, year, month, day, weekday);
 
-                                return (
-                                    <td
-                                        role={day !== 0 ? "button" : undefined}
-                                        role-label={day !== 0 ? `day-${day}` : undefined}
-                                        key={dayIndex}
+                            return (
+                                <div
+                                    role={day !== 0 ? "button" : undefined}
+                                    aria-label={day !== 0 ? `day-${day}` : undefined}
+                                    key={dayIndex}
+                                    className="flex justify-center items-center py-1"
+                                >
+                                    <span
                                         className={cn(
-                                            "booking-cell flex justify-center items-center rounded-full w-12 h-12 select-none",
-                                            { 'text-sm text-[#AAAAAA] bg-inherit hover:cursor-default': !isAvailable },
-                                            { 'text-lg font-bold text-primary bg-blue-50': isAvailable },
+                                            "booking-cell flex justify-center items-center rounded-full aspect-square w-10 sm:w-12 select-none text-sm sm:text-base",
+                                            { 'text-[#AAAAAA] bg-inherit hover:cursor-default': !isAvailable },
+                                            { 'font-bold text-primary bg-blue-50': isAvailable },
                                             { 'cursor-pointer hover:bg-primary hover:text-white': isAvailable },
                                         )}
                                         onClick={() => isAvailable ? onSelectDay(new Date(year, month - 1, day)) : undefined}
                                     >
                                         {day !== 0 && day}
-                                    </td>
-                                );
-                            })}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

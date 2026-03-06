@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
+import { Card } from '~/components/card';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
@@ -99,8 +100,7 @@ export function LoginForm() {
             </Link>
 
             {/* Login Card */}
-            <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">로그인</h2>
+            <Card variant="prominent" size="lg" className="w-full max-w-sm" title="로그인">
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
@@ -197,7 +197,7 @@ export function LoginForm() {
                         회원가입
                     </Link>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

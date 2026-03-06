@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Card } from '~/components/card';
 import { Header } from '~/components/header';
 import { useToast } from '~/components/toast/useToast';
 import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
@@ -235,8 +236,7 @@ export default function TimeSlotSettings() {
 
             <main className="w-full px-6 py-8 pb-20">
                 <div className="max-w-6xl mx-auto space-y-8">
-                    <section className="bg-white rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-4">내 프로필</h2>
+                    <Card title="내 프로필">
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
@@ -276,7 +276,7 @@ export default function TimeSlotSettings() {
                         {updateProfileMutation.isError && (
                             <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
                         )}
-                    </section>
+                    </Card>
 
                     <div className="flex flex-col lg:flex-row gap-8">
                         <div className="w-full lg:w-[400px] flex-shrink-0">

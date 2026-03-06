@@ -15,6 +15,7 @@ import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
 import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
 import CalendarSettingsGuarded from '~/pages/host/CalendarSettingsGuarded'
 import SettingsGuarded from '~/pages/settings/SettingsGuarded'
+import HostProfile from '~/pages/host/HostProfile'
 import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
@@ -110,6 +111,15 @@ const hostCalendarSettingsRoute = createRoute({
     component: CalendarSettingsGuarded,
 })
 
+const hostProfileRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/host/$hostId',
+    component: HostProfile,
+    params: z.object({
+        hostId: z.string(),
+    }),
+})
+
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/calendar/$slug',
@@ -162,6 +172,7 @@ export const routeTree = RootRoute.addChildren([
     hostRegisterRoute,
     hostTimeslotsRoute,
     hostCalendarSettingsRoute,
+    hostProfileRoute,
     oAuthCallbackRoute,
     termsRoute,
     privacyRoute,

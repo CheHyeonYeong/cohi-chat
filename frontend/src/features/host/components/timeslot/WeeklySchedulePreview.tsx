@@ -12,6 +12,7 @@ import {
     type DragOverEvent,
     type DragStartEvent,
 } from '@dnd-kit/core';
+import { Card } from '~/components/card';
 import type { TimeSlotEntry } from './TimeSlotForm';
 import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
 import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
@@ -249,9 +250,7 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
     );
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-[var(--cohi-text-dark)] mb-4">주간 스케줄 미리보기</h3>
-
+        <Card size="sm" title="주간 스케줄 미리보기">
             <div className="overflow-x-auto">
                 <div className="min-w-[420px]">
                     {/* Header */}
@@ -285,6 +284,6 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
                     ? '그리드를 드래그해 타임슬롯을 추가하거나, 왼쪽 폼에서 직접 설정하세요'
                     : '왼쪽 폼에서 시간대를 설정하면 미리보기에 반영됩니다'}
             </p>
-        </div>
+        </Card>
     );
 }

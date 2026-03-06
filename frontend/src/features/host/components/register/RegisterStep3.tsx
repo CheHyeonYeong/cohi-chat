@@ -1,4 +1,5 @@
 import Button from '~/components/button/Button';
+import { Card } from '~/components/card';
 import type { Step1Data } from './RegisterStep1';
 import type { Step2Data } from './RegisterStep2';
 
@@ -56,8 +57,7 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
             {/* Summary cards */}
             <div className="space-y-4 mb-8">
                 {/* Topics */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-500 mb-2">미팅 주제</h3>
+                <Card size="sm" title="미팅 주제">
                     <div className="flex flex-wrap gap-2">
                         {step1.topics.map((topic) => (
                             <span
@@ -68,21 +68,19 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
                             </span>
                         ))}
                     </div>
-                </div>
+                </Card>
 
                 {/* Description */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-500 mb-2">소개</h3>
+                <Card size="sm" title="소개">
                     <p className="text-[var(--cohi-text-dark)] whitespace-pre-wrap">{step1.description}</p>
-                </div>
+                </Card>
 
                 {/* Google Calendar */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-500 mb-2">Google Calendar ID</h3>
+                <Card size="sm" title="Google Calendar ID">
                     <p className="text-[var(--cohi-text-dark)] break-all">
                         {step2.googleCalendarId}
                     </p>
-                </div>
+                </Card>
             </div>
 
             {/* Role change notice */}

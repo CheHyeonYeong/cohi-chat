@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Button from '~/components/button/Button';
 import LinkButton from '~/components/button/LinkButton';
+import { Card } from '~/components/card';
 import { Header } from '~/components/header';
-import RegisterStep1 from '~/features/host/components/register/RegisterStep1';
-import RegisterStep2 from '~/features/host/components/register/RegisterStep2';
-import { useMyCalendar, useUpdateCalendar } from '~/features/host';
+import { MeetingInfoForm, GoogleCalendarSetup, useMyCalendar, useUpdateCalendar } from '~/features/host';
 import { validateCalendarData } from '~/features/host/utils/validation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
@@ -85,8 +84,8 @@ export default function CalendarSettings() {
                     }
                     right={<div className="w-9 h-9"></div>}
                 />
-                <div className="flex flex-col items-center justify-center py-20 px-6">
-                    <div className="bg-white p-10 rounded-2xl shadow-sm text-center max-w-md space-y-6">
+                <div className="flex  items-center justify-center py-20 px-6">
+                    <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">📅</div>
                         <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
@@ -95,7 +94,7 @@ export default function CalendarSettings() {
                         <LinkButton variant="primary" to="/host/register" size="lg" className="w-full">
                             캘린더 연동하러 가기
                         </LinkButton>
-                    </div>
+                    </Card>
                 </div>
             </div>
         );
@@ -115,51 +114,46 @@ export default function CalendarSettings() {
             />
 
             <main className="w-full px-6 py-10 max-w-4xl mx-auto space-y-8">
-                <div className="bg-white p-8 rounded-2xl shadow-sm space-y-10">
-                    <section>
-                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohi-text-dark)]">기본 정보 수정</h2>
-                        <RegisterStep1
-                            data={{ topics, description }}
-                            onChange={(data) => {
-                                setTopics(data.topics);
-                                setDescription(data.description);
-                            }}
-                            errors={errors}
-                        />
-                    </section>
+                <Card size="lg" title="기본 정보 수정">
+                    <MeetingInfoForm
+                        data={{ topics, description }}
+                        onChange={(data) => {
+                            setTopics(data.topics);
+                            setDescription(data.description);
+                        }}
+                        errors={errors}
+                    />
+                </Card>
 
-                    <div className="h-px bg-gray-100"></div>
+                <Card size="lg" title="연동 캘린더 수정">
+                    <GoogleCalendarSetup
+                        data={{ googleCalendarId }}
+                        onChange={(data) => setGoogleCalendarId(data.googleCalendarId)}
+                        errors={errors}
+                        noShadow
+                    />
+                </Card>
 
-                    <section>
-                        <h2 className="text-lg font-semibold mb-6 text-[var(--cohi-text-dark)]">연동 캘린더 수정</h2>
-                        <RegisterStep2
-                            data={{ googleCalendarId }}
-                            onChange={(data) => setGoogleCalendarId(data.googleCalendarId)}
-                            errors={errors}
-                        />
-                    </section>
+                {errors.submit && (
+                    <p className="text-red-500 text-sm text-center">{errors.submit}</p>
+                )}
 
-                    {errors.submit && (
-                        <p className="text-red-500 text-sm text-center">{errors.submit}</p>
-                    )}
+                {saveSuccess && (
+                    <p className="text-green-600 text-sm text-center font-medium animate-pulse">
+                        설정이 성공적으로 저장되었습니다!
+                    </p>
+                )}
 
-                    <div className="flex justify-center pt-4">
-                        <Button
-                            variant="primary"
-                            size="lg"
-                            className="w-full max-w-xs rounded-xl"
-                            onClick={handleSave}
-                            disabled={updateCalendarMutation.isPending}
-                        >
-                            {updateCalendarMutation.isPending ? '저장 중...' : '저장하기'}
-                        </Button>
-                    </div>
-
-                    {saveSuccess && (
-                        <p className="text-green-600 text-sm text-center font-medium animate-pulse">
-                            설정이 성공적으로 저장되었습니다!
-                        </p>
-                    )}
+                <div className="flex justify-center pt-4">
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full max-w-xs rounded-xl"
+                        onClick={handleSave}
+                        disabled={updateCalendarMutation.isPending}
+                    >
+                        {updateCalendarMutation.isPending ? '저장 중...' : '저장하기'}
+                    </Button>
                 </div>
             </main>
         </div>

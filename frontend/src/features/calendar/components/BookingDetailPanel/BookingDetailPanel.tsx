@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
+import { Card } from '~/components/card';
 import { formatFileSize } from '~/libs/fileValidation';
 import type { IBookingDetail } from '../../types';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
@@ -17,13 +18,13 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
 
     if (!booking) {
         return (
-            <div className="bg-white rounded-2xl p-8 shadow-sm h-full flex flex-col items-center justify-center text-center">
+            <Card size="lg" className="h-full flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                     <span className="text-2xl text-gray-300">📅</span>
                 </div>
                 <p className="text-gray-500 font-medium">예약을 선택해주세요.</p>
                 <p className="text-sm text-gray-400 mt-1">상세 정보를 보려면 목록에서 카드를 클릭하세요.</p>
-            </div>
+            </Card>
         );
     }
 
@@ -38,7 +39,7 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
     };
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm h-full flex flex-col gap-6">
+        <Card className="h-full flex flex-col gap-6">
             {/* Date and Host info */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -150,6 +151,6 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                     </ul>
                 )}
             </section>
-        </div>
+        </Card>
     );
 }

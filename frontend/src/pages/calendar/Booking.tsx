@@ -19,6 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
+import { Card } from '~/components/card';
 import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
@@ -316,7 +317,7 @@ export default function Booking() {
                     </Link>
 
                     {/* Booking info card */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <Card className="border border-gray-100">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
@@ -357,7 +358,7 @@ export default function Booking() {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Host No-show report section */}
                     {canReport && (
@@ -432,8 +433,7 @@ export default function Booking() {
                     )}
 
                     {/* File section */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
-                        <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)]">파일 첨부</h2>
+                    <Card className="border border-gray-100 space-y-5" title="파일 첨부">
 
                         {/* Capacity info */}
                         <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
@@ -547,7 +547,7 @@ export default function Booking() {
                         {fileOrder.length === 0 && (
                             <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
                         )}
-                    </div>
+                    </Card>
                 </div>
             </main>
         </div>
