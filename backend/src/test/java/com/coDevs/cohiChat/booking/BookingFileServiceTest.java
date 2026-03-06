@@ -9,7 +9,9 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -347,7 +349,7 @@ class BookingFileServiceTest {
             // given
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
             doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
-            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            given(fileUploadValidator.normalizeContentType(CONTENT_TYPE)).willReturn(CONTENT_TYPE);
             given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
                 .willReturn(PRESIGNED_URL);
 
@@ -362,7 +364,7 @@ class BookingFileServiceTest {
             assertThat(response.objectKey()).isNotNull();
             assertThat(response.expiresIn()).isGreaterThan(0);
             verify(fileUploadValidator).validateFileName(FILE_NAME);
-            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            verify(fileUploadValidator).normalizeContentType(CONTENT_TYPE);
         }
 
         @Test
@@ -371,7 +373,7 @@ class BookingFileServiceTest {
             // given
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
             doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
-            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            given(fileUploadValidator.normalizeContentType(CONTENT_TYPE)).willReturn(CONTENT_TYPE);
             given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(CONTENT_TYPE)))
                 .willReturn(PRESIGNED_URL);
 
@@ -384,7 +386,7 @@ class BookingFileServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.url()).isEqualTo(PRESIGNED_URL);
             verify(fileUploadValidator).validateFileName(FILE_NAME);
-            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            verify(fileUploadValidator).normalizeContentType(CONTENT_TYPE);
         }
 
         @Test
@@ -439,10 +441,14 @@ class BookingFileServiceTest {
                 .build();
 
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(fileUploadValidator.normalizeContentType(CONTENT_TYPE)).willReturn(CONTENT_TYPE);
+            setPendingUpload(OBJECT_KEY, BOOKING_ID, GUEST_ID, CONTENT_TYPE);
+            given(s3PresignedUrlService.getObjectMetadata(OBJECT_KEY))
+                .willReturn(Optional.of(new S3PresignedUrlService.S3ObjectMetadata(FILE_SIZE, CONTENT_TYPE)));
             doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
-            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
             doNothing().when(fileUploadValidator).validateFileSize(FILE_SIZE);
             doNothing().when(fileUploadValidator).validateBookingLimits(BOOKING_ID, FILE_SIZE);
+            doNothing().when(fileUploadValidator).validateContentType(CONTENT_TYPE);
             given(bookingFileRepository.save(any(BookingFile.class))).willReturn(bookingFile);
 
             // when
@@ -452,9 +458,10 @@ class BookingFileServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.originalFileName()).isEqualTo("resume.pdf");
             verify(fileUploadValidator).validateFileName(FILE_NAME);
-            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
             verify(fileUploadValidator).validateFileSize(FILE_SIZE);
             verify(fileUploadValidator).validateBookingLimits(BOOKING_ID, FILE_SIZE);
+            verify(fileUploadValidator).validateContentType(CONTENT_TYPE);
+            verify(s3PresignedUrlService).getObjectMetadata(OBJECT_KEY);
             verify(bookingFileRepository).save(any(BookingFile.class));
         }
 
@@ -488,12 +495,56 @@ class BookingFileServiceTest {
                 .fileSize(FILE_SIZE)
                 .build();
             given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            setPendingUpload(OBJECT_KEY, BOOKING_ID, GUEST_ID, CONTENT_TYPE);
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.confirmUpload(BOOKING_ID, OTHER_USER_ID, request))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ACCESS_DENIED);
+        }
+
+        @Test
+        @DisplayName("실패: 발급된 presigned 업로드 요청이 아니면 등록 불가")
+        void confirmUploadFailsWhenRequestNotIssued() {
+            // given
+            ConfirmUploadRequestDTO request = ConfirmUploadRequestDTO.builder()
+                .objectKey(OBJECT_KEY)
+                .originalFileName(FILE_NAME)
+                .contentType(CONTENT_TYPE)
+                .fileSize(FILE_SIZE)
+                .build();
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.confirmUpload(BOOKING_ID, GUEST_ID, request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FILE_UPLOAD_NOT_CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("실패: S3 메타데이터가 요청값과 다르면 등록 실패 및 객체 정리")
+        void confirmUploadFailsWhenMetadataMismatch() {
+            // given
+            ConfirmUploadRequestDTO request = ConfirmUploadRequestDTO.builder()
+                .objectKey(OBJECT_KEY)
+                .originalFileName(FILE_NAME)
+                .contentType(CONTENT_TYPE)
+                .fileSize(FILE_SIZE)
+                .build();
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(fileUploadValidator.normalizeContentType(CONTENT_TYPE)).willReturn(CONTENT_TYPE);
+            setPendingUpload(OBJECT_KEY, BOOKING_ID, GUEST_ID, CONTENT_TYPE);
+            given(s3PresignedUrlService.getObjectMetadata(OBJECT_KEY))
+                .willReturn(Optional.of(new S3PresignedUrlService.S3ObjectMetadata(FILE_SIZE + 1, CONTENT_TYPE)));
+
+            // when & then
+            assertThatThrownBy(() -> bookingFileService.confirmUpload(BOOKING_ID, GUEST_ID, request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FILE_UPLOAD_METADATA_MISMATCH);
+            verify(s3PresignedUrlService).deleteObjectQuietly(OBJECT_KEY);
         }
     }
 
@@ -572,5 +623,35 @@ class BookingFileServiceTest {
                 .extracting(e -> ((CustomException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setPendingUpload(String objectKey, Long bookingId, UUID requesterId, String contentType) {
+        Map<String, Object> pendingUploads =
+            (Map<String, Object>) ReflectionTestUtils.getField(bookingFileService, "pendingUploads");
+        assertThat(pendingUploads).isNotNull();
+
+        Class<?> pendingClass = null;
+        for (Class<?> nestedClass : BookingFileService.class.getDeclaredClasses()) {
+            if ("PendingUploadRequest".equals(nestedClass.getSimpleName())) {
+                pendingClass = nestedClass;
+                break;
+            }
+        }
+        assertThat(pendingClass).isNotNull();
+        Object pending = null;
+        try {
+            var constructor = pendingClass.getDeclaredConstructors()[0];
+            constructor.setAccessible(true);
+            pending = constructor.newInstance(
+                bookingId,
+                requesterId,
+                contentType,
+                Instant.now().plusSeconds(300)
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        pendingUploads.put(objectKey, pending);
     }
 }

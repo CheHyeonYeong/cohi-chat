@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -27,6 +28,9 @@ class S3PresignedUrlServiceTest {
 
     @Mock
     private S3Presigner s3Presigner;
+
+    @Mock
+    private S3Client s3Client;
 
     @Mock
     private PresignedGetObjectRequest presignedGetObjectRequest;
@@ -42,7 +46,7 @@ class S3PresignedUrlServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        s3PresignedUrlService = new S3PresignedUrlService(s3Presigner);
+        s3PresignedUrlService = new S3PresignedUrlService(s3Client, s3Presigner);
         ReflectionTestUtils.setField(s3PresignedUrlService, "bucketName", BUCKET_NAME);
     }
 

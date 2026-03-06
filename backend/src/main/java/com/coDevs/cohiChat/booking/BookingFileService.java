@@ -1,10 +1,13 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +39,7 @@ public class BookingFileService {
     private final FileStorageService fileStorageService;
     private final FileUploadValidator fileUploadValidator;
     private final S3PresignedUrlService s3PresignedUrlService;
+    private final Map<String, PendingUploadRequest> pendingUploads = new ConcurrentHashMap<>();
 
     @Transactional
     public BookingFileResponseDTO uploadFile(Long bookingId, UUID requesterId, MultipartFile file) {
@@ -129,11 +133,21 @@ public class BookingFileService {
 
         validateBookingAccess(booking, requesterId);
         fileUploadValidator.validateFileName(fileName);
-        fileUploadValidator.validateContentType(contentType);
+        String normalizedContentType = fileUploadValidator.normalizeContentType(contentType);
+        cleanupExpiredPendingUploads();
 
         String objectKey = generateObjectKey(fileName);
         String presignedUrl = s3PresignedUrlService.generateUploadUrl(
-            objectKey, PRESIGNED_URL_EXPIRATION, contentType
+            objectKey, PRESIGNED_URL_EXPIRATION, normalizedContentType
+        );
+        pendingUploads.put(
+            objectKey,
+            new PendingUploadRequest(
+                bookingId,
+                requesterId,
+                normalizedContentType,
+                Instant.now().plus(PRESIGNED_URL_EXPIRATION)
+            )
         );
 
         return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS);
@@ -156,23 +170,61 @@ public class BookingFileService {
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
+        cleanupExpiredPendingUploads();
+
+        PendingUploadRequest pendingUploadRequest = pendingUploads.get(request.getObjectKey());
+        if (pendingUploadRequest == null
+            || !pendingUploadRequest.bookingId().equals(bookingId)
+            || !pendingUploadRequest.requesterId().equals(requesterId)
+            || pendingUploadRequest.expiresAt().isBefore(Instant.now())) {
+            throw new CustomException(ErrorCode.FILE_UPLOAD_NOT_CONFIRMED);
+        }
 
         fileUploadValidator.validateFileName(request.getOriginalFileName());
-        fileUploadValidator.validateContentType(request.getContentType());
-        fileUploadValidator.validateFileSize(request.getFileSize());
-        fileUploadValidator.validateBookingLimits(bookingId, request.getFileSize());
+        String normalizedRequestedContentType = fileUploadValidator.normalizeContentType(request.getContentType());
 
-        BookingFile bookingFile = BookingFile.create(
-            booking,
-            extractFileName(request.getObjectKey()),
-            request.getOriginalFileName(),
-            request.getObjectKey(),
-            request.getFileSize(),
-            request.getContentType()
-        );
+        S3PresignedUrlService.S3ObjectMetadata objectMetadata = s3PresignedUrlService
+            .getObjectMetadata(request.getObjectKey())
+            .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        BookingFile savedFile = bookingFileRepository.save(bookingFile);
-        return BookingFileResponseDTO.from(savedFile);
+        String normalizedS3ContentType;
+        try {
+            normalizedS3ContentType = fileUploadValidator.normalizeContentType(objectMetadata.contentType());
+        } catch (CustomException e) {
+            cleanupOrphanObject(request.getObjectKey());
+            pendingUploads.remove(request.getObjectKey());
+            throw e;
+        }
+        if (!pendingUploadRequest.contentType().equals(normalizedRequestedContentType)
+            || !pendingUploadRequest.contentType().equals(normalizedS3ContentType)
+            || request.getFileSize() != objectMetadata.contentLength()) {
+            cleanupOrphanObject(request.getObjectKey());
+            pendingUploads.remove(request.getObjectKey());
+            throw new CustomException(ErrorCode.FILE_UPLOAD_METADATA_MISMATCH);
+        }
+
+        try {
+            fileUploadValidator.validateContentType(normalizedS3ContentType);
+            fileUploadValidator.validateFileSize(objectMetadata.contentLength());
+            fileUploadValidator.validateBookingLimits(bookingId, objectMetadata.contentLength());
+
+            BookingFile bookingFile = BookingFile.create(
+                booking,
+                extractFileName(request.getObjectKey()),
+                request.getOriginalFileName(),
+                request.getObjectKey(),
+                objectMetadata.contentLength(),
+                normalizedS3ContentType
+            );
+
+            BookingFile savedFile = bookingFileRepository.save(bookingFile);
+            pendingUploads.remove(request.getObjectKey());
+            return BookingFileResponseDTO.from(savedFile);
+        } catch (CustomException e) {
+            cleanupOrphanObject(request.getObjectKey());
+            pendingUploads.remove(request.getObjectKey());
+            throw e;
+        }
     }
 
     private String generateObjectKey(String fileName) {
@@ -197,4 +249,20 @@ public class BookingFileService {
         }
         return objectKey;
     }
+
+    private void cleanupExpiredPendingUploads() {
+        Instant now = Instant.now();
+        pendingUploads.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(now));
+    }
+
+    private void cleanupOrphanObject(String objectKey) {
+        s3PresignedUrlService.deleteObjectQuietly(objectKey);
+    }
+
+    private record PendingUploadRequest(
+        Long bookingId,
+        UUID requesterId,
+        String contentType,
+        Instant expiresAt
+    ) {}
 }

@@ -129,6 +129,7 @@ export default function Booking() {
     const [uploadProgress, setUploadProgress] = useState<string>('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [downloadError, setDownloadError] = useState<string | null>(null);
+    const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Host no-show report state
@@ -259,10 +260,13 @@ export default function Booking() {
 
     const handleDelete = async (fileId: number) => {
         try {
+            setDeletingFileId(fileId);
             await deleteFileAsync(fileId);
             refetch();
         } catch (err) {
             console.error('Delete error:', err);
+        } finally {
+            setDeletingFileId(null);
         }
     };
 
@@ -547,7 +551,7 @@ export default function Booking() {
                                                     file={file}
                                                     onDownload={handleDownload}
                                                     onDelete={handleDelete}
-                                                    isDeleting={isDeleting}
+                                                    isDeleting={isDeleting && deletingFileId === file.id}
                                                 />
                                             ))}
                                         </ul>

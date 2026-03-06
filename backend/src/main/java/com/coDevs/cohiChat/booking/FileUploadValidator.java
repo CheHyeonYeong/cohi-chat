@@ -1,8 +1,11 @@
 package com.coDevs.cohiChat.booking;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -75,7 +78,7 @@ public class FileUploadValidator {
             throw new CustomException(ErrorCode.FILE_EXTENSION_NOT_ALLOWED);
         }
 
-        String extension = getExtension(fileName).toLowerCase();
+        String extension = getExtension(fileName).toLowerCase(Locale.ROOT);
 
         if (BLOCKED_EXTENSIONS.contains(extension)) {
             throw new CustomException(ErrorCode.FILE_EXTENSION_BLOCKED);
@@ -96,7 +99,23 @@ public class FileUploadValidator {
     }
 
     public void validateContentType(String contentType) {
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
+        String normalizedContentType = normalizeContentType(contentType);
+        if (!ALLOWED_MIME_TYPES.contains(normalizedContentType)) {
+            throw new CustomException(ErrorCode.FILE_MIME_TYPE_NOT_ALLOWED);
+        }
+    }
+
+    public String normalizeContentType(String contentType) {
+        if (contentType == null) {
+            throw new CustomException(ErrorCode.FILE_MIME_TYPE_NOT_ALLOWED);
+        }
+
+        try {
+            MediaType mediaType = MediaType.parseMediaType(contentType);
+            return mediaType.getType().toLowerCase(Locale.ROOT)
+                + "/"
+                + mediaType.getSubtype().toLowerCase(Locale.ROOT);
+        } catch (InvalidMediaTypeException e) {
             throw new CustomException(ErrorCode.FILE_MIME_TYPE_NOT_ALLOWED);
         }
     }
