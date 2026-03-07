@@ -5,7 +5,6 @@ import LinkButton from '~/components/button/LinkButton';
 import { Card } from '~/components/card';
 import { Header } from '~/components/header';
 import { useHosts } from '~/hooks/useHost';
-import { LogoutButton } from '~/components/button/LogoutButton';
 import { useAuth } from '~/features/member';
 import { useMyCalendar } from '~/features/host';
 
@@ -75,8 +74,8 @@ export default function Home() {
     return (
         <div className='w-full min-h-screen bg-[var(--cohi-bg-light)]'>
             {/* Header */}
-            <Header right={
-                <div className='flex items-center gap-3'>
+            <Header showAuth right={
+                <>
                     {isAuthenticated && !isCalendarLoading && (
                         isHost && myCalendar ? (
                             <LinkButton variant="primary" to='/host/timeslots'>
@@ -93,13 +92,7 @@ export default function Home() {
                             설정
                         </LinkButton>
                     )}
-                    {isAuthenticated
-                        ? <LogoutButton />
-                        : <LinkButton variant="outline" to='/login'>
-                            로그인
-                        </LinkButton>
-                    }
-                </div>
+                </>
             } />
 
             {/* Hero Section */}

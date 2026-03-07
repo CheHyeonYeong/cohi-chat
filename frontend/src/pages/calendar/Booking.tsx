@@ -17,7 +17,7 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import PageHeader from '~/components/PageHeader';
+import { Header } from '~/components/header';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
@@ -304,7 +304,7 @@ export default function Booking() {
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
-            <PageHeader />
+            <Header showAuth />
 
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-3xl mx-auto space-y-6">
