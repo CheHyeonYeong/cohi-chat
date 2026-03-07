@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import LinkButton from '~/components/button/LinkButton';
-import PageHeader from '~/components/PageHeader';
+import { Header } from '~/components/header';
 import Pagination from '~/components/Pagination';
 import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
@@ -142,7 +142,7 @@ export default function MyBookings() {
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
-            <PageHeader />
+            <Header showAuth />
 
             <main className="w-full px-6 py-8 pb-16">
                 <div className="max-w-6xl mx-auto">

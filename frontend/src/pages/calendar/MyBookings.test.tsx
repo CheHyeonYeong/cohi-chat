@@ -75,8 +75,8 @@ vi.mock('@dnd-kit/utilities', () => ({
     CSS: { Transform: { toString: () => '' } },
 }));
 
-vi.mock('~/components/PageHeader', () => ({
-    default: () => <div data-testid="page-header" />,
+vi.mock('~/components/header', () => ({
+    Header: () => <div data-testid="page-header" />,
 }));
 
 vi.mock('~/components/Pagination', () => ({
