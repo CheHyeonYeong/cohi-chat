@@ -27,10 +27,12 @@ export default function Header({ center, right, className, showAuth }: HeaderPro
                 <span className="text-xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
             </Link>
             {center}
-            <div className="flex items-center gap-3">
-                {right}
-                {showAuth && <AuthControls />}
-            </div>
+            {(right || showAuth) && (
+                <div className="flex items-center gap-3">
+                    {right}
+                    {showAuth && <AuthControls />}
+                </div>
+            )}
         </header>
     );
 }
