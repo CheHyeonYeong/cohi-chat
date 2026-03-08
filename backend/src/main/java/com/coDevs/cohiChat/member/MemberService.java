@@ -261,7 +261,7 @@ public class MemberService {
                         if (remainingSeconds <= 0) {    
                                 return;
                         }
-                        String tokenHash = TokenHashUtil.hash(accessToken);
+                        String tokenHash = tokenService.hashToken(accessToken);
                         AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
                         accessTokenBlacklistRepository.save(blacklist);
                 } catch (ExpiredJwtException e) {       
@@ -303,7 +303,7 @@ public class MemberService {
                 String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());        
                 long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
                 RefreshToken newRefreshToken = RefreshToken.create(
-                        TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
+                        tokenService.hashToken(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
                 );
                 refreshTokenRepository.save(newRefreshToken);
 

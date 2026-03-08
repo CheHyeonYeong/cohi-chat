@@ -558,7 +558,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 게스트가 다운로드 URL을 생성할 수 있다")
         void generateDownloadUrlByGuestSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
@@ -578,7 +578,7 @@ class BookingFileServiceTest {
         @DisplayName("성공: 호스트가 다운로드 URL을 생성할 수 있다")
         void generateDownloadUrlByHostSuccess() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
@@ -597,7 +597,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 파일을 찾을 수 없음")
         void generateDownloadUrlFailsWhenFileNotFound() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.empty());
 
             // when & then
@@ -613,7 +613,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 게스트도 호스트도 아닌 사용자는 URL 생성 불가")
         void generateDownloadUrlFailsWhenAccessDenied() {
             // given
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
 
             // when & then
             assertThatThrownBy(() -> bookingFileService.generatePresignedDownloadUrl(
