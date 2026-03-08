@@ -210,14 +210,7 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.builder()     
-                        .bookingId(booking.getId())     
-                        .bookingDate(booking.getBookingDate())
-                        .startTime(booking.getTimeSlot().getStartTime())
-                        .endTime(booking.getTimeSlot().getEndTime())
-                        .topic(booking.getTopic())      
-                        .role(role)
-                        .build();
+                return AffectedBookingDTO.from(booking, role);
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
