@@ -1,11 +1,23 @@
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
+    skipAuthRefresh?: boolean;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // 동시 401 요청이 여러 개일 때 refresh를 한 번만 시도하기 위한 Promise 공유
 let refreshPromise: Promise<string | null> | null = null;
+
+function isAuthFlowEndpoint(url: string): boolean {
+    try {
+        const parsed = new URL(url, window.location.origin);
+        const path = parsed.pathname;
+        return /\/members\/v1\/(login|signup|refresh)$/.test(path)
+            || /\/oauth\/v1\/[^/]+\/callback$/.test(path);
+    } catch {
+        return false;
+    }
+}
 
 async function performRefresh(): Promise<string | null> {
     const refreshToken = localStorage.getItem('refresh_token');
@@ -84,7 +96,9 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
     const response = await fetch(url, { ...options, headers, body });
 
     // 401 → refresh 시도 후 원래 요청 1회 재시도
-    if (response.status === 401 && !isRetry) {
+    const shouldSkipRefresh = options.skipAuthRefresh || isAuthFlowEndpoint(url);
+
+    if (response.status === 401 && !isRetry && !shouldSkipRefresh) {
         try {
             const newToken = await tryRefreshToken();
             if (newToken) {

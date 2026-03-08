@@ -23,6 +23,7 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
         body: request,
+        skipAuthRefresh: true,
     });
 
     if (!response) {
@@ -39,6 +40,7 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
     const response = await httpClient<SignupResponse>(`${MEMBER_API}/signup`, {
         method: 'POST',
         body: payload,
+        skipAuthRefresh: true,
     });
 
     if (!response) {
@@ -62,6 +64,7 @@ export async function refreshTokenApi(): Promise<LoginResponse> {
     const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
         method: 'POST',
         body: { refreshToken },
+        skipAuthRefresh: true,
     });
     if (!response || !response.accessToken) {
         throw new Error('토큰 갱신에 실패했습니다.');
