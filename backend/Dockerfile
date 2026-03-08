@@ -3,10 +3,10 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Install wget, create non-root user, and setup directories in single layer
+# Install wget, create non-root user
 RUN apk add --no-cache wget curl \
     && addgroup -S spring && adduser -S spring -G spring \
-    && mkdir -p /app/data && chown -R spring:spring /app
+    && chown -R spring:spring /app
 
 # Copy pre-built JAR (uploaded from CI) with proper ownership
 COPY --chown=spring:spring app.jar app.jar
@@ -15,9 +15,6 @@ USER spring
 
 # Expose port
 EXPOSE 8080
-
-# Data volume
-VOLUME ["/app/data"]
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
