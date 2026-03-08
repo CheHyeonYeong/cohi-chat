@@ -1,5 +1,3 @@
-import type { ISO8601String, StringTime } from '~/types/base';
-
 // Calendar
 export interface CalendarCreatePayload {
     topics: string[];
@@ -18,8 +16,8 @@ export interface CalendarResponse {
     topics: string[];
     description: string;
     googleCalendarId: string;
-    createdAt: ISO8601String;
-    updatedAt: ISO8601String;
+    createdAt: string;
+    updatedAt: string;
     calendarAccessible: boolean | null;
 }
 
@@ -35,11 +33,11 @@ export interface TimeSlotCreatePayload {
 export interface TimeSlotResponse {
     id: number;
     userId: string;
-    startTime: StringTime;
-    endTime: StringTime;
+    startedAt: string;
+    endedAt: string;
     weekdays: number[];
     startDate: string | null;
     endDate: string | null;
-    createdAt: ISO8601String;
-    updatedAt: ISO8601String;
+    createdAt: string;
+    updatedAt: string;
 }

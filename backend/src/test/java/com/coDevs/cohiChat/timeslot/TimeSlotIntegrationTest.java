@@ -226,8 +226,8 @@ class TimeSlotIntegrationTest {
 
         // then
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getStartTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(result.get(1).getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(result.get(0).getStartedAt()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(result.get(1).getStartedAt()).isEqualTo(LocalTime.of(14, 0));
     }
 
     @Test

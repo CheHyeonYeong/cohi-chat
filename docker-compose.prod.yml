@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7.2-alpine
+    image: redis:8.6
     container_name: cohi-chat-redis
     volumes:
       - redis-data:/data

@@ -21,7 +21,7 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
     const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday);
     const availableTimeslots = timeslots
         .filter((ts) => isTimeslotAvailableOnDate(ts, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday))
-        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
         <div className="flex flex-col gap-4 items-center justify-start mx-auto">
@@ -51,11 +51,11 @@ export default function Timeslots({ baseDate, timeslots, bookings, onSelectTimes
                     type="button"
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}
-                    key={`${timeslot.startTime}-${timeslot.endTime}`}
+                    key={`${timeslot.startedAt}-${timeslot.endedAt}`}
                     className="w-full h-fit"
                     onClick={() => onSelectTimeslot(timeslot)}
                 >
-                    <span role="time">{timeslot.startTime}</span>
+                    <span role="time">{timeslot.startedAt}</span>
                 </Button>
             ))}
         </div>

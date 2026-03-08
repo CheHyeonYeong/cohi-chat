@@ -18,14 +18,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TimeSlotPublicResponseDTO {
 
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private LocalTime startedAt;
+    private LocalTime endedAt;
     private List<Integer> weekdays;
 
     public static TimeSlotPublicResponseDTO from(TimeSlot timeSlot) {
         return TimeSlotPublicResponseDTO.builder()
-            .startTime(timeSlot.getStartTime())
-            .endTime(timeSlot.getEndTime())
+            .startedAt(timeSlot.getStartTime())
+            .endedAt(timeSlot.getEndTime())
             .weekdays(timeSlot.getWeekdays())
             .build();
     }
