@@ -161,7 +161,7 @@ public class BookingService {
 
     private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
         boolean exists = bookingRepository.existsDuplicateBooking(
-            timeSlot,
+            timeSlot.getId(),
             bookingDate,
             AttendanceStatus.getExcludedFromDuplicateCheck(),
             excludedId
@@ -187,7 +187,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingResponseDTO getBookingById(Long bookingId, UUID requesterId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
@@ -270,7 +270,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO updateBookingSchedule(Long bookingId, UUID hostId, BookingScheduleUpdateRequestDTO request) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateHostAccess(booking, hostId);
@@ -342,7 +342,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO updateBookingStatus(Long bookingId, UUID hostId, BookingStatusUpdateRequestDTO request) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateHostAccess(booking, hostId);
@@ -362,7 +362,7 @@ public class BookingService {
 
     @Transactional
     public void cancelBooking(Long bookingId, UUID guestId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateGuestAccess(booking, guestId);
@@ -396,7 +396,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO updateBooking(Long bookingId, UUID guestId, BookingUpdateRequestDTO request) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateGuestAccess(booking, guestId);
@@ -450,7 +450,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO reportHostNoShow(Long bookingId, UUID guestId, String reason) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateGuestAccess(booking, guestId);

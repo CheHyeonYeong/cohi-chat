@@ -77,7 +77,7 @@ class BookingRepositoryTest {
     void existsDuplicateBookingTrue() {
         // when
         boolean exists = bookingRepository.existsDuplicateBooking(
-            savedTimeSlot,
+            savedTimeSlot.getId(),
             LocalDate.of(2025, 1, 20),
             AttendanceStatus.getCancelledStatuses(),
             null
@@ -92,7 +92,7 @@ class BookingRepositoryTest {
     void existsDuplicateBookingFalseDifferentDate() {
         // when
         boolean exists = bookingRepository.existsDuplicateBooking(
-            savedTimeSlot,
+            savedTimeSlot.getId(),
             LocalDate.of(2025, 1, 21),
             AttendanceStatus.getCancelledStatuses(),
             null
@@ -116,7 +116,7 @@ class BookingRepositoryTest {
 
         // when
         boolean exists = bookingRepository.existsDuplicateBooking(
-            savedAnotherTimeSlot,
+            savedAnotherTimeSlot.getId(),
             LocalDate.of(2025, 1, 20),
             AttendanceStatus.getCancelledStatuses(),
             null
@@ -131,7 +131,7 @@ class BookingRepositoryTest {
     void existsDuplicateBookingFalseWhenExcludingSelf() {
         // when
         boolean exists = bookingRepository.existsDuplicateBooking(
-            savedTimeSlot,
+            savedTimeSlot.getId(),
             LocalDate.of(2025, 1, 20),
             AttendanceStatus.getCancelledStatuses(),
             savedBooking.getId()
