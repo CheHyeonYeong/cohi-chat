@@ -3,20 +3,18 @@ import { Button } from '~/components/button';
 
 interface ReportModalProps {
     isPending: boolean;
-    defaultNickname?: string;
-    onSubmit: (nickname: string, reason: string) => void;
+    onSubmit: (reason: string) => void;
     onClose: () => void;
 }
 
-export default function NoShowReportModal({ isPending, defaultNickname = '', onSubmit, onClose }: ReportModalProps) {
-    const [nickname, setNickname] = useState(defaultNickname);
+export default function NoShowReportModal({ isPending, onSubmit, onClose }: ReportModalProps) {
     const [reason, setReason] = useState('');
 
     const isReasonEmpty = reason.trim() === '';
 
     const handleSubmit = () => {
         if (isReasonEmpty) return;
-        onSubmit(nickname.trim(), reason.trim());
+        onSubmit(reason.trim());
     };
 
     return (
@@ -34,17 +32,6 @@ export default function NoShowReportModal({ isPending, defaultNickname = '', onS
                 <h2 id="report-title" className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-4">신고하기</h2>
 
                 <div className="flex flex-col gap-3">
-                    <div>
-                        <label htmlFor="report-nickname" className="block text-sm font-medium text-gray-700 mb-1">닉네임</label>
-                        <input
-                            id="report-nickname"
-                            type="text"
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                            placeholder="신고 대상 닉네임"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                        />
-                    </div>
                     <div>
                         <label htmlFor="report-reason" className="block text-sm font-medium text-gray-700 mb-1">
                             신고 사유 <span className="text-red-500">*</span>

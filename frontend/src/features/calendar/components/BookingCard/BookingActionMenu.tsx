@@ -26,23 +26,27 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const showReportGuest = !!currentUser && currentUser.id === booking.hostId;
     const hasAnyAction = showReportHost || showReportGuest;
 
+    const hostDisplayName = booking.host?.displayName?.trim() || '호스트';
+    const guestDisplayName = booking.guest?.displayName?.trim() || '게스트';
+
     useEffect(() => {
         if (!open) return;
+
         const handler = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setOpen(false);
             }
         };
+
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
 
-    const handleReport = (nickname: string, reason: string) => {
-        const combined = [nickname && `[신고 대상: ${nickname}]`, reason].filter(Boolean).join(' ');
+    const handleReport = (reason: string) => {
         if (reportTarget === 'host') {
-            reportHostMutate(combined, { onSuccess: () => setReportTarget(null) });
+            reportHostMutate(reason, { onSuccess: () => setReportTarget(null) });
         } else {
-            reportGuestMutate(combined, { onSuccess: () => setReportTarget(null) });
+            reportGuestMutate(reason, { onSuccess: () => setReportTarget(null) });
         }
     };
 
@@ -75,7 +79,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
                                 setReportTarget('host');
                             }}
                         >
-                            {booking.host.displayName} 신고
+                            {hostDisplayName} 신고
                         </button>
                     )}
                     {showReportGuest && (
@@ -88,7 +92,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
                                 setReportTarget('guest');
                             }}
                         >
-                            {booking.guest.displayName} 신고
+                            {guestDisplayName} 신고
                         </button>
                     )}
                 </div>
@@ -97,7 +101,6 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
             {reportTarget && (
                 <NoShowReportModal
                     isPending={isPending}
-                    defaultNickname={reportTarget === 'host' ? booking.host.displayName : booking.guest.displayName}
                     onSubmit={handleReport}
                     onClose={() => setReportTarget(null)}
                 />

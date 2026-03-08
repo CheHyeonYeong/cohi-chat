@@ -57,17 +57,17 @@ describe('BookingCard', () => {
     });
 
     it('isSelected가 true이면 선택 스타일을 적용해야 한다', () => {
-        const { container } = render(
+        const { getByTestId } = render(
             <BookingCard booking={mockBooking} onSelect={vi.fn()} isSelected />,
         );
-        expect((container.firstChild as HTMLElement).className).toContain('border-[var(--cohi-primary)]');
+        expect(getByTestId('booking-card').className).toContain('border-[var(--cohi-primary)]');
     });
 
     it('isSelected가 false이면 기본 스타일을 적용해야 한다', () => {
-        const { container } = render(
+        const { getByTestId } = render(
             <BookingCard booking={mockBooking} onSelect={vi.fn()} isSelected={false} />,
         );
-        expect((container.firstChild as HTMLElement).className).not.toContain('border-[var(--cohi-primary)]');
+        expect(getByTestId('booking-card').className).not.toContain('border-[var(--cohi-primary)]');
     });
 
     it('파일이 있으면 첨부 개수 배지를 표시해야 한다', () => {

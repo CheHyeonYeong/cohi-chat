@@ -13,10 +13,12 @@ interface BookingCardProps {
 
 export default function BookingCard({ booking, onSelect, isSelected = false, className, headerAction }: BookingCardProps) {
     const when = new Date(booking.when);
+    const hostDisplayName = booking.host?.displayName?.trim() || '호스트';
 
     return (
         <Card
             size="sm"
+            data-testid="booking-card"
             className={cn(
                 'border transition-all',
                 isSelected
@@ -29,10 +31,10 @@ export default function BookingCard({ booking, onSelect, isSelected = false, cla
             <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-semibold text-[var(--cohi-primary)]">
-                        {booking.host?.displayName?.[0] ?? '?'}
+                        {hostDisplayName[0] ?? '?'}
                     </span>
                 </div>
-                <p className="font-semibold text-[var(--cohi-text-dark)] flex-1">{booking.host?.displayName}님과</p>
+                <p className="font-semibold text-[var(--cohi-text-dark)] flex-1">{hostDisplayName}님과</p>
                 {headerAction && (
                     <div onClick={(e) => e.stopPropagation()}>
                         {headerAction}
