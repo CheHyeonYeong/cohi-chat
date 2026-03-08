@@ -295,7 +295,6 @@ public class MemberService {
 			}
 
 			// 구 RT가 아닌 토큰이거나 grace window 초과 → 탈취로 간주하여 전체 세션 무효화
-			log.warn("리프레시 토큰 재사용 감지 - 세션 무효화 처리: username={}, tokenHash={}", verifiedUsername, tokenHash);
 			refreshTokenRepository.deleteById(verifiedUsername);
 			throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 		}
