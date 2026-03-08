@@ -2,7 +2,6 @@ import { Header } from '~/components/header';
 import { ProfileEditForm } from '~/features/member/components/ProfileEditForm';
 import { PasswordChangeForm } from '~/features/member/components/PasswordChangeForm';
 import { LogoutButton } from '~/components/button/LogoutButton';
-import { DummyDataSection } from './components/DummyDataSection';
 
 export default function Settings() {
     return (
@@ -22,10 +21,6 @@ export default function Settings() {
                     <div className="bg-white rounded-2xl shadow-md p-8">
                         <PasswordChangeForm />
                     </div>
-
-                    {import.meta.env.DEV && (
-                        <DummyDataSection />
-                    )}
                 </div>
             </div>
         </div>
