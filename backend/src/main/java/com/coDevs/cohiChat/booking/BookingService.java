@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final Pattern LEGACY_REPORT_TARGET_PREFIX = Pattern.compile("^\\[신고\\s*대상:\\s*[^\\]]+\\]\\s*");
 
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -479,7 +481,8 @@ public class BookingService {
         booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
-        NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
+        String normalizedReason = normalizeNoShowReportReason(reason);
+        NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, normalizedReason);
         noShowHistoryRepository.save(history);
 
         log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
@@ -524,7 +527,8 @@ public class BookingService {
         }
 
         UUID guestId = booking.getGuestId();
-        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, hostId, reason);
+        String normalizedReason = normalizeNoShowReportReason(reason);
+        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, hostId, normalizedReason);
         try {
             guestNoShowHistoryRepository.save(history);
         } catch (DataIntegrityViolationException e) {
@@ -572,5 +576,18 @@ public class BookingService {
 
     private Instant toInstant(LocalDate date, LocalTime time) {
         return date.atTime(time).atZone(calendarZoneId).toInstant();
+    }
+
+    private String normalizeNoShowReportReason(String reason) {
+        if (reason == null) {
+            return null;
+        }
+        String trimmed = reason.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        String withoutLegacyPrefix = LEGACY_REPORT_TARGET_PREFIX.matcher(trimmed).replaceFirst("").trim();
+        return withoutLegacyPrefix.isEmpty() ? null : withoutLegacyPrefix;
     }
 }

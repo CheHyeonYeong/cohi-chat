@@ -117,9 +117,6 @@ export async function reportHost(bookingId: number, reason?: string): Promise<IB
     return toBookingDetail(b, files);
 }
 
-/** @deprecated use reportHost */
-export const reportHostNoShow = reportHost;
-
 export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
     return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
 }
@@ -134,9 +131,6 @@ export async function reportGuest(bookingId: number, reason?: string): Promise<I
         body: reason && reason.trim() !== '' ? { reason } : undefined,
     });
 }
-
-/** @deprecated use reportGuest */
-export const reportGuestNoShow = reportGuest;
 
 export async function getGuestNoShowHistory(guestId: string): Promise<IGuestNoShowHistoryItem[]> {
     return await httpClient<IGuestNoShowHistoryItem[]>(`${API_URL}/bookings/guest/${guestId}/noshow-history`);

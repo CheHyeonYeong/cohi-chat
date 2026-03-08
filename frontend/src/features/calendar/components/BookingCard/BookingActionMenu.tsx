@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useReportHost, useReportGuest } from '../../hooks';
 import type { IBookingDetail } from '../../types';
 import { useAuth } from '~/features/member';
@@ -11,7 +11,6 @@ interface BookingActionMenuProps {
 export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const [open, setOpen] = useState(false);
     const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
 
     const { mutate: reportHostMutate, isPending: isReportingHost } = useReportHost(booking.id);
     const { mutate: reportGuestMutate, isPending: isReportingGuest } = useReportGuest(
@@ -29,18 +28,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const hostDisplayName = booking.host?.displayName?.trim() || '호스트';
     const guestDisplayName = booking.guest?.displayName?.trim() || '게스트';
 
-    useEffect(() => {
-        if (!open) return;
-
-        const handler = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+    const closeMenu = () => setOpen(false);
 
     const handleReport = (reason: string) => {
         if (reportTarget === 'host') {
@@ -53,11 +41,13 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     if (!hasAnyAction) return null;
 
     return (
-        <div ref={menuRef} className="relative">
+        <div className="relative">
             <button
                 type="button"
                 data-testid="booking-action-menu-trigger"
                 aria-label="더보기"
+                aria-haspopup="menu"
+                aria-expanded={open}
                 onClick={(e) => {
                     e.stopPropagation();
                     setOpen((v) => !v);
@@ -68,34 +58,44 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10">
-                    {showReportHost && (
-                        <button
-                            type="button"
-                            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setOpen(false);
-                                setReportTarget('host');
-                            }}
-                        >
-                            {hostDisplayName} 신고
-                        </button>
-                    )}
-                    {showReportGuest && (
-                        <button
-                            type="button"
-                            className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setOpen(false);
-                                setReportTarget('guest');
-                            }}
-                        >
-                            {guestDisplayName} 신고
-                        </button>
-                    )}
-                </div>
+                <>
+                    <button
+                        type="button"
+                        aria-label="메뉴 닫기"
+                        className="fixed inset-0 z-10 bg-transparent cursor-default"
+                        onClick={closeMenu}
+                    />
+                    <div
+                        role="menu"
+                        className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {showReportHost && (
+                            <button
+                                type="button"
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
+                                onClick={() => {
+                                    closeMenu();
+                                    setReportTarget('host');
+                                }}
+                            >
+                                {hostDisplayName} 신고
+                            </button>
+                        )}
+                        {showReportGuest && (
+                            <button
+                                type="button"
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
+                                onClick={() => {
+                                    closeMenu();
+                                    setReportTarget('guest');
+                                }}
+                            >
+                                {guestDisplayName} 신고
+                            </button>
+                        )}
+                    </div>
+                </>
             )}
 
             {reportTarget && (
