@@ -137,14 +137,7 @@ export default function Booking() {
 
     const isMeetingStarted = useMemo(() => {
         if (!booking) return false;
-        const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
-        const meetingStart = new Date(
-            booking.when.getFullYear(),
-            booking.when.getMonth(),
-            booking.when.getDate(),
-            h, m, 0, 0
-        );
-        return now >= meetingStart.getTime();
+        return now >= booking.startedAt.getTime();
     }, [booking, now]);
 
     useEffect(() => {
@@ -299,7 +292,7 @@ export default function Booking() {
         );
     }
 
-    const when = new Date(booking.when);
+    const startedAt = booking.startedAt;
     const canUploadMore = canUploadMoreFiles(fileOrder.length);
 
     return (
@@ -330,12 +323,12 @@ export default function Booking() {
                                         {booking.host.displayName}님과의 커피챗
                                     </h1>
                                     <p className="text-sm text-gray-500 mt-0.5">
-                                        {when.toLocaleDateString('ko-KR', {
+                                        {startedAt.toLocaleDateString('ko-KR', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
                                         })}{' '}
-                                        {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
+                                        {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
                                     </p>
                                 </div>
                             </div>
@@ -425,7 +418,7 @@ export default function Booking() {
                                 {noShowHistory.map((item) => (
                                     <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                        {item.bookingDate} 노쇼 발생
+                                        {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
                                     </li>
                                 ))}
                             </ul>

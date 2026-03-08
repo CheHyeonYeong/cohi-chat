@@ -19,8 +19,8 @@ public class TimeSlotResponseDTO {
 
     private Long id;
     private UUID userId;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private LocalTime startedAt;
+    private LocalTime endedAt;
     private List<Integer> weekdays;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -31,8 +31,8 @@ public class TimeSlotResponseDTO {
         return TimeSlotResponseDTO.builder()
             .id(timeSlot.getId())
             .userId(timeSlot.getUserId())
-            .startTime(timeSlot.getStartTime())
-            .endTime(timeSlot.getEndTime())
+            .startedAt(timeSlot.getStartTime())
+            .endedAt(timeSlot.getEndTime())
             .weekdays(timeSlot.getWeekdays())
             .startDate(timeSlot.getStartDate())
             .endDate(timeSlot.getEndDate())

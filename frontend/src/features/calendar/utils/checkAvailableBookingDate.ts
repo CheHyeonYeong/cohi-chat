@@ -50,20 +50,22 @@ export function checkAvailableBookingDate(
     if (!hasAvailableTimeslot) return false;
 
     return !bookings.some((booking) => {
-        const [bookingYear, bookingMonth, bookingDay] = booking.when.split("-");
-        if (Number(bookingYear) !== year || Number(bookingMonth) !== month || Number(bookingDay) !== day) {
+        const bookingStart = new Date(booking.startedAt);
+        const bookingYear = bookingStart.getFullYear();
+        const bookingMonth = bookingStart.getMonth() + 1;
+        const bookingDay = bookingStart.getDate();
+        if (bookingYear !== year || bookingMonth !== month || bookingDay !== day) {
             return false;
         }
 
-        const [bookingStartHour, bookingStartMinute] = booking.timeSlot.startTime.split(":");
-        const bookingStartTime = Number(bookingStartHour) * 60 + Number(bookingStartMinute);
-        const [bookingEndHour, bookingEndMinute] = booking.timeSlot.endTime.split(":");
-        const bookingEndTime = Number(bookingEndHour) * 60 + Number(bookingEndMinute);
+        const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+        const bookingEnd = new Date(booking.endedAt);
+        const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
 
         return timeslots.some((timeslot) => {
-            const [startHour, startMinute] = timeslot.startTime.split(":");
+            const [startHour, startMinute] = timeslot.startedAt.split(":");
             const startTime = Number(startHour) * 60 + Number(startMinute);
-            const [endHour, endMinute] = timeslot.endTime.split(":");
+            const [endHour, endMinute] = timeslot.endedAt.split(":");
             const endTime = Number(endHour) * 60 + Number(endMinute);
 
             return bookingStartTime < endTime && bookingEndTime > startTime;

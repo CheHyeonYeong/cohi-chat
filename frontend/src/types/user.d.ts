@@ -1,5 +1,3 @@
-import {ISO8601String} from "./base";
-
 export type Role = 'GUEST' | 'HOST' | 'ADMIN';
 
 export interface MemberResponseDTO {
@@ -8,8 +6,8 @@ export interface MemberResponseDTO {
     displayName: string;
     email: string;
     role: Role;
-    createdAt: ISO8601String;
-    updatedAt: ISO8601String;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface IUserSimple {

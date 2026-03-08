@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
@@ -10,30 +9,38 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import static com.coDevs.cohiChat.global.util.TimeUtils.toUtcInstant;
+
 @Getter
 @Builder
 @AllArgsConstructor
 public class NoShowHistoryResponseDTO {
 
-    private Long id;
-    private Long bookingId;
-    private UUID hostId;
-    private UUID reportedBy;
-    private String reason;
-    private Instant reportedAt;
-    private LocalDate bookingDate;
-    private String bookingTopic;
+    private final Long id;
+    private final Long bookingId;
+    private final UUID hostId;
+    private final UUID reportedBy;
+    private final String reason;
+    private final Instant reportedAt;
+    private final Instant bookingStartedAt;
+    private final Instant bookingEndedAt;
+    private final String bookingTopic;
 
     public static NoShowHistoryResponseDTO from(NoShowHistory history) {
+        var booking = history.getBooking();
+        var timeSlot = booking.getTimeSlot();
+        var date = booking.getBookingDate();
+
         return NoShowHistoryResponseDTO.builder()
             .id(history.getId())
-            .bookingId(history.getBooking().getId())
+            .bookingId(booking.getId())
             .hostId(history.getHostId())
             .reportedBy(history.getReportedBy())
             .reason(history.getReason())
             .reportedAt(history.getReportedAt())
-            .bookingDate(history.getBooking().getBookingDate())
-            .bookingTopic(history.getBooking().getTopic())
+            .bookingStartedAt(toUtcInstant(date, timeSlot.getStartTime()))
+            .bookingEndedAt(toUtcInstant(date, timeSlot.getEndTime()))
+            .bookingTopic(booking.getTopic())
             .build();
     }
 }

@@ -17,6 +17,7 @@
 | CheHyeonYeong | `chy` |
 | Tarte12 | `khs` |
 | say8425 | `bc` |
+| fru1tworld | `fru1tworld` |
 
 ### Git 보호 규칙 (필수)
 **main 브랜치 직접 작업 절대 금지:**
