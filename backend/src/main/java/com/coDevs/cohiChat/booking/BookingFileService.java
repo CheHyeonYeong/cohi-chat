@@ -28,7 +28,7 @@ public class BookingFileService {
 
     @Transactional
     public BookingFileResponseDTO uploadFile(Long bookingId, UUID requesterId, MultipartFile file) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
@@ -58,7 +58,7 @@ public class BookingFileService {
 
     @Transactional(readOnly = true)
     public List<BookingFileResponseDTO> getFiles(Long bookingId, UUID requesterId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);
@@ -86,7 +86,7 @@ public class BookingFileService {
     }
 
     private BookingFile getBookingFileWithAccessCheck(Long bookingId, Long fileId, UUID requesterId) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
         validateBookingAccess(booking, requesterId);

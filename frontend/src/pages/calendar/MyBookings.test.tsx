@@ -13,14 +13,15 @@ const uploadFileAsync = vi.fn().mockResolvedValue({});
 
 const booking: IBookingDetail = {
     id: 1,
-    when: new Date('2024-02-15'),
+    startedAt: new Date('2024-02-15T10:00:00+09:00'),
+    endedAt: new Date('2024-02-15T11:00:00+09:00'),
     topic: '테스트 주제',
     description: '테스트 설명',
     timeSlot: {
         id: 10,
         userId: 'host-uuid',
-        startTime: '10:00',
-        endTime: '11:00',
+        startedAt: '10:00',
+        endedAt: '11:00',
         weekdays: [4],
         startDate: null,
         endDate: null,

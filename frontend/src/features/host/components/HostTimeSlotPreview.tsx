@@ -59,7 +59,7 @@ export default function HostTimeSlotPreview({
                             {weekdayLabels}
                         </span>
                         <span className="text-sm text-gray-600">
-                            {normalizeTime(slot.startTime)} - {normalizeTime(slot.endTime)}
+                            {normalizeTime(slot.startedAt)} - {normalizeTime(slot.endedAt)}
                         </span>
                     </div>
                 );

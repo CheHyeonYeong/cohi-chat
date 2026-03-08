@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,6 +51,8 @@ class BookingIntegrationTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private Member host;
     private Member guest;
@@ -121,7 +124,7 @@ class BookingIntegrationTest {
         assertThat(response.getId()).isNotNull();
         assertThat(response.getTimeSlotId()).isEqualTo(timeSlot.getId());
         assertThat(response.getGuestId()).isEqualTo(guest.getId());
-        assertThat(response.getBookingDate()).isEqualTo(futureMonday);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(futureMonday);
         assertThat(response.getTopic()).isEqualTo("프로젝트 상담");
         assertThat(response.getDescription()).isEqualTo("Spring Boot 프로젝트 관련 질문");
         assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
@@ -264,7 +267,7 @@ class BookingIntegrationTest {
 
         // then
         assertThat(response.getId()).isNotNull();
-        assertThat(response.getBookingDate()).isEqualTo(nextMonday);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(nextMonday);
     }
 
     @Test
@@ -306,7 +309,7 @@ class BookingIntegrationTest {
         // then
         assertThat(rebookResponse.getId()).isNotNull();
         assertThat(rebookResponse.getId()).isNotEqualTo(firstResponse.getId());
-        assertThat(rebookResponse.getBookingDate()).isEqualTo(futureMonday);
+        assertThat(rebookResponse.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(futureMonday);
         assertThat(rebookResponse.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
 
         // DB에 2개의 예약이 존재하는지 확인 (취소된 것 + 새 예약)

@@ -1,5 +1,4 @@
 import { httpClient } from '~/libs/httpClient';
-import type { StringTime, ISO8601String } from '~/types/base';
 import type { AttendanceStatus, IBooking, IBookingDetail, IBookingFile, IGuestNoShowHistoryItem, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
 import { API_URL } from './constants';
 
@@ -14,36 +13,43 @@ interface BookingFlatResponse {
     timeSlotId: number;
     guestId: string;
     hostId: string | null;
-    when: string;
-    startTime: StringTime;
-    endTime: StringTime;
+    startedAt: string;
+    endedAt: string;
     topic: string;
     description: string;
     attendanceStatus: string;
-    createdAt: ISO8601String;
+    createdAt: string;
     hostUsername: string | null;
     hostDisplayName: string | null;
     guestUsername: string | null;
     guestDisplayName: string | null;
 }
 
-/** ?? ?? ???("YYYY-MM-DD")? ?? ???? ??. UTC ?? ???? ?? ?? ?? ??. */
-function parseDateLocal(dateStr: string): Date {
-    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
-    return new Date(year, month - 1, day);
+/** ISO 8601 datetime 문자열을 로컬 Date 객체로 파싱. */
+function parseDateTime(dateTimeStr: string): Date {
+    return new Date(dateTimeStr);
+}
+
+/** ISO 8601 datetime 문자열에서 "HH:mm" 형식의 시간 문자열 추출. */
+function extractTime(dateTimeStr: string): string {
+    const date = new Date(dateTimeStr);
+    const hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
 }
 
 function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail {
     return {
         id: b.id,
-        when: parseDateLocal(b.when),
+        startedAt: parseDateTime(b.startedAt),
+        endedAt: parseDateTime(b.endedAt),
         topic: b.topic,
         description: b.description,
         timeSlot: {
             id: b.timeSlotId,
             userId: '',
-            startTime: b.startTime,
-            endTime: b.endTime,
+            startedAt: extractTime(b.startedAt),
+            endedAt: extractTime(b.endedAt),
             weekdays: [],
             startDate: null,
             endDate: null,

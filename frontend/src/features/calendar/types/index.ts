@@ -1,4 +1,3 @@
-import type { DateString, ISO8601String, StringTime } from '~/types/base';
 import type { IUserSimple } from '~/types/user';
 
 export type AttendanceStatus =
@@ -13,38 +12,39 @@ export type AttendanceStatus =
 export interface ITimeSlot {
     id: number;
     userId: string;
-    startTime: StringTime;
-    endTime: StringTime;
+    startedAt: string;
+    endedAt: string;
     weekdays: number[];
     startDate: string | null;
     endDate: string | null;
-    createdAt: ISO8601String;
-    updatedAt: ISO8601String;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface IBooking {
     id: number;
-    when: DateString;
-    timeSlot: ITimeSlot;
+    startedAt: string;
+    endedAt: string;
 }
 
 export interface ICalendarEvent {
     id: string;
-    when: DateString;
-    timeSlot: ITimeSlot;
+    startedAt: string;
+    endedAt: string;
 }
 
 export interface IBookingDetail {
     id: number;
-    when: Date;
+    startedAt: Date;
+    endedAt: Date;
     topic: string;
     description: string;
     timeSlot: ITimeSlot;
     host: Pick<IUserSimple, 'username' | 'displayName'>;
     guest: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
-    createdAt: ISO8601String;
-    updatedAt: ISO8601String;
+    createdAt: string;
+    updatedAt: string;
     attendanceStatus: AttendanceStatus;
     hostId: string | null;
     guestId: string;
@@ -57,7 +57,8 @@ export interface INoShowHistoryItem {
     reportedBy: string;
     reason: string | null;
     reportedAt: string;
-    bookingDate: string;
+    bookingStartedAt: string;
+    bookingEndedAt: string;
     bookingTopic: string;
 }
 
@@ -74,7 +75,7 @@ export interface IGuestNoShowHistoryItem {
 }
 
 export interface IBookingPayload {
-    when: DateString;
+    when: string;
     topic: string;
     description: string;
     timeSlotId: number;
@@ -91,7 +92,7 @@ export interface IBookingFile {
     originalFileName: string;
     fileSize: number;
     contentType: string;
-    createdAt: ISO8601String;
+    createdAt: string;
 }
 
 export interface ICalendar {
