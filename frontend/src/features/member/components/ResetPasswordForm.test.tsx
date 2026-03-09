@@ -12,21 +12,14 @@ vi.mock('@tanstack/react-router', () => ({
         React.createElement('a', props, children),
 }));
 
-const mockVerifyMutate = vi.fn();
-const mockVerifyMutation: {
-    mutate: typeof mockVerifyMutate;
-    isPending: boolean;
-    isError: boolean;
-    isSuccess: boolean;
-    data: { valid: boolean } | null;
-    error: Error | null;
+let mockVerifyResult: {
+    isLoading: boolean;
+    isTokenValid: boolean;
+    isTokenInvalid: boolean;
 } = {
-    mutate: mockVerifyMutate,
-    isPending: false,
-    isError: false,
-    isSuccess: false,
-    data: null,
-    error: null,
+    isLoading: false,
+    isTokenValid: false,
+    isTokenInvalid: false,
 };
 
 const mockConfirmMutate = vi.fn();
@@ -43,7 +36,7 @@ const mockConfirmMutation: {
 };
 
 vi.mock('../hooks/usePasswordReset', () => ({
-    useVerifyResetToken: () => mockVerifyMutation,
+    useVerifyResetToken: () => mockVerifyResult,
     useConfirmPasswordReset: () => mockConfirmMutation,
 }));
 
@@ -62,20 +55,19 @@ const createWrapper = () => {
 describe('ResetPasswordForm', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockVerifyMutate.mockReset();
-        mockVerifyMutation.isPending = false;
-        mockVerifyMutation.isError = false;
-        mockVerifyMutation.isSuccess = false;
-        mockVerifyMutation.data = null;
-        mockVerifyMutation.error = null;
         mockConfirmMutate.mockReset();
+        mockVerifyResult = {
+            isLoading: false,
+            isTokenValid: false,
+            isTokenInvalid: false,
+        };
         mockConfirmMutation.isPending = false;
         mockConfirmMutation.isError = false;
         mockConfirmMutation.error = null;
     });
 
     it('토큰 검증 중 로딩 상태가 표시된다', () => {
-        mockVerifyMutation.isPending = true;
+        mockVerifyResult = { isLoading: true, isTokenValid: false, isTokenInvalid: false };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -84,8 +76,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('토큰이 유효하지 않으면 에러 메시지가 표시된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: false };
+        mockVerifyResult = { isLoading: false, isTokenValid: false, isTokenInvalid: true };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -94,8 +85,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('토큰 검증 에러 시 에러 메시지가 표시된다', () => {
-        mockVerifyMutation.isError = true;
-        mockVerifyMutation.error = new Error('검증 실패');
+        mockVerifyResult = { isLoading: false, isTokenValid: false, isTokenInvalid: true };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -103,8 +93,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('토큰이 유효하면 비밀번호 폼이 표시된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -115,8 +104,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('유효한 비밀번호로 제출하면 confirmMutate가 호출된다', async () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -137,8 +125,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('비밀번호가 비어있으면 validation 에러가 표시된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -151,8 +138,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('비밀번호 확인이 일치하지 않으면 validation 에러가 표시된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
@@ -168,8 +154,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('비밀번호 변경 성공 시 성공 메시지가 표시된다', async () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
         mockConfirmMutate.mockImplementation(
             (_payload: unknown, options: { onSuccess?: () => void }) => {
                 options?.onSuccess?.();
@@ -193,8 +178,7 @@ describe('ResetPasswordForm', () => {
     });
 
     it('confirm mutation 에러 시 에러 메시지가 표시된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
         mockConfirmMutation.isError = true;
         mockConfirmMutation.error = new Error('비밀번호 재설정 실패');
 
@@ -204,19 +188,12 @@ describe('ResetPasswordForm', () => {
     });
 
     it('confirm mutation pending 시 버튼이 비활성화되고 텍스트가 변경된다', () => {
-        mockVerifyMutation.isSuccess = true;
-        mockVerifyMutation.data = { valid: true };
+        mockVerifyResult = { isLoading: false, isTokenValid: true, isTokenInvalid: false };
         mockConfirmMutation.isPending = true;
 
         render(<ResetPasswordForm />, { wrapper: createWrapper() });
 
         const button = screen.getByRole('button', { name: '변경 중...' });
         expect(button).toBeDisabled();
-    });
-
-    it('마운트 시 토큰 검증 mutate가 호출된다', () => {
-        render(<ResetPasswordForm />, { wrapper: createWrapper() });
-
-        expect(mockVerifyMutate).toHaveBeenCalledWith('valid-token');
     });
 });
