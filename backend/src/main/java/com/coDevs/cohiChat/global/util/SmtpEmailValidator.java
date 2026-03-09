@@ -23,8 +23,13 @@ public class SmtpEmailValidator {
             log.warn("SMTP injection attempt detected for email input");
             return CompletableFuture.completedFuture(false);
         }
+        int atIndex = email.indexOf('@');
+        if (atIndex < 1 || atIndex == email.length() - 1) {
+            log.warn("Invalid email format");
+            return CompletableFuture.completedFuture(false);
+        }
         try {
-            String domain = email.substring(email.indexOf('@') + 1);
+            String domain = email.substring(atIndex + 1);
             String mxHost = lookupMxRecord(domain);
             if (mxHost == null) {
                 return CompletableFuture.completedFuture(false);
@@ -38,10 +43,11 @@ public class SmtpEmailValidator {
     }
 
     private String lookupMxRecord(String domain) {
+        InitialDirContext ctx = null;
         try {
             Hashtable<String, String> env = new Hashtable<>();
             env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
-            InitialDirContext ctx = new InitialDirContext(env);
+            ctx = new InitialDirContext(env);
             Attributes attrs = ctx.getAttributes(domain, new String[]{"MX"});
             Attribute mxAttr = attrs.get("MX");
             if (mxAttr == null || mxAttr.size() == 0) return null;
@@ -53,6 +59,14 @@ public class SmtpEmailValidator {
         } catch (NamingException e) {
             log.warn("MX lookup failed for domain: {}", domain);
             return null;
+        } finally {
+            if (ctx != null) {
+                try {
+                    ctx.close();
+                } catch (NamingException e) {
+                    log.debug("Failed to close DirContext", e);
+                }
+            }
         }
     }
 
@@ -73,7 +87,7 @@ public class SmtpEmailValidator {
 
             return response != null && response.startsWith("250");
         } catch (Exception e) {
-            log.warn("SMTP verify failed for {}", email);
+            log.warn("SMTP verify failed, treating as valid (fallback)", e);
             return true;
         }
     }
