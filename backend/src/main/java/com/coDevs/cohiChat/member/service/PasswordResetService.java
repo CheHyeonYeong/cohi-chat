@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -74,31 +77,14 @@ public class PasswordResetService {
     }
 
     private String buildPasswordResetEmail(String displayName, String resetLink) {
-        return """
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Segoe UI', Roboto, 'Noto Sans KR', 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <a href="%s" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                            <img src="https://www.cohi-chat.com/assets/cohi-logo.png" width="40" height="40" alt="cohiChat" style="vertical-align: middle;"/>
-                            <span style="font-size: 24px; font-weight: bold; color: #3D3D3D;">cohiChat</span>
-                        </a>
-                    </div>
-                    <div style="background: #F5F0E8; border-radius: 16px; padding: 32px;">
-                        <h2 style="color: #3D3D3D; margin-bottom: 16px;">비밀번호 재설정</h2>
-                        <p style="color: #3D3D3D; line-height: 1.6;">
-                            안녕하세요, %s님.<br/>
-                            아래 버튼을 클릭하여 비밀번호를 재설정해주세요.
-                        </p>
-                        <div style="text-align: center; margin: 24px 0;">
-                            <a href="%s" style="display: inline-block; background: #8B6914; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-                                비밀번호 재설정
-                            </a>
-                        </div>
-                        <p style="color: #999; font-size: 12px; margin-top: 24px;">
-                            이 링크는 3분간 유효합니다.<br/>
-                            본인이 요청하지 않은 경우 이 이메일을 무시해주세요.
-                        </p>
-                    </div>
-                </div>
-                """.formatted(baseUrl, displayName, resetLink);
+        try (InputStream is = getClass().getResourceAsStream("/templates/password-reset.html")) {
+            String template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            return template
+                    .replace("{{baseUrl}}", baseUrl)
+                    .replace("{{displayName}}", displayName)
+                    .replace("{{resetLink}}", resetLink);
+        } catch (IOException e) {
+            throw new RuntimeException("이메일 템플릿 로드 실패", e);
+        }
     }
 }
