@@ -137,7 +137,7 @@ export function LoginForm() {
                             <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
                         )}
                         <div className="text-right">
-                            <Link to="/forgot-password" className="text-xs text-[var(--cohe-secondary)] hover:underline">
+                            <Link to="/forgot-password" className="text-xs text-[var(--cohi-secondary)] hover:underline">
                                 비밀번호를 잊으셨나요?
                             </Link>
                         </div>
