@@ -19,6 +19,10 @@ public class SmtpEmailValidator {
 
     @Async
     public CompletableFuture<Boolean> validateEmailExists(String email) {
+        if (email.contains("\r") || email.contains("\n")) {
+            log.warn("SMTP injection attempt detected for email input");
+            return CompletableFuture.completedFuture(false);
+        }
         try {
             String domain = email.substring(email.indexOf('@') + 1);
             String mxHost = lookupMxRecord(domain);
