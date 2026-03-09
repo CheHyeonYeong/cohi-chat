@@ -161,6 +161,9 @@ public class Member {
                 if (encodedPassword == null || encodedPassword.isBlank()) {
                         throw new CustomException(ErrorCode.INVALID_PASSWORD);
                 }
+                if (this.provider != Provider.LOCAL) {
+                        throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
+                }
                 this.hashedPassword = encodedPassword;
         }
 
