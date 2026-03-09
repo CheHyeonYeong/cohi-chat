@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.util.HtmlUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -79,7 +81,7 @@ public class PasswordResetService {
             String template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
             return template
                     .replace("{{baseUrl}}", baseUrl)
-                    .replace("{{displayName}}", displayName)
+                    .replace("{{displayName}}", HtmlUtils.htmlEscape(displayName))
                     .replace("{{resetLink}}", resetLink);
         } catch (IOException e) {
             throw new RuntimeException("이메일 템플릿 로드 실패", e);
