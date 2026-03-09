@@ -8,18 +8,19 @@ export function useRequestPasswordReset() {
 }
 
 export function useVerifyResetToken(token: string | undefined) {
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isFetching, isError } = useQuery({
         queryKey: ['verify-reset-token', token],
         queryFn: () => verifyResetTokenApi(token!),
         enabled: !!token,
         retry: false,
-        staleTime: Infinity,
+        refetchOnMount: 'always',
     });
 
     return {
-        isLoading,
+        isLoading: isLoading || isFetching,
         isTokenValid: data?.valid === true,
-        isTokenInvalid: !token || isError || (data !== undefined && !data.valid),
+        isTokenInvalid: !token || (data !== undefined && !data.valid),
+        isVerificationError: isError,
     };
 }
 
