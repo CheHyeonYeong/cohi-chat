@@ -1,40 +1,35 @@
 package com.coDevs.cohiChat.member.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-@Entity
-@Table(name = "password_reset_tokens")
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
+import org.springframework.data.redis.core.index.Indexed;
+
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@RedisHash(value = "passwordResetToken")
 public class PasswordResetToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
+    @Indexed
     private String email;
 
-    @Column(nullable = false)
-    private LocalDateTime expiresAt;
+    @TimeToLive(unit = TimeUnit.MINUTES)
+    private Long expiration;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean used = false;
-
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
-    }
-
-    public void markUsed() {
-        this.used = true;
+    @Builder
+    private PasswordResetToken(String token, String email, Long expiration) {
+        this.token = token;
+        this.email = email;
+        this.expiration = expiration;
     }
 }

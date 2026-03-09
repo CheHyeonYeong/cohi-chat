@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Slf4j
@@ -39,11 +38,14 @@ public class PasswordResetService {
     public void requestPasswordReset(String email) {
         // Always return success for security (don't reveal if email exists)
         memberRepository.findByEmailAndIsDeletedFalse(email).ifPresent(member -> {
+            // 기존 토큰 무효화
+            tokenRepository.findByEmail(email).ifPresent(tokenRepository::delete);
+
             String token = UUID.randomUUID().toString();
             PasswordResetToken resetToken = PasswordResetToken.builder()
                     .token(token)
                     .email(email)
-                    .expiresAt(LocalDateTime.now().plusMinutes(tokenExpiryMinutes))
+                    .expiration((long) tokenExpiryMinutes)
                     .build();
             tokenRepository.save(resetToken);
 
@@ -53,31 +55,27 @@ public class PasswordResetService {
         });
     }
 
-    @Transactional(readOnly = true)
     public boolean verifyToken(String token) {
-        return tokenRepository.findByTokenAndUsedFalse(token)
-                .map(t -> !t.isExpired())
-                .orElse(false);
+        return tokenRepository.findById(token).isPresent();
     }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = tokenRepository.findByTokenAndUsedFalse(token)
+        PasswordResetToken resetToken = tokenRepository.findById(token)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_TOKEN));
-
-        if (resetToken.isExpired()) {
-            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
-        }
 
         Member member = memberRepository.findByEmailAndIsDeletedFalse(resetToken.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         member.updatePassword(passwordEncoder.encode(newPassword));
-        resetToken.markUsed();
+        tokenRepository.delete(resetToken);
     }
 
     private String buildPasswordResetEmail(String displayName, String resetLink) {
         try (InputStream is = getClass().getResourceAsStream("/templates/password-reset.html")) {
+            if (is == null) {
+                throw new RuntimeException("이메일 템플릿을 찾을 수 없습니다: /templates/password-reset.html");
+            }
             String template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
             return template
                     .replace("{{baseUrl}}", baseUrl)
