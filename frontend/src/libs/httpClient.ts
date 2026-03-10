@@ -95,8 +95,9 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
             throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
         } catch (err) {
             if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-                // Grace Window 상황에서는 로그아웃하지 않고 에러만 던짐 (다른 요청이 토큰을 업데이트했을 것임)
-                throw new Error('토큰 재발급 유예 기간입니다. 다시 시도해주세요.', { cause: 401 });
+                // 백엔드가 GRACE_WINDOW_HIT 시 세션을 삭제하므로 토큰도 함께 정리
+                clearAuthTokens();
+                throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
             }
             clearAuthTokens();
             throw err;
