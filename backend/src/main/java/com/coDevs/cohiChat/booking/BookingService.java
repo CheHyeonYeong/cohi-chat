@@ -469,7 +469,7 @@ public class BookingService {
 
         validateBookingAccess(booking, reporterId);
 
-        if (noShowHistoryRepository.existsByBookingId(bookingId)) {
+        if (noShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
@@ -501,7 +501,7 @@ public class BookingService {
 
         validateBookingAccess(booking, reporterId);
 
-        if (guestNoShowHistoryRepository.existsByBookingId(bookingId)) {
+        if (guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 

@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "noshow_history",
-    uniqueConstraints = @UniqueConstraint(name = "uq_noshow_history_booking_id", columnNames = "booking_id"),
+    uniqueConstraints = @UniqueConstraint(name = "uq_noshow_history_booking_reporter", columnNames = {"booking_id", "reported_by"}),
     indexes = {
         @Index(name = "idx_noshow_history_host_id", columnList = "host_id")
     }

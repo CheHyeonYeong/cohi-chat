@@ -14,5 +14,5 @@ public interface GuestNoShowHistoryRepository extends JpaRepository<GuestNoShowH
     @Query("SELECT h FROM GuestNoShowHistory h JOIN FETCH h.booking WHERE h.guestId = :guestId ORDER BY h.reportedAt DESC")
     List<GuestNoShowHistory> findByGuestIdOrderByReportedAtDesc(@Param("guestId") UUID guestId);
 
-    boolean existsByBookingId(Long bookingId);
+    boolean existsByBookingIdAndReportedBy(Long bookingId, java.util.UUID reportedBy);
 }

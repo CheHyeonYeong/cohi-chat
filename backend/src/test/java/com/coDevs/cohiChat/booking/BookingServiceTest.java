@@ -1436,7 +1436,7 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(noShowHistoryRepository.existsByBookingIdAndReportedBy(eq(bookingId), any(java.util.UUID.class))).willReturn(false);
         given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
@@ -1472,7 +1472,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(true);
+        given(noShowHistoryRepository.existsByBookingIdAndReportedBy(eq(bookingId), any(java.util.UUID.class))).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
@@ -1745,7 +1745,7 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
         booking.updateStatus(AttendanceStatus.NO_SHOW);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(eq(bookingId), any(java.util.UUID.class))).willReturn(false);
         given(guestNoShowHistoryRepository.save(any(GuestNoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
@@ -1785,7 +1785,7 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
         booking.updateStatus(AttendanceStatus.NO_SHOW);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(true);
+        given(guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(eq(bookingId), any(java.util.UUID.class))).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
@@ -1819,7 +1819,7 @@ class BookingServiceTest {
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
         booking.updateStatus(AttendanceStatus.NO_SHOW);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(guestNoShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
+        given(guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(eq(bookingId), any(java.util.UUID.class))).willReturn(false);
         given(guestNoShowHistoryRepository.save(any(GuestNoShowHistory.class)))
             .willThrow(new DataIntegrityViolationException("unique violation"));
 
