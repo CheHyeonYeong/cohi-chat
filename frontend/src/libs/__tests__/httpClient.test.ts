@@ -135,8 +135,8 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
                     makeResponse({ success: true, data: { accessToken: newAt, refreshToken: newRt } }, 200),
                 );
             }
-            const headers = init?.headers as Record<string, string> | undefined;
-            if (headers?.['Authorization'] === `Bearer ${newAt}`) {
+            const headers = new Headers(init?.headers);
+            if (headers.get('Authorization') === `Bearer ${newAt}`) {
                 return Promise.resolve(makeResponse({ success: true, data: { ok: true } }, 200));
             }
             return Promise.resolve(makeResponse({}, 401));
