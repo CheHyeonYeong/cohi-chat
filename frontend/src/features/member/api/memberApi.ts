@@ -20,19 +20,27 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
         provider: 'LOCAL',
     };
 
-    const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
+    // httpClient의 401 자동 refresh 로직을 타면 안 되므로 fetch 직접 사용
+    const res = await fetch(`${MEMBER_API}/login`, {
         method: 'POST',
-        body: request,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
     });
 
-    if (!response) {
-        throw new Error('서버로부터 응답을 받지 못했습니다.');
+    const body = await res.json();
+
+    if (!res.ok) {
+        const message = body?.error?.message ?? '로그인에 실패했습니다.';
+        throw new Error(message, { cause: res.status });
     }
-    if (!response.accessToken) {
+
+    const data = body?.data ?? body;
+
+    if (!data?.accessToken) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
-    return response;
+    return data as LoginResponse;
 }
 
 export async function signupApi(payload: SignupPayload): Promise<SignupResponse> {
