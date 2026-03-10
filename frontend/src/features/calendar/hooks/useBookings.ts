@@ -13,17 +13,19 @@ export function useBookings(hostname: string, date: Date | null) {
     });
 }
 
-export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
+export function useMyBookings({ page, pageSize, enabled = true }: { page?: number; pageSize?: number; enabled?: boolean }) {
     return useQuery<IPaginatedBookingDetail>({
         queryKey: calendarKeys.myBookings(page, pageSize),
         queryFn: () => getMyBookings({ page, pageSize }),
+        enabled,
     });
 }
 
-export function useMyHostBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
+export function useMyHostBookings({ page, pageSize, enabled = true }: { page?: number; pageSize?: number; enabled?: boolean }) {
     return useQuery<IPaginatedBookingDetail>({
         queryKey: calendarKeys.myHostBookings(page, pageSize),
         queryFn: () => getMyHostBookings({ page, pageSize }),
+        enabled,
     });
 }
 

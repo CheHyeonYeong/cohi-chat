@@ -65,8 +65,8 @@ function SortableBookingCard({
 export default function MyBookings() {
     const { page, pageSize, tab } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
-    const { data: guestBookings, isLoading: isGuestLoading, error: guestError, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
-    const { data: hostBookings, isLoading: isHostLoading, error: hostError, refetch: refetchHostBookings } = useMyHostBookings({ page, pageSize });
+    const { data: guestBookings, isLoading: isGuestLoading, error: guestError, refetch: refetchMyBookings } = useMyBookings({ page, pageSize, enabled: tab !== 'host' });
+    const { data: hostBookings, isLoading: isHostLoading, error: hostError, refetch: refetchHostBookings } = useMyHostBookings({ page, pageSize, enabled: tab === 'host' });
     const bookings = tab === 'host' ? hostBookings : guestBookings;
     const isLoading = tab === 'host' ? isHostLoading : isGuestLoading;
     const error = tab === 'host' ? hostError : guestError;
@@ -114,7 +114,7 @@ export default function MyBookings() {
         }
         const bookingMap = new Map(bookings.bookings.map(b => [b.id, b]));
         return sortedIds.map(id => bookingMap.get(id)).filter((b): b is IBookingDetail => b != null);
-    }, [bookings, sortedIds]);
+    }, [bookings?.bookings, sortedIds]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
