@@ -9,17 +9,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.GuestNoShowHistory;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
@@ -27,6 +31,7 @@ import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
@@ -49,12 +54,14 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final Pattern LEGACY_REPORT_TARGET_PREFIX = Pattern.compile("^\\[신고\\s*대상:\\s*[^\\]]+\\]\\s*");
 
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
     private final NoShowHistoryRepository noShowHistoryRepository;
+    private final GuestNoShowHistoryRepository guestNoShowHistoryRepository;
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
     private final EntityManager entityManager;
@@ -245,25 +252,32 @@ public class BookingService {
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String username = host != null ? host.getUsername() : null;
-        String displayName = host != null ? host.getDisplayName() : null;
-        return BookingResponseDTO.from(booking, username, displayName);
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        return BookingResponseDTO.from(booking,
+            host != null ? host.getUsername() : null,
+            host != null ? host.getDisplayName() : null,
+            guest != null ? guest.getUsername() : null,
+            guest != null ? guest.getDisplayName() : null);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
-        List<UUID> hostIds = bookings.stream()
-            .map(b -> b.getTimeSlot().getUserId())
+        List<UUID> memberIds = bookings.stream()
+            .flatMap(b -> Stream.of(b.getTimeSlot().getUserId(), b.getGuestId()))
+            .filter(Objects::nonNull)
             .distinct()
             .toList();
-        Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
+        Map<UUID, Member> memberMap = memberRepository.findAllById(memberIds).stream()
             .collect(Collectors.toMap(Member::getId, m -> m));
 
         return bookings.stream()
             .map(b -> {
-                Member host = hostMap.get(b.getTimeSlot().getUserId());
-                String username = host != null ? host.getUsername() : null;
-                String displayName = host != null ? host.getDisplayName() : null;
-                return BookingResponseDTO.from(b, username, displayName);
+                Member host = memberMap.get(b.getTimeSlot().getUserId());
+                Member guest = memberMap.get(b.getGuestId());
+                return BookingResponseDTO.from(b,
+                    host != null ? host.getUsername() : null,
+                    host != null ? host.getDisplayName() : null,
+                    guest != null ? guest.getUsername() : null,
+                    guest != null ? guest.getDisplayName() : null);
             })
             .toList();
     }
@@ -449,49 +463,61 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponseDTO reportHostNoShow(Long bookingId, UUID guestId, String reason) {
+    public BookingResponseDTO reportHostNoShow(Long bookingId, UUID reporterId, String reason) {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateGuestAccess(booking, guestId);
-        validateMeetingStarted(booking);
-
-        if (!booking.getAttendanceStatus().isGuestReportable()) {
-            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
-        }
+        validateParticipantAccess(booking, reporterId);
 
         if (noShowHistoryRepository.existsByBookingId(bookingId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
-        booking.reportHostNoShow(Instant.now());
-
         UUID hostId = booking.getTimeSlot().getUserId();
-        NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
+        String normalizedReason = normalizeNoShowReportReason(reason);
+        NoShowHistory history = NoShowHistory.create(booking, hostId, reporterId, normalizedReason);
         noShowHistoryRepository.save(history);
 
-        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
+        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, reporterId);
 
         return toBookingResponseDTO(booking);
-    }
-
-    private void validateMeetingStarted(Booking booking) {
-        String timezone = googleCalendarProperties.getTimezone();
-        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
-
-        LocalDate bookingDate = booking.getBookingDate();
-        LocalTime startTime = booking.getTimeSlot().getStartTime();
-        Instant meetingStart = bookingDate.atTime(startTime).atZone(zoneId).toInstant();
-
-        if (Instant.now().isBefore(meetingStart)) {
-            throw new CustomException(ErrorCode.MEETING_NOT_STARTED);
-        }
     }
 
     @Transactional(readOnly = true)
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
             .map(NoShowHistoryResponseDTO::from)
+            .toList();
+    }
+
+    @Transactional
+    public GuestNoShowHistoryResponseDTO reportGuestNoShow(Long bookingId, UUID reporterId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        validateParticipantAccess(booking, reporterId);
+
+        if (guestNoShowHistoryRepository.existsByBookingId(bookingId)) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
+
+        UUID guestId = booking.getGuestId();
+        String normalizedReason = normalizeNoShowReportReason(reason);
+        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, reporterId, normalizedReason);
+        try {
+            guestNoShowHistoryRepository.save(history);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
+
+        log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, reporterId);
+        return GuestNoShowHistoryResponseDTO.from(history);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GuestNoShowHistoryResponseDTO> getNoShowHistoryByGuestId(UUID guestId) {
+        return guestNoShowHistoryRepository.findByGuestIdOrderByReportedAtDesc(guestId).stream()
+            .map(GuestNoShowHistoryResponseDTO::from)
             .toList();
     }
 
@@ -517,6 +543,14 @@ public class BookingService {
         }
     }
 
+    private void validateParticipantAccess(Booking booking, UUID requesterId) {
+        UUID hostId = booking.getTimeSlot().getUserId();
+        UUID guestId = booking.getGuestId();
+        if (!hostId.equals(requesterId) && !guestId.equals(requesterId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
     private void validateGuestAccess(Booking booking, UUID requesterId) {
         if (!booking.getGuestId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
@@ -525,5 +559,18 @@ public class BookingService {
 
     private Instant toInstant(LocalDate date, LocalTime time) {
         return date.atTime(time).atZone(calendarZoneId).toInstant();
+    }
+
+    private String normalizeNoShowReportReason(String reason) {
+        if (reason == null) {
+            return null;
+        }
+        String trimmed = reason.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        String withoutLegacyPrefix = LEGACY_REPORT_TARGET_PREFIX.matcher(trimmed).replaceFirst("").trim();
+        return withoutLegacyPrefix.isEmpty() ? null : withoutLegacyPrefix;
     }
 }

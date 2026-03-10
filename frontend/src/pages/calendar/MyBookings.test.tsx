@@ -10,7 +10,6 @@ import MyBookings from './MyBookings';
 const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
 const refetchSelectedBooking = vi.fn().mockResolvedValue(undefined);
 const uploadFileAsync = vi.fn().mockResolvedValue({});
-const deleteFileAsync = vi.fn().mockResolvedValue({});
 
 const booking: IBookingDetail = {
     id: 1,
@@ -30,6 +29,7 @@ const booking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'host', displayName: '호스트' },
+    guest: { username: 'guest', displayName: '게스트' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -47,7 +47,7 @@ const myBookingsResponse = {
 };
 
 vi.mock('@tanstack/react-router', () => ({
-    useSearch: () => ({ page: 1, pageSize: 10 }),
+    useSearch: () => ({ page: 1, pageSize: 10, tab: 'guest' }),
     useNavigate: () => vi.fn(),
 }));
 
@@ -115,6 +115,14 @@ vi.mock('~/features/calendar/components/FileDropZone', () => ({
     ),
 }));
 
+vi.mock('~/features/member', () => ({
+    useAuth: () => ({ data: undefined }),
+}));
+
+vi.mock('~/features/calendar/components/BookingCard/BookingActionMenu', () => ({
+    default: () => null,
+}));
+
 vi.mock('~/features/calendar', () => ({
     useMyBookings: () => ({
         data: myBookingsResponse,
@@ -122,18 +130,18 @@ vi.mock('~/features/calendar', () => ({
         error: null,
         refetch: refetchMyBookings,
     }),
+    useMyHostBookings: () => ({
+        data: { bookings: [], totalCount: 0 },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn().mockResolvedValue(undefined),
+    }),
     useBooking: (id: number | null) => ({
         data: id ? booking : null,
         refetch: refetchSelectedBooking,
     }),
     useUploadBookingFile: () => ({
         mutateAsync: uploadFileAsync,
-        isPending: false,
-        error: null,
-        reset: vi.fn(),
-    }),
-    useDeleteBookingFile: () => ({
-        mutateAsync: deleteFileAsync,
         isPending: false,
     }),
 }));
@@ -153,7 +161,6 @@ describe('MyBookings upload refresh', () => {
 
         await waitFor(() => {
             expect(uploadFileAsync).toHaveBeenCalledTimes(1);
-            expect(uploadFileAsync.mock.calls[0][0]).toBeInstanceOf(File);
             expect(refetchSelectedBooking).toHaveBeenCalledTimes(1);
             expect(refetchMyBookings).toHaveBeenCalledTimes(1);
         });

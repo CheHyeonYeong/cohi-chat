@@ -33,6 +33,7 @@ const TanStackRouterDevtools = import.meta.env.DEV
     : () => null
 /* eslint-enable react-refresh/only-export-components */
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 const RootRoute = createRootRoute({
     component: () => {
         return (
@@ -66,6 +67,7 @@ const myBookingsRoute = createRoute({
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
         pageSize: z.number().min(1).optional().default(() => 10),
+        tab: z.enum(['guest', 'host']).optional().default('guest'),
     }),
 })
 
