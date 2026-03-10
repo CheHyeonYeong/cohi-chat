@@ -1,4 +1,4 @@
-import { httpClient } from '~/libs/httpClient';
+import { httpClient, publicHttpClient } from '~/libs/httpClient';
 import type {
     LoginRequest,
     LoginResponse,
@@ -20,27 +20,17 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
         provider: 'LOCAL',
     };
 
-    // httpClient의 401 자동 refresh 로직을 타면 안 되므로 fetch 직접 사용
-    const res = await fetch(`${MEMBER_API}/login`, {
+    // 401 자동 refresh 인터셉터를 타면 안 되므로 publicHttpClient 사용
+    const response = await publicHttpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: request,
     });
 
-    const body = await res.json();
-
-    if (!res.ok) {
-        const message = body?.error?.message ?? '로그인에 실패했습니다.';
-        throw new Error(message, { cause: res.status });
-    }
-
-    const data = body?.data ?? body;
-
-    if (!data?.accessToken) {
+    if (!response?.accessToken) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
-    return data as LoginResponse;
+    return response;
 }
 
 export async function signupApi(payload: SignupPayload): Promise<SignupResponse> {

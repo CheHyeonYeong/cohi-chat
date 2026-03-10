@@ -96,21 +96,17 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
     it('refresh 성공 시 토큰을 갱신하고 요청을 재시도한다', async () => {
         const newAt = 'new-access-token';
         const newRt = 'new-refresh-token';
-        let callCount = 0;
-
-        vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
             const url = input.toString();
-            callCount++;
             if (url.includes('/members/v1/refresh')) {
                 return Promise.resolve(
-                    makeResponse({ data: { accessToken: newAt, refreshToken: newRt } }, 200),
+                    makeResponse({ success: true, data: { accessToken: newAt, refreshToken: newRt } }, 200),
                 );
             }
             const headers = init?.headers as Record<string, string> | undefined;
             if (headers?.['Authorization'] === `Bearer ${newAt}`) {
                 return Promise.resolve(makeResponse({ success: true, data: { ok: true } }, 200));
             }
-            // 첫 호출은 401 (AT 만료 시뮬레이션)
             return Promise.resolve(makeResponse({}, 401));
         });
 
@@ -119,6 +115,6 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
         expect(result).toEqual({ ok: true });
         expect(localStorage.getItem('auth_token')).toBe(newAt);
         expect(localStorage.getItem('refresh_token')).toBe(newRt);
-        expect(callCount).toBe(3); // 원래 요청(401) + refresh + 재시도(200)
+        expect(fetchSpy).toHaveBeenCalledTimes(3); // 원래 요청(401) + refresh + 재시도(200)
     });
 });

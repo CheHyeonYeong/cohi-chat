@@ -21,8 +21,9 @@ async function performRefresh(): Promise<string | null> {
         const body = await res.json();
         
         if (!res.ok) {
-            // Grace Window 히트인 경우 특수 에러 처리
+            // Grace Window 히트: 백엔드가 세션 삭제 → 여기서 한 번만 정리 후 throw
             if (body?.error?.code === 'GRACE_WINDOW_HIT') {
+                clearAuthTokens();
                 throw new Error('GRACE_WINDOW_HIT');
             }
             return null;
@@ -95,8 +96,7 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
             throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
         } catch (err) {
             if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-                // 백엔드가 GRACE_WINDOW_HIT 시 세션을 삭제하므로 토큰도 함께 정리
-                clearAuthTokens();
+                // clearAuthTokens는 performRefresh에서 이미 호출됨 (중복 방지)
                 throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
             }
             clearAuthTokens();
@@ -129,4 +129,42 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
 
 export async function httpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
     return doRequest<T>(url, options);
+}
+
+// 인증 불필요 공개 API 전용 — 401 자동 refresh 없음
+export async function publicHttpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
+    const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
+    let body: BodyInit | undefined;
+
+    if (options.body) {
+        if (options.body instanceof FormData) {
+            body = options.body;
+        } else if (typeof options.body === 'object') {
+            body = JSON.stringify(options.body);
+            headers['Content-Type'] = 'application/json';
+        } else {
+            body = options.body as BodyInit;
+        }
+    }
+
+    const response = await fetch(url, { ...options, headers, body });
+
+    if (!response.ok) {
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
+        }
+        const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
+        throw new Error(message, { cause: response.status });
+    }
+
+    const text = await response.text();
+    if (!text) return undefined as T;
+    const data = JSON.parse(text);
+    if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        return (data as { success: boolean; data: T }).data;
+    }
+    return data as T;
 }
