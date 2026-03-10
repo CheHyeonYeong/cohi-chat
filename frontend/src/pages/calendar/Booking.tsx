@@ -132,6 +132,22 @@ export default function Booking() {
     const [reportReason, setReportReason] = useState('');
     const [alreadyReported, setAlreadyReported] = useState<Set<'host' | 'guest'>>(new Set());
 
+    useEffect(() => {
+        if (reportError && (reportError as { cause?: unknown }).cause === 409) {
+            setAlreadyReported((prev) => new Set([...prev, 'host']));
+            setReportTarget(null);
+            setReportReason('');
+        }
+    }, [reportError]);
+
+    useEffect(() => {
+        if (guestReportError && (guestReportError as { cause?: unknown }).cause === 409) {
+            setAlreadyReported((prev) => new Set([...prev, 'guest']));
+            setReportTarget(null);
+            setReportReason('');
+        }
+    }, [guestReportError]);
+
     // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
 
@@ -252,19 +268,11 @@ export default function Booking() {
     };
 
     const handleReportSubmit = () => {
-        const target = reportTarget!;
-        const mutate = target === 'host' ? reportNoShow : reportGuestNoShow;
+        const mutate = reportTarget === 'host' ? reportNoShow : reportGuestNoShow;
         mutate(reportReason || undefined, {
             onSuccess: () => {
                 setReportTarget(null);
                 setReportReason('');
-            },
-            onError: (err) => {
-                if ((err as { cause?: number }).cause === 409) {
-                    setAlreadyReported((prev) => new Set([...prev, target]));
-                    setReportTarget(null);
-                    setReportReason('');
-                }
             },
         });
     };
