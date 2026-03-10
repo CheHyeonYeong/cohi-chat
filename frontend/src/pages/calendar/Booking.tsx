@@ -130,6 +130,7 @@ export default function Booking() {
     // Report state: which target is being reported ('host' | 'guest' | null = not showing form)
     const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
     const [reportReason, setReportReason] = useState('');
+    const [alreadyReported, setAlreadyReported] = useState<Set<'host' | 'guest'>>(new Set());
 
     // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
@@ -251,11 +252,19 @@ export default function Booking() {
     };
 
     const handleReportSubmit = () => {
-        const mutate = reportTarget === 'host' ? reportNoShow : reportGuestNoShow;
+        const target = reportTarget!;
+        const mutate = target === 'host' ? reportNoShow : reportGuestNoShow;
         mutate(reportReason || undefined, {
             onSuccess: () => {
                 setReportTarget(null);
                 setReportReason('');
+            },
+            onError: (err) => {
+                if ((err as { cause?: number }).cause === 409) {
+                    setAlreadyReported((prev) => new Set([...prev, target]));
+                    setReportTarget(null);
+                    setReportReason('');
+                }
             },
         });
     };
@@ -362,7 +371,9 @@ export default function Booking() {
                             <h2 className="text-lg font-semibold mb-2 text-amber-900">
                                 {canReport ? '호스트 노쇼 신고' : '게스트 노쇼 신고'}
                             </h2>
-                            {reportTarget === null ? (
+                            {alreadyReported.has(canReport ? 'host' : 'guest') ? (
+                                <p className="text-sm text-amber-700 font-medium">이미 신고한 예약입니다.</p>
+                            ) : reportTarget === null ? (
                                 <div className="space-y-3">
                                     <p className="text-sm text-amber-800">
                                         {canReport
