@@ -48,6 +48,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
                 aria-label="더보기"
                 aria-haspopup="menu"
                 aria-expanded={open}
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                     e.stopPropagation();
                     setOpen((v) => !v);
