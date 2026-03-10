@@ -154,8 +154,8 @@ export default function Booking() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
-    const canReport = isGuest;
-    const canReportGuest = isHost;
+    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED';
+    const canReportGuest = isHost && booking?.attendanceStatus === 'NO_SHOW';
 
     /* -- Handlers ---------------------------------------------------------- */
 
