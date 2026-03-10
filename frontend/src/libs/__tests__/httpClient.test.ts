@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { httpClient } from '../httpClient';
+import { httpClient, publicHttpClient } from '../httpClient';
 
 const API_BASE = 'http://localhost:8080/api';
 
 function mockFetch(responses: Response[]) {
+    const spy = vi.spyOn(globalThis, 'fetch');
     let callCount = 0;
-    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+    spy.mockImplementation(() => {
         const res = responses[callCount] ?? responses[responses.length - 1];
         callCount++;
         return Promise.resolve(res);
     });
+    return spy;
 }
 
 function makeResponse(body: unknown, status: number): Response {
@@ -18,6 +20,33 @@ function makeResponse(body: unknown, status: number): Response {
         headers: { 'Content-Type': 'application/json' },
     });
 }
+
+describe('publicHttpClient - 401 인터셉터 미적용', () => {
+    beforeEach(() => {
+        localStorage.setItem('auth_token', 'expired-at');
+        localStorage.setItem('refresh_token', 'old-rt');
+    });
+
+    afterEach(() => {
+        localStorage.clear();
+        vi.restoreAllMocks();
+    });
+
+    it('401 응답 시 refresh를 시도하지 않고 에러를 그대로 던진다', async () => {
+        const fetchSpy = mockFetch([
+            makeResponse({ error: { message: '아이디 또는 비밀번호가 올바르지 않습니다.' } }, 401),
+        ]);
+
+        await expect(publicHttpClient(`${API_BASE}/members/v1/login`, { method: 'POST' })).rejects.toThrow(
+            '아이디 또는 비밀번호가 올바르지 않습니다.',
+        );
+
+        // refresh 엔드포인트를 호출하지 않아야 한다
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(localStorage.getItem('auth_token')).toBe('expired-at');
+        expect(localStorage.getItem('refresh_token')).toBe('old-rt');
+    });
+});
 
 describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
     beforeEach(() => {
@@ -60,23 +89,26 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
         const authChangeHandler = vi.fn();
         window.addEventListener('auth-change', authChangeHandler);
 
-        vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-            const url = input.toString();
-            if (url.includes('/members/v1/refresh')) {
-                return Promise.resolve(
-                    makeResponse(
-                        { success: false, error: { code: 'GRACE_WINDOW_HIT', message: '세션 무효화' } },
-                        401,
-                    ),
-                );
-            }
-            return Promise.resolve(makeResponse({}, 401));
-        });
+        try {
+            vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+                const url = input.toString();
+                if (url.includes('/members/v1/refresh')) {
+                    return Promise.resolve(
+                        makeResponse(
+                            { success: false, error: { code: 'GRACE_WINDOW_HIT', message: '세션 무효화' } },
+                            401,
+                        ),
+                    );
+                }
+                return Promise.resolve(makeResponse({}, 401));
+            });
 
-        await expect(httpClient(`${API_BASE}/some-endpoint`)).rejects.toThrow();
+            await expect(httpClient(`${API_BASE}/some-endpoint`)).rejects.toThrow();
 
-        expect(authChangeHandler).toHaveBeenCalled();
-        window.removeEventListener('auth-change', authChangeHandler);
+            expect(authChangeHandler).toHaveBeenCalledTimes(1);
+        } finally {
+            window.removeEventListener('auth-change', authChangeHandler);
+        }
     });
 
     it('일반 refresh 실패(null 반환) 시 토큰을 삭제하고 로그인 요구 에러를 던진다', async () => {
