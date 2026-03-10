@@ -18,8 +18,11 @@ async function performRefresh(): Promise<string | null> {
             body: JSON.stringify({ refreshToken }),
         });
 
-        const body = await res.json();
-        
+        const rawBody = await res.text();
+        const body = (() => {
+            try { return rawBody ? JSON.parse(rawBody) : null; } catch { return null; }
+        })();
+
         if (!res.ok) {
             // Grace Window 히트: 백엔드가 세션 삭제 → 여기서 한 번만 정리 후 throw
             if (body?.error?.code === 'GRACE_WINDOW_HIT') {
@@ -133,30 +136,33 @@ export async function httpClient<T>(url: string, options: HttpClientOptions = {}
 
 // 인증 불필요 공개 API 전용 — 401 자동 refresh 없음
 export async function publicHttpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
-    const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
+    const headers = new Headers(options.headers);
     let body: BodyInit | undefined;
 
     if (options.body) {
-        if (options.body instanceof FormData) {
+        if (
+            options.body instanceof FormData ||
+            options.body instanceof URLSearchParams ||
+            options.body instanceof Blob ||
+            options.body instanceof ArrayBuffer ||
+            ArrayBuffer.isView(options.body) ||
+            typeof options.body === 'string'
+        ) {
             body = options.body;
         } else if (typeof options.body === 'object') {
             body = JSON.stringify(options.body);
-            headers['Content-Type'] = 'application/json';
-        } else {
-            body = options.body as BodyInit;
+            headers.set('Content-Type', 'application/json');
         }
     }
 
     const response = await fetch(url, { ...options, headers, body });
 
     if (!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
-        }
-        const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
+        const rawErr = await response.text();
+        const errData = (() => {
+            try { return rawErr ? JSON.parse(rawErr) : null; } catch { return null; }
+        })();
+        const message = errData?.error?.message ?? `HTTP error! status: ${response.status}`;
         throw new Error(message, { cause: response.status });
     }
 
