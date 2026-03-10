@@ -463,16 +463,11 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponseDTO reportHostNoShow(Long bookingId, UUID guestId, String reason) {
+    public BookingResponseDTO reportHostNoShow(Long bookingId, UUID reporterId, String reason) {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateGuestAccess(booking, guestId);
-        validateMeetingStarted(booking);
-
-        if (!booking.getAttendanceStatus().isGuestReportable()) {
-            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
-        }
+        validateParticipantAccess(booking, reporterId);
 
         if (noShowHistoryRepository.existsByBookingId(bookingId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
@@ -482,25 +477,12 @@ public class BookingService {
 
         UUID hostId = booking.getTimeSlot().getUserId();
         String normalizedReason = normalizeNoShowReportReason(reason);
-        NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, normalizedReason);
+        NoShowHistory history = NoShowHistory.create(booking, hostId, reporterId, normalizedReason);
         noShowHistoryRepository.save(history);
 
-        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
+        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, reporterId);
 
         return toBookingResponseDTO(booking);
-    }
-
-    private void validateMeetingStarted(Booking booking) {
-        String timezone = googleCalendarProperties.getTimezone();
-        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
-
-        LocalDate bookingDate = booking.getBookingDate();
-        LocalTime startTime = booking.getTimeSlot().getStartTime();
-        Instant meetingStart = bookingDate.atTime(startTime).atZone(zoneId).toInstant();
-
-        if (Instant.now().isBefore(meetingStart)) {
-            throw new CustomException(ErrorCode.MEETING_NOT_STARTED);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -511,16 +493,11 @@ public class BookingService {
     }
 
     @Transactional
-    public GuestNoShowHistoryResponseDTO reportGuestNoShow(Long bookingId, UUID hostId, String reason) {
+    public GuestNoShowHistoryResponseDTO reportGuestNoShow(Long bookingId, UUID reporterId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateHostAccess(booking, hostId);
-        validateMeetingStarted(booking);
-
-        if (!booking.getAttendanceStatus().isHostReportable()) {
-            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
-        }
+        validateParticipantAccess(booking, reporterId);
 
         if (guestNoShowHistoryRepository.existsByBookingId(bookingId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
@@ -528,14 +505,14 @@ public class BookingService {
 
         UUID guestId = booking.getGuestId();
         String normalizedReason = normalizeNoShowReportReason(reason);
-        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, hostId, normalizedReason);
+        GuestNoShowHistory history = GuestNoShowHistory.create(booking, guestId, reporterId, normalizedReason);
         try {
             guestNoShowHistoryRepository.save(history);
         } catch (DataIntegrityViolationException e) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
-        log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, hostId);
+        log.info("Guest no-show reported for booking: {}, guest: {}, reporter: {}", bookingId, guestId, reporterId);
         return GuestNoShowHistoryResponseDTO.from(history);
     }
 
@@ -565,6 +542,14 @@ public class BookingService {
         }
         if (year < 1900 || year > 2100) {
             throw new CustomException(ErrorCode.INVALID_YEAR_MONTH);
+        }
+    }
+
+    private void validateParticipantAccess(Booking booking, UUID requesterId) {
+        UUID hostId = booking.getTimeSlot().getUserId();
+        UUID guestId = booking.getGuestId();
+        if (!hostId.equals(requesterId) && !guestId.equals(requesterId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }
 
