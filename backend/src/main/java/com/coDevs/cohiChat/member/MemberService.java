@@ -43,6 +43,7 @@ import io.jsonwebtoken.JwtException;
 import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.entity.Member;
 
@@ -68,6 +69,7 @@ public class MemberService {
         private final RateLimitServiceBase rateLimitService;
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
+        private final SmtpEmailValidator smtpEmailValidator;
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
@@ -90,6 +92,14 @@ public class MemberService {
                 );
 
                 memberRepository.save(member);
+
+                // 비동기 SMTP 이메일 검증 (fire-and-forget, 가입 차단하지 않음)
+                smtpEmailValidator.validateEmailExists(member.getEmail())
+                        .thenAccept(valid -> {
+                                if (!valid) {
+                                        log.warn("SMTP validation failed for email: {}", member.getEmail());
+                                }
+                        });
 
                 return new SignupResponseDTO(
                         member.getId(),

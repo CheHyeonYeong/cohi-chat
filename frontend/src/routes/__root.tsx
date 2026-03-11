@@ -19,6 +19,8 @@ import HostProfile from '~/pages/host/HostProfile'
 import Footer from '~/components/Footer'
 import Terms from '~/pages/legal/Terms'
 import Privacy from '~/pages/legal/Privacy'
+import ForgotPassword from '~/pages/ForgotPassword'
+import ResetPassword from '~/pages/ResetPassword'
 
 // DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
 // - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
@@ -162,6 +164,21 @@ const settingsRoute = createRoute({
     component: SettingsGuarded,
 })
 
+const forgotPasswordRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/forgot-password',
+    component: ForgotPassword,
+})
+
+const resetPasswordRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/reset-password',
+    component: ResetPassword,
+    validateSearch: z.object({
+        token: z.string().optional(),
+    }),
+})
+
 export const routeTree = RootRoute.addChildren([
     homeRoute,
     calendarRoute,
@@ -177,6 +194,8 @@ export const routeTree = RootRoute.addChildren([
     termsRoute,
     privacyRoute,
     settingsRoute,
+    forgotPasswordRoute,
+    resetPasswordRoute,
 ])
 
 export const router = createRouter({ routeTree })
