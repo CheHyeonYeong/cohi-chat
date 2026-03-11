@@ -19,7 +19,7 @@ export default function BookingCard({
     headerAction,
 }: BookingCardProps) {
     const { startedAt } = booking;
-    const hostDisplayName = booking.host?.displayName?.trim() || 'Host';
+    const hostDisplayName = booking.host?.displayName?.trim() || '호스트';
 
     return (
         <Card

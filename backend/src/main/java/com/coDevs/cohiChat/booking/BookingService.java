@@ -252,8 +252,13 @@ public class BookingService {
     }
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
-        Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        UUID hostId = booking.getTimeSlot().getUserId();
+        UUID guestId = booking.getGuestId();
+        Map<UUID, Member> memberMap = memberRepository.findAllById(
+            Stream.of(hostId, guestId).filter(Objects::nonNull).distinct().toList()
+        ).stream().collect(Collectors.toMap(Member::getId, m -> m));
+        Member host = memberMap.get(hostId);
+        Member guest = memberMap.get(guestId);
         return BookingResponseDTO.from(booking,
             host != null ? host.getUsername() : null,
             host != null ? host.getDisplayName() : null,
