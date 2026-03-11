@@ -27,6 +27,10 @@
   --cohi-timeslot-drag: rgba(139, 105, 20, 0.4);
 }
 
+::selection {
+  background: rgba(139, 105, 20, 0.225);
+}
+
 body {
   margin: 0;
   min-width: 320px;

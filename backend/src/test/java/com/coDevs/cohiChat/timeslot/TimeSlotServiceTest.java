@@ -95,7 +95,7 @@ class TimeSlotServiceTest {
 
         // then
         assertThat(response)
-            .extracting("startTime", "endTime")
+            .extracting("startedAt", "endedAt")
             .containsExactly(TEST_START_TIME, TEST_END_TIME);
         assertThat(response.getWeekdays()).containsExactlyInAnyOrderElementsOf(TEST_WEEKDAYS);
     }

@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.global.config;
 
 import java.time.Duration;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -17,8 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@Profile("!local")
 @RequiredArgsConstructor
-public class RateLimitService {
+public class RateLimitService implements RateLimitServiceBase {
 
 	private static final String RATE_LIMIT_KEY_PREFIX = "rate-limit:";
 
@@ -27,6 +29,7 @@ public class RateLimitService {
 
 	private volatile BucketConfiguration cachedConfiguration;
 
+	@Override
 	public long checkRateLimit(String key) {
 		String bucketKey = RATE_LIMIT_KEY_PREFIX + key;
 

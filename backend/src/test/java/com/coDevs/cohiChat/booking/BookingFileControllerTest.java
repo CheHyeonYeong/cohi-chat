@@ -10,6 +10,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -34,6 +36,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.coDevs.cohiChat.booking.controller.BookingFileController;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
+import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -250,6 +254,213 @@ class BookingFileControllerTest {
             // when & then
             mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/download", BOOKING_ID, FILE_ID))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("Pre-signed 업로드 URL 생성")
+    class GetPresignedUploadUrl {
+
+        private static final String PRESIGNED_URL = "https://bucket.s3.amazonaws.com/presigned-url";
+        private static final String OBJECT_KEY = "2025/03/uuid-document.pdf";
+
+        @Test
+        @DisplayName("성공: 업로드 URL 생성 - 200 OK")
+        void getPresignedUploadUrlSuccess() throws Exception {
+            // given
+            PresignedUploadUrlResponseDTO response = PresignedUploadUrlResponseDTO.of(
+                PRESIGNED_URL, OBJECT_KEY, 900
+            );
+
+            given(bookingFileService.generatePresignedUploadUrl(
+                eq(BOOKING_ID), eq(USER_ID), eq("document.pdf"), eq("application/pdf")
+            )).willReturn(response);
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/presigned-upload-url", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"fileName\":\"document.pdf\",\"contentType\":\"application/pdf\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.url").value(PRESIGNED_URL))
+                .andExpect(jsonPath("$.data.objectKey").value(OBJECT_KEY))
+                .andExpect(jsonPath("$.data.expiresIn").value(900));
+        }
+
+        @Test
+        @DisplayName("실패: 예약을 찾을 수 없음 - 404")
+        void getPresignedUploadUrlFailsWhenBookingNotFound() throws Exception {
+            // given
+            given(bookingFileService.generatePresignedUploadUrl(
+                eq(BOOKING_ID), eq(USER_ID), any(), any()
+            )).willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/presigned-upload-url", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"fileName\":\"document.pdf\",\"contentType\":\"application/pdf\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+
+        @Test
+        @DisplayName("실패: 접근 권한 없음 - 403")
+        void getPresignedUploadUrlFailsWhenAccessDenied() throws Exception {
+            // given
+            given(bookingFileService.generatePresignedUploadUrl(
+                eq(BOOKING_ID), eq(USER_ID), any(), any()
+            )).willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/presigned-upload-url", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"fileName\":\"document.pdf\",\"contentType\":\"application/pdf\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("업로드 완료 확인")
+    class ConfirmUpload {
+
+        @Test
+        @DisplayName("성공: 업로드 완료 파일 등록 - 201 Created")
+        void confirmUploadSuccess() throws Exception {
+            // given
+            BookingFileResponseDTO response = new BookingFileResponseDTO(
+                FILE_ID,
+                BOOKING_ID,
+                "uuid-file.pdf",
+                "resume.pdf",
+                1234L,
+                "application/pdf",
+                Instant.now()
+            );
+
+            given(bookingFileService.confirmUpload(eq(BOOKING_ID), eq(USER_ID), any()))
+                .willReturn(response);
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "2026/03/uuid-file.pdf",
+                          "originalFileName": "resume.pdf",
+                          "contentType": "application/pdf",
+                          "fileSize": 1234
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(FILE_ID))
+                .andExpect(jsonPath("$.data.originalFileName").value("resume.pdf"))
+                .andExpect(jsonPath("$.error").isEmpty());
+        }
+
+        @Test
+        @DisplayName("실패: 예약을 찾을 수 없음 - 404")
+        void confirmUploadFailsWhenBookingNotFound() throws Exception {
+            // given
+            given(bookingFileService.confirmUpload(eq(BOOKING_ID), eq(USER_ID), any()))
+                .willThrow(new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "2026/03/uuid-file.pdf",
+                          "originalFileName": "resume.pdf",
+                          "contentType": "application/pdf",
+                          "fileSize": 1234
+                        }
+                        """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+
+        @Test
+        @DisplayName("실패: 잘못된 요청 - 400")
+        void confirmUploadFailsWhenValidationError() throws Exception {
+            // when & then
+            mockMvc.perform(post("/bookings/{bookingId}/files/confirm-upload", BOOKING_ID)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "objectKey": "",
+                          "originalFileName": "",
+                          "contentType": "",
+                          "fileSize": 0
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("Pre-signed 다운로드 URL 생성")
+    class GetPresignedDownloadUrl {
+
+        private static final String PRESIGNED_URL = "https://bucket.s3.amazonaws.com/presigned-download-url";
+
+        @Test
+        @DisplayName("성공: 다운로드 URL 생성 - 200 OK")
+        void getPresignedDownloadUrlSuccess() throws Exception {
+            // given
+            PresignedDownloadUrlResponseDTO response = PresignedDownloadUrlResponseDTO.of(
+                PRESIGNED_URL, 900
+            );
+
+            given(bookingFileService.generatePresignedDownloadUrl(BOOKING_ID, FILE_ID, USER_ID))
+                .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/presigned-download-url", BOOKING_ID, FILE_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.url").value(PRESIGNED_URL))
+                .andExpect(jsonPath("$.data.expiresIn").value(900));
+        }
+
+        @Test
+        @DisplayName("실패: 파일을 찾을 수 없음 - 404")
+        void getPresignedDownloadUrlFailsWhenFileNotFound() throws Exception {
+            // given
+            given(bookingFileService.generatePresignedDownloadUrl(BOOKING_ID, FILE_ID, USER_ID))
+                .willThrow(new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/presigned-download-url", BOOKING_ID, FILE_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").exists());
+        }
+
+        @Test
+        @DisplayName("실패: 접근 권한 없음 - 403")
+        void getPresignedDownloadUrlFailsWhenAccessDenied() throws Exception {
+            // given
+            given(bookingFileService.generatePresignedDownloadUrl(BOOKING_ID, FILE_ID, USER_ID))
+                .willThrow(new CustomException(ErrorCode.ACCESS_DENIED));
+
+            // when & then
+            mockMvc.perform(get("/bookings/{bookingId}/files/{fileId}/presigned-download-url", BOOKING_ID, FILE_ID))
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").exists());
         }

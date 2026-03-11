@@ -7,7 +7,7 @@
 ### Backend - `/backend`
 - Spring Boot 3.5, Java 21
 - Spring Data JPA, Spring Security
-- SQLite, JWT (jjwt)
+- PostgreSQL, JWT (jjwt)
 - Lombok, ModelMapper
 - SpringDoc OpenAPI
 - Google Calendar API

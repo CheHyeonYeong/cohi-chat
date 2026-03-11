@@ -14,6 +14,7 @@ export {
     useMyBookings,
     useBooking,
     useUploadBookingFile,
+    useDeleteBookingFile,
     useBookingsStreamQuery,
     useBookingsSSEQuery,
     useNoShowHistory,
@@ -44,10 +45,25 @@ export {
     getMyBookings,
     getBooking,
     uploadBookingFile,
+    deleteBookingFile,
     reportHostNoShow,
     getNoShowHistory,
     createBooking,
     getCalendarEvent,
     getTimeslots,
     getTimeslotsByHostId,
+    // Pre-signed URL
+    getPresignedUploadUrl,
+    confirmUpload,
+    getPresignedDownloadUrl,
+    uploadFileToS3,
+    uploadBookingFileWithPresignedUrl,
+    downloadFileWithPresignedUrl,
 } from './api';
+
+// Pre-signed URL Types
+export type {
+    PresignedUploadUrlResponse,
+    PresignedDownloadUrlResponse,
+    ConfirmUploadRequest,
+} from './api/bookings';

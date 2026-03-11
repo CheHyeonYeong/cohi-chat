@@ -10,10 +10,13 @@ interface BookingDetailPanelProps {
     booking: IBookingDetail | null;
     onUpload: (files: FileList) => void;
     onDownload?: (fileId: number, fileName: string) => void;
+    onDelete?: (fileId: number) => void;
     isUploading: boolean;
+    isDeleting?: boolean;
+    uploadError?: Error | null;
 }
 
-export default function BookingDetailPanel({ booking, onUpload, onDownload, isUploading }: BookingDetailPanelProps) {
+export default function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, isUploading, isDeleting, uploadError }: BookingDetailPanelProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!booking) {
@@ -28,8 +31,8 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
         );
     }
 
-    const when = new Date(booking.when);
-    const dayLabel = DAY_NAMES[when.getDay() as Weekday];
+    const { startedAt } = booking;
+    const dayLabel = DAY_NAMES[startedAt.getDay() as Weekday];
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -74,12 +77,12 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                     <div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</span>
                         <p className="text-sm text-gray-600 mt-0.5">
-                            {when.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} ({dayLabel})
+                            {startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} ({dayLabel})
                         </p>
                     </div>
                     <div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time</span>
-                        <p className="text-sm text-gray-600 mt-0.5">{booking.timeSlot.startTime} - {booking.timeSlot.endTime}</p>
+                        <p className="text-sm text-gray-600 mt-0.5">{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</p>
                     </div>
                 </div>
             </section>
@@ -118,6 +121,13 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                     />
                 </div>
 
+                {/* Upload error */}
+                {uploadError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm">{uploadError.message}</p>
+                    </div>
+                )}
+
                 {/* File list */}
                 {booking.files.length === 0 ? (
                     <div className="py-8 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center">
@@ -137,15 +147,27 @@ export default function BookingDetailPanel({ booking, onUpload, onDownload, isUp
                                         </span>
                                     )}
                                 </div>
-                                {onDownload && (
-                                    <button
-                                        type="button"
-                                        onClick={() => onDownload(file.id, file.originalFileName ?? '이름 없는 파일')}
-                                        className="text-[10px] font-bold text-[var(--cohi-primary)] opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-tighter"
-                                    >
-                                        Download
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                    {onDownload && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onDownload(file.id, file.originalFileName ?? '이름 없는 파일')}
+                                            className="text-[10px] font-bold text-[var(--cohi-primary)] uppercase tracking-tighter"
+                                        >
+                                            Download
+                                        </button>
+                                    )}
+                                    {onDelete && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onDelete(file.id)}
+                                            disabled={isDeleting}
+                                            className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-tighter disabled:opacity-50"
+                                        >
+                                            {isDeleting ? '...' : 'Delete'}
+                                        </button>
+                                    )}
+                                </div>
                             </li>
                         ))}
                     </ul>

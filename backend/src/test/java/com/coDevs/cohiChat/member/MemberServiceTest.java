@@ -6,39 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
-import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
-import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
-
-import org.springframework.context.ApplicationEventPublisher;
-
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.mockito.ArgumentCaptor;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -49,12 +22,37 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
 import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
+import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
+import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
+import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Clock;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
@@ -98,6 +96,9 @@ class MemberServiceTest {
 	private TokenService tokenService;
 
 	@Mock
+	private Clock clock;
+
+	@Mock
 	private RateLimitService rateLimitService;
 
 	@Mock
@@ -109,7 +110,6 @@ class MemberServiceTest {
 
 	@BeforeEach
 	void setUp() {
-
 		member = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.GUEST);
 	}
 
@@ -127,7 +127,23 @@ class MemberServiceTest {
 
 		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
 		assertThat(signupResponseDTO.getUsername()).isEqualTo(TEST_USERNAME);
+	}
 
+	@Test
+	@DisplayName("성공: 표시명이 없으면(null) username으로 대체")
+	void signupWithUsernameAsDefaultDisplayName() {
+		SignupRequestDTO signupRequestDTO = SignupRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.email(TEST_EMAIL)
+			.displayName(null)
+			.build();
+
+		givenSuccessfulSignupMocks();
+
+		SignupResponseDTO signupResponseDTO = memberService.signup(signupRequestDTO);
+
+		assertThat(signupResponseDTO.getDisplayName()).isEqualTo(TEST_USERNAME);
 	}
 
 	@Test
@@ -318,13 +334,11 @@ class MemberServiceTest {
 		assertThatThrownBy(() -> memberService.updateMember(TEST_USERNAME, updateMemberRequestDTO))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_UPDATE_FIELDS);
-
 	}
 
 	@Test
 	@DisplayName("성공: 회원 탈퇴 (Soft Delete)")
 	void deleteMemberSoftDeleteSuccess() {
-
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME))
 			.willReturn(Optional.of(member));
 
@@ -351,13 +365,16 @@ class MemberServiceTest {
 	void refreshAccessTokenSuccess() {
 		String validRefreshToken = "valid-refresh-token";
 		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
+		String newRefreshToken = "new-refresh-token";
+		String newHash = "new-hash-value";
 		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
+		given(tokenService.hashToken(newRefreshToken)).willReturn(newHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
-		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn(newRefreshToken);
 		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
@@ -365,9 +382,8 @@ class MemberServiceTest {
 		RefreshTokenResponseDTO response = memberService.refreshAccessToken(validRefreshToken);
 
 		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
-		assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+		assertThat(response.getRefreshToken()).isEqualTo(newRefreshToken);
 		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
 		verify(refreshTokenRepository).save(any(RefreshToken.class));
 	}
 
@@ -400,10 +416,11 @@ class MemberServiceTest {
 	@DisplayName("실패: Redis에 존재하지 않는 Refresh Token (만료되어 삭제됨)")
 	void refreshAccessTokenFailNotInRedis() {
 		String tokenNotInRedis = "not-in-redis-token";
+		String tokenHash = "not-in-redis-hash";
 
 		given(jwtTokenProvider.getUsernameFromToken(tokenNotInRedis)).willReturn(TEST_USERNAME);
-		given(tokenService.hashToken(tokenNotInRedis)).willReturn("some-hash");
-		given(refreshTokenRepository.findByToken(anyString())).willReturn(Optional.empty());
+		given(tokenService.hashToken(tokenNotInRedis)).willReturn(tokenHash);
+		given(refreshTokenRepository.findByToken(tokenHash)).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
 			.isInstanceOf(CustomException.class)
@@ -415,13 +432,16 @@ class MemberServiceTest {
 	void refreshAccessToken_callsRateLimitCheck() {
 		String validRefreshToken = "valid-refresh-token";
 		String expectedHash = "ba518c093e1e0df01cfe01436563cd37f6a1f47697fcc620e818a2d062665083";
+		String newRefreshToken = "new-refresh-token";
+		String newHash = "new-hash-value";
 		RefreshToken storedToken = RefreshToken.create(expectedHash, TEST_USERNAME, 604800000L);
 
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
+		given(tokenService.hashToken(newRefreshToken)).willReturn(newHash);
 		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
-		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn("new-refresh-token");
+		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn(newRefreshToken);
 		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
 		given(jwtTokenProvider.createAccessToken(TEST_USERNAME, "GUEST")).willReturn("new-access-token");
 		given(jwtTokenProvider.getExpirationSeconds("new-access-token")).willReturn(3600L);
@@ -464,7 +484,9 @@ class MemberServiceTest {
 	void logoutSuccess() {
 		// given
 		String accessToken = "test-access-token";
+		String hashedToken = "hashed-access-token";
 		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1800L);
+		given(tokenService.hashToken(accessToken)).willReturn(hashedToken);
 
 		// when
 		memberService.logout(TEST_USERNAME, accessToken);
@@ -475,7 +497,7 @@ class MemberServiceTest {
 		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
 		verify(accessTokenBlacklistRepository).save(captor.capture());
 		AccessTokenBlacklist saved = captor.getValue();
-		assertThat(saved.getTokenHash()).isNotEqualTo(accessToken); // 해시되어 저장
+		assertThat(saved.getTokenHash()).isEqualTo(hashedToken);
 		assertThat(saved.getExpirationSeconds()).isEqualTo(1800L);
 	}
 
@@ -484,14 +506,20 @@ class MemberServiceTest {
 	void logoutWithNearExpiredToken() {
 		// given
 		String accessToken = "near-expired-token";
+		String hashedToken = "hashed-near-expired-token";
 		given(jwtTokenProvider.getExpirationSeconds(accessToken)).willReturn(1L);
+		given(tokenService.hashToken(accessToken)).willReturn(hashedToken);
 
 		// when
 		memberService.logout(TEST_USERNAME, accessToken);
 
 		// then
 		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-		verify(accessTokenBlacklistRepository).save(any(AccessTokenBlacklist.class));
+		
+		ArgumentCaptor<AccessTokenBlacklist> captor = ArgumentCaptor.forClass(AccessTokenBlacklist.class);
+		verify(accessTokenBlacklistRepository).save(captor.capture());
+		AccessTokenBlacklist saved = captor.getValue();
+		assertThat(saved.getTokenHash()).isEqualTo(hashedToken);
 	}
 
 	@Test

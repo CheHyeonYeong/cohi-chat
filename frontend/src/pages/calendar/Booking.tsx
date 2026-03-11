@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHostNoShow, useNoShowHistory } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -31,11 +31,8 @@ import {
     type FileValidationError,
 } from '~/libs/fileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
-import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
 import { canUploadMoreFiles } from './bookingUploadUtils';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
     SCHEDULED: '예약됨',
@@ -52,9 +49,11 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 interface SortableFileItemProps {
     file: IBookingFile;
     onDownload: (fileId: number, fileName: string) => void;
+    onDelete: (fileId: number) => void;
+    isDeleting: boolean;
 }
 
-function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
+function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFileItemProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: String(file.id),
     });
@@ -99,6 +98,16 @@ function SortableFileItem({ file, onDownload }: SortableFileItemProps) {
             {file.fileSize != null && (
                 <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.fileSize)}</span>
             )}
+
+            {/* Delete button */}
+            <button
+                type="button"
+                onClick={() => onDelete(file.id)}
+                disabled={isDeleting}
+                className="text-xs text-red-500 hover:text-red-700 flex-shrink-0 disabled:opacity-50"
+            >
+                {isDeleting ? '...' : '삭제'}
+            </button>
         </li>
     );
 }
@@ -110,6 +119,7 @@ export default function Booking() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
     const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
 
@@ -119,6 +129,7 @@ export default function Booking() {
     const [uploadProgress, setUploadProgress] = useState<string>('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [downloadError, setDownloadError] = useState<string | null>(null);
+    const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Host no-show report state
@@ -137,14 +148,7 @@ export default function Booking() {
 
     const isMeetingStarted = useMemo(() => {
         if (!booking) return false;
-        const [h, m] = booking.timeSlot.startTime.split(':').map(Number);
-        const meetingStart = new Date(
-            booking.when.getFullYear(),
-            booking.when.getMonth(),
-            booking.when.getDate(),
-            h, m, 0, 0
-        );
-        return now >= meetingStart.getTime();
+        return now >= booking.startedAt.getTime();
     }, [booking, now]);
 
     useEffect(() => {
@@ -215,40 +219,47 @@ export default function Booking() {
         try {
             for (let i = 0; i < selectedFiles.length; i++) {
                 setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
-                const formData = new FormData();
-                formData.append('file', selectedFiles[i]);
-                await uploadFileAsync(formData);
+                await uploadFileAsync(selectedFiles[i]);
             }
             refetch();
-        } finally {
-            setUploadProgress('');
+            // 성공 시에만 파일 선택 초기화
             setSelectedFiles([]);
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch {
+            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
+            // 파일 선택은 유지하여 사용자가 다른 파일로 재시도 가능
+        } finally {
+            setUploadProgress('');
         }
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
             setDownloadError(null);
-            const token = getValidToken();
-            const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!response.ok) throw new Error('다운로드에 실패했습니다.');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
+            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (err) {
             console.error('Download error:', err);
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
+        }
+    };
+
+    const handleDelete = async (fileId: number) => {
+        try {
+            setDeletingFileId(fileId);
+            await deleteFileAsync(fileId);
+            refetch();
+        } catch (err) {
+            console.error('Delete error:', err);
+        } finally {
+            setDeletingFileId(null);
         }
     };
 
@@ -299,7 +310,7 @@ export default function Booking() {
         );
     }
 
-    const when = new Date(booking.when);
+    const startedAt = booking.startedAt;
     const canUploadMore = canUploadMoreFiles(fileOrder.length);
 
     return (
@@ -330,12 +341,12 @@ export default function Booking() {
                                         {booking.host.displayName}님과의 커피챗
                                     </h1>
                                     <p className="text-sm text-gray-500 mt-0.5">
-                                        {when.toLocaleDateString('ko-KR', {
+                                        {startedAt.toLocaleDateString('ko-KR', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
                                         })}{' '}
-                                        {booking.timeSlot.startTime} - {booking.timeSlot.endTime}
+                                        {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
                                     </p>
                                 </div>
                             </div>
@@ -425,7 +436,7 @@ export default function Booking() {
                                 {noShowHistory.map((item) => (
                                     <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                        {item.bookingDate} 노쇼 발생
+                                        {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
                                     </li>
                                 ))}
                             </ul>
@@ -532,6 +543,8 @@ export default function Booking() {
                                                     key={file.id}
                                                     file={file}
                                                     onDownload={handleDownload}
+                                                    onDelete={handleDelete}
+                                                    isDeleting={isDeleting && deletingFileId === file.id}
                                                 />
                                             ))}
                                         </ul>

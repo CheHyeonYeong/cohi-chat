@@ -4,25 +4,30 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.global.config.RateLimitService;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
-import com.coDevs.cohiChat.member.entity.RefreshToken;
+import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
+import com.coDevs.cohiChat.member.entity.RefreshToken;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.event.MemberWithdrawalEvent;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateProfileRequestDTO;
+import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
-import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,7 +40,7 @@ import java.util.stream.Collectors;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
-import com.coDevs.cohiChat.global.config.RateLimitService;
+import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
@@ -60,7 +65,7 @@ public class MemberService {
         private final BookingRepository bookingRepository;
         private final PasswordEncoder passwordEncoder;
         private final JwtTokenProvider jwtTokenProvider;
-        private final RateLimitService rateLimitService;
+        private final RateLimitServiceBase rateLimitService;
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
 
@@ -205,14 +210,7 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.builder()     
-                        .bookingId(booking.getId())     
-                        .bookingDate(booking.getBookingDate())
-                        .startTime(booking.getTimeSlot().getStartTime())
-                        .endTime(booking.getTimeSlot().getEndTime())
-                        .topic(booking.getTopic())      
-                        .role(role)
-                        .build();
+                return AffectedBookingDTO.from(booking, role);
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
@@ -263,7 +261,7 @@ public class MemberService {
                         if (remainingSeconds <= 0) {    
                                 return;
                         }
-                        String tokenHash = TokenHashUtil.hash(accessToken);
+                        String tokenHash = tokenService.hashToken(accessToken);
                         AccessTokenBlacklist blacklist = AccessTokenBlacklist.create(tokenHash, remainingSeconds);
                         accessTokenBlacklistRepository.save(blacklist);
                 } catch (ExpiredJwtException e) {       
@@ -305,7 +303,7 @@ public class MemberService {
                 String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(member.getUsername());        
                 long refreshTokenExpirationMs = jwtTokenProvider.getRefreshTokenExpirationMs();
                 RefreshToken newRefreshToken = RefreshToken.create(
-                        TokenHashUtil.hash(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
+                        tokenService.hashToken(newRefreshTokenValue), member.getUsername(), refreshTokenExpirationMs
                 );
                 refreshTokenRepository.save(newRefreshToken);
 

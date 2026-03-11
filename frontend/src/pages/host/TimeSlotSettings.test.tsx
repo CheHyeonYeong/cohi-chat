@@ -87,8 +87,8 @@ vi.mock('~/hooks/useHost', () => ({
 const makeTimeslot = (overrides: Partial<TimeSlotResponse> = {}): TimeSlotResponse => ({
     id: 101,
     userId: 'tester',
-    startTime: '09:00:00',
-    endTime: '10:00:00',
+    startedAt: '09:00:00',
+    endedAt: '10:00:00',
     weekdays: [1],
     startDate: null,
     endDate: null,
