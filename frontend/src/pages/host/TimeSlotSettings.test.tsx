@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import TimeSlotSettings from './TimeSlotSettings';
 import {
     useCreateTimeslot,
@@ -166,12 +166,10 @@ describe('TimeSlotSettings preview delete', () => {
         const deleteButton = screen.getByRole('button', { name: 'trigger-grid-delete' });
         await waitFor(() => expect(deleteButton).toBeEnabled());
 
-        await act(async () => {
-            fireEvent.click(deleteButton);
-        });
+        fireEvent.click(deleteButton);
 
-        expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1);
-        expect(mockDeleteTimeslotMutate).toHaveBeenCalledWith(101);
+        await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledWith(101));
+        await waitFor(() => expect(deleteButton).toBeDisabled());
     });
 
     it('삭제 요청이 진행 중이면 같은 슬롯의 preview 삭제를 중복 호출하지 않아야 한다', async () => {
@@ -207,10 +205,7 @@ describe('TimeSlotSettings preview delete', () => {
 
         expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1);
 
-        await act(async () => {
-            resolveDelete?.();
-        });
-
+        resolveDelete?.();
         await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1));
     });
 });
