@@ -115,7 +115,7 @@ export default function Booking() {
 
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const { mutateAsync: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
-    const { data: noShowHistory } = useNoShowHistory(isGuest ? booking?.hostId : undefined);
+    const { data: noShowHistory } = useNoShowHistory(isGuest ? booking?.hostId ?? undefined : undefined);
     const { mutateAsync: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
     const { data: guestNoShowHistory } = useGuestNoShowHistory(isHost ? booking?.guestId : undefined);
 

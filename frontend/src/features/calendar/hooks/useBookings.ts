@@ -29,13 +29,6 @@ export function useMyHostBookings({ page, pageSize, enabled = true }: { page?: n
     });
 }
 
-export function useMyHostBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
-    return useQuery<IPaginatedBookingDetail>({
-        queryKey: calendarKeys.myHostBookings(page, pageSize),
-        queryFn: () => getMyHostBookings({ page, pageSize }),
-    });
-}
-
 export function useBooking(id: number | null) {
     return useQuery<IBookingDetail>({
         queryKey: calendarKeys.booking(id ?? 0),
