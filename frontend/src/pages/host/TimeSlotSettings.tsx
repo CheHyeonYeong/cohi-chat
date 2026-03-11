@@ -288,6 +288,14 @@ export default function TimeSlotSettings() {
                     </Card>
 
                     <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="w-full flex-1">
+                            <WeeklySchedulePreview
+                                entries={entries}
+                                onChange={setEntries}
+                                onDuplicateBlocked={handleDuplicateBlocked}
+                                onDeleteEntry={handlePreviewDelete}
+                            />
+                        </div>
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
                                 entries={entries}
@@ -298,14 +306,6 @@ export default function TimeSlotSettings() {
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <WeeklySchedulePreview
-                                entries={entries}
-                                onChange={setEntries}
-                                onDuplicateBlocked={handleDuplicateBlocked}
-                                onDeleteEntry={handlePreviewDelete}
                             />
                         </div>
                     </div>
