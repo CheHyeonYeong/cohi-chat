@@ -1,4 +1,5 @@
-import GoogleCalendarSetup, { CalendarIcon } from '../GoogleCalendarSetup';
+import { CalendarIcon } from '~/components/icons';
+import GoogleCalendarSetup from '../GoogleCalendarSetup';
 
 export interface Step2Data {
     googleCalendarId: string;
