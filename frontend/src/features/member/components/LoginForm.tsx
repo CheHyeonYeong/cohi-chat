@@ -3,15 +3,17 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import Button from '~/components/button/Button';
 import { Card } from '~/components/card';
 import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
+import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
-import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
-import { getErrorMessage } from '~/libs/errorUtils';
 
 interface LoginFormValues {
     username: string;
     password: string;
 }
+
+const GENERIC_LOGIN_ERROR_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
 
 const validationRules: Record<keyof LoginFormValues, ValidationRule<string>> = {
     username: (value: string) => {
@@ -90,21 +92,25 @@ export function LoginForm() {
     const isPending = loginMutation.isPending;
     const baseInputClass =
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
+    const loginErrorMessage = loginMutation.isError
+        ? isHttpError(loginMutation.error, 401)
+            ? GENERIC_LOGIN_ERROR_MESSAGE
+            : getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')
+        : null;
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)]">
-            {/* Logo */}
-            <Link to='/' className="flex items-center gap-2 mb-8">
+            <Link to="/" className="flex items-center gap-2 mb-8">
                 <CoffeeCupIcon className="w-10 h-10 text-[var(--cohi-primary)]" />
                 <span className="text-2xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
             </Link>
 
-            {/* Login Card */}
             <Card variant="prominent" size="lg" className="w-full max-w-sm" title="로그인">
-
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">아이디</label>
+                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
+                            아이디
+                        </label>
                         <input
                             type="text"
                             id="username"
@@ -121,7 +127,9 @@ export function LoginForm() {
                         )}
                     </div>
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">비밀번호</label>
+                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
+                            비밀번호
+                        </label>
                         <input
                             type="password"
                             id="password"
@@ -143,10 +151,8 @@ export function LoginForm() {
                         </div>
                     </div>
 
-                    {loginMutation.isError && (
-                        <div className="text-red-600 text-sm">
-                            {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
-                        </div>
+                    {loginErrorMessage && (
+                        <div className="text-red-600 text-sm">{loginErrorMessage}</div>
                     )}
 
                     <Button

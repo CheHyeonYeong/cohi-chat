@@ -227,7 +227,7 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_CREDENTIALS);
 	}
 
 	@Test
@@ -260,7 +260,7 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_CREDENTIALS);
 	}
 
 	@Test

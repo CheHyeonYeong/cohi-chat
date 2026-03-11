@@ -121,13 +121,13 @@ public class MemberService {
         @Transactional
         public LoginResponseDTO login(LoginRequestDTO request){
                 Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                        .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
                 if (member.getProvider() != Provider.LOCAL) {
                         throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
                 }
                 if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
-                        throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+                        throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
                 }
 
                 return tokenService.issueTokens(member);

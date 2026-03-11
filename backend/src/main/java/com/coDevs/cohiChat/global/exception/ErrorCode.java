@@ -32,6 +32,7 @@ public enum ErrorCode {
 	DUPLICATED_EMAIL(HttpStatus.CONFLICT, "중복된 E-mail 주소입니다."),
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자가 없습니다."),
 
+	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
 	PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다."),
 	SOCIAL_LOGIN_REQUIRED(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 비밀번호 로그인을 사용할 수 없습니다."),
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
