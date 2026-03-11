@@ -3,11 +3,12 @@ import { Button } from '~/components/button';
 
 interface ReportModalProps {
     isPending: boolean;
+    error?: string | null;
     onSubmit: (reason: string) => void;
     onClose: () => void;
 }
 
-export default function NoShowReportModal({ isPending, onSubmit, onClose }: ReportModalProps) {
+export default function NoShowReportModal({ isPending, error, onSubmit, onClose }: ReportModalProps) {
     const [reason, setReason] = useState('');
 
     const handleSubmit = () => {
@@ -42,6 +43,7 @@ export default function NoShowReportModal({ isPending, onSubmit, onClose }: Repo
                             onChange={(e) => setReason(e.target.value)}
                         />
                     </div>
+                    {error && <p className="text-sm text-red-500">{error}</p>}
                 </div>
 
                 <div className="flex gap-2 mt-4">

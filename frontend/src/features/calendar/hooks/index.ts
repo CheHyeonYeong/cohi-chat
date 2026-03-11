@@ -8,3 +8,4 @@ export { useReportHost, useReportHostNoShow } from './useReportHostNoShow';
 export { useNoShowHistory } from './useNoShowHistory';
 export { useReportGuest, useReportGuestNoShow } from './useReportGuestNoShow';
 export { useGuestNoShowHistory } from './useGuestNoShowHistory';
+export { useReportStatus } from './useReportStatus';

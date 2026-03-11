@@ -33,6 +33,7 @@ import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.ReportStatusResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -551,6 +552,13 @@ public class BookingService {
         if (!booking.getGuestId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ReportStatusResponseDTO getReportStatus(Long bookingId, UUID requesterId) {
+        boolean reportedHost = noShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, requesterId);
+        boolean reportedGuest = guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, requesterId);
+        return new ReportStatusResponseDTO(reportedHost, reportedGuest);
     }
 
     private Instant toInstant(LocalDate date, LocalTime time) {

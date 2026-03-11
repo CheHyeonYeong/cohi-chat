@@ -114,9 +114,9 @@ export default function Booking() {
     const isHost = !!currentUser && currentUser.id === booking?.hostId;
 
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
+    const { mutateAsync: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
     const { data: noShowHistory } = useNoShowHistory(isGuest ? booking?.hostId : undefined);
-    const { mutate: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
+    const { mutateAsync: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
     const { data: guestNoShowHistory } = useGuestNoShowHistory(isHost ? booking?.guestId : undefined);
 
     // File upload state
@@ -132,21 +132,6 @@ export default function Booking() {
     const [reportReason, setReportReason] = useState('');
     const [alreadyReported, setAlreadyReported] = useState<Set<'host' | 'guest'>>(new Set());
 
-    useEffect(() => {
-        if (reportError && (reportError as { cause?: unknown }).cause === 409) {
-            setAlreadyReported((prev) => new Set([...prev, 'host']));
-            setReportTarget(null);
-            setReportReason('');
-        }
-    }, [reportError]);
-
-    useEffect(() => {
-        if (guestReportError && (guestReportError as { cause?: unknown }).cause === 409) {
-            setAlreadyReported((prev) => new Set([...prev, 'guest']));
-            setReportTarget(null);
-            setReportReason('');
-        }
-    }, [guestReportError]);
 
     // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
@@ -267,14 +252,22 @@ export default function Booking() {
         }
     };
 
-    const handleReportSubmit = () => {
-        const mutate = reportTarget === 'host' ? reportNoShow : reportGuestNoShow;
-        mutate(reportReason || undefined, {
-            onSuccess: () => {
+    const handleReportSubmit = async () => {
+        const target = reportTarget!;
+        const mutateAsync = target === 'host' ? reportNoShow : reportGuestNoShow;
+        try {
+            await mutateAsync(reportReason || undefined);
+            setAlreadyReported((prev) => new Set([...prev, target]));
+            setReportTarget(null);
+            setReportReason('');
+        } catch (err) {
+            const cause = (err as Error & { cause?: unknown }).cause;
+            if (Number(cause) === 409) {
+                setAlreadyReported((prev) => new Set([...prev, target]));
                 setReportTarget(null);
                 setReportReason('');
-            },
-        });
+            }
+        }
     };
 
     const handleReportCancel = () => {
@@ -380,7 +373,7 @@ export default function Booking() {
                                 {canReport ? '호스트 노쇼 신고' : '게스트 노쇼 신고'}
                             </h2>
                             {alreadyReported.has(canReport ? 'host' : 'guest') ? (
-                                <p className="text-sm text-amber-700 font-medium">이미 신고한 예약입니다.</p>
+                                <p className="text-sm text-amber-700 font-medium">신고가 접수되었습니다.</p>
                             ) : reportTarget === null ? (
                                 <div className="space-y-3">
                                     <p className="text-sm text-amber-800">
