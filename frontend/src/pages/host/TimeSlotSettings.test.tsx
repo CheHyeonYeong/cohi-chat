@@ -29,10 +29,19 @@ vi.mock('~/components/toast/useToast', () => ({
 }));
 
 vi.mock('~/features/host/components/timeslot/TimeSlotForm', () => ({
-    default: ({ onOverlapDetected }: { onOverlapDetected?: () => void }) => (
-        <button type="button" onClick={() => onOverlapDetected?.()}>
-            trigger-form-overlap
-        </button>
+    default: ({
+        entries,
+        onOverlapDetected,
+    }: {
+        entries: TimeSlotEntry[];
+        onOverlapDetected?: () => void;
+    }) => (
+        <>
+            <div data-testid="form-entry-count">{entries.length}</div>
+            <button type="button" onClick={() => onOverlapDetected?.()}>
+                trigger-form-overlap
+            </button>
+        </>
     ),
 }));
 
@@ -174,6 +183,7 @@ describe('TimeSlotSettings preview delete', () => {
 
         await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledWith(101));
         await waitFor(() => expect(deleteButton).toBeDisabled());
+        await waitFor(() => expect(screen.getByTestId('form-entry-count').textContent).toBe('0'));
     });
 
     it('does not send duplicate delete requests while the first delete is pending', async () => {
@@ -207,6 +217,12 @@ describe('TimeSlotSettings preview delete', () => {
 });
 
 describe('TimeSlotSettings loaded timeslots', () => {
+    it('keeps the form empty when there are no existing timeslots', async () => {
+        render(<TimeSlotSettings />);
+
+        await waitFor(() => expect(screen.getByTestId('form-entry-count').textContent).toBe('0'));
+    });
+
     it('accepts legacy startTime/endTime responses when loading existing entries', async () => {
         vi.mocked(useMyTimeslots).mockReturnValue({
             data: [
