@@ -245,7 +245,7 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.SOCIAL_LOGIN_REQUIRED);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_CREDENTIALS);
 	}
 
 	@Test

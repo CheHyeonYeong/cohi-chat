@@ -124,7 +124,7 @@ public class MemberService {
                         .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
                 if (member.getProvider() != Provider.LOCAL) {
-                        throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
+                        throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
                 }
                 if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
                         throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
