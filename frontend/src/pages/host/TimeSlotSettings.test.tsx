@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import TimeSlotSettings from './TimeSlotSettings';
 import {
     useCreateTimeslot,
@@ -12,9 +12,11 @@ import {
 } from '~/features/host';
 import { useAuth, useUpdateProfile } from '~/features/member';
 import { useHost } from '~/hooks/useHost';
+import type { TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 
-const { mockShowToast } = vi.hoisted(() => ({
+const { mockShowToast, mockDeleteTimeslotMutate } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
+    mockDeleteTimeslotMutate: vi.fn(),
 }));
 
 vi.mock('~/components/header', () => ({
@@ -35,16 +37,33 @@ vi.mock('~/features/host/components/timeslot/TimeSlotForm', () => ({
 
 vi.mock('~/features/host/components/timeslot/WeeklySchedulePreview', () => ({
     default: ({
+        entries,
         onDuplicateBlocked,
+        onDeleteEntry,
     }: {
+        entries: TimeSlotEntry[];
         onDuplicateBlocked?: (entry: { weekdays: number[]; startTime: string; endTime: string }) => void;
+        onDeleteEntry?: (entry: TimeSlotEntry, index: number) => void;
     }) => (
-        <button
-            type="button"
-            onClick={() => onDuplicateBlocked?.({ weekdays: [1], startTime: '09:00', endTime: '10:00' })}
-        >
-            trigger-grid-duplicate
-        </button>
+        <>
+            <button
+                type="button"
+                onClick={() => onDuplicateBlocked?.({ weekdays: [1], startTime: '09:00', endTime: '10:00' })}
+            >
+                trigger-grid-duplicate
+            </button>
+            <button
+                type="button"
+                disabled={!entries.some((entry) => entry.existingId != null)}
+                onClick={() => {
+                    const entryIndex = entries.findIndex((entry) => entry.existingId != null);
+                    if (entryIndex < 0) return;
+                    onDeleteEntry?.(entries[entryIndex], entryIndex);
+                }}
+            >
+                trigger-grid-delete
+            </button>
+        </>
     ),
 }));
 
@@ -98,8 +117,9 @@ beforeEach(() => {
         isPending: false,
     } as unknown as ReturnType<typeof useCreateTimeslot>);
 
+    mockDeleteTimeslotMutate.mockReset();
     vi.mocked(useDeleteTimeslot).mockReturnValue({
-        mutateAsync: vi.fn(),
+        mutateAsync: mockDeleteTimeslotMutate,
     } as unknown as ReturnType<typeof useDeleteTimeslot>);
 });
 
@@ -122,5 +142,75 @@ describe('TimeSlotSettings duplicate blocked toast', () => {
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
         expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE, 'duplicate-timeslot');
+    });
+});
+
+describe('TimeSlotSettings preview delete', () => {
+    it('기존 슬롯 우클릭 삭제가 delete mutation으로 연결돼야 한다', async () => {
+        vi.mocked(useMyTimeslots).mockReturnValue({
+            data: [
+                {
+                    id: 101,
+                    weekdays: [1],
+                    startTime: '09:00:00',
+                    endTime: '10:00:00',
+                    updatedAt: '2026-03-11T00:00:00.000Z',
+                },
+            ],
+            isLoading: false,
+            error: null,
+        } as unknown as ReturnType<typeof useMyTimeslots>);
+
+        render(<TimeSlotSettings />);
+
+        const deleteButton = screen.getByRole('button', { name: 'trigger-grid-delete' });
+        await waitFor(() => expect(deleteButton).toBeEnabled());
+
+        await act(async () => {
+            fireEvent.click(deleteButton);
+        });
+
+        expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1);
+        expect(mockDeleteTimeslotMutate).toHaveBeenCalledWith(101);
+    });
+
+    it('삭제 요청이 진행 중이면 같은 슬롯의 preview 삭제를 중복 호출하지 않아야 한다', async () => {
+        let resolveDelete: (() => void) | null = null;
+        mockDeleteTimeslotMutate.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveDelete = resolve;
+                }),
+        );
+
+        vi.mocked(useMyTimeslots).mockReturnValue({
+            data: [
+                {
+                    id: 101,
+                    weekdays: [1],
+                    startTime: '09:00:00',
+                    endTime: '10:00:00',
+                    updatedAt: '2026-03-11T00:00:00.000Z',
+                },
+            ],
+            isLoading: false,
+            error: null,
+        } as unknown as ReturnType<typeof useMyTimeslots>);
+
+        render(<TimeSlotSettings />);
+
+        const deleteButton = screen.getByRole('button', { name: 'trigger-grid-delete' });
+        await waitFor(() => expect(deleteButton).toBeEnabled());
+
+        fireEvent.click(deleteButton);
+        fireEvent.click(deleteButton);
+
+        expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            resolveDelete?.();
+        });
+
+        await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1));
     });
 });

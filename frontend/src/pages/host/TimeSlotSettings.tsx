@@ -52,6 +52,7 @@ export default function TimeSlotSettings() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
@@ -175,6 +176,9 @@ export default function TimeSlotSettings() {
     };
 
     const handleDelete = async (existingId: number) => {
+        if (deletingIdsRef.current.has(existingId)) return;
+        deletingIdsRef.current.add(existingId);
+
         try {
             setDeletingId(existingId);
             await deleteTimeslotMutation.mutateAsync(existingId);
@@ -186,7 +190,8 @@ export default function TimeSlotSettings() {
         } catch (err) {
             setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
-            setDeletingId(null);
+            deletingIdsRef.current.delete(existingId);
+            setDeletingId((current) => (current === existingId ? null : current));
         }
     };
 
