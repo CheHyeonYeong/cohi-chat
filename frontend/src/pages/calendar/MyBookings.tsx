@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
     DndContext,
@@ -65,8 +65,8 @@ function SortableBookingCard({
 export default function MyBookings() {
     const { page, pageSize, tab } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
-    const { data: guestBookings, isLoading: isGuestLoading, error: guestError, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
-    const { data: hostBookings, isLoading: isHostLoading, error: hostError, refetch: refetchHostBookings } = useMyHostBookings({ page, pageSize });
+    const { data: guestBookings, isLoading: isGuestLoading, error: guestError, refetch: refetchMyBookings } = useMyBookings({ page, pageSize, enabled: tab !== 'host' });
+    const { data: hostBookings, isLoading: isHostLoading, error: hostError, refetch: refetchHostBookings } = useMyHostBookings({ page, pageSize, enabled: tab === 'host' });
     const bookings = tab === 'host' ? hostBookings : guestBookings;
     const isLoading = tab === 'host' ? isHostLoading : isGuestLoading;
     const error = tab === 'host' ? hostError : guestError;
@@ -103,19 +103,18 @@ export default function MyBookings() {
     };
 
     // sortedIds가 비어있거나 데이터와 매칭되지 않으면 API 순서 사용
-    const orderedBookings = (() => {
+    // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면
+    // useEffect가 돌아서 setSortedIds를 해주기 전까지는 API 순서를 그대로 보여줌
+    const orderedBookings = useMemo(() => {
         if (!bookings?.bookings) return [];
-        // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면 
-        // useEffect가 돌아서 setSortedIds를 해주기 전까지는 API 순서를 그대로 보여줌
-        if (sortedIds.length !== bookings.bookings.length || 
-            !bookings.bookings.every(b => sortedIds.includes(b.id))) {
+        const sortedIdSet = new Set(sortedIds);
+        if (sortedIds.length !== bookings.bookings.length ||
+            !bookings.bookings.every(b => sortedIdSet.has(b.id))) {
             return bookings.bookings;
         }
-        
-        return sortedIds
-            .map((id) => bookings.bookings.find((b) => b.id === id))
-            .filter((b): b is IBookingDetail => b != null);
-    })();
+        const bookingMap = new Map(bookings.bookings.map(b => [b.id, b]));
+        return sortedIds.map(id => bookingMap.get(id)).filter((b): b is IBookingDetail => b != null);
+    }, [bookings?.bookings, sortedIds]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;

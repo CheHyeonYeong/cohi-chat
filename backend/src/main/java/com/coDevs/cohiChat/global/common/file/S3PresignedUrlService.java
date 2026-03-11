@@ -1,13 +1,20 @@
 package com.coDevs.cohiChat.global.common.file;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -20,6 +27,7 @@ public class S3PresignedUrlService {
 
     private static final Duration DEFAULT_EXPIRATION = Duration.ofMinutes(15);
 
+    private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
     @Value("${aws.s3.bucket}")
@@ -105,4 +113,38 @@ public class S3PresignedUrlService {
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
         return presignedRequest.url().toString();
     }
+
+    public Optional<S3ObjectMetadata> getObjectMetadata(String objectKey) {
+        HeadObjectRequest request = HeadObjectRequest.builder()
+            .bucket(bucketName)
+            .key(objectKey)
+            .build();
+
+        try {
+            HeadObjectResponse response = s3Client.headObject(request);
+            return Optional.of(new S3ObjectMetadata(response.contentLength(), response.contentType()));
+        } catch (NoSuchKeyException e) {
+            return Optional.empty();
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                return Optional.empty();
+            }
+            throw e;
+        }
+    }
+
+    public void deleteObjectQuietly(String objectKey) {
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+            .bucket(bucketName)
+            .key(objectKey)
+            .build();
+
+        try {
+            s3Client.deleteObject(request);
+        } catch (Exception ignored) {
+            // orphan cleanup is best-effort
+        }
+    }
+
+    public record S3ObjectMetadata(long contentLength, String contentType) {}
 }

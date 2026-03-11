@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useReportHost, useReportGuest } from '../../hooks';
+import { useState, useMemo } from 'react';
+import { useReportHost, useReportGuest, useReportStatus } from '../../hooks';
 import type { IBookingDetail } from '../../types';
 import { useAuth } from '~/features/member';
+import { getErrorMessage } from '~/libs/errorUtils';
 import NoShowReportModal from './NoShowReportModal';
 
 interface BookingActionMenuProps {
@@ -11,14 +12,25 @@ interface BookingActionMenuProps {
 export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     const [open, setOpen] = useState(false);
     const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
+    const [locallyReported, setLocallyReported] = useState<Set<'host' | 'guest'>>(new Set());
+    const [reportError, setReportError] = useState<string | null>(null);
 
-    const { mutate: reportHostMutate, isPending: isReportingHost } = useReportHost(booking.id);
-    const { mutate: reportGuestMutate, isPending: isReportingGuest } = useReportGuest(
+    const { mutateAsync: reportHostMutate, isPending: isReportingHost } = useReportHost(booking.id);
+    const { mutateAsync: reportGuestMutate, isPending: isReportingGuest } = useReportGuest(
         booking.id,
         booking.guestId,
     );
 
     const { data: currentUser } = useAuth();
+    const { data: reportStatus } = useReportStatus(booking.id);
+
+    const reportedTargets = useMemo(() => {
+        const s = new Set(locallyReported);
+        if (reportStatus?.reportedHost) s.add('host');
+        if (reportStatus?.reportedGuest) s.add('guest');
+        return s;
+    }, [reportStatus, locallyReported]);
+
     const isPending = reportTarget === 'host' ? isReportingHost : isReportingGuest;
 
     const showReportHost = !!currentUser && currentUser.id === booking.guestId;
@@ -30,11 +42,25 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
 
     const closeMenu = () => setOpen(false);
 
-    const handleReport = (reason: string) => {
-        if (reportTarget === 'host') {
-            reportHostMutate(reason, { onSuccess: () => setReportTarget(null) });
-        } else {
-            reportGuestMutate(reason, { onSuccess: () => setReportTarget(null) });
+    const handleReport = async (reason: string) => {
+        const target = reportTarget!;
+        setReportError(null);
+        try {
+            if (target === 'host') {
+                await reportHostMutate(reason);
+            } else {
+                await reportGuestMutate(reason);
+            }
+            setLocallyReported((prev) => new Set([...prev, target]));
+            setReportTarget(null);
+        } catch (err) {
+            const cause = (err as Error & { cause?: unknown }).cause;
+            if (Number(cause) === 409) {
+                setLocallyReported((prev) => new Set([...prev, target]));
+                setReportTarget(null);
+            } else {
+                setReportError(getErrorMessage(err, '신고 처리 중 오류가 발생했습니다.'));
+            }
         }
     };
 
@@ -48,6 +74,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
                 aria-label="더보기"
                 aria-haspopup="menu"
                 aria-expanded={open}
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                     e.stopPropagation();
                     setOpen((v) => !v);
@@ -73,25 +100,29 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
                         {showReportHost && (
                             <button
                                 type="button"
-                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
+                                disabled={reportedTargets.has('host')}
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 onClick={() => {
                                     closeMenu();
+                                    setReportError(null);
                                     setReportTarget('host');
                                 }}
                             >
-                                {hostDisplayName} 신고
+                                {reportedTargets.has('host') ? '신고 완료' : `${hostDisplayName} 신고`}
                             </button>
                         )}
                         {showReportGuest && (
                             <button
                                 type="button"
-                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50"
+                                disabled={reportedTargets.has('guest')}
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 onClick={() => {
                                     closeMenu();
+                                    setReportError(null);
                                     setReportTarget('guest');
                                 }}
                             >
-                                {guestDisplayName} 신고
+                                {reportedTargets.has('guest') ? '신고 완료' : `${guestDisplayName} 신고`}
                             </button>
                         )}
                     </div>
@@ -101,6 +132,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
             {reportTarget && (
                 <NoShowReportModal
                     isPending={isPending}
+                    error={reportError}
                     onSubmit={handleReport}
                     onClose={() => setReportTarget(null)}
                 />

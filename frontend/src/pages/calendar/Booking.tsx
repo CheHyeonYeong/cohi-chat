@@ -109,11 +109,15 @@ export default function Booking() {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
+
+    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
+    const isHost = !!currentUser && currentUser.id === booking?.hostId;
+
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
-    const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
-    const { mutate: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
-    const { data: guestNoShowHistory } = useGuestNoShowHistory(booking?.guestId);
+    const { mutateAsync: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHost(Number(id));
+    const { data: noShowHistory } = useNoShowHistory(isGuest ? booking?.hostId : undefined);
+    const { mutateAsync: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
+    const { data: guestNoShowHistory } = useGuestNoShowHistory(isHost ? booking?.guestId : undefined);
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -123,28 +127,14 @@ export default function Booking() {
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Host no-show report state
-    const [showReportForm, setShowReportForm] = useState(false);
+    // Report state: which target is being reported ('host' | 'guest' | null = not showing form)
+    const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
     const [reportReason, setReportReason] = useState('');
+    const [alreadyReported, setAlreadyReported] = useState<Set<'host' | 'guest'>>(new Set());
 
-    // Guest no-show report state
-    const [showGuestReportForm, setShowGuestReportForm] = useState(false);
-    const [guestReportReason, setGuestReportReason] = useState('');
 
     // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
-
-    const [now, setNow] = useState(() => Date.now());
-
-    useEffect(() => {
-        const timer = setInterval(() => setNow(Date.now()), 10_000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const isMeetingStarted = useMemo(() => {
-        if (!booking) return false;
-        return now >= booking.startedAt.getTime();
-    }, [booking, now]);
 
     useEffect(() => {
         if (!booking) return;
@@ -166,6 +156,9 @@ export default function Booking() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
+    const canReport = isGuest;
+    const canReportGuest = isHost;
+
     /* -- Handlers ---------------------------------------------------------- */
 
     const handleFileSelect = (files: FileList | null) => {
@@ -180,14 +173,6 @@ export default function Booking() {
         setValidationErrors(result.errors);
         setSelectedFiles(Array.from(files));
     };
-
-    // 현재 사용자가 이 예약의 게스트인지 판단
-    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
-    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
-
-    // 현재 사용자가 이 예약의 호스트인지 판단
-    const isHost = !!currentUser && currentUser.id === booking?.hostId;
-    const canReportGuest = isHost && booking?.attendanceStatus === 'NO_SHOW' && isMeetingStarted;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileSelect(e.target.files);
@@ -267,22 +252,29 @@ export default function Booking() {
         }
     };
 
-    const handleReportSubmit = () => {
-        reportNoShow(reportReason || undefined, {
-            onSuccess: () => {
-                setShowReportForm(false);
+    const handleReportSubmit = async () => {
+        const target = reportTarget!;
+        const mutateAsync = target === 'host' ? reportNoShow : reportGuestNoShow;
+        try {
+            await mutateAsync(reportReason || undefined);
+            setAlreadyReported((prev) => new Set([...prev, target]));
+            setReportTarget(null);
+            setReportReason('');
+        } catch (err) {
+            const cause = (err as Error & { cause?: unknown }).cause;
+            if (Number(cause) === 409) {
+                setAlreadyReported((prev) => new Set([...prev, target]));
+                setReportTarget(null);
                 setReportReason('');
-            },
-        });
+            }
+        }
     };
 
-    const handleGuestReportSubmit = () => {
-        reportGuestNoShow(guestReportReason || undefined, {
-            onSuccess: () => {
-                setShowGuestReportForm(false);
-                setGuestReportReason('');
-            },
-        });
+    const handleReportCancel = () => {
+        if (reportTarget === 'host') resetReport();
+        else resetGuestReport();
+        setReportTarget(null);
+        setReportReason('');
     };
 
     /* -- Loading / error states -------------------------------------------- */
@@ -313,6 +305,8 @@ export default function Booking() {
 
     const startedAt = booking.startedAt;
     const canUploadMore = canUploadMoreFiles(fileOrder.length);
+    const activeReportError = reportTarget === 'host' ? reportError : guestReportError;
+    const isSubmittingReport = reportTarget === 'host' ? isReporting : isReportingGuest;
 
     return (
         <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
@@ -372,20 +366,28 @@ export default function Booking() {
                         </div>
                     </Card>
 
-                    {/* Host No-show report section */}
-                    {canReport && (
+                    {/* No-show report section (host or guest) */}
+                    {(canReport || canReportGuest) && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
-                            {!showReportForm ? (
+                            <h2 className="text-lg font-semibold mb-2 text-amber-900">
+                                {canReport ? '호스트 노쇼 신고' : '게스트 노쇼 신고'}
+                            </h2>
+                            {alreadyReported.has(canReport ? 'host' : 'guest') ? (
+                                <p className="text-sm text-amber-700 font-medium">신고가 접수되었습니다.</p>
+                            ) : reportTarget === null ? (
                                 <div className="space-y-3">
-                                    <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                                    <p className="text-sm text-amber-800">
+                                        {canReport
+                                            ? '호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.'
+                                            : '게스트가 약속 장소에 나타나지 않았나요? 신고를 통해 이력을 남겨주세요.'}
+                                    </p>
                                     <Button
                                         type="button"
                                         variant="primary"
-                                        onClick={() => setShowReportForm(true)}
+                                        onClick={() => setReportTarget(canReport ? 'host' : 'guest')}
                                         className="rounded-xl"
                                     >
-                                        호스트 노쇼 신고
+                                        {canReport ? '호스트 노쇼 신고' : '게스트 노쇼 신고'}
                                     </Button>
                                 </div>
                             ) : (
@@ -397,14 +399,14 @@ export default function Booking() {
                                         value={reportReason}
                                         onChange={(e) => setReportReason(e.target.value)}
                                     />
-                                    {reportError && (
-                                        <p className="text-red-600 text-sm">{reportError.message}</p>
+                                    {activeReportError && (
+                                        <p className="text-red-600 text-sm">{activeReportError.message}</p>
                                     )}
                                     <div className="flex flex-row space-x-2">
                                         <Button
                                             type="button"
                                             variant="primary"
-                                            loading={isReporting}
+                                            loading={isSubmittingReport}
                                             onClick={handleReportSubmit}
                                             className="rounded-xl px-6"
                                         >
@@ -413,67 +415,7 @@ export default function Booking() {
                                         <Button
                                             type="button"
                                             variant="secondary"
-                                            onClick={() => {
-                                                setShowReportForm(false);
-                                                setReportReason('');
-                                                resetReport();
-                                            }}
-                                            className="rounded-xl px-6"
-                                        >
-                                            취소
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Guest No-show report section */}
-                    {canReportGuest && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold mb-2 text-amber-900">게스트 노쇼 신고</h2>
-                            {!showGuestReportForm ? (
-                                <div className="space-y-3">
-                                    <p className="text-sm text-amber-800">게스트가 약속 장소에 나타나지 않았나요? 신고를 통해 이력을 남겨주세요.</p>
-                                    <Button
-                                        type="button"
-                                        variant="primary"
-                                        onClick={() => setShowGuestReportForm(true)}
-                                        className="rounded-xl"
-                                    >
-                                        게스트 노쇼 신고
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col space-y-3">
-                                    <textarea
-                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
-                                        rows={3}
-                                        placeholder="신고 사유를 입력해주세요 (선택)"
-                                        value={guestReportReason}
-                                        onChange={(e) => setGuestReportReason(e.target.value)}
-                                    />
-                                    {guestReportError && (
-                                        <p className="text-red-600 text-sm">{guestReportError.message}</p>
-                                    )}
-                                    <div className="flex flex-row space-x-2">
-                                        <Button
-                                            type="button"
-                                            variant="primary"
-                                            loading={isReportingGuest}
-                                            onClick={handleGuestReportSubmit}
-                                            className="rounded-xl px-6"
-                                        >
-                                            신고하기
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => {
-                                                setShowGuestReportForm(false);
-                                                setGuestReportReason('');
-                                                resetGuestReport();
-                                            }}
+                                            onClick={handleReportCancel}
                                             className="rounded-xl px-6"
                                         >
                                             취소

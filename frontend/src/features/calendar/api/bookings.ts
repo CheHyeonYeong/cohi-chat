@@ -113,13 +113,11 @@ export async function uploadBookingFile(id: number, files: FormData): Promise<IB
 }
 
 export async function reportHost(bookingId: number, reason?: string): Promise<IBookingDetail> {
-    const [b, files] = await Promise.all([
-        httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
-            method: 'POST',
-            body: reason && reason.trim() !== '' ? { reason } : undefined,
-        }),
-        httpClient<IBookingFile[]>(`${API_URL}/bookings/${bookingId}/files`)
-    ]);
+    const b = await httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
+        method: 'POST',
+        body: { reason: reason?.trim() || null },
+    });
+    const files = await httpClient<IBookingFile[]>(`${API_URL}/bookings/${bookingId}/files`);
     return toBookingDetail(b, files);
 }
 
@@ -134,10 +132,19 @@ export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
 export async function reportGuest(bookingId: number, reason?: string): Promise<IGuestNoShowHistoryItem> {
     return await httpClient<IGuestNoShowHistoryItem>(`${API_URL}/bookings/${bookingId}/report-guest-noshow`, {
         method: 'POST',
-        body: reason && reason.trim() !== '' ? { reason } : undefined,
+        body: { reason: reason?.trim() || null },
     });
 }
 
 export async function getGuestNoShowHistory(guestId: string): Promise<IGuestNoShowHistoryItem[]> {
     return await httpClient<IGuestNoShowHistoryItem[]>(`${API_URL}/bookings/guest/${guestId}/noshow-history`);
+}
+
+export interface IReportStatus {
+    reportedHost: boolean;
+    reportedGuest: boolean;
+}
+
+export async function getReportStatus(bookingId: number): Promise<IReportStatus> {
+    return await httpClient<IReportStatus>(`${API_URL}/bookings/${bookingId}/report-status`);
 }

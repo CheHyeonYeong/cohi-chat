@@ -33,6 +33,7 @@ import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.ReportStatusResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -467,16 +468,20 @@ public class BookingService {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateParticipantAccess(booking, reporterId);
+        validateBookingAccess(booking, reporterId);
 
-        if (noShowHistoryRepository.existsByBookingId(bookingId)) {
+        if (noShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
         UUID hostId = booking.getTimeSlot().getUserId();
         String normalizedReason = normalizeNoShowReportReason(reason);
         NoShowHistory history = NoShowHistory.create(booking, hostId, reporterId, normalizedReason);
-        noShowHistoryRepository.save(history);
+        try {
+            noShowHistoryRepository.save(history);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
 
         log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, reporterId);
 
@@ -492,12 +497,12 @@ public class BookingService {
 
     @Transactional
     public GuestNoShowHistoryResponseDTO reportGuestNoShow(Long bookingId, UUID reporterId, String reason) {
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateParticipantAccess(booking, reporterId);
+        validateBookingAccess(booking, reporterId);
 
-        if (guestNoShowHistoryRepository.existsByBookingId(bookingId)) {
+        if (guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
@@ -543,18 +548,17 @@ public class BookingService {
         }
     }
 
-    private void validateParticipantAccess(Booking booking, UUID requesterId) {
-        UUID hostId = booking.getTimeSlot().getUserId();
-        UUID guestId = booking.getGuestId();
-        if (!hostId.equals(requesterId) && !guestId.equals(requesterId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-    }
-
     private void validateGuestAccess(Booking booking, UUID requesterId) {
         if (!booking.getGuestId().equals(requesterId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ReportStatusResponseDTO getReportStatus(Long bookingId, UUID requesterId) {
+        boolean reportedHost = noShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, requesterId);
+        boolean reportedGuest = guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, requesterId);
+        return new ReportStatusResponseDTO(reportedHost, reportedGuest);
     }
 
     private Instant toInstant(LocalDate date, LocalTime time) {

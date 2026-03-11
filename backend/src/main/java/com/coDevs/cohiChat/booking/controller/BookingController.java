@@ -25,6 +25,7 @@ import com.coDevs.cohiChat.booking.request.NoShowReportRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.GuestNoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.ReportStatusResponseDTO;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -172,7 +173,7 @@ public class BookingController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "노쇼 신고 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요"),
-        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (게스트만 신고 가능)"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (커피챗 참여자만 신고 가능)"),
         @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
         @ApiResponse(responseCode = "409", description = "이미 신고된 예약"),
         @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (미팅 시작 전, 신고 불가능한 상태)")
@@ -208,7 +209,7 @@ public class BookingController {
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "노쇼 신고 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요"),
-        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (호스트만 신고 가능)"),
+        @ApiResponse(responseCode = "403", description = "접근 권한 없음 (커피챗 참여자만 신고 가능)"),
         @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
         @ApiResponse(responseCode = "409", description = "이미 신고된 예약"),
         @ApiResponse(responseCode = "422", description = "비즈니스 규칙 위반 (미팅 시작 전, 신고 불가능한 상태)")
@@ -238,6 +239,21 @@ public class BookingController {
     ) {
         List<GuestNoShowHistoryResponseDTO> responses = bookingService.getNoShowHistoryByGuestId(guestId);
         return ResponseEntity.ok(ApiResponseDTO.success(responses));
+    }
+
+    @Operation(summary = "내 신고 현황 조회", description = "현재 사용자가 해당 예약의 호스트/게스트를 이미 신고했는지 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/{bookingId}/report-status")
+    public ResponseEntity<ApiResponseDTO<ReportStatusResponseDTO>> getReportStatus(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long bookingId
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        ReportStatusResponseDTO response = bookingService.getReportStatus(bookingId, member.getId());
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "예약 수정 (게스트)", description = "게스트가 본인의 예약 정보(주제, 설명, 일정)를 수정합니다.")
