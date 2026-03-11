@@ -296,7 +296,6 @@ export default function TimeSlotSettings() {
                                 entries={entries}
                                 onChange={setEntries}
                                 onDuplicateBlocked={handleDuplicateBlocked}
-                                onDeleteEntry={handlePreviewDelete}
                             />
                         </div>
                     </div>
