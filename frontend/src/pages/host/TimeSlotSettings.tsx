@@ -25,20 +25,22 @@ function formatWeekdaySummary(weekdays: number[]): string {
     return names.join(', ');
 }
 
-function normalizeTime(time: string): string {
-    return time.slice(0, 5);
+function normalizeTime(time?: string | null): string {
+    return typeof time === 'string' ? time.slice(0, 5) : '';
 }
 
 function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
     if (timeslots.length === 0) return [];
-    return timeslots.map((ts) => ({
-        weekdays: ts.weekdays,
-        startTime: normalizeTime(ts.startTime),
-        endTime: normalizeTime(ts.endTime),
-        startDate: ts.startDate ?? undefined,
-        endDate: ts.endDate ?? undefined,
-        existingId: ts.id,
-    }));
+    return timeslots
+        .map((ts) => ({
+            weekdays: ts.weekdays,
+            startTime: normalizeTime(ts.startTime),
+            endTime: normalizeTime(ts.endTime),
+            startDate: ts.startDate ?? undefined,
+            endDate: ts.endDate ?? undefined,
+            existingId: ts.id,
+        }))
+        .filter((entry) => entry.startTime && entry.endTime);
 }
 
 const defaultEntry: TimeSlotEntry = {

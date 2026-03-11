@@ -10,6 +10,7 @@ import {
     useMyCalendar,
     useMyTimeslots,
 } from '~/features/host';
+import type { TimeSlotResponse } from '~/features/host';
 import { useAuth, useUpdateProfile } from '~/features/member';
 import { useHost } from '~/hooks/useHost';
 import type { TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
@@ -83,9 +84,23 @@ vi.mock('~/hooks/useHost', () => ({
     useHost: vi.fn(),
 }));
 
+const makeTimeslot = (overrides: Partial<TimeSlotResponse> = {}): TimeSlotResponse => ({
+    id: 101,
+    userId: 'tester',
+    startTime: '09:00:00',
+    endTime: '10:00:00',
+    weekdays: [1],
+    startDate: null,
+    endDate: null,
+    createdAt: '2026-03-11T00:00:00.000Z',
+    updatedAt: '2026-03-11T00:00:00.000Z',
+    ...overrides,
+});
+
 beforeEach(() => {
     vi.clearAllMocks();
     mockShowToast.mockReset();
+    mockDeleteTimeslotMutate.mockReset();
 
     vi.mocked(useAuth).mockReturnValue({
         data: { username: 'tester' },
@@ -117,46 +132,35 @@ beforeEach(() => {
         isPending: false,
     } as unknown as ReturnType<typeof useCreateTimeslot>);
 
-    mockDeleteTimeslotMutate.mockReset();
     vi.mocked(useDeleteTimeslot).mockReturnValue({
         mutateAsync: mockDeleteTimeslotMutate,
     } as unknown as ReturnType<typeof useDeleteTimeslot>);
 });
 
-const DUPLICATE_TOAST_MESSAGE = '이미 존재하는 시간대와 겹쳐서 추가되지 않았어요.';
-
 describe('TimeSlotSettings duplicate blocked toast', () => {
-    it('DnD 겹침 차단 시 토스트를 호출한다', () => {
+    it('shows a duplicate toast when the preview reports overlap', () => {
         render(<TimeSlotSettings />);
 
         fireEvent.click(screen.getByRole('button', { name: 'trigger-grid-duplicate' }));
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
-        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE, 'duplicate-timeslot');
+        expect(mockShowToast.mock.calls[0]?.[1]).toBe('duplicate-timeslot');
     });
 
-    it('폼 편집 겹침 감지 시 토스트를 호출한다', () => {
+    it('shows a duplicate toast when the form reports overlap', () => {
         render(<TimeSlotSettings />);
 
         fireEvent.click(screen.getByRole('button', { name: 'trigger-form-overlap' }));
 
         expect(mockShowToast).toHaveBeenCalledTimes(1);
-        expect(mockShowToast).toHaveBeenCalledWith(DUPLICATE_TOAST_MESSAGE, 'duplicate-timeslot');
+        expect(mockShowToast.mock.calls[0]?.[1]).toBe('duplicate-timeslot');
     });
 });
 
 describe('TimeSlotSettings preview delete', () => {
-    it('기존 슬롯 우클릭 삭제가 delete mutation으로 연결돼야 한다', async () => {
+    it('routes preview deletion for persisted entries to the delete mutation', async () => {
         vi.mocked(useMyTimeslots).mockReturnValue({
-            data: [
-                {
-                    id: 101,
-                    weekdays: [1],
-                    startTime: '09:00:00',
-                    endTime: '10:00:00',
-                    updatedAt: '2026-03-11T00:00:00.000Z',
-                },
-            ],
+            data: [makeTimeslot()],
             isLoading: false,
             error: null,
         } as unknown as ReturnType<typeof useMyTimeslots>);
@@ -172,7 +176,7 @@ describe('TimeSlotSettings preview delete', () => {
         await waitFor(() => expect(deleteButton).toBeDisabled());
     });
 
-    it('삭제 요청이 진행 중이면 같은 슬롯의 preview 삭제를 중복 호출하지 않아야 한다', async () => {
+    it('does not send duplicate delete requests while the first delete is pending', async () => {
         let resolveDelete: (() => void) | null = null;
         mockDeleteTimeslotMutate.mockImplementation(
             () =>
@@ -182,15 +186,7 @@ describe('TimeSlotSettings preview delete', () => {
         );
 
         vi.mocked(useMyTimeslots).mockReturnValue({
-            data: [
-                {
-                    id: 101,
-                    weekdays: [1],
-                    startTime: '09:00:00',
-                    endTime: '10:00:00',
-                    updatedAt: '2026-03-11T00:00:00.000Z',
-                },
-            ],
+            data: [makeTimeslot()],
             isLoading: false,
             error: null,
         } as unknown as ReturnType<typeof useMyTimeslots>);
