@@ -177,7 +177,7 @@ describe('TimeSlotSettings preview delete', () => {
     });
 
     it('does not send duplicate delete requests while the first delete is pending', async () => {
-        let resolveDelete: (() => void) | null = null;
+        let resolveDelete = () => {};
         mockDeleteTimeslotMutate.mockImplementation(
             () =>
                 new Promise<void>((resolve) => {
@@ -201,7 +201,7 @@ describe('TimeSlotSettings preview delete', () => {
 
         expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1);
 
-        resolveDelete?.();
+        resolveDelete();
         await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1));
     });
 });
