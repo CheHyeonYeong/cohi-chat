@@ -468,7 +468,7 @@ public class BookingService {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateBookingAccess(booking, reporterId);
+        validateGuestAccess(booking, reporterId);
 
         if (noShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
@@ -500,7 +500,7 @@ public class BookingService {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
 
-        validateBookingAccess(booking, reporterId);
+        validateHostAccess(booking, reporterId);
 
         if (guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);

@@ -16,5 +16,3 @@ export function useReportHost(bookingId: number) {
     });
 }
 
-/** @deprecated use useReportHost */
-export const useReportHostNoShow = useReportHost;

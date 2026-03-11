@@ -19,5 +19,3 @@ export function useReportGuest(bookingId: number, guestId?: string) {
     });
 }
 
-/** @deprecated use useReportGuest */
-export const useReportGuestNoShow = useReportGuest;
