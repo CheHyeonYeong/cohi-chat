@@ -190,15 +190,6 @@ export default function TimeSlotSettings() {
         }
     };
 
-    const handlePreviewDelete = (entry: TimeSlotEntry, index: number) => {
-        if (entry.existingId != null) {
-            void handleDelete(entry.existingId);
-            return;
-        }
-
-        setEntries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-    };
-
     const summaryText = entries
         .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
         .join(' / ');
@@ -288,14 +279,6 @@ export default function TimeSlotSettings() {
                     </Card>
 
                     <div className="flex flex-col lg:flex-row gap-8">
-                        <div className="w-full flex-1">
-                            <WeeklySchedulePreview
-                                entries={entries}
-                                onChange={setEntries}
-                                onDuplicateBlocked={handleDuplicateBlocked}
-                                onDeleteEntry={handlePreviewDelete}
-                            />
-                        </div>
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
                                 entries={entries}
@@ -306,6 +289,13 @@ export default function TimeSlotSettings() {
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <WeeklySchedulePreview
+                                entries={entries}
+                                onChange={setEntries}
+                                onDuplicateBlocked={handleDuplicateBlocked}
                             />
                         </div>
                     </div>

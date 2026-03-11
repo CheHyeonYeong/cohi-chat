@@ -40,20 +40,6 @@ const toLocalDateString = (date: Date): string => {
 
 
 // 00:00 ~ 23:30, 30분 단위
-const DAY_LABEL_MAP = WEEKDAYS.reduce<Record<number, string>>((acc, day) => {
-    acc[day.value] = day.label;
-    return acc;
-}, {});
-
-function formatEntrySummary(entry: TimeSlotEntry): string {
-    const weekdayLabels = [...entry.weekdays]
-        .sort((a, b) => a - b)
-        .map((weekday) => DAY_LABEL_MAP[weekday])
-        .filter(Boolean);
-    const weekdayText = weekdayLabels.length > 0 ? weekdayLabels.join(', ') : '요일 미선택';
-    return `${weekdayText} · ${entry.startTime} - ${entry.endTime}`;
-}
-
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     const h = Math.floor(i / 2);
     const m = i % 2 === 0 ? '00' : '30';
@@ -152,9 +138,6 @@ export default function TimeSlotForm({
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
                                     시간대 {index + 1}
-                                </span>
-                                <span data-testid="entry-summary" className="text-xs text-gray-500">
-                                    {formatEntrySummary(entry)}
                                 </span>
                                 {entry.existingId != null && (
                                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>

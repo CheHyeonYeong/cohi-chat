@@ -230,22 +230,4 @@ describe('TimeSlotForm', () => {
             expect(queryByText('요일')).toBeInTheDocument();
         });
     });
-
-    describe('issue 392 - 목록 가시성', () => {
-        it('각 시간대 헤더에 요일과 시간 요약을 표시해야 한다', () => {
-            const entries: TimeSlotEntry[] = [
-                { weekdays: [1, 3], startTime: '09:00', endTime: '11:30' },
-            ];
-
-            const { getByTestId } = render(
-                <TimeSlotForm {...defaultProps} entries={entries} />,
-            );
-
-            const summary = getByTestId('entry-summary');
-            expect(summary.textContent).toContain('09:00');
-            expect(summary.textContent).toContain('11:30');
-            expect(summary.textContent).toContain('월');
-            expect(summary.textContent).toContain('수');
-        });
-    });
 });

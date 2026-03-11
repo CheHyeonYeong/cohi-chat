@@ -14,14 +14,13 @@ import {
 } from '@dnd-kit/core';
 import { Card } from '~/components/card';
 import type { TimeSlotEntry } from './TimeSlotForm';
-import { computeDragHighlights, commitDraggedEntry, parseCellId } from './dragUtils';
+import { computeDragHighlights, commitDraggedEntry } from './dragUtils';
 import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
     onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
-    onDeleteEntry?: (entry: TimeSlotEntry, index: number) => void;
 }
 
 
@@ -73,13 +72,11 @@ function DraggableCell({
     halfRow,
     isHighlighted,
     isInDragRange,
-    onContextDelete,
 }: {
     col: number;
     halfRow: number;
     isHighlighted: boolean;
     isInDragRange: boolean;
-    onContextDelete?: (cellId: string) => void;
 }) {
     const id = `cell-${col}-${halfRow}`;
     const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({ id });
@@ -99,12 +96,6 @@ function DraggableCell({
             ref={setRef}
             {...attributes}
             {...listeners}
-            onContextMenu={(event) => {
-                if (!onContextDelete) return;
-                event.preventDefault();
-                event.stopPropagation();
-                onContextDelete(id);
-            }}
             tabIndex={0}
             data-testid={`grid-cell-${col}-${halfRow}`}
             data-highlighted={isHighlighted || undefined}
@@ -122,13 +113,11 @@ function WeeklyGrid({
     highlights,
     dragHighlights,
     isInteractive,
-    onContextDelete,
 }: {
     hours: number[];
     highlights: Map<number, { start: number; end: number }[]>;
     dragHighlights: Set<string>;
     isInteractive: boolean;
-    onContextDelete?: (cellId: string) => void;
 }) {
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
 
@@ -169,14 +158,12 @@ function WeeklyGrid({
                                                 halfRow={topHalfRow}
                                                 isHighlighted={topExisting || topInRange}
                                                 isInDragRange={topInRange}
-                                                onContextDelete={onContextDelete}
                                             />
                                             <DraggableCell
                                                 col={colIdx}
                                                 halfRow={bottomHalfRow}
                                                 isHighlighted={bottomExisting || bottomInRange}
                                                 isInDragRange={bottomInRange}
-                                                onContextDelete={onContextDelete}
                                             />
                                         </>
                                     ) : (
@@ -196,12 +183,7 @@ function WeeklyGrid({
 }
 
 
-export default function WeeklySchedulePreview({
-    entries,
-    onChange,
-    onDuplicateBlocked,
-    onDeleteEntry,
-}: WeeklySchedulePreviewProps) {
+export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -232,28 +214,6 @@ export default function WeeklySchedulePreview({
         return map;
     }, [entries, startHour]);
 
-    const cellEntryIndices = useMemo(() => {
-        const map = new Map<string, number[]>();
-        entries.forEach((entry, entryIndex) => {
-            if (!entry.startTime || !entry.endTime || entry.weekdays.length === 0) return;
-            const startRow = timeToRow(entry.startTime, startHour);
-            const endRow = timeToRow(entry.endTime, startHour);
-            if (startRow >= endRow) return;
-
-            entry.weekdays.forEach((wd) => {
-                const col = WEEKDAY_TO_COLUMN[wd as Weekday];
-                if (col === undefined) return;
-                for (let row = startRow; row < endRow; row += 1) {
-                    const key = `${col}-${row}`;
-                    const current = map.get(key) ?? [];
-                    current.push(entryIndex);
-                    map.set(key, current);
-                }
-            });
-        });
-        return map;
-    }, [entries, startHour]);
-
     const dragHighlights = useMemo(
         () => computeDragHighlights(dragStartId, dragOverId),
         [dragStartId, dragOverId],
@@ -280,36 +240,12 @@ export default function WeeklySchedulePreview({
         setDragOverId(null);
     };
 
-    const handleContextDelete = useCallback((cellId: string) => {
-        if (!onChange) return;
-        const parsed = parseCellId(cellId);
-        if (!parsed) return;
-
-        const key = `${parsed.col}-${parsed.row}`;
-        const matched = cellEntryIndices.get(key);
-        if (!matched || matched.length === 0) return;
-
-        const targetIndex = matched[matched.length - 1];
-        const targetEntry = entries[targetIndex];
-        if (!targetEntry) return;
-        const confirmDelete = window.confirm('선택한 예약 시간대를 삭제할까요?');
-        if (!confirmDelete) return;
-
-        if (onDeleteEntry) {
-            onDeleteEntry(targetEntry, targetIndex);
-            return;
-        }
-
-        onChange(entries.filter((_, index) => index !== targetIndex));
-    }, [cellEntryIndices, entries, onChange, onDeleteEntry]);
-
     const grid = (
         <WeeklyGrid
             hours={hours}
             highlights={highlights}
             dragHighlights={dragHighlights}
             isInteractive={!!onChange}
-            onContextDelete={handleContextDelete}
         />
     );
 
