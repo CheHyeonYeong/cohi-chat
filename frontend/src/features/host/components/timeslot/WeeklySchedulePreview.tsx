@@ -15,7 +15,7 @@ import {
 import { Card } from '~/components/card';
 import type { TimeSlotEntry } from './TimeSlotForm';
 import { computeDragHighlights, commitDraggedEntry, parseCellId } from './dragUtils';
-import { DAY_NAMES, WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
+import { WEEKDAY_LABELS, WEEKDAY_TO_COLUMN, type Weekday } from '~/libs/constants/days';
 
 interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
@@ -55,19 +55,6 @@ function computeHoursRange(entries: TimeSlotEntry[]): number[] {
 function timeToRow(time: string, startHour: number): number {
     const [h, m] = time.split(':').map(Number);
     return Math.max(0, (h - startHour) * 2 + Math.round(m / 30));
-}
-
-function formatWeekdaySummary(weekdays: number[]): string {
-    const sorted = [...weekdays].sort((a, b) => a - b);
-    if (sorted.length === 0) return '';
-
-    const names = sorted.map((day) => DAY_NAMES[day as Weekday]);
-    const isConsecutive = sorted.every((day, index) => index === 0 || day === sorted[index - 1] + 1);
-    if (isConsecutive && sorted.length >= 2) {
-        return `${names[0]}~${names[names.length - 1]}`;
-    }
-
-    return names.join(', ');
 }
 
 /** read-only 모드 반시간 셀 — dnd 훅 없음 */
@@ -249,11 +236,6 @@ export default function WeeklySchedulePreview({
         () => computeDragHighlights(dragStartId, dragOverId),
         [dragStartId, dragOverId],
     );
-    const summaryEntries = useMemo(
-        () => entries.filter((entry) => entry.startTime && entry.endTime && entry.weekdays.length > 0),
-        [entries],
-    );
-
     const handleDragStart = (event: DragStartEvent) => {
         setDragStartId(event.active.id as string);
         setDragOverId(event.active.id as string);
@@ -331,55 +313,30 @@ export default function WeeklySchedulePreview({
 
     return (
         <Card size="sm" title="주간 스케줄 미리보기">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                <div className="min-w-0 flex-1 overflow-x-auto">
-                    <div className="min-w-[420px]">
-                        {/* Header */}
-                        <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
-                            <div />
-                            {WEEKDAY_LABELS.map((label) => (
-                                <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
-                                    {label}
-                                </div>
-                            ))}
-                        </div>
-
-                        {onChange ? (
-                            <DndContext
-                                sensors={sensors}
-                                onDragStart={handleDragStart}
-                                onDragOver={handleDragOver}
-                                onDragEnd={handleDragEnd}
-                                onDragCancel={handleDragCancel}
-                            >
-                                {grid}
-                            </DndContext>
-                        ) : (
-                            grid
-                        )}
+            <div className="overflow-x-auto">
+                <div className="min-w-[420px]">
+                    {/* Header */}
+                    <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
+                        <div />
+                        {WEEKDAY_LABELS.map((label) => (
+                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
+                                {label}
+                            </div>
+                        ))}
                     </div>
-                </div>
-                <div className="hidden w-full rounded-lg border border-gray-200 bg-white/80 p-3 lg:w-64">
-                    <p className="text-sm font-semibold text-[var(--cohi-text-dark)]">현재 시간대</p>
-                    {summaryEntries.length > 0 ? (
-                        <ul className="mt-3 space-y-2">
-                            {summaryEntries.map((entry, index) => (
-                                <li
-                                    key={`${entry.existingId ?? 'new'}-${index}-${entry.startTime}-${entry.endTime}`}
-                                    data-testid="timeslot-summary-item"
-                                    className="rounded-md bg-[var(--cohi-bg-light)]/60 px-3 py-2"
-                                >
-                                    <p className="text-sm font-medium text-[var(--cohi-text-dark)]">
-                                        {formatWeekdaySummary(entry.weekdays)}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        {entry.startTime} - {entry.endTime}
-                                    </p>
-                                </li>
-                            ))}
-                        </ul>
+
+                    {onChange ? (
+                        <DndContext
+                            sensors={sensors}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                            onDragCancel={handleDragCancel}
+                        >
+                            {grid}
+                        </DndContext>
                     ) : (
-                        <p className="mt-2 text-sm text-gray-400">아직 표시할 시간대가 없습니다.</p>
+                        grid
                     )}
                 </div>
             </div>
