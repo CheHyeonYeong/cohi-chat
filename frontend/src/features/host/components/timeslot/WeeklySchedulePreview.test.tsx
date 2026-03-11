@@ -155,6 +155,30 @@ describe('WeeklySchedulePreview', () => {
             expect(onChange).toHaveBeenCalledWith([]);
             confirmSpy.mockRestore();
         });
+
+        it('기존 시간대 우클릭 삭제는 onDeleteEntry로 위임해야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1], startTime: '09:00', endTime: '10:00', existingId: 101 },
+            ];
+            const onChange = vi.fn();
+            const onDeleteEntry = vi.fn();
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+            const { getByTestId } = render(
+                <WeeklySchedulePreview
+                    entries={entries}
+                    onChange={onChange}
+                    onDeleteEntry={onDeleteEntry}
+                />,
+            );
+
+            fireEvent.contextMenu(getByTestId('grid-cell-0-2'));
+
+            expect(confirmSpy).toHaveBeenCalledTimes(1);
+            expect(onDeleteEntry).toHaveBeenCalledWith(entries[0], 0);
+            expect(onChange).not.toHaveBeenCalled();
+            confirmSpy.mockRestore();
+        });
     });
 });
 

@@ -21,6 +21,7 @@ interface WeeklySchedulePreviewProps {
     entries: TimeSlotEntry[];
     onChange?: (entries: TimeSlotEntry[]) => void;
     onDuplicateBlocked?: (entry: TimeSlotEntry) => void;
+    onDeleteEntry?: (entry: TimeSlotEntry, index: number) => void;
 }
 
 
@@ -195,7 +196,12 @@ function WeeklyGrid({
 }
 
 
-export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBlocked }: WeeklySchedulePreviewProps) {
+export default function WeeklySchedulePreview({
+    entries,
+    onChange,
+    onDuplicateBlocked,
+    onDeleteEntry,
+}: WeeklySchedulePreviewProps) {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -284,11 +290,18 @@ export default function WeeklySchedulePreview({ entries, onChange, onDuplicateBl
         if (!matched || matched.length === 0) return;
 
         const targetIndex = matched[matched.length - 1];
+        const targetEntry = entries[targetIndex];
+        if (!targetEntry) return;
         const confirmDelete = window.confirm('선택한 예약 시간대를 삭제할까요?');
         if (!confirmDelete) return;
 
+        if (onDeleteEntry) {
+            onDeleteEntry(targetEntry, targetIndex);
+            return;
+        }
+
         onChange(entries.filter((_, index) => index !== targetIndex));
-    }, [cellEntryIndices, entries, onChange]);
+    }, [cellEntryIndices, entries, onChange, onDeleteEntry]);
 
     const grid = (
         <WeeklyGrid

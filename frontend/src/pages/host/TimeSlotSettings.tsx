@@ -190,6 +190,15 @@ export default function TimeSlotSettings() {
         }
     };
 
+    const handlePreviewDelete = (entry: TimeSlotEntry, index: number) => {
+        if (entry.existingId != null) {
+            void handleDelete(entry.existingId);
+            return;
+        }
+
+        setEntries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    };
+
     const summaryText = entries
         .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
         .join(' / ');
@@ -296,6 +305,7 @@ export default function TimeSlotSettings() {
                                 entries={entries}
                                 onChange={setEntries}
                                 onDuplicateBlocked={handleDuplicateBlocked}
+                                onDeleteEntry={handlePreviewDelete}
                             />
                         </div>
                     </div>
