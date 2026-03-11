@@ -138,6 +138,19 @@ describe('WeeklySchedulePreview', () => {
             expect(highlightedCells.length).toBeGreaterThan(0);
         });
 
+        it('현재 시간대 텍스트 목록을 같이 표시해야 한다', () => {
+            const entries: TimeSlotEntry[] = [
+                { weekdays: [1, 3], startTime: '09:00', endTime: '10:00' },
+            ];
+
+            const { getAllByTestId, container } = render(
+                <WeeklySchedulePreview entries={entries} onChange={vi.fn()} />,
+            );
+
+            expect(getAllByTestId('timeslot-summary-item')).toHaveLength(1);
+            expect(container.textContent).toContain('09:00 - 10:00');
+        });
+
         it('하이라이트된 셀 우클릭 후 확인하면 해당 시간대를 삭제해야 한다', () => {
             const entries: TimeSlotEntry[] = [
                 { weekdays: [1], startTime: '09:00', endTime: '10:00' },

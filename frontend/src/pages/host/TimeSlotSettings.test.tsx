@@ -205,3 +205,25 @@ describe('TimeSlotSettings preview delete', () => {
         await waitFor(() => expect(mockDeleteTimeslotMutate).toHaveBeenCalledTimes(1));
     });
 });
+
+describe('TimeSlotSettings loaded timeslots', () => {
+    it('accepts legacy startTime/endTime responses when loading existing entries', async () => {
+        vi.mocked(useMyTimeslots).mockReturnValue({
+            data: [
+                {
+                    ...makeTimeslot(),
+                    startedAt: undefined as unknown as string,
+                    endedAt: undefined as unknown as string,
+                    startTime: '09:00:00',
+                    endTime: '10:00:00',
+                },
+            ],
+            isLoading: false,
+            error: null,
+        } as unknown as ReturnType<typeof useMyTimeslots>);
+
+        render(<TimeSlotSettings />);
+
+        await waitFor(() => expect(screen.getByRole('button', { name: 'trigger-grid-delete' })).toBeEnabled());
+    });
+});

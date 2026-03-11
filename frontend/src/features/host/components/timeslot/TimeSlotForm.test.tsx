@@ -231,4 +231,9 @@ describe('TimeSlotForm', () => {
         });
     });
 
+    it('shows the entry summary text in the header', () => {
+        render(<TimeSlotForm {...defaultProps} />);
+
+        expect(screen.getByTestId('entry-summary-0').textContent).toContain('09:00 - 18:00');
+    });
 });

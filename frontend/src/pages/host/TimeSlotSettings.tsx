@@ -29,13 +29,29 @@ function normalizeTime(time?: string | null): string {
     return typeof time === 'string' ? time.slice(0, 5) : '';
 }
 
+function readTimeslotStart(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('startedAt' in ts ? ts.startedAt : undefined) ??
+        ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
+        null,
+    );
+}
+
+function readTimeslotEnd(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('endedAt' in ts ? ts.endedAt : undefined) ??
+        ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
+        null,
+    );
+}
+
 function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
     if (timeslots.length === 0) return [];
     return timeslots
         .map((ts) => ({
             weekdays: ts.weekdays,
-            startTime: normalizeTime(ts.startedAt),
-            endTime: normalizeTime(ts.endedAt),
+            startTime: readTimeslotStart(ts),
+            endTime: readTimeslotEnd(ts),
             startDate: ts.startDate ?? undefined,
             endDate: ts.endDate ?? undefined,
             existingId: ts.id,
