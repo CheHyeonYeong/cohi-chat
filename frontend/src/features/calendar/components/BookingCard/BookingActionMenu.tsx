@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useReportHost, useReportGuest, useReportStatus } from '../../hooks';
 import type { IBookingDetail } from '../../types';
 import { useAuth } from '~/features/member';
-import { getErrorMessage } from '~/libs/errorUtils';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
 import NoShowReportModal from './NoShowReportModal';
 
 interface BookingActionMenuProps {
@@ -54,10 +54,10 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
             setLocallyReported((prev) => new Set([...prev, target]));
             setReportTarget(null);
         } catch (err) {
-            const cause = (err as Error & { cause?: unknown }).cause;
-            if (Number(cause) === 409) {
+            if (isHttpError(err, 409)) {
                 setLocallyReported((prev) => new Set([...prev, target]));
                 setReportTarget(null);
+                setReportError(null);
             } else {
                 setReportError(getErrorMessage(err, '신고 처리 중 오류가 발생했습니다.'));
             }

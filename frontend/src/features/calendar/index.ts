@@ -23,6 +23,7 @@ export {
     useGuestNoShowHistory,
     useReportGuest,
     useReportGuestNoShow,
+    useReportStatus,
 } from './hooks';
 
 // Utils

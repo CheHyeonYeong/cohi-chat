@@ -8,6 +8,7 @@ export function useReportGuest(bookingId: number, guestId?: string) {
         mutationFn: (reason?: string) => reportGuest(bookingId, reason),
         onSuccess: async () => {
             await Promise.all([
+                queryClient.invalidateQueries({ queryKey: [...calendarKeys.booking(bookingId), 'report-status'] }),
                 queryClient.invalidateQueries({ queryKey: calendarKeys.booking(bookingId) }),
                 queryClient.invalidateQueries({ queryKey: calendarKeys.myBookingsAll() }),
                 ...(guestId

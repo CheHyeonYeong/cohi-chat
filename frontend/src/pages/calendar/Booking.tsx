@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useReportHost, useNoShowHistory, useReportGuest, useGuestNoShowHistory } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useReportHost, useNoShowHistory, useReportGuest, useGuestNoShowHistory, useReportStatus } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -30,7 +30,7 @@ import {
     FILE_UPLOAD_LIMITS,
     type FileValidationError,
 } from '~/libs/fileValidation';
-import { getErrorMessage } from '~/libs/errorUtils';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
 import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
 import { canUploadMoreFiles } from './bookingUploadUtils';
@@ -118,6 +118,7 @@ export default function Booking() {
     const { data: noShowHistory } = useNoShowHistory(isGuest ? booking?.hostId ?? undefined : undefined);
     const { mutateAsync: reportGuestNoShow, isPending: isReportingGuest, error: guestReportError, reset: resetGuestReport } = useReportGuest(Number(id), booking?.guestId);
     const { data: guestNoShowHistory } = useGuestNoShowHistory(isHost ? booking?.guestId : undefined);
+    const { data: reportStatus } = useReportStatus(Number(id));
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -130,7 +131,13 @@ export default function Booking() {
     // Report state: which target is being reported ('host' | 'guest' | null = not showing form)
     const [reportTarget, setReportTarget] = useState<'host' | 'guest' | null>(null);
     const [reportReason, setReportReason] = useState('');
-    const [alreadyReported, setAlreadyReported] = useState<Set<'host' | 'guest'>>(new Set());
+    const [locallyReported, setLocallyReported] = useState<Set<'host' | 'guest'>>(new Set());
+    const alreadyReported = useMemo(() => {
+        const s = new Set(locallyReported);
+        if (reportStatus?.reportedHost) s.add('host');
+        if (reportStatus?.reportedGuest) s.add('guest');
+        return s;
+    }, [reportStatus, locallyReported]);
 
 
     // Sortable file list – preserves DnD order across refetches
@@ -257,13 +264,12 @@ export default function Booking() {
         const mutateAsync = target === 'host' ? reportNoShow : reportGuestNoShow;
         try {
             await mutateAsync(reportReason || undefined);
-            setAlreadyReported((prev) => new Set([...prev, target]));
+            setLocallyReported((prev) => new Set([...prev, target]));
             setReportTarget(null);
             setReportReason('');
         } catch (err) {
-            const cause = (err as Error & { cause?: unknown }).cause;
-            if (Number(cause) === 409) {
-                setAlreadyReported((prev) => new Set([...prev, target]));
+            if (isHttpError(err, 409)) {
+                setLocallyReported((prev) => new Set([...prev, target]));
                 setReportTarget(null);
                 setReportReason('');
             }

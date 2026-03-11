@@ -116,6 +116,8 @@ export default function MyBookings() {
         return sortedIds.map(id => bookingMap.get(id)).filter((b): b is IBookingDetail => b != null);
     }, [bookings?.bookings, sortedIds]);
 
+    const sortableItemIds = useMemo(() => orderedBookings.map((b) => b.id), [orderedBookings]);
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
@@ -219,7 +221,7 @@ export default function MyBookings() {
                                     onDragEnd={handleDragEnd}
                                 >
                                     <SortableContext
-                                        items={orderedBookings.map((b) => b.id)}
+                                        items={sortableItemIds}
                                         strategy={verticalListSortingStrategy}
                                     >
                                         {orderedBookings.map((booking) => (
