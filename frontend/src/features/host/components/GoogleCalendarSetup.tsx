@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '~/components/button/Button';
 import { Card } from '~/components/card';
+import { CheckIcon, CopyIcon, ExternalLinkIcon } from '~/components/icons';
 import { useServiceAccountEmail } from '~/features/host/hooks/useServiceAccountEmail';
 import { CALENDAR_ID_REGEX } from '~/features/host/utils/validation';
 import calendarSettingsGuide from '~/assets/images/host-register/calendar-settings-guide.png';
@@ -15,45 +16,6 @@ interface GoogleCalendarSetupProps {
     onChange: (data: GoogleCalendarSetupData) => void;
     errors: Record<string, string>;
     noShadow?: boolean;
-}
-
-export function CalendarIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-            <path d="M3 10H21" stroke="currentColor" strokeWidth="2" />
-            <path d="M8 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <path d="M16 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <text x="12" y="18" textAnchor="middle" fill="currentColor" fontSize="7" fontWeight="bold">21</text>
-        </svg>
-    );
-}
-
-function ExternalLinkIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 3H3V13H13V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M9 2H14V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M14 2L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function CopyIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 11V3C3 2.44772 3.44772 2 4 2H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function CheckIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 8L6.5 11.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
 }
 
 export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
