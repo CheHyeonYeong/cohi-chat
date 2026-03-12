@@ -1,5 +1,5 @@
 import React from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 
 interface PaginationProps {
     page: number;
@@ -38,4 +38,4 @@ const Pagination: React.FC<PaginationProps> = ({ page, pageSize, totalCount, onP
     );
 };
 
-export default Pagination; 
+export { Pagination };

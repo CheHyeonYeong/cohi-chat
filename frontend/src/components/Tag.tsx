@@ -30,7 +30,7 @@ const sizeStyles: Record<string, string> = {
     md: 'px-2 py-0.5 text-xs',
 };
 
-export default function Tag({
+export function Tag({
     children,
     variant = 'filled',
     color = 'primary',

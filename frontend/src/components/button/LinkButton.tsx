@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { createLink } from "@tanstack/react-router";
-import Button from "./Button";
+import { Button } from "./Button";
 
 interface LinkButtonProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     variant: "primary" | "secondary" | "outline";
@@ -19,8 +19,4 @@ const LinkButtonInner = forwardRef<HTMLAnchorElement, LinkButtonProps>(
     }
 );
 
-LinkButtonInner.displayName = "LinkButtonInner";
-
-const LinkButton = createLink(LinkButtonInner);
-
-export default LinkButton;
+export const LinkButton = createLink(LinkButtonInner);

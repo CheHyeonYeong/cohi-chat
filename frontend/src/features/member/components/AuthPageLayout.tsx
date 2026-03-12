@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { CoffeeCupIcon } from '~/components/icons/CoffeeCupIcon';
+import { useDocumentTitle } from '~/hooks/useDocumentTitle';
 
 interface AuthPageLayoutProps {
     title: string;
@@ -7,6 +8,8 @@ interface AuthPageLayoutProps {
 }
 
 export function AuthPageLayout({ title, children }: AuthPageLayoutProps) {
+    useDocumentTitle(title);
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)]">
             <Link to="/" className="flex items-center gap-2 mb-8">
@@ -15,9 +18,9 @@ export function AuthPageLayout({ title, children }: AuthPageLayoutProps) {
             </Link>
 
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">
+                <h1 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">
                     {title}
-                </h2>
+                </h1>
                 {children}
             </div>
         </div>

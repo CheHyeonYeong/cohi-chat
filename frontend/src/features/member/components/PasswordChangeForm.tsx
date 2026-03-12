@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
 import { usePasswordValidation, type PasswordFormValues } from '../hooks/usePasswordValidation';

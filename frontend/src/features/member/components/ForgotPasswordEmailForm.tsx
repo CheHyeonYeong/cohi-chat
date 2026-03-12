@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { useRequestPasswordReset } from '../hooks/usePasswordReset';
 import { validateEmail } from '../utils/validators';

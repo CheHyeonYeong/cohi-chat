@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import CoffeeCupIcon from '~/components/icons/CoffeeCupIcon';
+import { CoffeeCupIcon } from '~/components/icons/CoffeeCupIcon';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';

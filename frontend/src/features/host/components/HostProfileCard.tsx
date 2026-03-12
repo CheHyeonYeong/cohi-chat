@@ -7,7 +7,7 @@ interface HostProfileCardProps {
     className?: string;
 }
 
-export default function HostProfileCard({ host, className }: HostProfileCardProps) {
+export function HostProfileCard({ host, className }: HostProfileCardProps) {
     return (
         <Card
             variant="elevated"

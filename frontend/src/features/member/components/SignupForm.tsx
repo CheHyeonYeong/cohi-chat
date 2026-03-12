@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { newRandomNick } from 'random-korean-nickname';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';

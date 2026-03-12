@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
 import { useProfileValidation, type ProfileFormValues } from '../hooks/useProfileValidation';
