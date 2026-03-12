@@ -85,9 +85,7 @@ export default function HostRegister() {
                 onSuccess: async () => {
                     setIsCompleted(true);
                     try {
-                        const response = await refreshTokenApi();
-                        localStorage.setItem('auth_token', response.accessToken);
-                        localStorage.setItem('refresh_token', response.refreshToken);
+                        await refreshTokenApi();
                     } catch {
                         setTokenRefreshFailed(true);
                     }

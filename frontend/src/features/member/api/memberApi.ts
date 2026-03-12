@@ -26,9 +26,9 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     });
 
     if (!response) {
-        throw new Error('서버로부터 응답을 받지 못했습니다.');
+        throw new Error('로그인 응답을 받지 못했습니다.');
     }
-    if (!response.accessToken) {
+    if (!response.username) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
@@ -55,14 +55,10 @@ export async function logoutApi(): Promise<void> {
 }
 
 export async function refreshTokenApi(): Promise<LoginResponse> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-        throw new Error('Refresh token이 없습니다.');
-    }
     const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
         method: 'POST',
-        body: { refreshToken },
     });
+
     if (!response || !response.accessToken) {
         throw new Error('토큰 갱신에 실패했습니다.');
     }

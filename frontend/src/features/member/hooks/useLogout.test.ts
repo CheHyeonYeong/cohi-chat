@@ -35,8 +35,6 @@ describe('useLogout', () => {
             },
         });
 
-        localStorage.setItem('auth_token', 'test-token');
-        localStorage.setItem('refresh_token', 'test-refresh-token');
         localStorage.setItem('username', 'testuser');
 
         vi.clearAllMocks();
@@ -48,7 +46,7 @@ describe('useLogout', () => {
         vi.restoreAllMocks();
     });
 
-    it('should call logout API when auth token exists', async () => {
+    it('calls logout API', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
@@ -58,19 +56,17 @@ describe('useLogout', () => {
         expect(logoutApi).toHaveBeenCalledTimes(1);
     });
 
-    it('should clear localStorage on logout', async () => {
+    it('clears stored username on logout', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
         await result.current.logout();
 
-        expect(localStorage.getItem('auth_token')).toBeNull();
-        expect(localStorage.getItem('refresh_token')).toBeNull();
         expect(localStorage.getItem('username')).toBeNull();
     });
 
-    it('should navigate to login page after logout', async () => {
+    it('navigates to login page after logout', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
@@ -80,7 +76,7 @@ describe('useLogout', () => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
-    it('should clear localStorage even if API call fails', async () => {
+    it('clears username even if API call fails', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
@@ -89,13 +85,11 @@ describe('useLogout', () => {
 
         await result.current.logout();
 
-        expect(localStorage.getItem('auth_token')).toBeNull();
-        expect(localStorage.getItem('refresh_token')).toBeNull();
         expect(localStorage.getItem('username')).toBeNull();
     });
 
-    it('should not call API if no auth token exists', async () => {
-        localStorage.removeItem('auth_token');
+    it('still calls API when username is missing', async () => {
+        localStorage.removeItem('username');
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
@@ -103,6 +97,6 @@ describe('useLogout', () => {
 
         await result.current.logout();
 
-        expect(logoutApi).not.toHaveBeenCalled();
+        expect(logoutApi).toHaveBeenCalledTimes(1);
     });
 });

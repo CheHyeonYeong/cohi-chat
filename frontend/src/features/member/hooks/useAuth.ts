@@ -1,22 +1,25 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useSyncExternalStore } from 'react';
-import { getCurrentUsername, getValidToken } from '~/libs/jwt';
 import { getUserApi } from '../api/memberApi';
+import { getStoredUsername } from '../utils/authStorage';
 import { subscribeAuthChange } from '../utils/authEvent';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
-function getTokenSnapshot() {
-    return getValidToken();
+function getUsernameSnapshot() {
+    return getStoredUsername();
 }
 
-function getServerTokenSnapshot() {
+function getServerUsernameSnapshot() {
     return null;
 }
 
 export function useAuth() {
     const queryClient = useQueryClient();
-    const token = useSyncExternalStore(subscribeAuthChange, getTokenSnapshot, getServerTokenSnapshot);
-    const username = token ? getCurrentUsername() : null;
+    const username = useSyncExternalStore(
+        subscribeAuthChange,
+        getUsernameSnapshot,
+        getServerUsernameSnapshot,
+    );
 
     const invalidateAuth = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ['auth'] });
@@ -41,7 +44,7 @@ export function useAuth() {
 
     return {
         ...query,
-        isAuthenticated: !!token && !!username,
+        isAuthenticated: !!username,
         invalidateAuth,
     };
 }

@@ -22,7 +22,6 @@ import { useMyBookings, useBooking, useUploadBookingFile } from '~/features/cale
 import BookingCard from '~/features/calendar/components/BookingCard';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
-import { getValidToken } from '~/libs/jwt';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/calendar';
 
@@ -121,9 +120,8 @@ export default function MyBookings() {
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
-            const token = getValidToken();
             const res = await fetch(`${API_URL}/bookings/${selectedId}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'include',
             });
             if (!res.ok) throw new Error('다운로드 실패');
             const blob = await res.blob();

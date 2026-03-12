@@ -41,9 +41,9 @@ export interface LoginRequest extends LoginCredentials {
 }
 
 export interface LoginResponse {
-    accessToken: string;
+    accessToken?: string;
     expiredInMinutes: number;
-    refreshToken: string;
+    refreshToken?: string;
     username: string;
     displayName: string;
 }

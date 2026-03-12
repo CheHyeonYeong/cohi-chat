@@ -17,6 +17,9 @@ vi.mock('~/features/member/api/memberApi', () => ({
     refreshTokenApi: vi.fn().mockResolvedValue({
         accessToken: 'mock-access-token',
         refreshToken: 'mock-refresh-token',
+        username: 'host-user',
+        displayName: 'Host User',
+        expiredInMinutes: 60,
     }),
 }));
 

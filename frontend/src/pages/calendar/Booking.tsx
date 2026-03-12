@@ -31,7 +31,6 @@ import {
     type FileValidationError,
 } from '~/libs/fileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
-import { getValidToken } from '~/libs/jwt';
 import { cn } from '~/libs/cn';
 import { canUploadMoreFiles } from './bookingUploadUtils';
 
@@ -224,9 +223,8 @@ export default function Booking() {
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
             setDownloadError(null);
-            const token = getValidToken();
             const response = await fetch(`${API_URL}/bookings/${id}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'include',
             });
             if (!response.ok) throw new Error('다운로드에 실패했습니다.');
 

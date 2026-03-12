@@ -1,51 +1,48 @@
+import { clearAuthenticatedUser } from '~/features/member/utils/authStorage';
+
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const REFRESH_URL = `${API_BASE}/members/v1/refresh`;
 
-// 동시 401 요청이 여러 개일 때 refresh를 한 번만 시도하기 위한 Promise 공유
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
-async function performRefresh(): Promise<string | null> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return null;
-
+async function performRefresh(): Promise<boolean> {
     try {
-        const res = await fetch(`${API_BASE}/members/v1/refresh`, {
+        const response = await fetch(REFRESH_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
+            credentials: 'include',
         });
 
-        const body = await res.json();
-        
-        if (!res.ok) {
-            // Grace Window 히트인 경우 특수 에러 처리
-            if (body?.error?.code === 'GRACE_WINDOW_HIT') {
+        let payload: unknown = null;
+        try {
+            payload = await response.json();
+        } catch {
+            payload = null;
+        }
+
+        if (!response.ok) {
+            const errorCode = typeof payload === 'object' && payload !== null
+                ? (payload as { error?: { code?: string } }).error?.code
+                : undefined;
+            if (errorCode === 'GRACE_WINDOW_HIT') {
                 throw new Error('GRACE_WINDOW_HIT');
             }
-            return null;
+            return false;
         }
 
-        const data = body?.data ?? body;
-        if (!data?.accessToken) return null;
-
-        localStorage.setItem('auth_token', data.accessToken);
-        if (data.refreshToken) {
-            localStorage.setItem('refresh_token', data.refreshToken);
+        return true;
+    } catch (error) {
+        if (error instanceof Error && error.message === 'GRACE_WINDOW_HIT') {
+            throw error;
         }
-        window.dispatchEvent(new Event('auth-change'));
-        return data.accessToken;
-    } catch (err) {
-        if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-            throw err;
-        }
-        return null;
+        return false;
     }
 }
 
-function tryRefreshToken(): Promise<string | null> {
+function tryRefreshToken(): Promise<boolean> {
     if (!refreshPromise) {
         refreshPromise = performRefresh().finally(() => {
             refreshPromise = null;
@@ -54,52 +51,52 @@ function tryRefreshToken(): Promise<string | null> {
     return refreshPromise;
 }
 
-function clearAuthTokens(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('username');
-    window.dispatchEvent(new Event('auth-change'));
+function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, string>): BodyInit | undefined {
+    if (!body) {
+        return undefined;
+    }
+
+    if (body instanceof FormData) {
+        return body;
+    }
+
+    if (typeof body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        return JSON.stringify(body);
+    }
+
+    return body;
+}
+
+function shouldRetryWithRefresh(url: string, isRetry: boolean): boolean {
+    return !isRetry && url !== REFRESH_URL;
 }
 
 async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> {
-    const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
-    let body: BodyInit | undefined;
+    const headers: Record<string, string> = { ...(options.headers as Record<string, string> | undefined) };
+    const body = normalizeBody(options.body, headers);
 
-    const authToken = localStorage.getItem('auth_token');
-    if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-    }
+    const response = await fetch(url, {
+        ...options,
+        headers,
+        body,
+        credentials: options.credentials ?? 'include',
+    });
 
-    if (options.body) {
-        if (options.body instanceof FormData) {
-            body = options.body;
-        } else if (typeof options.body === 'object') {
-            body = JSON.stringify(options.body);
-            headers['Content-Type'] = 'application/json';
-        } else {
-            body = options.body;
-        }
-    }
-
-    const response = await fetch(url, { ...options, headers, body });
-
-    // 401 → refresh 시도 후 원래 요청 1회 재시도
-    if (response.status === 401 && !isRetry) {
+    if (response.status === 401 && shouldRetryWithRefresh(url, isRetry)) {
         try {
-            const newToken = await tryRefreshToken();
-            if (newToken) {
+            const refreshed = await tryRefreshToken();
+            if (refreshed) {
                 return doRequest<T>(url, options, true);
             }
-            // Refresh 실패 (진짜 만료 등)
-            clearAuthTokens();
-            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
-        } catch (err) {
-            if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-                // Grace Window 상황에서는 로그아웃하지 않고 에러만 던짐 (다른 요청이 토큰을 업데이트했을 것임)
-                throw new Error('토큰 재발급 유예 기간입니다. 다시 시도해주세요.', { cause: 401 });
+            clearAuthenticatedUser();
+            throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.', { cause: 401 });
+        } catch (error) {
+            if (error instanceof Error && error.message === 'GRACE_WINDOW_HIT') {
+                throw new Error('토큰 재발급 대기 중입니다. 다시 시도해 주세요.', { cause: 401 });
             }
-            clearAuthTokens();
-            throw err;
+            clearAuthenticatedUser();
+            throw error;
         }
     }
 
@@ -118,8 +115,8 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
     if (!text) {
         return undefined as T;
     }
-    const data = JSON.parse(text);
 
+    const data = JSON.parse(text);
     if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
         return (data as { success: boolean; data: T }).data;
     }

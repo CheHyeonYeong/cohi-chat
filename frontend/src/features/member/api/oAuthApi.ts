@@ -17,7 +17,7 @@ export async function oAuthCallbackApi(provider: string, code: string, state: st
         method: 'POST',
         body: { code, state },
     });
-    if (!response?.accessToken) {
+    if (!response?.username) {
         throw new Error('소셜 로그인 응답이 올바르지 않습니다.');
     }
     return response;
