@@ -5,22 +5,25 @@ import { z } from 'zod'
 import {
     createRoute,
 } from '@tanstack/react-router'
-import Calendar from '../pages/calendar/Calendar'
-import { LoginForm, SignupForm } from '~/features/member'
-import Home from '~/pages/main/Home'
-import OAuthCallbackPage from '~/pages/oauth/OAuthCallbackPage'
-import MyBookingsGuarded from '~/pages/calendar/MyBookingsGuarded'
-import Booking from '~/pages/calendar/Booking'
-import HostRegisterGuarded from '~/pages/host/HostRegisterGuarded'
-import TimeSlotSettingsGuarded from '~/pages/host/TimeSlotSettingsGuarded'
-import CalendarSettingsGuarded from '~/pages/host/CalendarSettingsGuarded'
-import SettingsGuarded from '~/pages/settings/SettingsGuarded'
-import HostProfile from '~/pages/host/HostProfile'
-import Footer from '~/components/Footer'
-import Terms from '~/pages/legal/Terms'
-import Privacy from '~/pages/legal/Privacy'
-import ForgotPassword from '~/pages/ForgotPassword'
-import ResetPassword from '~/pages/ResetPassword'
+import { Calendar } from '~/pages/booking/Calendar'
+import { AuthGuard } from '~/features/member'
+import { HostGuard } from '~/features/host'
+import { Home } from '~/pages/Home'
+import { Login } from '~/pages/Login'
+import { Signup } from '~/pages/Signup'
+import { CallbackPage } from '~/pages/oauth/CallbackPage'
+import { MyBookings } from '~/pages/booking/MyBookings'
+import { Detail as BookingDetail } from '~/pages/booking/Detail'
+import { Register } from '~/pages/host/Register'
+import { TimeSlotSettings } from '~/pages/host/TimeSlotSettings'
+import { Settings as HostSettings } from '~/pages/host/Settings'
+import { Settings as MemberSettings } from '~/pages/member/Settings'
+import { Profile } from '~/pages/host/Profile'
+import { Footer } from '~/components/Footer'
+import { Terms } from '~/pages/Terms'
+import { Privacy } from '~/pages/Privacy'
+import { ForgotPassword } from '~/pages/ForgotPassword'
+import { ResetPassword } from '~/pages/ResetPassword'
 
 // DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
 // - import.meta.env.DEV는 빌드 시점에 boolean으로 치환되어 dead code elimination 적용
@@ -64,8 +67,8 @@ const homeRoute = createRoute({
 
 const myBookingsRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/my-bookings',
-    component: MyBookingsGuarded,
+    path: '/booking/my-bookings',
+    component: () => <AuthGuard><MyBookings /></AuthGuard>,
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
         pageSize: z.number().min(1).optional().default(() => 10),
@@ -76,7 +79,7 @@ const myBookingsRoute = createRoute({
 const bookingRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/booking/$id',
-    component: Booking,
+    component: BookingDetail,
     params: z.object({
         id: z.string().transform<number>((val) => parseInt(val, 10)).pipe(z.number().min(1)),
     }),
@@ -86,38 +89,38 @@ const bookingRoute = createRoute({
 const loginRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/login',
-    component: LoginForm,
+    component: Login,
 })
 
 const signupRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/signup',
-    component: SignupForm,
+    component: Signup,
 })
 
 
 const hostRegisterRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/host/register',
-    component: HostRegisterGuarded,
+    component: () => <AuthGuard><Register /></AuthGuard>,
 })
 
 const hostTimeslotsRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/host/timeslots',
-    component: TimeSlotSettingsGuarded,
+    component: () => <HostGuard><TimeSlotSettings /></HostGuard>,
 })
 
-const hostCalendarSettingsRoute = createRoute({
+const hostSettingsRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/host/settings',
-    component: CalendarSettingsGuarded,
+    component: () => <HostGuard><HostSettings /></HostGuard>,
 })
 
 const hostProfileRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/host/$hostId',
-    component: HostProfile,
+    component: Profile,
     params: z.object({
         hostId: z.string(),
     }),
@@ -125,7 +128,7 @@ const hostProfileRoute = createRoute({
 
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/calendar/$slug',
+    path: '/booking/new/$slug',
     component: Calendar,
     params: z.object({
         slug: z.string().min(4),
@@ -139,7 +142,7 @@ const calendarRoute = createRoute({
 const oAuthCallbackRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/oauth/callback/$provider',
-    component: OAuthCallbackPage,
+    component: CallbackPage,
     validateSearch: z.object({
         code: z.string().optional(),
         error: z.string().optional(),
@@ -159,10 +162,10 @@ const privacyRoute = createRoute({
     component: Privacy,
 })
 
-const settingsRoute = createRoute({
+const memberSettingsRoute = createRoute({
     getParentRoute: () => RootRoute,
-    path: '/settings',
-    component: SettingsGuarded,
+    path: '/member/settings',
+    component: () => <AuthGuard><MemberSettings /></AuthGuard>,
 })
 
 const forgotPasswordRoute = createRoute({
@@ -189,12 +192,12 @@ export const routeTree = RootRoute.addChildren([
     bookingRoute,
     hostRegisterRoute,
     hostTimeslotsRoute,
-    hostCalendarSettingsRoute,
+    hostSettingsRoute,
     hostProfileRoute,
     oAuthCallbackRoute,
     termsRoute,
     privacyRoute,
-    settingsRoute,
+    memberSettingsRoute,
     forgotPasswordRoute,
     resetPasswordRoute,
 ])
