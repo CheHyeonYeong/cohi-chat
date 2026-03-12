@@ -36,7 +36,7 @@ export default function BookingActionMenu({ booking }: BookingActionMenuProps) {
     }, [reportStatus, locallyReported]);
 
     const showReportHost = !!currentUser && currentUser.id === booking.guestId;
-    const showReportGuest = !!currentUser && currentUser.id === booking.hostId;
+    const showReportGuest = !!currentUser && currentUser.id === booking.hostId && booking.attendanceStatus === 'NO_SHOW';
     const hasAnyAction = showReportHost || showReportGuest;
 
     const hostDisplayName = booking.host?.displayName?.trim() || '호스트';

@@ -129,6 +129,120 @@ export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
     return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
 }
 
+export async function deleteBookingFile(bookingId: number, fileId: number): Promise<void> {
+    await httpClient<void>(`${API_URL}/bookings/${bookingId}/files/${fileId}`, {
+        method: 'DELETE',
+    });
+}
+
+// Pre-signed URL 관련 타입
+export interface PresignedUploadUrlResponse {
+    url: string;
+    objectKey: string;
+    expiresIn: number;
+}
+
+export interface PresignedDownloadUrlResponse {
+    url: string;
+    expiresIn: number;
+}
+
+export interface ConfirmUploadRequest {
+    objectKey: string;
+    originalFileName: string;
+    contentType: string;
+    fileSize: number;
+}
+
+export async function getPresignedUploadUrl(
+    bookingId: number,
+    fileName: string,
+    contentType: string
+): Promise<PresignedUploadUrlResponse> {
+    return await httpClient<PresignedUploadUrlResponse>(
+        `${API_URL}/bookings/${bookingId}/files/presigned-upload-url`,
+        {
+            method: 'POST',
+            body: { fileName, contentType },
+        }
+    );
+}
+
+export async function confirmUpload(
+    bookingId: number,
+    request: ConfirmUploadRequest
+): Promise<IBookingFile> {
+    return await httpClient<IBookingFile>(
+        `${API_URL}/bookings/${bookingId}/files/confirm-upload`,
+        {
+            method: 'POST',
+            body: request,
+        }
+    );
+}
+
+export async function getPresignedDownloadUrl(
+    bookingId: number,
+    fileId: number
+): Promise<PresignedDownloadUrlResponse> {
+    return await httpClient<PresignedDownloadUrlResponse>(
+        `${API_URL}/bookings/${bookingId}/files/${fileId}/presigned-download-url`
+    );
+}
+
+export async function uploadFileToS3(
+    presignedUrl: string,
+    file: File
+): Promise<void> {
+    const contentType = file.type || 'application/octet-stream';
+    const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+            'Content-Type': contentType,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error('S3 업로드 실패');
+    }
+}
+
+export async function uploadBookingFileWithPresignedUrl(
+    bookingId: number,
+    file: File
+): Promise<IBookingFile> {
+    const { url, objectKey } = await getPresignedUploadUrl(
+        bookingId,
+        file.name,
+        file.type || 'application/octet-stream'
+    );
+
+    await uploadFileToS3(url, file);
+
+    return await confirmUpload(bookingId, {
+        objectKey,
+        originalFileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+    });
+}
+
+export async function downloadFileWithPresignedUrl(
+    bookingId: number,
+    fileId: number,
+    fileName: string
+): Promise<void> {
+    const { url } = await getPresignedDownloadUrl(bookingId, fileId);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 export async function reportGuest(bookingId: number, reason?: string): Promise<IGuestNoShowHistoryItem> {
     return await httpClient<IGuestNoShowHistoryItem>(`${API_URL}/bookings/${bookingId}/report-guest-noshow`, {
         method: 'POST',

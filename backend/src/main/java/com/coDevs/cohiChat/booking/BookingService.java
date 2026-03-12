@@ -507,6 +507,10 @@ public class BookingService {
 
         validateHostAccess(booking, reporterId);
 
+        if (!booking.getAttendanceStatus().isHostReportable()) {
+            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
+        }
+
         if (guestNoShowHistoryRepository.existsByBookingIdAndReportedBy(bookingId, reporterId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }

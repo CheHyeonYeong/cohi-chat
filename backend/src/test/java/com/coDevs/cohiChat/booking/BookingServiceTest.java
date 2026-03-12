@@ -1794,6 +1794,22 @@ class BookingServiceTest {
     }
 
     @Test
+    @DisplayName("실패: NO_SHOW 아닌 상태 예약에 게스트 노쇼 신고 시도")
+    void reportGuestNoShowFailWhenNotReportableStatus() {
+        // given
+        Long bookingId = 1L;
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        // SCHEDULED 상태 그대로 (NO_SHOW 아님)
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.reportGuestNoShow(bookingId, HOST_ID, "사유"))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_NOT_REPORTABLE);
+    }
+
+    @Test
     @DisplayName("실패: 존재하지 않는 예약에 게스트 노쇼 신고")
     void reportGuestNoShowFailWhenBookingNotFound() {
         // given
