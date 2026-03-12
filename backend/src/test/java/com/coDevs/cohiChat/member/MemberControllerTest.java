@@ -32,14 +32,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
+import com.coDevs.cohiChat.global.security.auth.AuthTokenResolver;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
+import com.coDevs.cohiChat.member.request.RefreshTokenRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
 import com.coDevs.cohiChat.member.request.UpdateMemberRequestDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -57,10 +61,48 @@ class MemberControllerTest {
 	@MockitoBean
 	private MemberService memberService;
 
+	@MockitoBean
+	private AuthTokenResolver authTokenResolver;
+
+	@MockitoBean
+	private AuthCookieService authCookieService;
+
 	private static final String TEST_USERNAME = "testtest";
 	private static final String TEST_EMAIL = "test@test.com";
 	private static final String TEST_PASSWORD = "testPassword123";
 	private static final String TEST_DISPLAY_NAME = "testDisplayName";
+
+	@Nested
+	@DisplayName("由ы봽?덉떆 API")
+	class Refresh {
+
+		@Test
+		@DisplayName("由ы봽?덉떆 ?깃났 ?묐떟 ?뺤떇 寃利?")
+		void refreshSuccess() throws Exception {
+			RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
+				.accessToken("new-access-token")
+				.refreshToken("new-refresh-token")
+				.expiredInMinutes(60)
+				.build();
+
+			when(authTokenResolver.resolveRefreshToken(any())).thenReturn(null);
+			when(memberService.refreshAccessToken("body-refresh-token")).thenReturn(refreshResponse);
+
+			mockMvc.perform(post("/members/v1/refresh")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(
+						RefreshTokenRequestDTO.builder()
+							.refreshToken("body-refresh-token")
+							.build())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+				.andExpect(jsonPath("$.error").isEmpty());
+
+			verify(memberService).refreshAccessToken("body-refresh-token");
+			verify(authCookieService).addRefreshCookies(any(), eq(refreshResponse));
+		}
+	}
 
 	@Nested
 	@DisplayName("회원가입 API")
@@ -242,6 +284,7 @@ class MemberControllerTest {
 			LoginResponseDTO loginResponse = LoginResponseDTO.builder()
 				.accessToken("test-access-token")
 				.expiredInMinutes(60)
+				.refreshToken("test-refresh-token")
 				.username(TEST_USERNAME)
 				.displayName(TEST_DISPLAY_NAME)
 				.build();
@@ -260,6 +303,8 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.data.accessToken").value("test-access-token"))
 				.andExpect(jsonPath("$.data.username").value(TEST_USERNAME))
 				.andExpect(jsonPath("$.error").isEmpty());
+
+			verify(authCookieService).addLoginCookies(any(), eq(loginResponse));
 		}
 	}
 
@@ -271,9 +316,9 @@ class MemberControllerTest {
 		@DisplayName("로그아웃 성공 응답 형식 검증")
 		void logoutSuccess() throws Exception {
 			doNothing().when(memberService).logout(anyString(), anyString());
+			when(authTokenResolver.resolveAccessToken(any())).thenReturn("test-access-token");
 
 			mockMvc.perform(delete("/members/v1/logout")
-					.header("Authorization", "Bearer test-access-token")
 					.principal(() -> TEST_USERNAME))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
@@ -281,6 +326,7 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.error").value(nullValue()));
 
 			verify(memberService).logout(eq(TEST_USERNAME), eq("test-access-token"));
+			verify(authCookieService).clearAuthCookies(any());
 		}
 	}
 

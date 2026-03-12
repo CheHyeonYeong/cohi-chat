@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class OAuthController {
 
 	private final OAuthService oAuthService;
+	private final AuthCookieService authCookieService;
 
 	@Operation(summary = "OAuth 인가 URL 조회", description = "지정된 provider의 OAuth 인가 URL을 반환합니다")
 	@GetMapping("/{provider}/authorize")
@@ -37,10 +40,12 @@ public class OAuthController {
 	@PostMapping("/{provider}/callback")
 	public ResponseEntity<LoginResponseDTO> socialLoginCallback(
 		@PathVariable String provider,
-		@Valid @RequestBody OAuthCallbackRequest request
+		@Valid @RequestBody OAuthCallbackRequest request,
+		HttpServletResponse response
 	) {
-		LoginResponseDTO response = oAuthService.socialLogin(provider, request.code(), request.state());
-		return ResponseEntity.ok(response);
+		LoginResponseDTO loginResponse = oAuthService.socialLogin(provider, request.code(), request.state());
+		authCookieService.addLoginCookies(response, loginResponse);
+		return ResponseEntity.ok(loginResponse);
 	}
 
 	public record OAuthCallbackRequest(

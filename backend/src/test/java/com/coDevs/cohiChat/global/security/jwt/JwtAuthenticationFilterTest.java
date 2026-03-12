@@ -18,6 +18,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.coDevs.cohiChat.global.security.auth.AuthTokenResolver;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
 import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
 
@@ -30,21 +31,24 @@ class JwtAuthenticationFilterTest {
 	@Mock
 	private AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
+	@Mock
+	private AuthTokenResolver authTokenResolver;
+
 	private JwtAuthenticationFilter filter;
 
 	@BeforeEach
 	void setUp() {
 		SecurityContextHolder.clearContext();
-		filter = new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository);
+		filter = new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository, authTokenResolver);
 	}
 
 	@Test
 	@DisplayName("정상 토큰: SecurityContext에 인증 설정")
 	void validToken_setsAuthentication() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
-		request.addHeader("Authorization", "Bearer valid-token");
 		MockFilterChain chain = new MockFilterChain();
 
+		given(authTokenResolver.resolveAccessToken(request)).willReturn("valid-token");
 		given(jwtTokenProvider.validateToken("valid-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("valid-token"))).willReturn(false);
 		given(jwtTokenProvider.getAuthentication("valid-token"))
@@ -61,9 +65,9 @@ class JwtAuthenticationFilterTest {
 	@DisplayName("블랙리스트 토큰: SecurityContext 미설정")
 	void blacklistedToken_doesNotSetAuthentication() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
-		request.addHeader("Authorization", "Bearer blacklisted-token");
 		MockFilterChain chain = new MockFilterChain();
 
+		given(authTokenResolver.resolveAccessToken(request)).willReturn("blacklisted-token");
 		given(jwtTokenProvider.validateToken("blacklisted-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("blacklisted-token"))).willReturn(true);
 
@@ -79,6 +83,7 @@ class JwtAuthenticationFilterTest {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		MockFilterChain chain = new MockFilterChain();
 
+		given(authTokenResolver.resolveAccessToken(request)).willReturn(null);
 		filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
 
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
@@ -89,9 +94,9 @@ class JwtAuthenticationFilterTest {
 	@DisplayName("유효하지 않은 토큰: SecurityContext 미설정")
 	void invalidToken_doesNotSetAuthentication() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
-		request.addHeader("Authorization", "Bearer invalid-token");
 		MockFilterChain chain = new MockFilterChain();
 
+		given(authTokenResolver.resolveAccessToken(request)).willReturn("invalid-token");
 		given(jwtTokenProvider.validateToken("invalid-token")).willReturn(false);
 
 		filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
@@ -104,9 +109,9 @@ class JwtAuthenticationFilterTest {
 	@DisplayName("Redis 장애 시 fail-closed: SecurityContext 미설정")
 	void redisFailure_clearsSecurityContext() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
-		request.addHeader("Authorization", "Bearer valid-token");
 		MockFilterChain chain = new MockFilterChain();
 
+		given(authTokenResolver.resolveAccessToken(request)).willReturn("valid-token");
 		given(jwtTokenProvider.validateToken("valid-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("valid-token")))
 			.willThrow(new DataAccessResourceFailureException("Redis connection refused"));

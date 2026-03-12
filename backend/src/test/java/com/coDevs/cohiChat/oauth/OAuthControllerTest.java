@@ -1,7 +1,10 @@
 package com.coDevs.cohiChat.oauth;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 
 @SpringBootTest
@@ -34,6 +38,9 @@ class OAuthControllerTest {
 
 	@MockitoBean
 	private OAuthService oAuthService;
+
+	@MockitoBean
+	private AuthCookieService authCookieService;
 
 	@Test
 	@DisplayName("GET /oauth/v1/{provider}/authorize - Authorization URL 반환")
@@ -65,6 +72,8 @@ class OAuthControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.accessToken").value("test-access-token"))
 			.andExpect(jsonPath("$.username").value("google_123"));
+
+		verify(authCookieService).addLoginCookies(any(), eq(loginResponse));
 	}
 
 	@Test

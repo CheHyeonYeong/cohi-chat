@@ -4,6 +4,7 @@ package com.coDevs.cohiChat.member;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
-import com.coDevs.cohiChat.global.util.TokenUtil;
+import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
+import com.coDevs.cohiChat.global.security.auth.AuthTokenResolver;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
 import com.coDevs.cohiChat.member.request.RefreshTokenRequestDTO;
 import com.coDevs.cohiChat.member.request.SignupRequestDTO;
@@ -39,6 +41,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +52,8 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
         private final MemberService memberService;
+        private final AuthTokenResolver authTokenResolver;
+        private final AuthCookieService authCookieService;
 
         @PostMapping("/v1/signup")
         public ResponseEntity<ApiResponseDTO<SignupResponseDTO>> signupLocal(
@@ -61,28 +66,45 @@ public class MemberController {
 
         @PostMapping("/v1/login")
         public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(
-                @Valid @RequestBody LoginRequestDTO request) {
+                @Valid @RequestBody LoginRequestDTO request,
+                HttpServletResponse response) {
 
-                LoginResponseDTO response = memberService.login(request);
-                return ResponseEntity.ok(ApiResponseDTO.success(response));
+                LoginResponseDTO loginResponse = memberService.login(request);
+                authCookieService.addLoginCookies(response, loginResponse);
+                return ResponseEntity.ok(ApiResponseDTO.success(loginResponse));
         }
 
         @PostMapping("/v1/refresh")
         public ResponseEntity<ApiResponseDTO<RefreshTokenResponseDTO>> refreshToken(
-                @Valid @RequestBody RefreshTokenRequestDTO request) {
+                @RequestBody(required = false) RefreshTokenRequestDTO request,
+                HttpServletRequest httpRequest,
+                HttpServletResponse response) {
 
-                RefreshTokenResponseDTO response = memberService.refreshAccessToken(request.getRefreshToken());
-                return ResponseEntity.ok(ApiResponseDTO.success(response));
+                String refreshToken = authTokenResolver.resolveRefreshToken(httpRequest);
+                if (!StringUtils.hasText(refreshToken) && request != null) {
+                        refreshToken = request.getRefreshToken();
+                }
+                if (!StringUtils.hasText(refreshToken)) {
+                        throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+                }
+
+                RefreshTokenResponseDTO refreshResponse = memberService.refreshAccessToken(refreshToken);
+                authCookieService.addRefreshCookies(response, refreshResponse);
+                return ResponseEntity.ok(ApiResponseDTO.success(refreshResponse));
         }
 
         @DeleteMapping("/v1/logout")
         @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(Principal principal, HttpServletRequest request) {
-                String accessToken = TokenUtil.resolveToken(request);
+        public ResponseEntity<ApiResponseDTO<LogoutResponseDTO>> logout(
+                Principal principal,
+                HttpServletRequest request,
+                HttpServletResponse response) {
+                String accessToken = authTokenResolver.resolveAccessToken(request);
                 if (accessToken == null) {
                         throw new CustomException(ErrorCode.INVALID_TOKEN);
                 }
                 memberService.logout(principal.getName(), accessToken);
+                authCookieService.clearAuthCookies(response);
                 return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
         }
 

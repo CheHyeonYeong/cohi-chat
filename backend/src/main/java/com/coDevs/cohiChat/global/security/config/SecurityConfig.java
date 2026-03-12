@@ -1,9 +1,7 @@
 package com.coDevs.cohiChat.global.security.config;
 
-import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
-import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
-import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,7 +19,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.coDevs.cohiChat.global.security.auth.AuthProperties;
+import com.coDevs.cohiChat.global.security.auth.AuthTokenResolver;
+import com.coDevs.cohiChat.global.security.jwt.JwtAuthenticationFilter;
+import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
+import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -38,6 +42,8 @@ public class SecurityConfig {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private final AuthTokenResolver authTokenResolver;
+	private final AuthProperties authProperties;
 
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
@@ -65,7 +71,10 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 
-			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository), UsernamePasswordAuthenticationFilter.class);
+			.addFilterBefore(
+				new JwtAuthenticationFilter(jwtTokenProvider, accessTokenBlacklistRepository, authTokenResolver),
+				UsernamePasswordAuthenticationFilter.class
+			);
 
 		return http.build();
 	}
@@ -73,7 +82,7 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(List.of("*"));
+		configuration.setAllowedOrigins(authProperties.getCorsAllowedOrigins());
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);

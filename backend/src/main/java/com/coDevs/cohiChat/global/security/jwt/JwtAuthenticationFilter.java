@@ -6,8 +6,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.coDevs.cohiChat.global.security.auth.AuthTokenResolver;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
-import com.coDevs.cohiChat.global.util.TokenUtil;
 import com.coDevs.cohiChat.member.AccessTokenBlacklistRepository;
 
 import jakarta.servlet.FilterChain;
@@ -23,12 +23,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private final AuthTokenResolver authTokenResolver;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 		throws ServletException, IOException {
 
-		String token = TokenUtil.resolveToken(request);
+		String token = authTokenResolver.resolveAccessToken(request);
 
 		if (token != null && jwtTokenProvider.validateToken(token)) {
 			try {
