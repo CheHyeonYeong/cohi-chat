@@ -151,7 +151,7 @@ describe('MyBookings upload refresh', () => {
         showToast.mockClear();
     });
 
-    it('shows a toast when upload fails', async () => {
+    it('does not refetch after upload fails', async () => {
         uploadFileAsync.mockRejectedValueOnce(new Error('업로드 실패'));
 
         render(<MyBookings />);
@@ -160,8 +160,9 @@ describe('MyBookings upload refresh', () => {
         fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
 
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('업로드 실패', 'my-bookings-upload-error');
+            expect(uploadFileAsync).toHaveBeenCalledTimes(1);
         });
+        expect(showToast).not.toHaveBeenCalled();
         expect(refetchSelectedBooking).not.toHaveBeenCalled();
         expect(refetchMyBookings).not.toHaveBeenCalled();
     });

@@ -228,8 +228,8 @@ export default function Booking() {
             setSelectedFiles([]);
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
-        } catch (err) {
-            showToast(getErrorMessage(err, '파일 업로드에 실패했습니다.'), 'booking-upload-error');
+        } catch {
+            return;
         } finally {
             setUploadProgress('');
         }
