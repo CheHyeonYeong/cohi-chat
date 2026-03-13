@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createRouter, createRootRoute, createRoute, Navigate, Outlet } from '@tanstack/react-router'
+import { createRouter, createRootRoute, createRoute, Outlet } from '@tanstack/react-router'
 import { z } from 'zod'
 import { AuthGuard } from '~/features/member'
 import { HostGuard } from '~/features/host'
@@ -121,17 +121,6 @@ const hostProfileRoute = createRoute({
     }),
 })
 
-const calendarRoute = createRoute({
-    getParentRoute: () => RootRoute,
-    path: '/booking/new/$slug',
-    component: function CalendarRedirect() {
-        const { slug } = calendarRoute.useParams();
-        return <Navigate to="/host/$hostId" params={{ hostId: slug }} />;
-    },
-    params: z.object({
-        slug: z.string().min(4),
-    }),
-})
 
 const oAuthCallbackRoute = createRoute({
     getParentRoute: () => RootRoute,
@@ -179,7 +168,7 @@ const resetPasswordRoute = createRoute({
 
 export const routeTree = RootRoute.addChildren([
     homeRoute,
-    calendarRoute,
+
     loginRoute,
     signupRoute,
     myBookingsRoute,

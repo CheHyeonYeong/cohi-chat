@@ -3,7 +3,7 @@
   - `/member/settings` → `pages/member/Settings.tsx`
   - `/host/timeslots` → `pages/host/TimeSlotSettings.tsx`
   - `/booking/my-bookings` → `pages/booking/MyBookings.tsx`
-  - `/booking/new/$slug` → `pages/booking/Calendar.tsx`
+  - `/host/$hostId` → `pages/host/Profile.tsx`
 - 페이지 파일명에 도메인 prefix를 붙이지 않는다 (디렉토리가 namespace)
   - Good: `pages/host/Profile.tsx`, `pages/member/Settings.tsx`
   - Bad: `pages/host/HostProfile.tsx`, `pages/member/MemberSettings.tsx`
