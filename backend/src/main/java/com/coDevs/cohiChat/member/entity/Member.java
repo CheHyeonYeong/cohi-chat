@@ -157,6 +157,16 @@ public class Member {
                 }
         }
 
+        public void updatePassword(String encodedPassword) {
+                if (encodedPassword == null || encodedPassword.isBlank()) {
+                        throw new CustomException(ErrorCode.INVALID_PASSWORD);
+                }
+                if (this.provider != Provider.LOCAL) {
+                        throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
+                }
+                this.hashedPassword = encodedPassword;
+        }
+
         public void updateDisplayName(String displayName) {
                 if (displayName == null || displayName.isBlank()) {
                         throw new CustomException(ErrorCode.INVALID_DISPLAY_NAME);

@@ -92,7 +92,9 @@ public enum ErrorCode {
 	FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "예약당 최대 파일 개수(5개)를 초과합니다."),
 	FILE_EXTENSION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 파일 확장자입니다. (허용: pdf, doc, docx, txt, jpg, jpeg, png, gif)"),
 	FILE_EXTENSION_BLOCKED(HttpStatus.BAD_REQUEST, "보안상 업로드가 차단된 파일 형식입니다. (차단: exe, bat, sh, js, php)"),
-	FILE_MIME_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "파일 형식이 올바르지 않습니다.");
+	FILE_MIME_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "파일 형식이 올바르지 않습니다."),
+	FILE_UPLOAD_NOT_CONFIRMED(HttpStatus.BAD_REQUEST, "검증된 Presigned 업로드 요청이 아닌 파일입니다."),
+	FILE_UPLOAD_METADATA_MISMATCH(HttpStatus.BAD_REQUEST, "업로드 파일 메타 정보가 요청값과 일치하지 않습니다.");
 
 	private final HttpStatus status;
 	private final String message;

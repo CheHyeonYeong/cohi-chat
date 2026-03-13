@@ -25,33 +25,46 @@ function formatWeekdaySummary(weekdays: number[]): string {
     return names.join(', ');
 }
 
-function normalizeTime(time: string): string {
-    return time.slice(0, 5);
+function normalizeTime(time?: string | null): string {
+    return typeof time === 'string' ? time.slice(0, 5) : '';
+}
+
+function readTimeslotStart(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('startedAt' in ts ? ts.startedAt : undefined) ??
+        ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
+        null,
+    );
+}
+
+function readTimeslotEnd(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('endedAt' in ts ? ts.endedAt : undefined) ??
+        ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
+        null,
+    );
 }
 
 function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
     if (timeslots.length === 0) return [];
-    return timeslots.map((ts) => ({
-        weekdays: ts.weekdays,
-        startTime: normalizeTime(ts.startedAt),
-        endTime: normalizeTime(ts.endedAt),
-        startDate: ts.startDate ?? undefined,
-        endDate: ts.endDate ?? undefined,
-        existingId: ts.id,
-    }));
+    return timeslots
+        .map((ts) => ({
+            weekdays: ts.weekdays,
+            startTime: readTimeslotStart(ts),
+            endTime: readTimeslotEnd(ts),
+            startDate: ts.startDate ?? undefined,
+            endDate: ts.endDate ?? undefined,
+            existingId: ts.id,
+        }))
+        .filter((entry) => entry.startTime && entry.endTime);
 }
 
-const defaultEntry: TimeSlotEntry = {
-    weekdays: [1, 2, 3, 4, 5],
-    startTime: '09:00',
-    endTime: '18:00',
-};
-
 export default function TimeSlotSettings() {
-    const [entries, setEntries] = useState<TimeSlotEntry[]>([{ ...defaultEntry }]);
+    const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
@@ -101,15 +114,11 @@ export default function TimeSlotSettings() {
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
-        if (loaded.length > 0) {
-            setEntries(loaded);
-            const latestUpdate = existingTimeslots
-                .map((ts) => new Date(ts.updatedAt))
-                .sort((a, b) => b.getTime() - a.getTime())[0];
-            if (latestUpdate) setLastSaved(latestUpdate);
-        } else {
-            setEntries([{ ...defaultEntry }]);
-        }
+        setEntries(loaded);
+        const latestUpdate = existingTimeslots
+            .map((ts) => new Date(ts.updatedAt))
+            .sort((a, b) => b.getTime() - a.getTime())[0];
+        if (latestUpdate) setLastSaved(latestUpdate);
         syncedRef.current = true;
     }, [existingTimeslots]);
 
@@ -175,24 +184,36 @@ export default function TimeSlotSettings() {
     };
 
     const handleDelete = async (existingId: number) => {
+        if (deletingIdsRef.current.has(existingId)) return;
+        deletingIdsRef.current.add(existingId);
+
         try {
             setDeletingId(existingId);
             await deleteTimeslotMutation.mutateAsync(existingId);
-            setEntries((prev) => {
-                const remaining = prev.filter((e) => e.existingId !== existingId);
-                return remaining.length > 0 ? remaining : [{ ...defaultEntry }];
-            });
+            setEntries((prev) => prev.filter((e) => e.existingId !== existingId));
             syncedRef.current = false;
         } catch (err) {
             setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
-            setDeletingId(null);
+            deletingIdsRef.current.delete(existingId);
+            setDeletingId((current) => (current === existingId ? null : current));
         }
     };
 
-    const summaryText = entries
-        .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
-        .join(' / ');
+    const handlePreviewDelete = (entry: TimeSlotEntry, index: number) => {
+        if (entry.existingId != null) {
+            void handleDelete(entry.existingId);
+            return;
+        }
+
+        setEntries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    };
+
+    const summaryText = entries.length > 0
+        ? entries
+            .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
+            .join(' / ')
+        : '설정된 시간대 없음';
 
     const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
 
@@ -279,6 +300,14 @@ export default function TimeSlotSettings() {
                     </Card>
 
                     <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="w-full flex-1">
+                            <WeeklySchedulePreview
+                                entries={entries}
+                                onChange={setEntries}
+                                onDuplicateBlocked={handleDuplicateBlocked}
+                                onDeleteEntry={handlePreviewDelete}
+                            />
+                        </div>
                         <div className="w-full lg:w-[400px] flex-shrink-0">
                             <TimeSlotForm
                                 entries={entries}
@@ -289,13 +318,6 @@ export default function TimeSlotSettings() {
                                 isPending={createTimeslotMutation.isPending}
                                 deletingId={deletingId}
                                 errors={errors}
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <WeeklySchedulePreview
-                                entries={entries}
-                                onChange={setEntries}
-                                onDuplicateBlocked={handleDuplicateBlocked}
                             />
                         </div>
                     </div>

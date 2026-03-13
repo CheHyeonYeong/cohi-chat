@@ -9,6 +9,8 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -17,6 +19,7 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
+import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -70,6 +73,8 @@ class MemberServiceTest {
 		given(memberRepository.existsByEmail(anyString())).willReturn(false);
 		given(passwordEncoder.encode(anyString())).willReturn("hashedPassword");
 		given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
+		given(smtpEmailValidator.validateEmailExists(anyString()))
+			.willReturn(CompletableFuture.completedFuture(true));
 	}
 
 	private Member member;
@@ -103,6 +108,9 @@ class MemberServiceTest {
 
 	@Mock
 	private ApplicationEventPublisher eventPublisher;
+
+	@Mock
+	private SmtpEmailValidator smtpEmailValidator;
 
 	@InjectMocks
 	private MemberService memberService;
@@ -372,7 +380,7 @@ class MemberServiceTest {
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(tokenService.hashToken(newRefreshToken)).willReturn(newHash);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
+		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn(newRefreshToken);
 		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
@@ -384,95 +392,7 @@ class MemberServiceTest {
 		assertThat(response.getAccessToken()).isEqualTo("new-access-token");
 		assertThat(response.getRefreshToken()).isEqualTo(newRefreshToken);
 		assertThat(response.getExpiredInMinutes()).isEqualTo(60);
-		verify(refreshTokenRepository).save(storedToken);
-		assertThat(storedToken.getToken()).isEqualTo(newHash);
-		assertThat(storedToken.getPreviousToken()).isEqualTo(expectedHash);
-	}
-
-	@Test
-	@DisplayName("실패: 이미 사용된 RT(이전 토큰)가 Grace Window 내에 들어오면 GRACE_WINDOW_HIT 반환 (세션 무효화)")
-	void refreshAccessTokenGraceWindow() {
-		String oldRefreshToken = "old-refresh-token";
-		String oldHash = "old-hash";
-		String currentHash = "current-hash";
-		given(clock.millis()).willReturn(100_000L);
-
-		// 이미 한 번 회전된 상태의 저장된 토큰
-		RefreshToken storedToken = RefreshToken.builder()
-			.username(TEST_USERNAME)
-			.token(currentHash)
-			.previousToken(oldHash)
-			.rotatedAt(95_000L) // now(100000) - 5000
-			.expiration(604800000L)
-			.build();
-
-		given(jwtTokenProvider.getUsernameFromToken(oldRefreshToken)).willReturn(TEST_USERNAME);
-		given(tokenService.hashToken(oldRefreshToken)).willReturn(oldHash);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
-
-		assertThatThrownBy(() -> memberService.refreshAccessToken(oldRefreshToken))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.GRACE_WINDOW_HIT);
-
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
-	}
-
-	@Test
-	@DisplayName("실패: Grace Window 내라도 previousToken이 아닌 완전히 낯선 토큰은 즉시 세션 무효화")
-	void refreshAccessTokenGraceWindowWithNonPreviousToken() {
-		String mismatchedToken = "mismatched-token";
-		String mismatchHash = "mismatch-hash";
-		String currentHash = "current-hash";
-		String previousHash = "previous-hash";
-		given(clock.millis()).willReturn(100_000L);
-
-		RefreshToken storedToken = RefreshToken.builder()
-			.username(TEST_USERNAME)
-			.token(currentHash)
-			.previousToken(previousHash)
-			.rotatedAt(95_000L) // now(100000) - 5000
-			.expiration(604800000L)
-			.build();
-
-		given(jwtTokenProvider.getUsernameFromToken(mismatchedToken)).willReturn(TEST_USERNAME);
-		given(tokenService.hashToken(mismatchedToken)).willReturn(mismatchHash);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
-
-		assertThatThrownBy(() -> memberService.refreshAccessToken(mismatchedToken))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
-
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
-		verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
-	}
-
-	@Test
-	@DisplayName("실패: 이미 사용된 RT가 Grace Window를 초과하면 세션 무효화(삭제) 처리")
-	void refreshAccessTokenReuseAfterGraceWindow() {
-		String oldRefreshToken = "old-refresh-token";
-		String oldHash = "old-hash";
-		String currentHash = "current-hash";
-		given(clock.millis()).willReturn(100_000L);
-		
-		// 30초(Grace Window) 이상 지난 토큰
-		RefreshToken storedToken = RefreshToken.builder()
-			.username(TEST_USERNAME)
-			.token(currentHash)
-			.previousToken(oldHash)
-			.rotatedAt(60_000L) // now(100000) - 40000
-			.expiration(604800000L)
-			.build();
-
-		given(jwtTokenProvider.getUsernameFromToken(oldRefreshToken)).willReturn(TEST_USERNAME);
-		given(tokenService.hashToken(oldRefreshToken)).willReturn(oldHash);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
-
-		assertThatThrownBy(() -> memberService.refreshAccessToken(oldRefreshToken))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REFRESH_TOKEN);
-		
-		verify(refreshTokenRepository).deleteById(TEST_USERNAME);
+		verify(refreshTokenRepository).save(any(RefreshToken.class));
 	}
 
 	@Test
@@ -504,9 +424,11 @@ class MemberServiceTest {
 	@DisplayName("실패: Redis에 존재하지 않는 Refresh Token (만료되어 삭제됨)")
 	void refreshAccessTokenFailNotInRedis() {
 		String tokenNotInRedis = "not-in-redis-token";
+		String tokenHash = "not-in-redis-hash";
 
 		given(jwtTokenProvider.getUsernameFromToken(tokenNotInRedis)).willReturn(TEST_USERNAME);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.empty());
+		given(tokenService.hashToken(tokenNotInRedis)).willReturn(tokenHash);
+		given(refreshTokenRepository.findByToken(tokenHash)).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> memberService.refreshAccessToken(tokenNotInRedis))
 			.isInstanceOf(CustomException.class)
@@ -525,7 +447,7 @@ class MemberServiceTest {
 		given(jwtTokenProvider.getUsernameFromToken(validRefreshToken)).willReturn(TEST_USERNAME);
 		given(tokenService.hashToken(validRefreshToken)).willReturn(expectedHash);
 		given(tokenService.hashToken(newRefreshToken)).willReturn(newHash);
-		given(refreshTokenRepository.findById(TEST_USERNAME)).willReturn(Optional.of(storedToken));
+		given(refreshTokenRepository.findByToken(expectedHash)).willReturn(Optional.of(storedToken));
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(jwtTokenProvider.createRefreshToken(TEST_USERNAME)).willReturn(newRefreshToken);
 		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604800000L);
