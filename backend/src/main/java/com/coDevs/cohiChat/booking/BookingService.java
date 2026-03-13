@@ -456,10 +456,6 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateMeetingStarted(booking);
 
-        if (!booking.getAttendanceStatus().isGuestReportable()) {
-            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
-        }
-
         if (noShowHistoryRepository.existsByBookingId(bookingId)) {
             throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
@@ -469,6 +465,11 @@ public class BookingService {
         UUID hostId = booking.getTimeSlot().getUserId();
         NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
         noShowHistoryRepository.save(history);
+
+        long reportCount = noShowHistoryRepository.countByHostId(hostId);
+        if (reportCount >= 20) {
+            memberRepository.findById(hostId).ifPresent(Member::ban);
+        }
 
         log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
 

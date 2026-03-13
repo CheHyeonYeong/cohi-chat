@@ -87,6 +87,12 @@ public class Member {
         @Column(name = "deleted_at")
         private Instant deletedAt;
 
+        @Column(name = "is_banned", nullable = false)
+        private boolean isBanned = false;
+
+        @Column(name = "banned_at")
+        private Instant bannedAt;
+
         @Column(name = "job", length = 100)
         private String job;
 
@@ -205,6 +211,11 @@ public class Member {
         }
 
         public boolean isActive() {
-                return !isDeleted;
+                return !isDeleted && !isBanned;
+        }
+
+        public void ban() {
+                this.isBanned = true;
+                this.bannedAt = Instant.now();
         }
 }
