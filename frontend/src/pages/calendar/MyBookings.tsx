@@ -18,10 +18,12 @@ import { CSS } from '@dnd-kit/utilities';
 import LinkButton from '~/components/button/LinkButton';
 import PageHeader from '~/components/PageHeader';
 import Pagination from '~/components/Pagination';
+import { useToast } from '~/components/toast/useToast';
 import { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl } from '~/features/calendar';
 import BookingCard from '~/features/calendar/components/BookingCard';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
+import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/calendar';
 
 // Sortable wrapper for BookingCard
@@ -54,6 +56,7 @@ function SortableBookingCard({
 export default function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/my-bookings' });
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -130,8 +133,8 @@ export default function MyBookings() {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch {
-            // Download failures stay silent in the browser console.
+        } catch (err) {
+            showToast(getErrorMessage(err, '파일 다운로드 실패'), 'my-bookings-download-error');
         }
     };
 
@@ -140,8 +143,8 @@ export default function MyBookings() {
         try {
             await deleteFileAsync(fileId);
             await refetchSelectedBooking();
-        } catch {
-            // Delete failures stay silent in the browser console.
+        } catch (err) {
+            showToast(getErrorMessage(err, '파일 삭제 실패'), 'my-bookings-delete-error');
         }
     };
 

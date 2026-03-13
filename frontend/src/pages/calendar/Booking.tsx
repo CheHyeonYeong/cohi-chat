@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
+import { useToast } from '~/components/toast/useToast';
 import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
@@ -116,6 +117,7 @@ function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFi
 
 export default function Booking() {
     const { id } = useParams({ from: '/booking/$id' });
+    const { showToast } = useToast();
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
@@ -247,6 +249,7 @@ export default function Booking() {
             document.body.removeChild(link);
         } catch (err) {
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
+            showToast(getErrorMessage(err, '파일 다운로드에 실패했습니다.'), 'booking-download-error');
         }
     };
 
@@ -255,8 +258,8 @@ export default function Booking() {
             setDeletingFileId(fileId);
             await deleteFileAsync(fileId);
             refetch();
-        } catch {
-            // Delete failures are reflected by stale data remaining visible.
+        } catch (err) {
+            showToast(getErrorMessage(err, '파일 삭제에 실패했습니다.'), 'booking-delete-error');
         } finally {
             setDeletingFileId(null);
         }
