@@ -41,11 +41,8 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 
 import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
-import com.coDevs.cohiChat.global.exception.CustomException;
-import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
 import com.coDevs.cohiChat.global.util.TokenHashUtil;
-import com.coDevs.cohiChat.member.entity.Member;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

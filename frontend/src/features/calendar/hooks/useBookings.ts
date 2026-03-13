@@ -101,7 +101,7 @@ export function useBookingsStreamQuery({
                     });
                 }
             } catch {
-                // Stream fetch failures are handled by falling back to existing UI state.
+                return;
             }
         };
 

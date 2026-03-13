@@ -35,13 +35,11 @@ export function useBookingsSSEQuery({
                 });
                 onMessage?.(newData);
             } catch {
-                // Ignore malformed SSE chunks.
+                return;
             }
         };
 
-        eventSource.onerror = () => {
-            // Ignore transient SSE transport errors.
-        };
+        eventSource.onerror = () => undefined;
 
         return () => eventSource.close();
     }, [endpoint, onMessage]);

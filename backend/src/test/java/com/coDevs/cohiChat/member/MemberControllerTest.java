@@ -265,6 +265,7 @@ class MemberControllerTest {
 		}
 
 		@Test
+		@DisplayName("로그인 실패: 일반화된 자격증명 오류 응답 검증")
 		void loginFailWithGenericCredentialsMessage() throws Exception {
 			when(memberService.login(any())).thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
 

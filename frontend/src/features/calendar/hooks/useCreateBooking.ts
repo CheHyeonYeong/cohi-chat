@@ -19,6 +19,6 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
                 search: { year, month },
             });
         },
-        onError: () => {},
+        onError: () => undefined,
     });
 }
