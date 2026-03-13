@@ -11,13 +11,14 @@ const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
 const refetchSelectedBooking = vi.fn().mockResolvedValue(undefined);
 const uploadFileAsync = vi.fn().mockResolvedValue({});
 const deleteFileAsync = vi.fn().mockResolvedValue({});
+const showToast = vi.fn();
 
 const booking: IBookingDetail = {
     id: 1,
     startedAt: new Date('2024-02-15T10:00:00+09:00'),
     endedAt: new Date('2024-02-15T11:00:00+09:00'),
-    topic: '테스트 주제',
-    description: '테스트 설명',
+    topic: 'test topic',
+    description: 'test description',
     timeSlot: {
         id: 10,
         userId: 'host-uuid',
@@ -29,7 +30,7 @@ const booking: IBookingDetail = {
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
     },
-    host: { username: 'host', displayName: '호스트' },
+    host: { username: 'host', displayName: 'Host' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -87,6 +88,10 @@ vi.mock('~/components/Pagination', () => ({
 
 vi.mock('~/components/button/LinkButton', () => ({
     default: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+}));
+
+vi.mock('~/components/toast/useToast', () => ({
+    useToast: () => ({ showToast }),
 }));
 
 vi.mock('~/features/calendar/components/BookingCard', () => ({
