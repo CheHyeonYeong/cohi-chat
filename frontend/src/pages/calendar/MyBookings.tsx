@@ -22,7 +22,6 @@ import { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, 
 import BookingCard from '~/features/calendar/components/BookingCard';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
-import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/calendar';
 
 // Sortable wrapper for BookingCard
