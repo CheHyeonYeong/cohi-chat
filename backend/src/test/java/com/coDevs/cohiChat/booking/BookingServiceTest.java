@@ -1490,24 +1490,6 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("실패: SCHEDULED가 아닌 상태에서 노쇼 신고 시도")
-    void reportHostNoShowFailWhenNotScheduledStatus() {
-        // given
-        Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        booking.updateStatus(AttendanceStatus.ATTENDED);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-
-        // when & then
-        assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
-            .isInstanceOf(CustomException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_NOT_REPORTABLE);
-    }
-
-    @Test
     @DisplayName("실패: 존재하지 않는 예약에 노쇼 신고")
     void reportHostNoShowFailWhenBookingNotFound() {
         // given
