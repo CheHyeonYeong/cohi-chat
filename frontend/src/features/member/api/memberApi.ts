@@ -23,6 +23,7 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
         body: request,
+        skipAuthRefresh: true, // 로그인 요청은 401 시 refresh 재시도 불필요
     });
 
     if (!response) {

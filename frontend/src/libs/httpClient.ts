@@ -2,10 +2,14 @@ import { clearAuthenticatedUser } from '~/features/member/utils/authStorage';
 
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
+    skipAuthRefresh?: boolean; // true이면 401 자동 refresh 건너뜀 (로그인 등 인증 전 요청)
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const REFRESH_URL = `${API_BASE}/members/v1/refresh`;
+
+// 내부에서 GRACE_WINDOW_HIT 에러를 구분하기 위한 상수
+const GRACE_WINDOW_HIT = 'GRACE_WINDOW_HIT';
 
 let refreshPromise: Promise<boolean> | null = null;
 
@@ -27,15 +31,15 @@ async function performRefresh(): Promise<boolean> {
             const errorCode = typeof payload === 'object' && payload !== null
                 ? (payload as { error?: { code?: string } }).error?.code
                 : undefined;
-            if (errorCode === 'GRACE_WINDOW_HIT') {
-                throw new Error('GRACE_WINDOW_HIT');
+            if (errorCode === GRACE_WINDOW_HIT) {
+                throw new Error(GRACE_WINDOW_HIT);
             }
             return false;
         }
 
         return true;
     } catch (error) {
-        if (error instanceof Error && error.message === 'GRACE_WINDOW_HIT') {
+        if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {
             throw error;
         }
         return false;
@@ -56,7 +60,14 @@ function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, 
         return undefined;
     }
 
-    if (body instanceof FormData) {
+    if (
+        body instanceof FormData ||
+        body instanceof URLSearchParams ||
+        body instanceof Blob ||
+        body instanceof ArrayBuffer ||
+        ArrayBuffer.isView(body) ||
+        typeof body === 'string'
+    ) {
         return body;
     }
 
@@ -65,25 +76,26 @@ function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, 
         return JSON.stringify(body);
     }
 
-    return body;
+    return undefined;
 }
 
-function shouldRetryWithRefresh(url: string, isRetry: boolean): boolean {
-    return !isRetry && url !== REFRESH_URL;
+function shouldRetryWithRefresh(url: string, isRetry: boolean, skipAuthRefresh: boolean): boolean {
+    return !isRetry && !skipAuthRefresh && url !== REFRESH_URL;
 }
 
 async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> {
-    const headers: Record<string, string> = { ...(options.headers as Record<string, string> | undefined) };
-    const body = normalizeBody(options.body, headers);
+    const { skipAuthRefresh = false, ...fetchOptions } = options;
+    const headers: Record<string, string> = { ...(fetchOptions.headers as Record<string, string> | undefined) };
+    const body = normalizeBody(fetchOptions.body, headers);
 
     const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers,
         body,
-        credentials: options.credentials ?? 'include',
+        credentials: fetchOptions.credentials ?? 'include',
     });
 
-    if (response.status === 401 && shouldRetryWithRefresh(url, isRetry)) {
+    if (response.status === 401 && shouldRetryWithRefresh(url, isRetry, skipAuthRefresh)) {
         try {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
@@ -92,7 +104,7 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
             clearAuthenticatedUser();
             throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.', { cause: 401 });
         } catch (error) {
-            if (error instanceof Error && error.message === 'GRACE_WINDOW_HIT') {
+            if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {
                 throw new Error('토큰 재발급 대기 중입니다. 다시 시도해 주세요.', { cause: 401 });
             }
             clearAuthenticatedUser();
