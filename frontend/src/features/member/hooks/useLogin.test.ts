@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { useLogin } from './useLogin';
@@ -72,6 +72,27 @@ describe('useLogin', () => {
                 password: 'wrong-password',
             })
         ).rejects.toThrow('아이디 또는 비밀번호가 올바르지 않습니다.');
+
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not write console.error when mutate handles expected login failures', async () => {
+        const error = new Error('invalid credentials', { cause: 401 });
+        vi.mocked(loginApi).mockRejectedValue(error);
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const { result } = renderHook(() => useLogin(), {
+            wrapper: createWrapper(),
+        });
+
+        result.current.mutate({
+            username: 'tester',
+            password: 'wrong-password',
+        });
+
+        await waitFor(() => {
+            expect(result.current.isError).toBe(true);
+        });
 
         expect(consoleErrorSpy).not.toHaveBeenCalled();
     });

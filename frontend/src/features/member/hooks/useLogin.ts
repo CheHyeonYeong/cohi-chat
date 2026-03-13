@@ -10,5 +10,7 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             saveAuthTokens(response);
             return response;
         },
+        // Expected credential failures are handled by UI state, not console noise.
+        onError: () => {},
     });
 }
