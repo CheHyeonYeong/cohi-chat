@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { newRandomNick } from 'random-korean-nickname';
 import { Button } from '~/components/button';
-import { Card } from '~/components/card';
+import { AuthPageLayout } from './AuthPageLayout';
 import { useSignup } from '../hooks/useSignup';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
@@ -92,10 +92,7 @@ export function SignupForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)] py-8">
-            {/* Signup Card */}
-            <Card variant="prominent" size="lg" className="w-full max-w-sm" title="회원가입">
-
+        <AuthPageLayout title="회원가입" className="py-8">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
@@ -248,7 +245,6 @@ export function SignupForm() {
                         로그인
                     </Link>
                 </div>
-            </Card>
-        </div>
+        </AuthPageLayout>
     );
 }

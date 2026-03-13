@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
-import { Card } from '~/components/card';
-import { CoffeeCupIcon } from '~/components/icons/CoffeeCupIcon';
+import { AuthPageLayout } from './AuthPageLayout';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
@@ -92,16 +91,7 @@ export function LoginForm() {
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)]">
-            {/* Logo */}
-            <Link to='/' className="flex items-center gap-2 mb-8">
-                <CoffeeCupIcon className="w-10 h-10 text-[var(--cohi-primary)]" />
-                <span className="text-2xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
-            </Link>
-
-            {/* Login Card */}
-            <Card variant="prominent" size="lg" className="w-full max-w-sm" title="로그인">
-
+        <AuthPageLayout title="로그인">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">아이디</label>
@@ -202,7 +192,6 @@ export function LoginForm() {
                         회원가입
                     </Link>
                 </div>
-            </Card>
-        </div>
+        </AuthPageLayout>
     );
 }

@@ -1,13 +1,16 @@
 import { Link } from '@tanstack/react-router';
 import { CoffeeCupIcon } from '~/components/icons/CoffeeCupIcon';
+import { Card } from '~/components/card';
+import { cn } from '~/libs/cn';
 import { useDocumentTitle } from '~/hooks/useDocumentTitle';
 
 interface AuthPageLayoutProps {
     title: string;
+    className?: string;
     children: React.ReactNode;
 }
 
-export function AuthPageLayout({ title, children }: AuthPageLayoutProps) {
+export function AuthPageLayout({ title, className, children }: AuthPageLayoutProps) {
     useDocumentTitle(title);
 
     return (
@@ -17,12 +20,9 @@ export function AuthPageLayout({ title, children }: AuthPageLayoutProps) {
                 <span className="text-2xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
             </Link>
 
-            <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
-                <h1 className="text-2xl font-bold text-center text-[var(--cohi-text-dark)] mb-6">
-                    {title}
-                </h1>
+            <Card variant="prominent" size="lg" className={cn('w-full max-w-sm', className)} title={title}>
                 {children}
-            </div>
+            </Card>
         </div>
     );
 }
