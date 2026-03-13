@@ -23,12 +23,10 @@ import BookingCard from '~/features/calendar/components/BookingCard';
 import BookingActionMenu from '~/features/calendar/components/BookingCard/BookingActionMenu';
 import BookingDetailPanel from '~/features/calendar/components/BookingDetailPanel';
 import FileDropZone from '~/features/calendar/components/FileDropZone';
-import { getValidToken } from '~/libs/jwt';
 import { getErrorMessage } from '~/libs/errorUtils';
+import { downloadFileWithPresignedUrl } from '~/features/calendar/api/bookings';
 import { cn } from '~/libs/cn';
 import type { IBookingDetail } from '~/features/calendar';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Sortable wrapper for BookingCard
 function SortableBookingCard({
@@ -131,29 +129,14 @@ export default function MyBookings() {
     const handleUpload = async (files: FileList) => {
         if (!selectedId) return;
         for (const file of files) {
-            const formData = new FormData();
-            formData.append('file', file);
-            await uploadFileAsync(formData);
+            await uploadFileAsync(file);
         }
         await Promise.all([refetchSelectedBooking(), refetchActiveBookings()]);
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
-            const token = getValidToken();
-            const res = await fetch(`${API_URL}/bookings/${selectedId}/files/${fileId}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('다운로드 실패');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            await downloadFileWithPresignedUrl(selectedId!, fileId, fileName);
         } catch (err) {
             console.error(getErrorMessage(err, '파일 다운로드 실패'));
         }
