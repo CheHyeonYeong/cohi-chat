@@ -247,72 +247,72 @@ export function TimeSlotSettings() {
 
     return (
         <PageLayout title="시간대 설정" className="pb-20">
-                <div className="space-y-8">
-                    <Card title="내 프로필">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
-                                <input
-                                    type="text"
-                                    value={job}
-                                    onChange={(e) => setJob(e.target.value)}
-                                    placeholder="예: 백엔드 개발자 @ 스타트업"
-                                    maxLength={100}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
-                                <input
-                                    type="url"
-                                    value={profileImageUrl}
-                                    onChange={(e) => setProfileImageUrl(e.target.value)}
-                                    placeholder="https://..."
-                                    maxLength={500}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                                />
-                            </div>
-                            <div className="flex items-end gap-2">
-                                <Button
-                                    variant="primary"
-                                    onClick={handleProfileSave}
-                                    loading={updateProfileMutation.isPending}
-                                >
+            <div className="space-y-8">
+                <Card title="내 프로필">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
+                            <input
+                                type="text"
+                                value={job}
+                                onChange={(e) => setJob(e.target.value)}
+                                placeholder="예: 백엔드 개발자 @ 스타트업"
+                                maxLength={100}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
+                            <input
+                                type="url"
+                                value={profileImageUrl}
+                                onChange={(e) => setProfileImageUrl(e.target.value)}
+                                placeholder="https://..."
+                                maxLength={500}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                            />
+                        </div>
+                        <div className="flex items-end gap-2">
+                            <Button
+                                variant="primary"
+                                onClick={handleProfileSave}
+                                loading={updateProfileMutation.isPending}
+                            >
                                     저장
-                                </Button>
-                                {profileSaved && (
-                                    <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
-                                )}
-                            </div>
-                        </div>
-                        {updateProfileMutation.isError && (
-                            <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
-                        )}
-                    </Card>
-
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        <div className="w-full flex-1">
-                            <WeeklySchedulePreview
-                                entries={entries}
-                                onChange={setEntries}
-                                onDuplicateBlocked={handleDuplicateBlocked}
-                                onDeleteEntry={handlePreviewDelete}
-                            />
-                        </div>
-                        <div className="w-full lg:w-[400px] flex-shrink-0">
-                            <TimeSlotForm
-                                entries={entries}
-                                onChange={setEntries}
-                                onSave={handleSave}
-                                onDelete={handleDelete}
-                                onOverlapDetected={handleDuplicateBlocked}
-                                isPending={createTimeslotMutation.isPending}
-                                deletingId={deletingId}
-                                errors={errors}
-                            />
+                            </Button>
+                            {profileSaved && (
+                                <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
+                            )}
                         </div>
                     </div>
+                    {updateProfileMutation.isError && (
+                        <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
+                    )}
+                </Card>
+
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="w-full flex-1">
+                        <WeeklySchedulePreview
+                            entries={entries}
+                            onChange={setEntries}
+                            onDuplicateBlocked={handleDuplicateBlocked}
+                            onDeleteEntry={handlePreviewDelete}
+                        />
+                    </div>
+                    <div className="w-full lg:w-[400px] flex-shrink-0">
+                        <TimeSlotForm
+                            entries={entries}
+                            onChange={setEntries}
+                            onSave={handleSave}
+                            onDelete={handleDelete}
+                            onOverlapDetected={handleDuplicateBlocked}
+                            isPending={createTimeslotMutation.isPending}
+                            deletingId={deletingId}
+                            errors={errors}
+                        />
+                    </div>
                 </div>
+            </div>
 
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">

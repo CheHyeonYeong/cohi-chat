@@ -92,106 +92,106 @@ export function LoginForm() {
 
     return (
         <AuthPageLayout title="로그인">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">아이디</label>
-                        <input
-                            type="text"
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            onBlur={() => onBlur('username', username)}
-                            disabled={isPending}
-                            required
-                            placeholder="아이디"
-                            className={getInputClassName('username', baseInputClass)}
-                        />
-                        {fields.username?.touched && fields.username.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
-                        )}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">비밀번호</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onBlur={() => onBlur('password', password)}
-                            disabled={isPending}
-                            required
-                            placeholder="비밀번호"
-                            className={getInputClassName('password', baseInputClass)}
-                        />
-                        {fields.password?.touched && fields.password.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
-                        )}
-                        <div className="text-right">
-                            <Link to="/forgot-password" className="text-xs text-[var(--cohi-secondary)] hover:underline">
-                                비밀번호를 잊으셨나요?
-                            </Link>
-                        </div>
-                    </div>
-
-                    {loginMutation.isError && (
-                        <div className="text-red-600 text-sm">
-                            {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
-                        </div>
-                    )}
-
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        type="submit"
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">아이디</label>
+                    <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        onBlur={() => onBlur('username', username)}
                         disabled={isPending}
-                        className="w-full rounded-lg mt-2"
-                    >
-                        {isPending ? '로그인 중...' : '로그인'}
-                    </Button>
-                </form>
-
-                <div className="flex items-center gap-3 mt-4">
-                    <hr className="flex-1 border-gray-200" />
-                    <span className="text-xs text-gray-400">또는</span>
-                    <hr className="flex-1 border-gray-200" />
-                </div>
-
-                <div className="flex flex-col gap-2 mt-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSocialLogin('google')}
-                        disabled={!!oAuthPending || isPending}
-                        className="w-full py-3 flex items-center justify-center gap-3 !bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <GoogleIcon />
-                        <span className="text-sm font-medium">
-                            {oAuthPending === 'google' ? '연결 중...' : 'Google로 로그인'}
-                        </span>
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSocialLogin('kakao')}
-                        disabled={!!oAuthPending || isPending}
-                        className="w-full py-3 flex items-center justify-center gap-3 !bg-[#FEE500] !border-0 hover:!bg-[#F0D800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <KakaoIcon />
-                        <span className="text-sm font-medium text-[#3C1E1E]">
-                            {oAuthPending === 'kakao' ? '연결 중...' : '카카오로 로그인'}
-                        </span>
-                    </Button>
-                    {oAuthError && (
-                        <p className="text-xs text-red-500 text-center mt-1">{oAuthError}</p>
+                        required
+                        placeholder="아이디"
+                        className={getInputClassName('username', baseInputClass)}
+                    />
+                    {fields.username?.touched && fields.username.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
                     )}
                 </div>
-
-                <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
-                    계정이 없으신가요?{' '}
-                    <Link to="/signup" className="text-[var(--cohi-primary)] font-semibold hover:underline">
-                        회원가입
-                    </Link>
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">비밀번호</label>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onBlur={() => onBlur('password', password)}
+                        disabled={isPending}
+                        required
+                        placeholder="비밀번호"
+                        className={getInputClassName('password', baseInputClass)}
+                    />
+                    {fields.password?.touched && fields.password.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
+                    )}
+                    <div className="text-right">
+                        <Link to="/forgot-password" className="text-xs text-[var(--cohi-secondary)] hover:underline">
+                                비밀번호를 잊으셨나요?
+                        </Link>
+                    </div>
                 </div>
+
+                {loginMutation.isError && (
+                    <div className="text-red-600 text-sm">
+                        {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
+                    </div>
+                )}
+
+                <Button
+                    variant="primary"
+                    size="lg"
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full rounded-lg mt-2"
+                >
+                    {isPending ? '로그인 중...' : '로그인'}
+                </Button>
+            </form>
+
+            <div className="flex items-center gap-3 mt-4">
+                <hr className="flex-1 border-gray-200" />
+                <span className="text-xs text-gray-400">또는</span>
+                <hr className="flex-1 border-gray-200" />
+            </div>
+
+            <div className="flex flex-col gap-2 mt-4">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={!!oAuthPending || isPending}
+                    className="w-full py-3 flex items-center justify-center gap-3 !bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <GoogleIcon />
+                    <span className="text-sm font-medium">
+                        {oAuthPending === 'google' ? '연결 중...' : 'Google로 로그인'}
+                    </span>
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSocialLogin('kakao')}
+                    disabled={!!oAuthPending || isPending}
+                    className="w-full py-3 flex items-center justify-center gap-3 !bg-[#FEE500] !border-0 hover:!bg-[#F0D800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <KakaoIcon />
+                    <span className="text-sm font-medium text-[#3C1E1E]">
+                        {oAuthPending === 'kakao' ? '연결 중...' : '카카오로 로그인'}
+                    </span>
+                </Button>
+                {oAuthError && (
+                    <p className="text-xs text-red-500 text-center mt-1">{oAuthError}</p>
+                )}
+            </div>
+
+            <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
+                    계정이 없으신가요?{' '}
+                <Link to="/signup" className="text-[var(--cohi-primary)] font-semibold hover:underline">
+                        회원가입
+                </Link>
+            </div>
         </AuthPageLayout>
     );
 }

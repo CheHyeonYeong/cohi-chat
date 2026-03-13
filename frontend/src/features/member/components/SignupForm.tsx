@@ -93,158 +93,158 @@ export function SignupForm() {
 
     return (
         <AuthPageLayout title="회원가입" className="py-8">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
                             아이디 <span className="text-red-500">*</span>
-                        </label>
+                    </label>
+                    <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        onBlur={() => onBlur('username', username)}
+                        disabled={isPending}
+                        required
+                        minLength={4}
+                        maxLength={12}
+                        placeholder="(4-12자)"
+                        className={getInputClassName('username', baseInputClass)}
+                    />
+                    {fields.username?.touched && fields.username.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
+                            이메일 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onBlur={() => onBlur('email', email)}
+                        disabled={isPending}
+                        required
+                        maxLength={128}
+                        placeholder="(최대 128자)"
+                        className={getInputClassName('email', baseInputClass)}
+                    />
+                    {fields.email?.touched && fields.email.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.email.error}</span>
+                    )}
+                    {fields.email?.touched && fields.email.isValid && (
+                        <span className="text-xs text-green-500 mt-1 flex items-center gap-1" data-testid="email-valid-indicator">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                                이메일 형식이 올바릅니다
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
+                            표시 이름 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
                         <input
                             type="text"
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            onBlur={() => onBlur('username', username)}
+                            id="displayName"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            onBlur={() => onBlur('displayName', displayName)}
                             disabled={isPending}
                             required
-                            minLength={4}
-                            maxLength={12}
-                            placeholder="(4-12자)"
-                            className={getInputClassName('username', baseInputClass)}
+                            maxLength={20}
+                            placeholder="(2-20자)"
+                            className={getInputClassName('displayName', baseInputClass)}
                         />
-                        {fields.username?.touched && fields.username.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.username.error}</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
-                            이메일 <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            onBlur={() => onBlur('email', email)}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleRandomName}
                             disabled={isPending}
-                            required
-                            maxLength={128}
-                            placeholder="(최대 128자)"
-                            className={getInputClassName('email', baseInputClass)}
-                        />
-                        {fields.email?.touched && fields.email.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.email.error}</span>
-                        )}
-                        {fields.email?.touched && fields.email.isValid && (
-                            <span className="text-xs text-green-500 mt-1 flex items-center gap-1" data-testid="email-valid-indicator">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                이메일 형식이 올바릅니다
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
-                            표시 이름 <span className="text-red-500">*</span>
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                id="displayName"
-                                value={displayName}
-                                onChange={(e) => setDisplayName(e.target.value)}
-                                onBlur={() => onBlur('displayName', displayName)}
-                                disabled={isPending}
-                                required
-                                maxLength={20}
-                                placeholder="(2-20자)"
-                                className={getInputClassName('displayName', baseInputClass)}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleRandomName}
-                                disabled={isPending}
-                                className="whitespace-nowrap flex-shrink-0"
-                                data-testid="random-name-button"
-                            >
+                            className="whitespace-nowrap flex-shrink-0"
+                            data-testid="random-name-button"
+                        >
                                 랜덤 생성
-                            </Button>
-                        </div>
-                        {fields.displayName?.touched && fields.displayName.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
-                        )}
+                        </Button>
                     </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
-                            비밀번호 <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onBlur={() => onBlur('password', password)}
-                            disabled={isPending}
-                            required
-                            minLength={8}
-                            maxLength={20}
-                            placeholder="(8-20자)"
-                            className={getInputClassName('password', baseInputClass)}
-                        />
-                        {fields.password?.touched && fields.password.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
-                            비밀번호 확인 <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="password"
-                            id="passwordAgain"
-                            value={passwordAgain}
-                            onChange={(e) => setPasswordAgain(e.target.value)}
-                            onBlur={() => onBlur('passwordAgain', passwordAgain)}
-                            disabled={isPending}
-                            required
-                            minLength={8}
-                            maxLength={20}
-                            placeholder="비밀번호 확인"
-                            className={getInputClassName('passwordAgain', baseInputClass)}
-                        />
-                        {fields.passwordAgain?.touched && fields.passwordAgain.error && (
-                            <span className="text-xs text-red-500 mt-1">{fields.passwordAgain.error}</span>
-                        )}
-                    </div>
-
-                    {signupMutation.isError && (
-                        <div className="text-red-600 text-sm">
-                            {getErrorMessage(signupMutation.error, '회원가입에 실패했습니다.')}
-                        </div>
+                    {fields.displayName?.touched && fields.displayName.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.displayName.error}</span>
                     )}
-
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        type="submit"
-                        disabled={isPending}
-                        className="w-full rounded-lg mt-2"
-                    >
-                        {isPending ? '가입 중...' : '회원가입'}
-                    </Button>
-                </form>
-
-                <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
-                    이미 계정이 있으신가요?{' '}
-                    <Link to="/login" className="text-[var(--cohi-primary)] font-semibold hover:underline">
-                        로그인
-                    </Link>
                 </div>
+
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
+                            비밀번호 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onBlur={() => onBlur('password', password)}
+                        disabled={isPending}
+                        required
+                        minLength={8}
+                        maxLength={20}
+                        placeholder="(8-20자)"
+                        className={getInputClassName('password', baseInputClass)}
+                    />
+                    {fields.password?.touched && fields.password.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
+                            비밀번호 확인 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="passwordAgain"
+                        value={passwordAgain}
+                        onChange={(e) => setPasswordAgain(e.target.value)}
+                        onBlur={() => onBlur('passwordAgain', passwordAgain)}
+                        disabled={isPending}
+                        required
+                        minLength={8}
+                        maxLength={20}
+                        placeholder="비밀번호 확인"
+                        className={getInputClassName('passwordAgain', baseInputClass)}
+                    />
+                    {fields.passwordAgain?.touched && fields.passwordAgain.error && (
+                        <span className="text-xs text-red-500 mt-1">{fields.passwordAgain.error}</span>
+                    )}
+                </div>
+
+                {signupMutation.isError && (
+                    <div className="text-red-600 text-sm">
+                        {getErrorMessage(signupMutation.error, '회원가입에 실패했습니다.')}
+                    </div>
+                )}
+
+                <Button
+                    variant="primary"
+                    size="lg"
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full rounded-lg mt-2"
+                >
+                    {isPending ? '가입 중...' : '회원가입'}
+                </Button>
+            </form>
+
+            <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
+                    이미 계정이 있으신가요?{' '}
+                <Link to="/login" className="text-[var(--cohi-primary)] font-semibold hover:underline">
+                        로그인
+                </Link>
+            </div>
         </AuthPageLayout>
     );
 }
