@@ -148,6 +148,22 @@ describe('MyBookings upload refresh', () => {
         refetchMyBookings.mockClear();
         refetchSelectedBooking.mockClear();
         uploadFileAsync.mockClear();
+        showToast.mockClear();
+    });
+
+    it('shows a toast when upload fails', async () => {
+        uploadFileAsync.mockRejectedValueOnce(new Error('업로드 실패'));
+
+        render(<MyBookings />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'select-booking' }));
+        fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
+
+        await waitFor(() => {
+            expect(showToast).toHaveBeenCalledWith('업로드 실패', 'my-bookings-upload-error');
+        });
+        expect(refetchSelectedBooking).not.toHaveBeenCalled();
+        expect(refetchMyBookings).not.toHaveBeenCalled();
     });
 
     it('refetches both selected booking and booking list after upload', async () => {

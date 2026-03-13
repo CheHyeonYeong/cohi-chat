@@ -117,8 +117,8 @@ export default function MyBookings() {
                 await uploadFileAsync(file);
             }
             await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
-        } catch {
-            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
+        } catch (err) {
+            showToast(getErrorMessage(err, '파일 업로드 실패'), 'my-bookings-upload-error');
         }
     };
 
