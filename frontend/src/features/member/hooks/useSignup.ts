@@ -5,6 +5,5 @@ import type { SignupPayload, SignupResponse } from '../types';
 export function useSignup(): UseMutationResult<SignupResponse, Error, SignupPayload> {
     return useMutation<SignupResponse, Error, SignupPayload>({
         mutationFn: signupApi,
-        onError: () => undefined,
     });
 }

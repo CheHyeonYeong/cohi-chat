@@ -100,9 +100,7 @@ export function useBookingsStreamQuery({
                         }
                     });
                 }
-            } catch {
-                return;
-            }
+            } catch {}
         };
 
         fetchStream();

@@ -34,12 +34,8 @@ export function useBookingsSSEQuery({
                     return prevData;
                 });
                 onMessage?.(newData);
-            } catch {
-                return;
-            }
+            } catch {}
         };
-
-        eventSource.onerror = () => undefined;
 
         return () => eventSource.close();
     }, [endpoint, onMessage]);

@@ -10,6 +10,5 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             saveAuthTokens(response);
             return response;
         },
-        onError: () => undefined,
     });
 }
