@@ -52,7 +52,7 @@ export function Body({ year, month, days, baseDate, selectedDate, timeslots, boo
 
                             return (
                                 <div
-                                    role={day !== 0 ? "button" : undefined}
+                                    role={day !== 0 && isAvailable ? "button" : undefined}
                                     aria-label={day !== 0 ? `day-${day}` : undefined}
                                     key={dayIndex}
                                     className="flex justify-center items-center py-1"
