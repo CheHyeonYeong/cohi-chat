@@ -80,18 +80,13 @@ export function Profile() {
     return (
         <PageLayout title={title}>
             {isHostLoading && (
-                <div data-testid="host-profile-loading" className="text-center py-16 text-gray-500">
+                <div data-testid="host-profile-loading" className="flex items-center justify-center min-h-[60vh] text-gray-500">
                     프로필을 불러오는 중...
                 </div>
             )}
 
             {hostError && (
-                <div data-testid="host-profile-error" className="text-center py-16">
-                    <p className="text-red-500">{(hostError as Error).message}</p>
-                    <LinkButton variant="outline" to="/" className="mt-4">
-                        홈으로 돌아가기
-                    </LinkButton>
-                </div>
+                <div className="text-center py-16 text-gray-500">{(hostError as Error).message}</div>
             )}
 
             {host && (
