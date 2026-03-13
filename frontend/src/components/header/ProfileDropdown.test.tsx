@@ -42,6 +42,7 @@ const nonHostUser = {
 
 const hostUser = {
     displayName: 'HostUser',
+    username: 'hostuser123',
     isHost: true,
 };
 
@@ -82,11 +83,12 @@ describe('ProfileDropdown', () => {
         expect(screen.getByTestId('menu-item-host-register')).toHaveTextContent('호스트 등록하기');
         expect(screen.getByTestId('menu-item-logout')).toHaveTextContent('로그아웃');
 
+        expect(screen.queryByTestId('menu-item-host-profile-preview')).not.toBeInTheDocument();
         expect(screen.queryByTestId('menu-item-host-timeslots')).not.toBeInTheDocument();
         expect(screen.queryByTestId('menu-item-host-calendar')).not.toBeInTheDocument();
     });
 
-    it('호스트(캘린더 있음): "시간대 설정", "호스트 설정" 메뉴가 표시된다, "호스트 등록하기"는 없다', async () => {
+    it('호스트(캘린더 있음): "내 프로필 미리보기", "시간대 설정", "호스트 설정" 메뉴가 표시된다, "호스트 등록하기"는 없다', async () => {
         mockUseAuth.mockReturnValue({ data: hostUser });
         mockUseMyCalendar.mockReturnValue({ data: { googleCalendarId: 'test@gmail.com' }, isLoading: false });
         const user = userEvent.setup();
@@ -94,6 +96,7 @@ describe('ProfileDropdown', () => {
         render(<ProfileDropdown />, { wrapper: createWrapper() });
         await user.click(screen.getByTestId('profile-avatar'));
 
+        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveTextContent('내 프로필 미리보기');
         expect(screen.getByTestId('menu-item-host-timeslots')).toHaveTextContent('시간대 설정');
         expect(screen.getByTestId('menu-item-host-calendar')).toHaveTextContent('호스트 설정');
 
@@ -121,6 +124,7 @@ describe('ProfileDropdown', () => {
 
         expect(screen.getByTestId('menu-item-my-bookings')).toHaveAttribute('href', '/booking/my-bookings');
         expect(screen.getByTestId('menu-item-settings')).toHaveAttribute('href', '/member/settings');
+        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveAttribute('href', '/host/$hostId');
         expect(screen.getByTestId('menu-item-host-timeslots')).toHaveAttribute('href', '/host/timeslots');
         expect(screen.getByTestId('menu-item-host-calendar')).toHaveAttribute('href', '/host/settings');
     });

@@ -54,6 +54,14 @@ export function ProfileDropdown() {
                     {hasCalendar ? (
                         <>
                             <DropdownMenuItem
+                                data-testid="menu-item-host-profile-preview"
+                                to="/host/$hostId"
+                                params={{ hostId: user.username }}
+                            >
+                                내 프로필 미리보기
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
                                 data-testid="menu-item-host-timeslots"
                                 to="/host/timeslots"
                             >
@@ -91,11 +99,12 @@ export function ProfileDropdown() {
     );
 }
 
-function DropdownMenuItem({ to, children, ...props }: { to: string; children: React.ReactNode; 'data-testid': string }) {
+function DropdownMenuItem({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: React.ReactNode; 'data-testid': string }) {
     return (
         <DropdownMenu.Item asChild className="outline-none">
             <Link
                 to={to}
+                params={params}
                 className="block px-4 py-2 text-sm text-[var(--cohi-text-dark)] hover:bg-[var(--cohi-bg-warm)] cursor-pointer"
                 {...props}
             >
