@@ -14,7 +14,7 @@ export function AuthPageLayout({ title, className, children }: AuthPageLayoutPro
     useDocumentTitle(title);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-warm)]">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--cohi-bg-light)]">
             <Link to="/" className="flex items-center gap-2 mb-8">
                 <CoffeeCupIcon className="w-10 h-10 text-[var(--cohi-primary)]" />
                 <span className="text-2xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
