@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { PageLayout } from '~/components';
 import { Card } from '~/components/card';
-import { LinkButton } from '~/components/button/LinkButton';
 import { HostProfileCard } from '~/features/host/components/HostProfileCard';
 import { HostTopicTags } from '~/features/host/components/HostTopicTags';
 import { Body, Navigator, Timeslots, getCalendarDays } from '~/components/calendar';
@@ -86,7 +85,10 @@ export function Profile() {
             )}
 
             {hostError && (
-                <div className="text-center py-16 text-gray-500">{(hostError as Error).message}</div>
+                <div data-testid="host-profile-error" className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 gap-4">
+                    <p>{(hostError as Error).message}</p>
+                    <Link to="/" className="text-[var(--cohi-primary)] hover:underline">홈으로 돌아가기</Link>
+                </div>
             )}
 
             {host && (
