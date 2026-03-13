@@ -14,7 +14,7 @@ interface TimeslotsProps {
 }
 
 export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) {
-    const { data: user } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     const now = baseDate ?? new Date();
     const weekday = now.getDay(); // 0=일, 1=월, ..., 6=토
@@ -26,12 +26,11 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
     return <Suspense fallback={<div>Loading timeslots...</div>}>
         <div className="flex flex-col gap-4 items-center justify-start mx-auto">
             <h3 className="text-2xl font-bold">{now.getFullYear()}년 {now.getMonth() + 1}월 {now.getDate()}일</h3>
-            {!user && (
+            {!isAuthenticated && (
                 <div
                     role="status"
                     role-label="no-date"
                     className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
-                    <p>커피챗을 신청할 날짜를 고르세요.</p>
                     <Link
                         to="/login"
                         className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
@@ -40,12 +39,12 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                 </div>
             )}
 
-            {!!user && (timeslots.length === 0 || !isAvailable) && (<div role="status" role-label="no-timeslots">
+            {isAuthenticated && (timeslots.length === 0 || !isAvailable) && (<div role="status" role-label="no-timeslots">
                 <p>예약 가능한 시간대가 없는 날입니다.</p>
             </div>
             )}
 
-            {!!user && isAvailable && availableTimeslots.map((timeslot) => (
+            {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
                 <Button
                     variant="primary"
                     type="button"
