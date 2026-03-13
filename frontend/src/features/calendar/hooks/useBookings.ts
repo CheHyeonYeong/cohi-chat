@@ -100,7 +100,11 @@ export function useBookingsStreamQuery({
                         }
                     });
                 }
-            } catch {}
+            } catch (error) {
+                if (!isCancelled) {
+                    console.error('Error fetching stream:', error);
+                }
+            }
         };
 
         fetchStream();
@@ -112,3 +116,4 @@ export function useBookingsStreamQuery({
 
     return items;
 }
+

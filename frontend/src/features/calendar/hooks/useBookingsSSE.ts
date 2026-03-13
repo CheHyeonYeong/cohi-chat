@@ -34,7 +34,9 @@ export function useBookingsSSEQuery({
                     return prevData;
                 });
                 onMessage?.(newData);
-            } catch {}
+            } catch (error) {
+                console.error('SSE message parsing error:', error);
+            }
         };
 
         return () => eventSource.close();
@@ -42,3 +44,4 @@ export function useBookingsSSEQuery({
 
     return { data };
 }
+
