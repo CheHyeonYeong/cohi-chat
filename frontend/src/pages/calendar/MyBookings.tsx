@@ -131,8 +131,8 @@ export default function MyBookings() {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (err) {
-            console.error(getErrorMessage(err, '파일 다운로드 실패'));
+        } catch {
+            // Download failures stay silent in the browser console.
         }
     };
 
@@ -141,8 +141,8 @@ export default function MyBookings() {
         try {
             await deleteFileAsync(fileId);
             await refetchSelectedBooking();
-        } catch (err) {
-            console.error(getErrorMessage(err, '파일 삭제 실패'));
+        } catch {
+            // Delete failures stay silent in the browser console.
         }
     };
 

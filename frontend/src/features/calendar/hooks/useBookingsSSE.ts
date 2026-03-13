@@ -34,13 +34,13 @@ export function useBookingsSSEQuery({
                     return prevData;
                 });
                 onMessage?.(newData);
-            } catch (error) {
-                console.error('SSE message parsing error:', error);
+            } catch {
+                // Ignore malformed SSE chunks.
             }
         };
 
-        eventSource.onerror = (error) => {
-            console.error('SSE connection error:', error);
+        eventSource.onerror = () => {
+            // Ignore transient SSE transport errors.
         };
 
         return () => eventSource.close();

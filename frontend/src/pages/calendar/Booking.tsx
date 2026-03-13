@@ -246,7 +246,6 @@ export default function Booking() {
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            console.error('Download error:', err);
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
         }
     };
@@ -256,8 +255,8 @@ export default function Booking() {
             setDeletingFileId(fileId);
             await deleteFileAsync(fileId);
             refetch();
-        } catch (err) {
-            console.error('Delete error:', err);
+        } catch {
+            // Delete failures are reflected by stale data remaining visible.
         } finally {
             setDeletingFileId(null);
         }

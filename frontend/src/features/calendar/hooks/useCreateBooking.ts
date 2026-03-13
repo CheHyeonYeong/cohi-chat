@@ -19,8 +19,6 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
                 search: { year, month },
             });
         },
-        onError: (error: Error) => {
-            console.error('Error creating booking:', error.message);
-        },
+        onError: () => {},
     });
 }

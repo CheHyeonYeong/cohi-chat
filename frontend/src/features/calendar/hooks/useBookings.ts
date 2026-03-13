@@ -100,9 +100,9 @@ export function useBookingsStreamQuery({
                         }
                     });
                 }
-            } catch (error) {
+            } catch {
                 if (!isCancelled) {
-                    console.error('Error fetching stream:', error);
+                    // Stream fetch failures are handled by falling back to existing UI state.
                 }
             }
         };
