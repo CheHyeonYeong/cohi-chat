@@ -34,7 +34,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                     <p>커피챗을 신청할 날짜를 고르세요.</p>
                     <Link
                         to="/login"
-                        className="block w-full border border-blue-100 font-semibold rounded py-3 text-center bg-primary text-white hover:bg-secondary">
+                        className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
                         로그인 후 커피챗 신청하기
                     </Link>
                 </div>

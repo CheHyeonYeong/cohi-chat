@@ -1,11 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { createRouter, createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRouter, createRootRoute, createRoute, Navigate, Outlet } from '@tanstack/react-router'
 import { z } from 'zod'
-
-import {
-    createRoute,
-} from '@tanstack/react-router'
-import { Calendar } from '~/pages/booking/Calendar'
 import { AuthGuard } from '~/features/member'
 import { HostGuard } from '~/features/host'
 import { Home } from '~/pages/Home'
@@ -129,13 +124,12 @@ const hostProfileRoute = createRoute({
 const calendarRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/booking/new/$slug',
-    component: Calendar,
+    component: function CalendarRedirect() {
+        const { slug } = calendarRoute.useParams();
+        return <Navigate to="/host/$hostId" params={{ hostId: slug }} />;
+    },
     params: z.object({
         slug: z.string().min(4),
-    }),
-    validateSearch: z.object({
-        year: z.number().min(2024).optional().default(() => new Date().getFullYear()),
-        month: z.number().min(1).max(12).optional().default(() => new Date().getMonth() + 1),
     }),
 })
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Profile } from './Profile';
 
@@ -20,13 +20,28 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('~/components/calendar', () => ({
     Navigator: ({ year, month }: { year: number; month: number }) =>
         React.createElement('div', { 'data-testid': 'calendar-navigator' }, `${year}년 ${month}월`),
-    Body: () => React.createElement('div', { 'data-testid': 'calendar-body' }, 'calendar-body'),
+    Body: ({ onSelectDay }: { onSelectDay: (date: Date) => void }) =>
+        React.createElement('div', {
+            'data-testid': 'calendar-body',
+            onClick: () => onSelectDay(new Date(2024, 2, 15)),
+        }, 'calendar-body'),
+    Timeslots: ({ onSelectTimeslot, baseDate }: { onSelectTimeslot: (ts: Record<string, unknown>) => void; baseDate: Date | null }) =>
+        React.createElement('div', {
+            'data-testid': 'calendar-timeslots',
+            onClick: () => onSelectTimeslot({ id: 1, startedAt: '10:00', endedAt: '11:00' }),
+        }, baseDate ? `timeslots-${baseDate.getDate()}` : 'timeslots'),
     getCalendarDays: () => [],
 }));
 
+const mockUseAuth = vi.fn();
 vi.mock('~/features/member', () => ({
-    useAuth: () => ({ isAuthenticated: true }),
+    useAuth: (...args: unknown[]) => mockUseAuth(...args),
     useLogout: () => ({ logout: vi.fn() }),
+}));
+
+vi.mock('~/features/booking', () => ({
+    useBookings: () => ({ data: [], refetch: vi.fn() }),
+    BookingForm: () => React.createElement('div', { 'data-testid': 'booking-form' }, 'BookingForm'),
 }));
 
 const mockUseHostProfile = vi.fn();
@@ -60,6 +75,8 @@ const mockTimeslots = [
     {
         id: 1,
         userId: '1',
+        startedAt: '10:00',
+        endedAt: '11:00',
         startTime: '10:00:00',
         endTime: '11:00:00',
         weekdays: [1, 3],
@@ -77,6 +94,7 @@ beforeEach(() => {
         data: { topics: ['개발 커리어', '이직 준비'], description: '안녕하세요, 프론트엔드 개발자입니다.' },
     });
     mockUseHostTimeslots.mockReturnValue({ data: mockTimeslots, isLoading: false });
+    mockUseAuth.mockReturnValue({ data: { username: 'guestuser', displayName: 'Guest User' }, isAuthenticated: true });
 });
 
 afterEach(() => {
@@ -130,12 +148,6 @@ describe('Profile 페이지', () => {
         expect(screen.getByTestId('calendar-body')).toBeInTheDocument();
     });
 
-    it('미팅 예약하기 버튼을 표시한다', () => {
-        render(<Profile />, { wrapper: createWrapper() });
-
-        expect(screen.getByText('미팅 예약하기')).toBeInTheDocument();
-    });
-
     it('로딩 중이면 로딩 메시지를 표시한다', () => {
         mockUseHostProfile.mockReturnValue({ data: undefined, isLoading: true, error: null });
 
@@ -156,5 +168,56 @@ describe('Profile 페이지', () => {
         expect(screen.getByTestId('host-profile-error')).toBeInTheDocument();
         expect(screen.getByText('호스트를 찾을 수 없습니다.')).toBeInTheDocument();
         expect(screen.getByText('홈으로 돌아가기')).toBeInTheDocument();
+    });
+
+    it('날짜 클릭 시 Timeslots가 표시된다', () => {
+        render(<Profile />, { wrapper: createWrapper() });
+
+        expect(screen.queryByTestId('calendar-timeslots')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('calendar-body'));
+
+        expect(screen.getByTestId('calendar-timeslots')).toBeInTheDocument();
+    });
+
+    it('시간대 선택 시 BookingForm Card가 표시된다', () => {
+        mockUseHostCalendar.mockReturnValue({
+            data: { topics: ['개발 커리어'], description: '테스트' },
+        });
+
+        render(<Profile />, { wrapper: createWrapper() });
+
+        fireEvent.click(screen.getByTestId('calendar-body'));
+        fireEvent.click(screen.getByTestId('calendar-timeslots'));
+
+        expect(screen.getByTestId('host-profile-booking-form')).toBeInTheDocument();
+        expect(screen.getByTestId('booking-form')).toBeInTheDocument();
+    });
+
+    it('자기 프로필일 때 Timeslots/BookingForm이 숨겨진다', () => {
+        mockUseAuth.mockReturnValue({ data: { username: 'testhost', displayName: 'Test Host' }, isAuthenticated: true });
+
+        render(<Profile />, { wrapper: createWrapper() });
+
+        fireEvent.click(screen.getByTestId('calendar-body'));
+
+        expect(screen.queryByTestId('calendar-timeslots')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('host-profile-booking-form')).not.toBeInTheDocument();
+    });
+
+    it('자기 프로필일 때 제목이 "내 프로필 미리보기"로 표시된다', () => {
+        mockUseAuth.mockReturnValue({ data: { username: 'testhost', displayName: 'Test Host' }, isAuthenticated: true });
+
+        render(<Profile />, { wrapper: createWrapper() });
+
+        const headings = screen.getAllByRole('heading', { level: 1 });
+        expect(headings.some(h => h.textContent?.includes('내 프로필 미리보기'))).toBe(true);
+    });
+
+    it('타인 프로필일 때 제목이 "OOO님과 약속잡기"로 표시된다', () => {
+        render(<Profile />, { wrapper: createWrapper() });
+
+        const headings = screen.getAllByRole('heading', { level: 1 });
+        expect(headings.some(h => h.textContent?.includes('Test Host님과 약속잡기'))).toBe(true);
     });
 });

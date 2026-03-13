@@ -145,81 +145,81 @@ export function MyBookings() {
 
     return (
         <PageLayout title="내 예약 목록" className="pb-16">
-                    {isLoading && (
-                        <div className="text-center py-16 text-gray-500">내 예약 목록을 불러오고 있습니다...</div>
+            {isLoading && (
+                <div className="text-center py-16 text-gray-500">내 예약 목록을 불러오고 있습니다...</div>
+            )}
+
+            {error && (
+                <div className="text-center py-16 space-y-4">
+                    <p className="text-red-500">{error.message}</p>
+                    {error.cause === 401 && (
+                        <LinkButton variant="primary" to="/login">로그인하기</LinkButton>
                     )}
+                </div>
+            )}
 
-                    {error && (
-                        <div className="text-center py-16 space-y-4">
-                            <p className="text-red-500">{error.message}</p>
-                            {error.cause === 401 && (
-                                <LinkButton variant="primary" to="/login">로그인하기</LinkButton>
-                            )}
-                        </div>
-                    )}
+            {!isLoading && !error && bookings?.bookings.length === 0 && (
+                <div className="text-center py-16 text-gray-500">예약 내역이 없습니다.</div>
+            )}
 
-                    {!isLoading && !error && bookings?.bookings.length === 0 && (
-                        <div className="text-center py-16 text-gray-500">예약 내역이 없습니다.</div>
-                    )}
+            {bookings && bookings.bookings.length > 0 && (
+                <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Left: booking list */}
+                    <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col gap-4">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={orderedBookings.map((b) => b.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {orderedBookings.map((booking) => (
+                                    <SortableBookingCard
+                                        key={booking.id}
+                                        booking={booking}
+                                        isSelected={selectedId === booking.id}
+                                        onSelect={handleCardSelect}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
 
-                    {bookings && bookings.bookings.length > 0 && (
-                        <div className="flex flex-col lg:flex-row gap-6">
-                            {/* Left: booking list */}
-                            <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col gap-4">
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <SortableContext
-                                        items={orderedBookings.map((b) => b.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        {orderedBookings.map((booking) => (
-                                            <SortableBookingCard
-                                                key={booking.id}
-                                                booking={booking}
-                                                isSelected={selectedId === booking.id}
-                                                onSelect={handleCardSelect}
-                                            />
-                                        ))}
-                                    </SortableContext>
-                                </DndContext>
+                        <Pagination
+                            page={page}
+                            pageSize={pageSize}
+                            totalCount={bookings.totalCount}
+                            onPageChange={handlePageChange}
+                        />
+                    </div>
 
-                                <Pagination
-                                    page={page}
-                                    pageSize={pageSize}
-                                    totalCount={bookings.totalCount}
-                                    onPageChange={handlePageChange}
+                    {/* Right: detail panel */}
+                    <div className="flex-1 min-w-0">
+                        {selectedId && selectedBooking ? (
+                            <div className="flex flex-col gap-4">
+                                <BookingDetailPanel
+                                    booking={selectedBooking}
+                                    onUpload={handleUpload}
+                                    onDownload={handleDownload}
+                                    onDelete={handleDelete}
+                                    isUploading={isUploading}
+                                    isDeleting={isDeleting}
+                                    uploadError={uploadError}
+                                />
+                                <FileDropZone
+                                    onFilesDropped={handleUpload}
+                                    disabled={isUploading}
                                 />
                             </div>
-
-                            {/* Right: detail panel */}
-                            <div className="flex-1 min-w-0">
-                                {selectedId && selectedBooking ? (
-                                    <div className="flex flex-col gap-4">
-                                        <BookingDetailPanel
-                                            booking={selectedBooking}
-                                            onUpload={handleUpload}
-                                            onDownload={handleDownload}
-                                            onDelete={handleDelete}
-                                            isUploading={isUploading}
-                                            isDeleting={isDeleting}
-                                            uploadError={uploadError}
-                                        />
-                                        <FileDropZone
-                                            onFilesDropped={handleUpload}
-                                            disabled={isUploading}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-64 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm">
+                        ) : (
+                            <div className="flex items-center justify-center h-64 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm">
                                         예약을 선택하면 상세 정보를 볼 수 있습니다
-                                    </div>
-                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                </div>
+            )}
         </PageLayout>
     );
 }

@@ -8,11 +8,10 @@ interface BookingFormProps {
     slug: string;
     timeSlotId: number;
     when: Date;
-    onBack: () => void;
     onCreated: () => void;
 }
 
-export function BookingForm({ calendar, slug, timeSlotId, when, onBack, onCreated }: BookingFormProps) {
+export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) {
     const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
     const topicRef = useRef<HTMLSelectElement>(null);
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
@@ -34,41 +33,42 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onBack, onCreate
     }, [createBookingMutation.isSuccess, onCreated]);
 
     return (
-        <div className='flex flex-col items-center justify-center space-y-4'>
-            <div className="w-full">
-                <Button variant="secondary" onClick={onBack}>달력으로 돌아가기</Button>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+                <label htmlFor="topic" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                    주제
+                </label>
+                <select
+                    ref={topicRef}
+                    id="topic"
+                    data-testid="booking-topic-select"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
+                >
+                    {calendar.topics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
+                </select>
             </div>
-            <form onSubmit={handleSubmit} className="w-full">
-                <div className="space-y-4 w-full">
-                    <div className="space-y-2">
-                        <label htmlFor="topic">주제:</label>
-                        <select
-                            ref={topicRef}
-                            id="topic"
-                            className="w-full border border-gray-300 rounded-md p-2"
-                        >
-                            {calendar.topics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="description">설명:</label>
-                        <textarea
-                            ref={descriptionRef}
-                            id="description"
-                            className="w-full border border-gray-300 rounded-md p-2"
-                        />
-                    </div>
-                    <Button variant='primary' type="submit" disabled={createBookingMutation.isPending} size="lg" className='w-full'>
-                        {createBookingMutation.isPending ? '예약 신청 중...' : '예약 신청하기'}
-                    </Button>
-                    {createBookingMutation.isError && (
-                        <div className="error-message">{createBookingMutation.error.message}</div>
-                    )}
-                    {createBookingMutation.isSuccess && (
-                        <div className="success-message">예약 생성 완료!</div>
-                    )}
-                </div>
-            </form>
-        </div>
+            <div className="flex flex-col gap-1">
+                <label htmlFor="description" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                    설명
+                </label>
+                <textarea
+                    ref={descriptionRef}
+                    id="description"
+                    data-testid="booking-description-textarea"
+                    placeholder="이야기하고 싶은 내용을 자유롭게 적어주세요"
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] resize-none focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
+                />
+            </div>
+            <Button variant='primary' type="submit" disabled={createBookingMutation.isPending} size="lg" className='w-full'>
+                {createBookingMutation.isPending ? '예약 신청 중...' : '예약 신청하기'}
+            </Button>
+            {createBookingMutation.isError && (
+                <p data-testid="booking-error" className="text-sm text-red-500">{createBookingMutation.error.message}</p>
+            )}
+            {createBookingMutation.isSuccess && (
+                <p data-testid="booking-success" className="text-green-600 text-sm">예약 생성 완료!</p>
+            )}
+        </form>
     );
 }

@@ -4,18 +4,20 @@ const SIZE_CLASSES = {
     sm: 'w-9 h-9',
     md: 'w-12 h-12',
     lg: 'w-16 h-16',
+    xl: 'w-20 h-20',
 } as const;
 
 const INITIAL_TEXT_SIZES = {
     sm: 'text-sm',
     md: 'text-lg',
     lg: 'text-xl',
+    xl: 'text-3xl',
 } as const;
 
 interface AvatarProps {
     displayName: string;
     profileImageUrl?: string;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
     className?: string;
 }
 

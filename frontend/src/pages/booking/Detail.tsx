@@ -315,250 +315,250 @@ export function Detail() {
 
     return (
         <PageLayout maxWidth="3xl" className="pb-16">
-                <div className="space-y-6">
-                    {/* Back link */}
-                    <Link
-                        to="/booking/my-bookings"
-                        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohi-primary)]"
-                    >
+            <div className="space-y-6">
+                {/* Back link */}
+                <Link
+                    to="/booking/my-bookings"
+                    className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohi-primary)]"
+                >
                         &larr; 내 예약 목록으로
-                    </Link>
+                </Link>
 
-                    {/* Booking info card */}
-                    <Card className="border border-gray-100">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg font-semibold text-[var(--cohi-primary)]">
-                                        {booking.host.displayName[0] ?? '?'}
-                                    </span>
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-[var(--cohi-text-dark)]">
-                                        {booking.host.displayName}님과의 커피챗
-                                    </h1>
-                                    <p className="text-sm text-gray-500 mt-0.5">
-                                        {startedAt.toLocaleDateString('ko-KR', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                        })}{' '}
-                                        {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
-                                    {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
+                {/* Booking info card */}
+                <Card className="border border-gray-100">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
+                                <span className="text-lg font-semibold text-[var(--cohi-primary)]">
+                                    {booking.host.displayName[0] ?? '?'}
                                 </span>
                             </div>
-                        </div>
-
-                        <div className="space-y-4">
                             <div>
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">주제</span>
-                                <p className="mt-1 text-gray-800">{booking.topic}</p>
+                                <h1 className="text-xl font-bold text-[var(--cohi-text-dark)]">
+                                    {booking.host.displayName}님과의 커피챗
+                                </h1>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    {startedAt.toLocaleDateString('ko-KR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                    })}{' '}
+                                    {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
+                                </p>
                             </div>
-                            {booking.description && (
-                                <div>
-                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">설명</span>
-                                    <p className="mt-1 text-gray-600 text-sm leading-relaxed">{booking.description}</p>
-                                </div>
-                            )}
                         </div>
-                    </Card>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
+                                {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
+                            </span>
+                        </div>
+                    </div>
 
-                    {/* Host No-show report section */}
-                    {canReport && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
-                            {!showReportForm ? (
-                                <div className="space-y-3">
-                                    <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                    <div className="space-y-4">
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">주제</span>
+                            <p className="mt-1 text-gray-800">{booking.topic}</p>
+                        </div>
+                        {booking.description && (
+                            <div>
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">설명</span>
+                                <p className="mt-1 text-gray-600 text-sm leading-relaxed">{booking.description}</p>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                {/* Host No-show report section */}
+                {canReport && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
+                        {!showReportForm ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    onClick={() => setShowReportForm(true)}
+                                    className="rounded-xl"
+                                >
+                                        호스트 노쇼 신고
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col space-y-3">
+                                <textarea
+                                    className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                    rows={3}
+                                    placeholder="신고 사유를 입력해주세요 (선택)"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                />
+                                {reportError && (
+                                    <p className="text-red-600 text-sm">{reportError.message}</p>
+                                )}
+                                <div className="flex flex-row space-x-2">
                                     <Button
                                         type="button"
                                         variant="primary"
-                                        onClick={() => setShowReportForm(true)}
-                                        className="rounded-xl"
+                                        loading={isReporting}
+                                        onClick={handleReportSubmit}
+                                        className="rounded-xl px-6"
                                     >
-                                        호스트 노쇼 신고
+                                            신고하기
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => {
+                                            setShowReportForm(false);
+                                            setReportReason('');
+                                            resetReport();
+                                        }}
+                                        className="rounded-xl px-6"
+                                    >
+                                            취소
                                     </Button>
                                 </div>
-                            ) : (
-                                <div className="flex flex-col space-y-3">
-                                    <textarea
-                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
-                                        rows={3}
-                                        placeholder="신고 사유를 입력해주세요 (선택)"
-                                        value={reportReason}
-                                        onChange={(e) => setReportReason(e.target.value)}
-                                    />
-                                    {reportError && (
-                                        <p className="text-red-600 text-sm">{reportError.message}</p>
-                                    )}
-                                    <div className="flex flex-row space-x-2">
-                                        <Button
-                                            type="button"
-                                            variant="primary"
-                                            loading={isReporting}
-                                            onClick={handleReportSubmit}
-                                            className="rounded-xl px-6"
-                                        >
-                                            신고하기
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => {
-                                                setShowReportForm(false);
-                                                setReportReason('');
-                                                resetReport();
-                                            }}
-                                            className="rounded-xl px-6"
-                                        >
-                                            취소
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {isGuest && noShowHistory && noShowHistory.length > 0 && (
-                        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold mb-3 text-red-800">
-                                이 호스트의 노쇼 이력 {noShowHistory.length}건
-                            </h2>
-                            <ul className="space-y-2">
-                                {noShowHistory.map((item) => (
-                                    <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                        {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    {/* File section */}
-                    <Card className="border border-gray-100 space-y-5" title="파일 첨부">
-
-                        {/* Capacity info */}
-                        <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
-                            <span>허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')}</span>
-                            <span>최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)}</span>
-                            <span>첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개</span>
-                        </div>
-
-                        {/* Upload form */}
-                        {canUploadMore ? (
-                            <form onSubmit={handleSubmit} className="space-y-3">
-                                {/* Drop zone */}
-                                <div
-                                    onDragOver={handleDropZoneDragOver}
-                                    onDragLeave={handleDropZoneDragLeave}
-                                    onDrop={handleDropZoneDrop}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={cn(
-                                        'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
-                                        isDraggingOver
-                                            ? 'border-[var(--cohi-primary)] bg-[var(--cohi-primary)]/5'
-                                            : 'border-gray-200 hover:border-[var(--cohi-primary)]/50 hover:bg-gray-50',
-                                    )}
-                                >
-                                    <span className="text-2xl select-none" aria-hidden="true">&#8679;</span>
-                                    <p className="text-sm text-gray-500">
-                                        {isDraggingOver
-                                            ? '파일을 놓으세요'
-                                            : '파일을 드래그하거나 클릭해서 선택'}
-                                    </p>
-                                    {selectedFiles.length > 0 && (
-                                        <p className="text-sm text-[var(--cohi-primary)] font-medium">
-                                            {selectedFiles.map((f) => f.name).join(', ')}
-                                        </p>
-                                    )}
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        name="files"
-                                        multiple
-                                        accept={getAcceptedFileTypes()}
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                    />
-                                </div>
-
-                                {/* Validation errors */}
-                                {validationErrors.length > 0 && (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                        <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
-                                        <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
-                                            {validationErrors.map((err, i) => (
-                                                <li key={i}>{err.message}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                {/* Upload API error */}
-                                {uploadError && (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                        <p className="text-red-600 text-sm">업로드 실패: {uploadError.message}</p>
-                                    </div>
-                                )}
-
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    className="w-full"
-                                    disabled={validationErrors.length > 0 || selectedFiles.length === 0}
-                                    loading={isUploading}
-                                >
-                                    {isUploading ? (uploadProgress || '업로드 중...') : '첨부하기'}
-                                </Button>
-                            </form>
-                        ) : (
-                            <p className="text-sm text-red-500">
-                                최대 파일 개수에 도달했습니다. 더 파일을 첨부하려면 기존 파일을 삭제해주세요.
-                            </p>
-                        )}
-
-                        {/* Attached file list (sortable) */}
-                        {fileOrder.length > 0 && (
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-gray-600">첨부된 파일</p>
-                                <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다. (현재 세션에서만 유지됨)</p>
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
-                                        <ul className="space-y-2">
-                                            {fileOrder.map((file) => (
-                                                <SortableFileItem
-                                                    key={file.id}
-                                                    file={file}
-                                                    onDownload={handleDownload}
-                                                    onDelete={handleDelete}
-                                                    isDeleting={isDeleting && deletingFileId === file.id}
-                                                />
-                                            ))}
-                                        </ul>
-                                    </SortableContext>
-                                </DndContext>
                             </div>
                         )}
+                    </div>
+                )}
 
-                        {downloadError && (
-                            <p className="mt-1 text-sm text-red-500">{downloadError}</p>
-                        )}
+                {isGuest && noShowHistory && noShowHistory.length > 0 && (
+                    <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold mb-3 text-red-800">
+                                이 호스트의 노쇼 이력 {noShowHistory.length}건
+                        </h2>
+                        <ul className="space-y-2">
+                            {noShowHistory.map((item) => (
+                                <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                    {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
-                        {fileOrder.length === 0 && (
-                            <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
-                        )}
-                    </Card>
-                </div>
+                {/* File section */}
+                <Card className="border border-gray-100 space-y-5" title="파일 첨부">
+
+                    {/* Capacity info */}
+                    <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')}</span>
+                        <span>최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)}</span>
+                        <span>첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개</span>
+                    </div>
+
+                    {/* Upload form */}
+                    {canUploadMore ? (
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            {/* Drop zone */}
+                            <div
+                                onDragOver={handleDropZoneDragOver}
+                                onDragLeave={handleDropZoneDragLeave}
+                                onDrop={handleDropZoneDrop}
+                                onClick={() => fileInputRef.current?.click()}
+                                className={cn(
+                                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                                    isDraggingOver
+                                        ? 'border-[var(--cohi-primary)] bg-[var(--cohi-primary)]/5'
+                                        : 'border-gray-200 hover:border-[var(--cohi-primary)]/50 hover:bg-gray-50',
+                                )}
+                            >
+                                <span className="text-2xl select-none" aria-hidden="true">&#8679;</span>
+                                <p className="text-sm text-gray-500">
+                                    {isDraggingOver
+                                        ? '파일을 놓으세요'
+                                        : '파일을 드래그하거나 클릭해서 선택'}
+                                </p>
+                                {selectedFiles.length > 0 && (
+                                    <p className="text-sm text-[var(--cohi-primary)] font-medium">
+                                        {selectedFiles.map((f) => f.name).join(', ')}
+                                    </p>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    name="files"
+                                    multiple
+                                    accept={getAcceptedFileTypes()}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </div>
+
+                            {/* Validation errors */}
+                            {validationErrors.length > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
+                                    <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
+                                        {validationErrors.map((err, i) => (
+                                            <li key={i}>{err.message}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Upload API error */}
+                            {uploadError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <p className="text-red-600 text-sm">업로드 실패: {uploadError.message}</p>
+                                </div>
+                            )}
+
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                className="w-full"
+                                disabled={validationErrors.length > 0 || selectedFiles.length === 0}
+                                loading={isUploading}
+                            >
+                                {isUploading ? (uploadProgress || '업로드 중...') : '첨부하기'}
+                            </Button>
+                        </form>
+                    ) : (
+                        <p className="text-sm text-red-500">
+                                최대 파일 개수에 도달했습니다. 더 파일을 첨부하려면 기존 파일을 삭제해주세요.
+                        </p>
+                    )}
+
+                    {/* Attached file list (sortable) */}
+                    {fileOrder.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-600">첨부된 파일</p>
+                            <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다. (현재 세션에서만 유지됨)</p>
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
+                                <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
+                                    <ul className="space-y-2">
+                                        {fileOrder.map((file) => (
+                                            <SortableFileItem
+                                                key={file.id}
+                                                file={file}
+                                                onDownload={handleDownload}
+                                                onDelete={handleDelete}
+                                                isDeleting={isDeleting && deletingFileId === file.id}
+                                            />
+                                        ))}
+                                    </ul>
+                                </SortableContext>
+                            </DndContext>
+                        </div>
+                    )}
+
+                    {downloadError && (
+                        <p className="mt-1 text-sm text-red-500">{downloadError}</p>
+                    )}
+
+                    {fileOrder.length === 0 && (
+                        <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
+                    )}
+                </Card>
+            </div>
         </PageLayout>
     );
 }

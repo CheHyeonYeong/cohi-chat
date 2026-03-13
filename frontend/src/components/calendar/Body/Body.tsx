@@ -7,12 +7,13 @@ interface BodyProps {
     month: number;
     days: number[];
     baseDate?: Date;
+    selectedDate?: Date | null;
     timeslots: ITimeSlot[];
     bookings: Array<IBooking | ICalendarEvent>;
     onSelectDay: (date: Date) => void;
 }
 
-export function Body({ year, month, days, baseDate, timeslots, bookings, onSelectDay }: BodyProps) {
+export function Body({ year, month, days, baseDate, selectedDate, timeslots, bookings, onSelectDay }: BodyProps) {
     const weeks = days.reduce<number[][]>((acc, day, i) => {
         const weekIndex = Math.floor(i / 7);
 
@@ -44,6 +45,10 @@ export function Body({ year, month, days, baseDate, timeslots, bookings, onSelec
                         {week.map((day, dayIndex) => {
                             const weekday = dayIndex;
                             const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, year, month, day, weekday);
+                            const isSelected = selectedDate
+                                && selectedDate.getFullYear() === year
+                                && selectedDate.getMonth() + 1 === month
+                                && selectedDate.getDate() === day;
 
                             return (
                                 <div
@@ -55,9 +60,10 @@ export function Body({ year, month, days, baseDate, timeslots, bookings, onSelec
                                     <span
                                         className={cn(
                                             "booking-cell flex justify-center items-center rounded-full aspect-square w-10 sm:w-12 select-none text-sm sm:text-base",
-                                            { 'text-[#AAAAAA] bg-inherit hover:cursor-default': !isAvailable },
-                                            { 'font-bold text-primary bg-blue-50': isAvailable },
-                                            { 'cursor-pointer hover:bg-primary hover:text-white': isAvailable },
+                                            day === 0 && 'invisible',
+                                            day !== 0 && !isAvailable && 'text-[#AAAAAA] bg-inherit cursor-default',
+                                            day !== 0 && isAvailable && !isSelected && 'font-bold text-[var(--cohi-primary)] bg-[var(--cohi-bg-light)] cursor-pointer hover:bg-[var(--cohi-primary)] hover:text-[var(--cohi-text-light)]',
+                                            day !== 0 && isAvailable && isSelected && 'font-bold bg-[var(--cohi-primary)] text-[var(--cohi-text-light)] cursor-pointer',
                                         )}
                                         onClick={() => isAvailable ? onSelectDay(new Date(year, month - 1, day)) : undefined}
                                     >
