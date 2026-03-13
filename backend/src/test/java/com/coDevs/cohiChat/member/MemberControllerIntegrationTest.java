@@ -226,14 +226,14 @@ class MemberControllerIntegrationTest {
 		}
 
 		@Test
-		@DisplayName("RT 미포함(빈 값) 요청 시 400 Bad Request 반환")
-		void refreshWithBlankToken_returns400() throws Exception {
+		@DisplayName("RT 미포함(빈 값) + 쿠키 없음 요청 시 401 Unauthorized 반환")
+		void refreshWithBlankToken_returns401() throws Exception {
 			mockMvc.perform(post(REFRESH_ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"refreshToken\": \"\"}"))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+				.andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
 		}
 	}
 
