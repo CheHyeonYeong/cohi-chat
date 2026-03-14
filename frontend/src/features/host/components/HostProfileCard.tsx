@@ -1,5 +1,6 @@
 import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
+import { Avatar } from '~/components/Avatar';
 import type { HostResponseDTO } from '~/features/member';
 
 interface HostProfileCardProps {
@@ -7,7 +8,7 @@ interface HostProfileCardProps {
     className?: string;
 }
 
-export default function HostProfileCard({ host, className }: HostProfileCardProps) {
+export function HostProfileCard({ host, className }: HostProfileCardProps) {
     return (
         <Card
             variant="elevated"
@@ -15,22 +16,11 @@ export default function HostProfileCard({ host, className }: HostProfileCardProp
             data-testid="host-profile-card"
             className={cn('flex flex-col items-center text-center', className)}
         >
-            <div
-                data-testid="host-profile-avatar"
-                className="w-20 h-20 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center overflow-hidden"
-            >
-                {host.profileImageUrl ? (
-                    <img
-                        src={host.profileImageUrl}
-                        alt={host.displayName}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <span className="text-3xl font-bold text-[var(--cohi-primary)]">
-                        {host.displayName.charAt(0)}
-                    </span>
-                )}
-            </div>
+            <Avatar
+                displayName={host.displayName}
+                profileImageUrl={host.profileImageUrl}
+                size="xl"
+            />
 
             <h1
                 data-testid="host-profile-name"

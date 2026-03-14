@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import HostTimeSlotPreview from './HostTimeSlotPreview';
-import type { ITimeSlot } from '~/features/calendar';
+import { HostTimeSlotPreview } from './HostTimeSlotPreview';
+import type { ITimeSlot } from '~/components/calendar';
 
 const mockTimeslots: ITimeSlot[] = [
     {

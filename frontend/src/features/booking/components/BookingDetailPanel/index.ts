@@ -1,0 +1,1 @@
+export { BookingDetailPanel } from './BookingDetailPanel';

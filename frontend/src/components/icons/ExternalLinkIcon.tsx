@@ -2,7 +2,7 @@ interface IconProps {
     className?: string;
 }
 
-export default function ExternalLinkIcon({ className = '' }: IconProps) {
+export function ExternalLinkIcon({ className = '' }: IconProps) {
     return (
         <svg className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 3H3V13H13V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

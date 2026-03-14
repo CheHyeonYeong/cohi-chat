@@ -1,5 +1,5 @@
 import { cn } from '~/libs/cn';
-import type { ITimeSlot } from '~/features/calendar';
+import type { ITimeSlot } from '~/components/calendar';
 
 const DAY_NAMES: Record<number, string> = {
     0: '일',
@@ -21,7 +21,7 @@ interface HostTimeSlotPreviewProps {
     className?: string;
 }
 
-export default function HostTimeSlotPreview({
+export function HostTimeSlotPreview({
     timeslots,
     isLoading,
     className,

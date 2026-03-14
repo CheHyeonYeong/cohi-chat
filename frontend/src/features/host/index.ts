@@ -1,7 +1,8 @@
 // Components
-export { default as HostGuard } from './components/HostGuard';
-export { default as MeetingInfoForm } from './components/MeetingInfoForm';
-export { default as GoogleCalendarSetup } from './components/GoogleCalendarSetup';
+export { HostGuard } from './components/HostGuard';
+export { MeetingInfoForm } from './components/MeetingInfoForm';
+export { GoogleCalendarSetup } from './components/GoogleCalendarSetup';
+export { HostCard } from './components/HostCard';
 
 // Hooks
 export {

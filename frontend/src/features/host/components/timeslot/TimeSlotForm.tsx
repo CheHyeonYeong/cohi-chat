@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
 import { DAY_NAMES, WEEKDAYS, type Weekday } from '~/libs/constants/days';
@@ -64,7 +64,7 @@ function formatEntrySummary(entry: TimeSlotEntry): string {
     return `${formatWeekdaySummary(entry.weekdays)} ${entry.startTime} - ${entry.endTime}`;
 }
 
-export default function TimeSlotForm({
+export function TimeSlotForm({
     entries,
     onChange,
     onSave,
