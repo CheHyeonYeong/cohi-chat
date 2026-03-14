@@ -1,7 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useCreateBooking } from '../../hooks';
 import { Button } from '~/components/button';
 import type { ICalendar } from '~/components/calendar';
+import type { MeetingType } from '../../types';
+import { MeetingTypeSelector } from '../MeetingTypeSelector';
 
 interface BookingFormProps {
     calendar: ICalendar;
@@ -15,6 +17,10 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
     const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
     const topicRef = useRef<HTMLSelectElement>(null);
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
+    const locationRef = useRef<HTMLInputElement>(null);
+    const meetingLinkRef = useRef<HTMLInputElement>(null);
+
+    const [meetingType, setMeetingType] = useState<MeetingType>('ONLINE');
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -23,6 +29,9 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
             topic: topicRef.current?.value ?? '',
             description: descriptionRef.current?.value ?? '',
             when: `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}-${String(when.getDate()).padStart(2, '0')}`,
+            meetingType,
+            location: meetingType === 'OFFLINE' ? locationRef.current?.value : undefined,
+            meetingLink: meetingType === 'ONLINE' ? meetingLinkRef.current?.value : undefined,
         });
     };
 
@@ -47,6 +56,14 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
                     {calendar.topics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
                 </select>
             </div>
+
+            <MeetingTypeSelector
+                value={meetingType}
+                onChange={setMeetingType}
+                locationRef={locationRef}
+                meetingLinkRef={meetingLinkRef}
+            />
+
             <div className="flex flex-col gap-1">
                 <label htmlFor="description" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
                     설명

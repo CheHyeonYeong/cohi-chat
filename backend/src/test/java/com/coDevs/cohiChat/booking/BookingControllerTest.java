@@ -107,7 +107,8 @@ class BookingControllerTest {
                 "timeSlotId": 1,
                 "when": "%s",
                 "topic": "프로젝트 상담",
-                "description": "Spring Boot 프로젝트 관련 질문"
+                "description": "Spring Boot 프로젝트 관련 질문",
+                "meetingType": "ONLINE"
             }
             """.formatted(FUTURE_DATE);
 
@@ -137,7 +138,8 @@ class BookingControllerTest {
                 "timeSlotId": 1,
                 "when": "%s",
                 "topic": "프로젝트 상담",
-                "description": "Spring Boot 프로젝트 관련 질문"
+                "description": "Spring Boot 프로젝트 관련 질문",
+                "meetingType": "ONLINE"
             }
             """.formatted(FUTURE_DATE);
 
@@ -160,7 +162,8 @@ class BookingControllerTest {
                 "timeSlotId": 1,
                 "when": "2020-01-01",
                 "topic": "프로젝트 상담",
-                "description": "Spring Boot 프로젝트 관련 질문"
+                "description": "Spring Boot 프로젝트 관련 질문",
+                "meetingType": "ONLINE"
             }
             """;
 
@@ -186,7 +189,8 @@ class BookingControllerTest {
                 "timeSlotId": 1,
                 "when": "%s",
                 "topic": "프로젝트 상담",
-                "description": "Spring Boot 프로젝트 관련 질문"
+                "description": "Spring Boot 프로젝트 관련 질문",
+                "meetingType": "ONLINE"
             }
             """.formatted(FUTURE_DATE);
 
@@ -212,7 +216,8 @@ class BookingControllerTest {
                 "timeSlotId": 999,
                 "when": "%s",
                 "topic": "프로젝트 상담",
-                "description": "Spring Boot 프로젝트 관련 질문"
+                "description": "Spring Boot 프로젝트 관련 질문",
+                "meetingType": "ONLINE"
             }
             """.formatted(FUTURE_DATE);
 

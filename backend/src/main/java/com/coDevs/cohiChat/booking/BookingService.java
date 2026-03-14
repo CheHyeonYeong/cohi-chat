@@ -94,7 +94,10 @@ public class BookingService {
             guest.getId(),
             request.getBookingDate(),
             request.getTopic(),
-            request.getDescription()
+            request.getDescription(),
+            request.getMeetingType(),
+            request.getLocation(),
+            request.getMeetingLink()
         );
 
         Booking savedBooking = bookingRepository.save(booking);
@@ -415,7 +418,15 @@ public class BookingService {
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
         validateTopic(newTimeSlot.getUserId(), request.getTopic());
 
-        booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
+        booking.update(
+            request.getTopic(),
+            request.getDescription(),
+            newTimeSlot,
+            request.getBookingDate(),
+            request.getMeetingType(),
+            request.getLocation(),
+            request.getMeetingLink()
+        );
 
         Member guest = memberRepository.findById(guestId).orElse(null);
         upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
