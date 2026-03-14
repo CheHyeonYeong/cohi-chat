@@ -61,14 +61,13 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         String path = request.getRequestURI();
         int status = response.getStatus();
-        String message = String.format(
-            "[http] [%s] method=%s path=%s status=%d durationMs=%d",
-            resolveOutcome(status, duration),
-            method,
-            path,
-            status,
-            duration
-        );
+        String message = StructuredLogMessage.of("http", resolveOutcome(status, duration))
+            .add("context", "request")
+            .add("method", method)
+            .add("path", path)
+            .add("status", status)
+            .add("durationMs", duration)
+            .build();
 
         if (status >= HttpStatus.INTERNAL_SERVER_ERROR.value()) {
             log.error(message);

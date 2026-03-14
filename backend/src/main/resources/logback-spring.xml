@@ -33,7 +33,7 @@
         </root>
 
         <logger name="com.coDevs.cohiChat" level="DEBUG"/>
-        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.springframework.web" level="INFO"/>
     </springProfile>
 
     <!-- Production profile: 텍스트 stdout 출력 (Fluent Bit 수집) -->

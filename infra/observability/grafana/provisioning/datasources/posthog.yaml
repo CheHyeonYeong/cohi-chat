@@ -13,5 +13,7 @@ datasources:
       allowedHosts:
         - ${POSTHOG_APP_HOST}
       httpHeaderName1: Authorization
+      httpHeaderName2: Content-Type
     secureJsonData:
       httpHeaderValue1: Bearer ${POSTHOG_PERSONAL_API_KEY}
+      httpHeaderValue2: application/json

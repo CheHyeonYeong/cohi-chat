@@ -13,7 +13,14 @@ codec = "json"
 type = "remap"
 inputs = ["fluent_bit"]
 source = '''
-.raw_log = string!(.log ?? .message ?? .msg ?? "")
+.raw_log = ""
+if exists(.log) {
+  .raw_log = string!(.log)
+} else if exists(.message) {
+  .raw_log = string!(.message)
+} else if exists(.msg) {
+  .raw_log = string!(.msg)
+}
 if .raw_log == "" {
   .raw_log = encode_json(.)
 }
@@ -44,12 +51,19 @@ if event_err == null {
   .details = .message
 }
 
+context_meta, context_err = parse_regex(.details, r'(^| )context=(?P<context>[^ ]+)')
+if context_err == null {
+  .context = context_meta.context
+} else {
+  .context = ""
+}
+
 .api_key = "${POSTHOG_API_KEY:?POSTHOG_API_KEY is required}"
 .event = "backend_log"
 .distinct_id = .request_id
 .timestamp = .event_timestamp
 .properties = {
-  "$process_person_profile": false,
+  "$$process_person_profile": false,
   "application": "cohichat",
   "pipeline": "backend-log",
   "level": .level,
@@ -58,6 +72,7 @@ if event_err == null {
   "details": .details,
   "action": .action,
   "status": .status,
+  "context": .context,
   "request_id": .request_id,
   "raw_log": .raw_log
 }

@@ -89,7 +89,7 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT count() AS total_logs FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000)\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT count() AS total_logs FROM events WHERE event = 'backend_log' AND properties.action != 'unclassified' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000)\"}}",
             "method": "POST"
           }
         }
@@ -120,10 +120,12 @@
       "id": 2,
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "hidden",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
+        "orientation": "horizontal",
+        "showValue": "auto",
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -134,12 +136,12 @@
           "columns": [
             {
               "selector": "0",
-              "text": "minute",
-              "type": "time"
+              "text": "context",
+              "type": "string"
             },
             {
               "selector": "1",
-              "text": "log_count",
+              "text": "value",
               "type": "number"
             }
           ],
@@ -148,7 +150,7 @@
             "uid": "posthog-observability"
           },
           "filters": [],
-          "format": "timeseries",
+          "format": "table",
           "parser": "backend",
           "refId": "A",
           "root_selector": "results",
@@ -158,13 +160,13 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT toStartOfMinute(timestamp) AS minute, count() AS log_count FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY minute ORDER BY minute\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT coalesce(nullIf(properties.context, ''), 'none') AS context, count() AS value FROM events WHERE event = 'backend_log' AND properties.context != '' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY context ORDER BY value DESC LIMIT 10\"}}",
             "method": "POST"
           }
         }
       ],
-      "title": "Logs Per Minute",
-      "type": "timeseries"
+      "title": "Context Distribution",
+      "type": "barchart"
     },
     {
       "datasource": {
@@ -232,7 +234,7 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT coalesce(nullIf(properties.level, ''), 'UNKNOWN') AS level, count() AS value FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY level ORDER BY value DESC\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT coalesce(nullIf(properties.level, ''), 'UNKNOWN') AS level, count() AS value FROM events WHERE event = 'backend_log' AND properties.action != 'unclassified' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY level ORDER BY value DESC\"}}",
             "method": "POST"
           }
         }
@@ -302,12 +304,12 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT concat(coalesce(nullIf(properties.action, ''), 'unclassified'), ' / ', coalesce(nullIf(properties.status, ''), 'NONE')) AS action_status, count() AS value FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY action_status ORDER BY value DESC LIMIT 20\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT concat(coalesce(nullIf(properties.action, ''), 'unclassified'), ' / ', coalesce(nullIf(properties.status, ''), 'NONE')) AS action_status, count() AS value FROM events WHERE event = 'backend_log' AND properties.action != 'unclassified' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY action_status ORDER BY value DESC LIMIT 20\"}}",
             "method": "POST"
           }
         }
       ],
-      "title": "Top Action / Status",
+      "title": "Top Event / Status",
       "type": "barchart"
     },
     {
@@ -347,26 +349,36 @@
             },
             {
               "selector": "1",
-              "text": "action",
+              "text": "request_id",
               "type": "string"
             },
             {
               "selector": "2",
-              "text": "status",
+              "text": "context",
               "type": "string"
             },
             {
               "selector": "3",
-              "text": "level",
+              "text": "action",
               "type": "string"
             },
             {
               "selector": "4",
-              "text": "logger",
+              "text": "status",
               "type": "string"
             },
             {
               "selector": "5",
+              "text": "level",
+              "type": "string"
+            },
+            {
+              "selector": "6",
+              "text": "logger",
+              "type": "string"
+            },
+            {
+              "selector": "7",
               "text": "details",
               "type": "string"
             }
@@ -386,16 +398,16 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT timestamp, coalesce(nullIf(properties.action, ''), 'unclassified') AS action, coalesce(nullIf(properties.status, ''), 'NONE') AS status, coalesce(nullIf(properties.level, ''), 'INFO') AS level, coalesce(nullIf(properties.logger, ''), 'unknown') AS logger, coalesce(properties.details, properties.message, '') AS details FROM events WHERE event = 'backend_log' AND (properties.status IN ('FAIL', 'SLOW') OR properties.level IN ('WARN', 'ERROR')) AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) ORDER BY timestamp DESC LIMIT 100\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT timestamp, coalesce(nullIf(properties.request_id, ''), 'N/A') AS request_id, coalesce(nullIf(properties.context, ''), 'none') AS context, coalesce(nullIf(properties.action, ''), 'unclassified') AS action, coalesce(nullIf(properties.status, ''), 'NONE') AS status, coalesce(nullIf(properties.level, ''), 'INFO') AS level, coalesce(nullIf(properties.logger, ''), 'unknown') AS logger, coalesce(properties.details, properties.message, '') AS details FROM events WHERE event = 'backend_log' AND properties.action != 'unclassified' AND (properties.status IN ('FAIL', 'SLOW') OR properties.level IN ('WARN', 'ERROR')) AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) ORDER BY timestamp DESC LIMIT 100\"}}",
             "method": "POST"
           }
         }
       ],
-      "title": "Latest Fail / Slow Logs",
+      "title": "Latest Request / Fail / Slow Logs",
       "type": "table"
     }
   ],
-  "refresh": "30s",
+  "refresh": "5m",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [

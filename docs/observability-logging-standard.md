@@ -17,11 +17,14 @@
 ## Log Format
 
 ```text
-2026-03-12 10:30:45.123 [a1b2c3d4] INFO  com.coDevs.cohiChat.booking.BookingService - [createBooking] [SUCCESS] bookingId=123
-2026-03-12 10:30:45.123 [a1b2c3d4] WARN  com.coDevs.cohiChat.google.calendar.GoogleCalendarService - [createEvent] [FAIL] durationMs=2145 cause=SocketTimeoutException
+2026-03-12 10:30:45.101 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.observability.SlowQueryLoggingListener - [slowquery] [SLOW] context=request datasource=cohichat-datasource durationMs=214 thresholdMs=100 queryCount=1 statementType=Prepared query="select ..."
+2026-03-12 10:30:45.123 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.exception.GlobalExceptionHandler - [context] [FAIL] context=request method=POST path=/api/members/v1/login status=404 code=USER_NOT_FOUND
+2026-03-12 10:30:45.124 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.observability.HttpLoggingFilter - [http] [FAIL] context=request method=POST path=/api/members/v1/login status=404 durationMs=231
 ```
 
-- Prefix every business or integration log message with `[action] [status]`
+- Prefix every structured observability log message with `[action] [status]`
+- Use the same `request-id` across `slowquery`, `context`, and `http` logs for a single request
+- Add `context=<request|async|integration|system>` in details for cross-cutting logs
 - `request-id` is the only request-scoped MDC field
 - Prefer safe identifiers such as `bookingId`; avoid UUID, email, IP, token, calendar ID
 
@@ -38,7 +41,9 @@
 - Member: signup success, login success/failure, withdrawal success
 - Calendar: host calendar created, guest-to-host promotion
 - Google Calendar: create/update/delete/access validation failures and slow calls
+- Context: request-boundary failures and internal exception context logs
 - HTTP: one access log per request with method, path, status, duration
+- Slow query: warn when SQL latency crosses threshold, keeping the same `request-id` when present
 
 ## Pipeline
 

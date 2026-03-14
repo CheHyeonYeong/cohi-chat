@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.coDevs.cohiChat.global.observability.StructuredLogMessage;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.global.response.ErrorResponseDTO;
 
@@ -94,13 +95,16 @@ public class GlobalExceptionHandler {
     }
 
     private void logHandledFailure(HttpServletRequest request, HttpStatus status, String code, Exception e) {
-        String message = String.format(
-            "[api] [FAIL] method=%s path=%s status=%d code=%s",
-            request.getMethod(),
-            request.getRequestURI(),
-            status.value(),
-            code
-        );
+        StructuredLogMessage messageBuilder = StructuredLogMessage.of("context", "FAIL")
+            .add("context", "request")
+            .add("method", request.getMethod())
+            .add("path", request.getRequestURI())
+            .add("status", status.value())
+            .add("code", code);
+        if (e != null) {
+            messageBuilder.add("cause", e.getClass().getSimpleName());
+        }
+        String message = messageBuilder.build();
 
         if (status.is5xxServerError()) {
             log.error(message, e);
