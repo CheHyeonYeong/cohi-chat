@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
@@ -48,11 +50,15 @@ public class DevBookingController {
         @RequestParam Long timeSlotId,
         @RequestParam(defaultValue = "1") int daysAgo
     ) {
+        if (daysAgo < 1) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
         Member guest = memberRepository.findByUsernameAndIsDeletedFalse(userDetails.getUsername())
-            .orElseThrow(() -> new IllegalArgumentException("Member not found: " + userDetails.getUsername()));
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
-            .orElseThrow(() -> new IllegalArgumentException("TimeSlot not found: " + timeSlotId));
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         LocalDate pastDate = LocalDate.now().minusDays(daysAgo);
         Booking booking = Booking.create(timeSlot, guest.getId(), pastDate, "[DEV] 노쇼 테스트 예약", "로컬 테스트용 과거 예약입니다.");

@@ -156,8 +156,8 @@ describe('노쇼 신고 버튼', () => {
         expect(screen.getByText('이미 신고한 예약입니다.')).toBeInTheDocument();
     });
 
-    it('게스트가 아닌 경우(호스트 본인): 신고 섹션이 표시되지 않는다', () => {
-        mockBooking = { ...makeBooking(PAST_STARTED_AT), guestId: 'other-guest-uuid' };
+    it('게스트가 아닌 경우: 신고 섹션이 표시되지 않는다', () => {
+        mockBooking = { ...makeBooking(PAST_STARTED_AT), guestId: HOST_ID };
 
         render(<Booking />);
 

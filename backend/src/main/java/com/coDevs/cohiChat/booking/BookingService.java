@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -465,10 +466,14 @@ public class BookingService {
 
         UUID hostId = booking.getTimeSlot().getUserId();
         NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
-        noShowHistoryRepository.save(history);
+        try {
+            noShowHistoryRepository.save(history);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+        }
 
         long reportCount = noShowHistoryRepository.countByHostId(hostId);
-        if (reportCount == NO_SHOW_BAN_THRESHOLD) {
+        if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
             memberRepository.findById(hostId).ifPresent(Member::ban);
         }
 
