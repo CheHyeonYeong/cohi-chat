@@ -32,7 +32,7 @@ class AuthCookieServiceTest {
 	}
 
 	@Test
-	@DisplayName("login cookie瑜?access/refresh ??媛쒕쾶 ?듯빐 ?쒖젙?쒕떎")
+	@DisplayName("로그인 쿠키에 access/refresh 토큰이 설정된다")
 	void addLoginCookies_setsAccessAndRefreshCookies() {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		LoginResponseDTO loginResponse = LoginResponseDTO.builder()
@@ -58,7 +58,7 @@ class AuthCookieServiceTest {
 	}
 
 	@Test
-	@DisplayName("logout cookie? 留뚮즺 泥섎━?쒕떎")
+	@DisplayName("로그아웃 쿠키를 만료 처리한다")
 	void clearAuthCookies_expiresCookies() {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 

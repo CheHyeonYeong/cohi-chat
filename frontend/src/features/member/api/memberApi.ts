@@ -60,7 +60,7 @@ export async function refreshTokenApi(): Promise<LoginResponse> {
         method: 'POST',
     });
 
-    if (!response || !response.accessToken) {
+    if (!response || !response.username) {
         throw new Error('토큰 갱신에 실패했습니다.');
     }
     return response;
