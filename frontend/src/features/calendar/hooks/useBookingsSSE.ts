@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { snakeToCamel } from '~/libs/utils';
 import type { IBooking, ICalendarEvent } from '../types';
 
@@ -11,6 +11,11 @@ export function useBookingsSSEQuery({
 }) {
     const [data, setData] = useState<Array<IBooking | ICalendarEvent>>([]);
     const [connectionError, setConnectionError] = useState<Event | null>(null);
+    const onMessageRef = useRef(onMessage);
+
+    useEffect(() => {
+        onMessageRef.current = onMessage;
+    });
 
     useEffect(() => {
         setConnectionError(null);
@@ -35,7 +40,7 @@ export function useBookingsSSEQuery({
                     }
                     return prevData;
                 });
-                onMessage?.(newData);
+                onMessageRef.current?.(newData);
             } catch {
                 // 파싱 실패한 메시지는 무시
             }
@@ -47,7 +52,7 @@ export function useBookingsSSEQuery({
         };
 
         return () => eventSource.close();
-    }, [endpoint, onMessage]);
+    }, [endpoint]);
 
     return { data, connectionError };
 }

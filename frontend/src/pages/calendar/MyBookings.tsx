@@ -118,7 +118,7 @@ export default function MyBookings() {
             }
             await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
         } catch {
-            return;
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         }
     };
 

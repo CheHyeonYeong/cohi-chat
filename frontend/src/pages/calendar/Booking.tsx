@@ -229,7 +229,7 @@ export default function Booking() {
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch {
-            return;
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         } finally {
             setUploadProgress('');
         }
@@ -248,7 +248,6 @@ export default function Booking() {
             document.body.removeChild(link);
         } catch (err) {
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
-            showToast(getErrorMessage(err, '파일 다운로드에 실패했습니다.'), 'booking-download-error');
         }
     };
 
