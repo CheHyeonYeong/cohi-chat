@@ -188,7 +188,7 @@ export default function Booking() {
 
     // 현재 사용자가 이 예약의 게스트인지 판단
     const isGuest = !!currentUser && currentUser.id === booking?.guestId;
-    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
+    const isAlreadyReported = booking?.attendanceStatus === 'HOST_NO_SHOW';
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileSelect(e.target.files);
@@ -372,17 +372,24 @@ export default function Booking() {
                     </Card>
 
                     {/* Host No-show report section */}
-                    {canReport && (
+                    {isGuest && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
                             <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
-                            {!showReportForm ? (
+                            {isAlreadyReported ? (
+                                <p className="text-sm text-amber-800">이미 신고한 예약입니다.</p>
+                            ) : !showReportForm ? (
                                 <div className="space-y-3">
-                                    <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                                    <p className="text-sm text-amber-800">
+                                        {isMeetingStarted
+                                            ? '호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.'
+                                            : '미팅 시작 이후부터 신고할 수 있습니다.'}
+                                    </p>
                                     <Button
                                         type="button"
                                         variant="primary"
+                                        disabled={!isMeetingStarted}
                                         onClick={() => setShowReportForm(true)}
-                                        className="rounded-xl"
+                                        className={isMeetingStarted ? 'bg-red-600 hover:bg-red-700 rounded-xl' : 'rounded-xl'}
                                     >
                                         호스트 노쇼 신고
                                     </Button>
@@ -405,7 +412,7 @@ export default function Booking() {
                                             variant="primary"
                                             loading={isReporting}
                                             onClick={handleReportSubmit}
-                                            className="rounded-xl px-6"
+                                            className="bg-red-600 hover:bg-red-700 rounded-xl px-6"
                                         >
                                             신고하기
                                         </Button>
