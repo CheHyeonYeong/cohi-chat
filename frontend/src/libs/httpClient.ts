@@ -102,7 +102,6 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
             if (refreshed) {
                 return doRequest<T>(url, options, true);
             }
-            clearAuthenticatedUser();
             throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.', { cause: 401 });
         } catch (error) {
             if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {

@@ -76,16 +76,15 @@ describe('useLogout', () => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
-    it('clears username even if API call fails', async () => {
+    it('throws error and does not clear username if API call fails', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
-        await result.current.logout();
-
-        expect(localStorage.getItem('username')).toBeNull();
+        await expect(result.current.logout()).rejects.toThrow('Network error');
+        expect(localStorage.getItem('username')).toBe('testuser');
     });
 
     it('still calls API when username is missing', async () => {

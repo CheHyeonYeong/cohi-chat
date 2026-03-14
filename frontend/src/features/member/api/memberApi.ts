@@ -55,15 +55,10 @@ export async function logoutApi(): Promise<void> {
     });
 }
 
-export async function refreshTokenApi(): Promise<LoginResponse> {
-    const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
+export async function refreshTokenApi(): Promise<void> {
+    await httpClient<void>(`${MEMBER_API}/refresh`, {
         method: 'POST',
     });
-
-    if (!response || !response.username) {
-        throw new Error('토큰 갱신에 실패했습니다.');
-    }
-    return response;
 }
 
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {

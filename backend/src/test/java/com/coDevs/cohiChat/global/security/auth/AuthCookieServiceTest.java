@@ -47,14 +47,15 @@ class AuthCookieServiceTest {
 
 		List<String> setCookieHeaders = response.getHeaders(HttpHeaders.SET_COOKIE);
 		assertThat(setCookieHeaders).hasSize(2);
-		assertThat(setCookieHeaders.get(0))
-			.contains("cohi_access_token=access-token")
-			.contains("HttpOnly")
-			.contains("Path=/api")
-			.contains("SameSite=Lax");
-		assertThat(setCookieHeaders.get(1))
-			.contains("cohi_refresh_token=refresh-token")
-			.contains("HttpOnly");
+		assertThat(setCookieHeaders)
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_access_token=access-token")
+				.contains("HttpOnly")
+				.contains("Path=/api")
+				.contains("SameSite=Lax"))
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_refresh_token=refresh-token")
+				.contains("HttpOnly"));
 	}
 
 	@Test
@@ -66,11 +67,12 @@ class AuthCookieServiceTest {
 
 		List<String> setCookieHeaders = response.getHeaders(HttpHeaders.SET_COOKIE);
 		assertThat(setCookieHeaders).hasSize(2);
-		assertThat(setCookieHeaders.get(0))
-			.contains("cohi_access_token=")
-			.contains("Max-Age=0");
-		assertThat(setCookieHeaders.get(1))
-			.contains("cohi_refresh_token=")
-			.contains("Max-Age=0");
+		assertThat(setCookieHeaders)
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_access_token=")
+				.contains("Max-Age=0"))
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_refresh_token=")
+				.contains("Max-Age=0"));
 	}
 }

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useSyncExternalStore } from 'react';
 import { getUserApi } from '../api/memberApi';
-import { getStoredUsername } from '../utils/authStorage';
+import { clearAuthenticatedUser, getStoredUsername } from '../utils/authStorage';
 import { subscribeAuthChange } from '../utils/authEvent';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
@@ -31,11 +31,18 @@ export function useAuth() {
             if (!username) {
                 throw new Error('Not authenticated');
             }
-            const data: MemberResponseDTO = await getUserApi(username);
-            return {
-                ...data,
-                isHost: data.role === 'HOST',
-            };
+            try {
+                const data: MemberResponseDTO = await getUserApi(username);
+                return {
+                    ...data,
+                    isHost: data.role === 'HOST',
+                };
+            } catch (error) {
+                if (error instanceof Error && (error.cause === 401 || error.cause === 403)) {
+                    clearAuthenticatedUser();
+                }
+                throw error;
+            }
         },
         retry: false,
         enabled: !!username,

@@ -20,7 +20,7 @@ class AuthTokenResolverTest {
 	}
 
 	@Test
-	@DisplayName("access token? cookie瑜?Header蹂대떎 ?곗꽑 ?ъ슜?쒕떎")
+	@DisplayName("access token은 cookie를 Header보다 우선 사용한다")
 	void resolveAccessToken_prefersCookie() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setCookies(new Cookie("cohi_access_token", "cookie-token"));
@@ -32,7 +32,7 @@ class AuthTokenResolverTest {
 	}
 
 	@Test
-	@DisplayName("access token cookie媛 ?놁쑝硫?Bearer header濡?fallback?쒕떎")
+	@DisplayName("access token cookie가 없으면 Bearer header로 fallback한다")
 	void resolveAccessToken_fallsBackToHeader() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.addHeader("Authorization", "Bearer header-token");
@@ -43,7 +43,7 @@ class AuthTokenResolverTest {
 	}
 
 	@Test
-	@DisplayName("refresh token? refresh cookie?먯꽌留??몄뒗??")
+	@DisplayName("refresh token은 refresh cookie에서만 읽는다")
 	void resolveRefreshToken_readsCookieOnly() {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setCookies(new Cookie("cohi_refresh_token", "refresh-cookie-token"));

@@ -9,15 +9,9 @@ export function useLogout() {
     const queryClient = useQueryClient();
 
     const logout = useCallback(async () => {
-        try {
-            await logoutApi();
-        } catch (error) {
-            console.warn('Logout API error:', error);
-        }
-
+        await logoutApi();
         queryClient.clear();
         clearAuthenticatedUser();
-
         navigate({ to: '/login', replace: true });
     }, [navigate, queryClient]);
 
