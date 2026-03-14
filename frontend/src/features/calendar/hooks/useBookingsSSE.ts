@@ -10,8 +10,10 @@ export function useBookingsSSEQuery({
     onMessage?: (data: IBooking | ICalendarEvent) => void;
 }) {
     const [data, setData] = useState<Array<IBooking | ICalendarEvent>>([]);
+    const [connectionError, setConnectionError] = useState<Event | null>(null);
 
     useEffect(() => {
+        setConnectionError(null);
         const eventSource = new EventSource(
             endpoint,
             {
@@ -34,14 +36,18 @@ export function useBookingsSSEQuery({
                     return prevData;
                 });
                 onMessage?.(newData);
-            } catch (error) {
-                console.error('SSE message parsing error:', error);
+            } catch {
+                // 파싱 실패한 메시지는 무시
             }
+        };
+
+        eventSource.onerror = (e) => {
+            setConnectionError(e);
+            eventSource.close();
         };
 
         return () => eventSource.close();
     }, [endpoint, onMessage]);
 
-    return { data };
+    return { data, connectionError };
 }
-
