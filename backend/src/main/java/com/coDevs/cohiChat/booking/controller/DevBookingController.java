@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,6 +45,7 @@ public class DevBookingController {
      * @param daysAgo    며칠 전 예약으로 생성할지 (기본값 1)
      * @return 생성된 예약 ID
      */
+    @Transactional
     @PostMapping("/past")
     public ResponseEntity<Long> createPastBooking(
         @AuthenticationPrincipal UserDetails userDetails,

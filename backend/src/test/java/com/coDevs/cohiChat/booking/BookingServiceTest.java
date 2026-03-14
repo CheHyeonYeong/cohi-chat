@@ -1417,25 +1417,26 @@ class BookingServiceTest {
 
     // ===== 호스트 노쇼 신고 테스트 (Issue #195) =====
 
+    private Booking setupNoShowScenario(Long bookingId, LocalDate date) {
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, date, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        return booking;
+    }
+
     @Test
     @DisplayName("성공: 게스트가 미팅 시간 경과 후 호스트 노쇼 신고")
     void reportHostNoShowSuccess() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        String reason = "호스트가 나타나지 않았습니다.";
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
 
         // when
-        BookingResponseDTO response = bookingService.reportHostNoShow(bookingId, GUEST_ID, reason);
+        BookingResponseDTO response = bookingService.reportHostNoShow(bookingId, GUEST_ID, "호스트가 나타나지 않았습니다.");
 
         // then
         assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.HOST_NO_SHOW);
@@ -1447,16 +1448,7 @@ class BookingServiceTest {
     void reportHostNoShowTriggersBanAt20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(20L);
         given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
@@ -1472,16 +1464,7 @@ class BookingServiceTest {
     void reportHostNoShowDoesNotBanBelow20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(19L);
         given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
@@ -1497,16 +1480,7 @@ class BookingServiceTest {
     void reportHostNoShowDoesNotBanAt1() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(1L);
         given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
@@ -1522,16 +1496,7 @@ class BookingServiceTest {
     void reportHostNoShowKeepsBanAbove20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(21L);
         given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
@@ -1575,16 +1540,13 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("실패: 이미 노쇼 신고된 예약에 재신고 시도")
+    @DisplayName("실패: 이미 노쇼 신고된 예약에 재신고 시도 (DB 유니크 제약 위반)")
     void reportHostNoShowFailWhenAlreadyReported() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(true);
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class)))
+            .willThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))

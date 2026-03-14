@@ -10,7 +10,7 @@ import { httpClient } from '~/libs/httpClient';
 export function DevPanel() {
     const navigate = useNavigate();
     const [timeSlotId, setTimeSlotId] = useState('');
-    const [daysAgo, setDaysAgo] = useState('1');
+    const [daysAgo, setDaysAgo] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -59,7 +59,7 @@ export function DevPanel() {
                                 type="number"
                                 placeholder="며칠 전"
                                 value={daysAgo}
-                                onChange={e => setDaysAgo(e.target.value)}
+                                onChange={e => setDaysAgo(Number(e.target.value))}
                                 className="bg-gray-800 text-white rounded px-2 py-1 w-20"
                                 min="1"
                             />

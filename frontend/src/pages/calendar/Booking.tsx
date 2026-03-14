@@ -388,7 +388,7 @@ export default function Booking() {
                                         variant="primary"
                                         disabled={!isMeetingStarted}
                                         onClick={() => setShowReportForm(true)}
-                                        className={isMeetingStarted ? 'bg-red-600 hover:bg-red-700 rounded-xl' : 'rounded-xl'}
+                                        className={cn('rounded-xl', isMeetingStarted && 'bg-red-600 hover:bg-red-700')}
                                     >
                                         호스트 노쇼 신고
                                     </Button>

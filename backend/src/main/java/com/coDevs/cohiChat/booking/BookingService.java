@@ -458,10 +458,6 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateMeetingStarted(booking);
 
-        if (noShowHistoryRepository.existsByBookingId(bookingId)) {
-            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
-        }
-
         booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
@@ -483,12 +479,9 @@ public class BookingService {
     }
 
     private void validateMeetingStarted(Booking booking) {
-        String timezone = googleCalendarProperties.getTimezone();
-        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
-
         LocalDate bookingDate = booking.getBookingDate();
         LocalTime startTime = booking.getTimeSlot().getStartTime();
-        Instant meetingStart = bookingDate.atTime(startTime).atZone(zoneId).toInstant();
+        Instant meetingStart = bookingDate.atTime(startTime).atZone(calendarZoneId).toInstant();
 
         if (Instant.now().isBefore(meetingStart)) {
             throw new CustomException(ErrorCode.MEETING_NOT_STARTED);

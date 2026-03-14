@@ -109,6 +109,7 @@ describe('노쇼 신고 버튼', () => {
         vi.useFakeTimers();
         vi.setSystemTime(MOCK_NOW);
         reportNoShow.mockClear();
+        mockBooking = null;
     });
 
     afterEach(() => {
