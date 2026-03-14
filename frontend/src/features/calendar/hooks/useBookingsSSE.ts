@@ -48,7 +48,6 @@ export function useBookingsSSEQuery({
 
         eventSource.onerror = (e) => {
             setConnectionError(e);
-            eventSource.close();
         };
 
         return () => eventSource.close();
