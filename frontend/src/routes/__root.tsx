@@ -33,6 +33,10 @@ const TanStackRouterDevtools = import.meta.env.DEV
         }))
     )
     : () => null
+
+const DevPanel = import.meta.env.DEV
+    ? lazy(() => import('~/components/DevPanel').then((mod) => ({ default: mod.DevPanel })))
+    : () => null
 /* eslint-enable react-refresh/only-export-components */
 
 /* eslint-disable-next-line react-refresh/only-export-components */
@@ -49,6 +53,9 @@ const RootRoute = createRootRoute({
                 {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
                 <Suspense fallback={null}>
                     <TanStackRouterDevtools />
+                </Suspense>
+                <Suspense fallback={null}>
+                    <DevPanel />
                 </Suspense>
             </>
         )
