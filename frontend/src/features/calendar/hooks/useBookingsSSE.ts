@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { snakeToCamel } from '~/libs/utils';
 import type { IBooking, ICalendarEvent } from '../types';
 
@@ -13,7 +13,7 @@ export function useBookingsSSEQuery({
     const [connectionError, setConnectionError] = useState<Event | null>(null);
     const onMessageRef = useRef(onMessage);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         onMessageRef.current = onMessage;
     });
 
