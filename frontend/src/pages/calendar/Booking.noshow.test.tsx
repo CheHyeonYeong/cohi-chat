@@ -94,7 +94,6 @@ vi.mock('~/features/calendar', () => ({
     useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useReportHostNoShow: () => ({ mutate: reportNoShow, isPending: false, error: null, reset: vi.fn() }),
-    useNoShowHistory: () => ({ data: [] }),
     getPresignedDownloadUrl: vi.fn(),
     AttendanceStatus: {},
 }));

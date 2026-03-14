@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import PageHeader from '~/components/PageHeader';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/calendar';
+import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, getPresignedDownloadUrl } from '~/features/calendar';
 import type { IBookingFile, AttendanceStatus } from '~/features/calendar';
 import { useAuth } from '~/features/member';
 import {
@@ -121,7 +121,6 @@ export default function Booking() {
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
-    const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
 
     // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
@@ -434,21 +433,6 @@ export default function Booking() {
                         </div>
                     )}
 
-                    {isGuest && noShowHistory && noShowHistory.length > 0 && (
-                        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold mb-3 text-red-800">
-                                이 호스트의 노쇼 이력 {noShowHistory.length}건
-                            </h2>
-                            <ul className="space-y-2">
-                                {noShowHistory.map((item) => (
-                                    <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                        {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
 
                     {/* File section */}
                     <Card className="border border-gray-100 space-y-5" title="파일 첨부">
