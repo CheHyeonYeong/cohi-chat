@@ -49,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final long NO_SHOW_BAN_THRESHOLD = 20;
 
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -467,7 +468,7 @@ public class BookingService {
         noShowHistoryRepository.save(history);
 
         long reportCount = noShowHistoryRepository.countByHostId(hostId);
-        if (reportCount >= 20) {
+        if (reportCount == NO_SHOW_BAN_THRESHOLD) {
             memberRepository.findById(hostId).ifPresent(Member::ban);
         }
 

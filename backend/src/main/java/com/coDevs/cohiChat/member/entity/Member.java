@@ -215,6 +215,9 @@ public class Member {
         }
 
         public void ban() {
+                if (this.isBanned) {
+                        return;
+                }
                 this.isBanned = true;
                 this.bannedAt = Instant.now();
         }
