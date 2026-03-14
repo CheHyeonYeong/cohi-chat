@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -25,6 +26,9 @@ public class GoogleCalendarService {
     private final GoogleCalendarProperties properties;
     private final GoogleCalendarConfig googleCalendarConfig;
 
+    @Value("${observability.google-calendar.slow-call-threshold-ms:2000}")
+    private long slowCallThresholdMs;
+
     public GoogleCalendarService(
         @Autowired(required = false) Calendar calendar,
         GoogleCalendarProperties properties,
@@ -43,12 +47,13 @@ public class GoogleCalendarService {
         String googleCalendarId
     ) {
         if (calendar == null) {
-            log.warn("Google Calendar service is not initialized");
+            log.debug("[createEvent] [SKIP] reason=SERVICE_NOT_INITIALIZED");
             return null;
         }
 
         String calendarId = resolveCalendarId(googleCalendarId);
         Event event = buildEvent(summary, description, startDateTime, endDateTime);
+        long startNanos = System.nanoTime();
 
         try {
             Event createdEvent = calendar.events()
@@ -56,10 +61,11 @@ public class GoogleCalendarService {
                 .setConferenceDataVersion(1)
                 .execute();
 
-            log.info("Google Calendar event created: {}", createdEvent.getId());
+            logCompletion("createEvent", startNanos);
             return createdEvent.getId();
         } catch (IOException e) {
-            log.error("Failed to create Google Calendar event", e);
+            log.warn("[createEvent] [FAIL] durationMs={} cause={}",
+                elapsedMillis(startNanos), e.getClass().getSimpleName());
             return null;
         }
     }
@@ -73,61 +79,67 @@ public class GoogleCalendarService {
         String googleCalendarId
     ) {
         if (calendar == null) {
-            log.warn("Google Calendar service is not initialized");
+            log.debug("[updateEvent] [SKIP] reason=SERVICE_NOT_INITIALIZED");
             return false;
         }
 
         String calendarId = resolveCalendarId(googleCalendarId);
         Event event = buildEvent(summary, description, startDateTime, endDateTime);
+        long startNanos = System.nanoTime();
 
         try {
             calendar.events()
                 .update(calendarId, eventId, event)
                 .execute();
 
-            log.info("Google Calendar event updated: {}", eventId);
+            logCompletion("updateEvent", startNanos);
             return true;
         } catch (IOException e) {
-            log.error("Failed to update Google Calendar event: {}", eventId, e);
+            log.warn("[updateEvent] [FAIL] durationMs={} cause={}",
+                elapsedMillis(startNanos), e.getClass().getSimpleName());
             return false;
         }
     }
 
     public boolean deleteEvent(String eventId, String googleCalendarId) {
         if (calendar == null) {
-            log.warn("Google Calendar service is not initialized");
+            log.debug("[deleteEvent] [SKIP] reason=SERVICE_NOT_INITIALIZED");
             return false;
         }
 
         String calendarId = resolveCalendarId(googleCalendarId);
+        long startNanos = System.nanoTime();
 
         try {
             calendar.events()
                 .delete(calendarId, eventId)
                 .execute();
 
-            log.info("Google Calendar event deleted: {}", eventId);
+            logCompletion("deleteEvent", startNanos);
             return true;
         } catch (IOException e) {
-            log.error("Failed to delete Google Calendar event: {}", eventId, e);
+            log.warn("[deleteEvent] [FAIL] durationMs={} cause={}",
+                elapsedMillis(startNanos), e.getClass().getSimpleName());
             return false;
         }
     }
 
     public Event getEvent(String eventId, String googleCalendarId) {
         if (calendar == null) {
-            log.warn("Google Calendar service is not initialized");
+            log.debug("[getEvent] [SKIP] reason=SERVICE_NOT_INITIALIZED");
             return null;
         }
 
         String calendarId = resolveCalendarId(googleCalendarId);
 
         try {
-            return calendar.events()
+            Event event = calendar.events()
                 .get(calendarId, eventId)
                 .execute();
+            log.debug("[getEvent] [SUCCESS]");
+            return event;
         } catch (IOException e) {
-            log.error("Failed to get Google Calendar event: {}", eventId, e);
+            log.warn("[getEvent] [FAIL] cause={}", e.getClass().getSimpleName());
             return null;
         }
     }
@@ -137,52 +149,62 @@ public class GoogleCalendarService {
     }
 
     public boolean checkCalendarAccess(String googleCalendarId) {
-        if (calendar == null) return true;
+        if (calendar == null) {
+            log.debug("[checkCalendarAccess] [SKIP] reason=SERVICE_NOT_INITIALIZED");
+            return true;
+        }
+
         String resolvedId = resolveCalendarId(googleCalendarId);
-        if (resolvedId == null || resolvedId.isBlank()) return true;
+        if (resolvedId == null || resolvedId.isBlank()) {
+            log.debug("[checkCalendarAccess] [SKIP] reason=CALENDAR_ID_NOT_PROVIDED");
+            return true;
+        }
+
         try {
             calendar.events().list(resolvedId).setMaxResults(1).execute();
+            log.debug("[checkCalendarAccess] [SUCCESS]");
             return true;
         } catch (GoogleJsonResponseException e) {
             if (e.getStatusCode() == 403 || e.getStatusCode() == 404) {
-                log.warn("Calendar access denied for calendarId: {} (HTTP {})", googleCalendarId, e.getStatusCode());
+                log.warn("[checkCalendarAccess] [FAIL] status={} reason=ACCESS_DENIED", e.getStatusCode());
                 return false;
             }
-            // 네트워크/서버 오류는 접근 가능으로 간주 (잘못된 경고 배너 방지)
-            log.warn("Google Calendar API error during access check for calendarId: {} (HTTP {}), assuming accessible",
-                googleCalendarId, e.getStatusCode());
+            log.warn("[checkCalendarAccess] [FAIL] status={} reason=API_ERROR assumeAccessible=true",
+                e.getStatusCode());
             return true;
         } catch (IOException e) {
-            log.warn("Google Calendar connection error during access check for calendarId: {}, assuming accessible",
-                googleCalendarId);
+            log.warn("[checkCalendarAccess] [FAIL] reason=IO_ERROR assumeAccessible=true");
             return true;
         }
     }
 
     public void validateCalendarAccess(String googleCalendarId) {
         if (calendar == null) {
-            log.warn("Google Calendar not configured, skipping access validation");
+            log.debug("[validateCalendarAccess] [SKIP] reason=SERVICE_NOT_INITIALIZED");
             return;
         }
+
         String resolvedId = resolveCalendarId(googleCalendarId);
         if (resolvedId == null || resolvedId.isBlank()) {
-            log.warn("Calendar ID not configured, skipping access validation");
+            log.debug("[validateCalendarAccess] [SKIP] reason=CALENDAR_ID_NOT_PROVIDED");
             return;
         }
+
         try {
             calendar.events()
                 .list(resolvedId)
                 .setMaxResults(1)
                 .execute();
+            log.debug("[validateCalendarAccess] [SUCCESS]");
         } catch (GoogleJsonResponseException e) {
             if (e.getStatusCode() == 403 || e.getStatusCode() == 404) {
-                log.error("Calendar access denied for calendarId: {} (HTTP {})", googleCalendarId, e.getStatusCode());
+                log.warn("[validateCalendarAccess] [FAIL] status={} reason=ACCESS_DENIED", e.getStatusCode());
                 throw new CustomException(ErrorCode.GOOGLE_CALENDAR_ACCESS_DENIED);
             }
-            log.error("Google Calendar API error for calendarId: {} (HTTP {})", googleCalendarId, e.getStatusCode(), e);
+            log.warn("[validateCalendarAccess] [FAIL] status={} reason=API_ERROR", e.getStatusCode());
             throw new CustomException(ErrorCode.GOOGLE_CALENDAR_UNAVAILABLE);
         } catch (IOException e) {
-            log.error("Google Calendar connection error for calendarId: {}", googleCalendarId, e);
+            log.warn("[validateCalendarAccess] [FAIL] reason=IO_ERROR");
             throw new CustomException(ErrorCode.GOOGLE_CALENDAR_UNAVAILABLE);
         }
     }
@@ -218,5 +240,18 @@ public class GoogleCalendarService {
         eventDateTime.setTimeZone(timezone);
 
         return eventDateTime;
+    }
+
+    private void logCompletion(String action, long startNanos) {
+        long durationMs = elapsedMillis(startNanos);
+        if (durationMs >= slowCallThresholdMs) {
+            log.warn("[{}] [SLOW] durationMs={} thresholdMs={}", action, durationMs, slowCallThresholdMs);
+            return;
+        }
+        log.info("[{}] [SUCCESS] durationMs={}", action, durationMs);
+    }
+
+    private long elapsedMillis(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000;
     }
 }

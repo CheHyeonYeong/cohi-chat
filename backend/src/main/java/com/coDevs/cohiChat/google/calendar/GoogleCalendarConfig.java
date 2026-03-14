@@ -59,7 +59,7 @@ public class GoogleCalendarConfig {
 
             if (baseCredentials instanceof ServiceAccountCredentials sac) {
                 this.extractedServiceAccountEmail = sac.getClientEmail();
-                log.info("Google Calendar service account: {}", extractedServiceAccountEmail);
+                log.info("[googleCalendarInit] [SUCCESS] credentials=SERVICE_ACCOUNT");
             }
 
             GoogleCredentials credentials = baseCredentials.createScoped(SCOPES);
@@ -91,13 +91,13 @@ public class GoogleCalendarConfig {
             Path path = Paths.get(credentialsPath);
             if (Files.exists(path)) {
                 try {
-                    log.info("Loading Google Calendar credentials from file: {}", credentialsPath);
+                    log.debug("[googleCalendarCredentials] [START] source=FILE");
                     return new FileInputStream(credentialsPath);
                 } catch (IOException e) {
-                    log.warn("Failed to read credentials file: {}", e.getMessage());
+                    log.warn("[googleCalendarCredentials] [FAIL] source=FILE cause={}", e.getClass().getSimpleName());
                 }
             } else {
-                log.info("Credentials file not found: {}", credentialsPath);
+                log.debug("[googleCalendarCredentials] [SKIP] source=FILE reason=NOT_FOUND");
             }
         }
 
@@ -105,13 +105,14 @@ public class GoogleCalendarConfig {
         String secretName = properties.getCredentialsSecretName();
         if (secretName != null && !secretName.isBlank()) {
             try {
-                log.info("Loading Google Calendar credentials from AWS Secrets Manager: {}", secretName);
+                log.info("[googleCalendarCredentials] [START] source=SECRETS_MANAGER");
                 String secretJson = getSecretFromAwsSecretsManager(secretName);
                 if (secretJson != null) {
                     return new ByteArrayInputStream(secretJson.getBytes(StandardCharsets.UTF_8));
                 }
             } catch (Exception e) {
-                log.warn("Failed to load credentials from AWS Secrets Manager: {}", e.getMessage());
+                log.warn("[googleCalendarCredentials] [FAIL] source=SECRETS_MANAGER cause={}",
+                    e.getClass().getSimpleName());
             }
         }
 
@@ -139,11 +140,12 @@ public class GoogleCalendarConfig {
             if (root.has(CREDENTIALS_KEY)) {
                 return root.get(CREDENTIALS_KEY).asText();
             } else {
-                log.warn("Key '{}' not found in secret '{}'", CREDENTIALS_KEY, secretName);
+                log.warn("[googleCalendarCredentials] [FAIL] source=SECRETS_MANAGER reason=MISSING_KEY");
                 return null;
             }
         } catch (Exception e) {
-            log.error("AWS Secrets Manager error for secret '{}': {}", secretName, e.getMessage());
+            log.error("[googleCalendarCredentials] [FAIL] source=SECRETS_MANAGER cause={}",
+                e.getClass().getSimpleName());
             return null;
         }
     }

@@ -101,6 +101,9 @@ public class BookingService {
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
+        log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
+            savedBooking.getId(), savedBooking.getBookingDate());
+
         return toBookingResponseDTO(savedBooking);
     }
 
@@ -299,7 +302,7 @@ public class BookingService {
         UUID hostId = timeSlot.getUserId();
         var calendarOpt = calendarRepository.findById(hostId);
         if (calendarOpt.isEmpty()) {
-            log.debug("No Google Calendar linked for host: {}", hostId);
+            log.debug("[syncGoogleCalendar] [SKIP] reason=CALENDAR_NOT_LINKED");
             return;
         }
 
@@ -315,22 +318,17 @@ public class BookingService {
                 );
                 if (eventId != null) {
                     booking.setGoogleEventId(eventId);
-                    log.info("Google Calendar event created for booking: {}", booking.getId());
-                } else {
-                    log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
                 }
                 return;
             }
 
-            boolean updated = googleCalendarService.updateEvent(
+            googleCalendarService.updateEvent(
                 booking.getGoogleEventId(), summary, description,
                 startDateTime, endDateTime, calendar.getGoogleCalendarId()
             );
-            if (updated) {
-                log.info("Google Calendar event updated for booking: {}", booking.getId());
-            }
         } catch (Exception e) {
-            log.error("Google Calendar event upsert failed for booking: {}", booking.getId(), e);
+            log.error("[syncGoogleCalendar] [FAIL] bookingId={} cause={}",
+                booking.getId(), e.getClass().getSimpleName(), e);
         }
     }
 
@@ -374,6 +372,8 @@ public class BookingService {
         deleteGoogleCalendarEvent(booking);
 
         booking.cancel();
+
+        log.info("[cancelBooking] [SUCCESS] bookingId={}", bookingId);
     }
 
     private void deleteGoogleCalendarEvent(Booking booking) {
@@ -383,14 +383,10 @@ public class BookingService {
 
         UUID hostId = booking.getTimeSlot().getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            boolean deleted = googleCalendarService.deleteEvent(
+            googleCalendarService.deleteEvent(
                 booking.getGoogleEventId(),
                 calendar.getGoogleCalendarId()
             );
-
-            if (deleted) {
-                log.info("Google Calendar event deleted for booking: {}", booking.getId());
-            }
         });
     }
 
@@ -433,7 +429,7 @@ public class BookingService {
             Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
 
-            boolean updated = googleCalendarService.updateEvent(
+            googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
                 request.getTopic(),
                 request.getDescription(),
@@ -441,10 +437,6 @@ public class BookingService {
                 endDateTime,
                 calendar.getGoogleCalendarId()
             );
-
-            if (updated) {
-                log.info("Google Calendar event updated for booking: {}", booking.getId());
-            }
         });
     }
 
@@ -470,7 +462,7 @@ public class BookingService {
         NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
         noShowHistoryRepository.save(history);
 
-        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
+        log.info("[reportHostNoShow] [SUCCESS] bookingId={}", bookingId);
 
         return toBookingResponseDTO(booking);
     }

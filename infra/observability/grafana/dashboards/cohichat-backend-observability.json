@@ -1,0 +1,419 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "posthog-observability"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "0",
+              "text": "total_logs",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "posthog-observability"
+          },
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "results",
+          "source": "url",
+          "type": "json",
+          "url": "",
+          "url_options": {
+            "body_type": "raw",
+            "content_type": "application/json",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT count() AS total_logs FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000)\"}}",
+            "method": "POST"
+          }
+        }
+      ],
+      "title": "Total Logs",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "posthog-observability"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "0",
+              "text": "minute",
+              "type": "time"
+            },
+            {
+              "selector": "1",
+              "text": "log_count",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "posthog-observability"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "results",
+          "source": "url",
+          "type": "json",
+          "url": "",
+          "url_options": {
+            "body_type": "raw",
+            "content_type": "application/json",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT toStartOfMinute(timestamp) AS minute, count() AS log_count FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY minute ORDER BY minute\"}}",
+            "method": "POST"
+          }
+        }
+      ],
+      "title": "Logs Per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "posthog-observability"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "displayLabels": [
+          "name",
+          "value",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "0",
+              "text": "level",
+              "type": "string"
+            },
+            {
+              "selector": "1",
+              "text": "value",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "posthog-observability"
+          },
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "results",
+          "source": "url",
+          "type": "json",
+          "url": "",
+          "url_options": {
+            "body_type": "raw",
+            "content_type": "application/json",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT coalesce(nullIf(properties.level, ''), 'UNKNOWN') AS level, count() AS value FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY level ORDER BY value DESC\"}}",
+            "method": "POST"
+          }
+        }
+      ],
+      "title": "Level Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "posthog-observability"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "0",
+              "text": "action_status",
+              "type": "string"
+            },
+            {
+              "selector": "1",
+              "text": "value",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "posthog-observability"
+          },
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "results",
+          "source": "url",
+          "type": "json",
+          "url": "",
+          "url_options": {
+            "body_type": "raw",
+            "content_type": "application/json",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT concat(coalesce(nullIf(properties.action, ''), 'unclassified'), ' / ', coalesce(nullIf(properties.status, ''), 'NONE')) AS action_status, count() AS value FROM events WHERE event = 'backend_log' AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY action_status ORDER BY value DESC LIMIT 20\"}}",
+            "method": "POST"
+          }
+        }
+      ],
+      "title": "Top Action / Status",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "posthog-observability"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "0",
+              "text": "timestamp",
+              "type": "time"
+            },
+            {
+              "selector": "1",
+              "text": "action",
+              "type": "string"
+            },
+            {
+              "selector": "2",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "3",
+              "text": "level",
+              "type": "string"
+            },
+            {
+              "selector": "4",
+              "text": "logger",
+              "type": "string"
+            },
+            {
+              "selector": "5",
+              "text": "details",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "posthog-observability"
+          },
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "results",
+          "source": "url",
+          "type": "json",
+          "url": "",
+          "url_options": {
+            "body_type": "raw",
+            "content_type": "application/json",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT timestamp, coalesce(nullIf(properties.action, ''), 'unclassified') AS action, coalesce(nullIf(properties.status, ''), 'NONE') AS status, coalesce(nullIf(properties.level, ''), 'INFO') AS level, coalesce(nullIf(properties.logger, ''), 'unknown') AS logger, coalesce(properties.details, properties.message, '') AS details FROM events WHERE event = 'backend_log' AND (properties.status IN ('FAIL', 'SLOW') OR properties.level IN ('WARN', 'ERROR')) AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) ORDER BY timestamp DESC LIMIT 100\"}}",
+            "method": "POST"
+          }
+        }
+      ],
+      "title": "Latest Fail / Slow Logs",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "cohichat",
+    "observability",
+    "posthog"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "CohiChat Backend Observability",
+  "uid": "cohichat-backend-observability",
+  "version": 1,
+  "weekStart": ""
+}

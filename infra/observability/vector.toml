@@ -1,0 +1,83 @@
+# Vector configuration for cohichat backend logs
+
+[sources.fluent_bit]
+type = "http_server"
+address = "0.0.0.0:8686"
+path = "/"
+strict_path = true
+
+[sources.fluent_bit.decoding]
+codec = "json"
+
+[transforms.posthog_payload]
+type = "remap"
+inputs = ["fluent_bit"]
+source = '''
+.raw_log = string!(.log ?? .message ?? .msg ?? "")
+if .raw_log == "" {
+  .raw_log = encode_json(.)
+}
+
+parsed, err = parse_regex(.raw_log, r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<request_id>[^\]]+)\] (?P<level>[A-Z]+)\s+(?P<logger>[^ ]+) - (?P<message>.*)$')
+if err == null {
+  .event_timestamp = format_timestamp!(parse_timestamp!(parsed.timestamp, format: "%F %T%.3f", timezone: "Asia/Seoul"), format: "%+")
+  .request_id = parsed.request_id
+  .level = parsed.level
+  .logger = parsed.logger
+  .message = parsed.message
+} else {
+  .event_timestamp = format_timestamp!(now(), format: "%+")
+  .request_id = "unknown"
+  .level = "INFO"
+  .logger = "unknown"
+  .message = .raw_log
+}
+
+event_meta, event_err = parse_regex(.message, r'^\[(?P<action>[^\]]+)\] \[(?P<status>[^\]]+)\] (?P<details>.*)$')
+if event_err == null {
+  .action = event_meta.action
+  .status = event_meta.status
+  .details = event_meta.details
+} else {
+  .action = "unclassified"
+  .status = "NONE"
+  .details = .message
+}
+
+.api_key = "${POSTHOG_API_KEY:?POSTHOG_API_KEY is required}"
+.event = "backend_log"
+.distinct_id = .request_id
+.timestamp = .event_timestamp
+.properties = {
+  "$process_person_profile": false,
+  "application": "cohichat",
+  "pipeline": "backend-log",
+  "level": .level,
+  "logger": .logger,
+  "message": .message,
+  "details": .details,
+  "action": .action,
+  "status": .status,
+  "request_id": .request_id,
+  "raw_log": .raw_log
+}
+'''
+
+[sinks.posthog]
+type = "http"
+inputs = ["posthog_payload"]
+uri = "${POSTHOG_CAPTURE_HOST:?POSTHOG_CAPTURE_HOST is required}/i/v0/e/"
+method = "post"
+encoding.codec = "json"
+
+[sinks.posthog.request]
+headers.Content-Type = "application/json"
+
+[sinks.posthog.batch]
+max_bytes = 1048576
+max_events = 100
+timeout_secs = 5
+
+[api]
+enabled = true
+address = "0.0.0.0:8687"

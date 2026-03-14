@@ -4,11 +4,12 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.global.config.RateLimitService;
+import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
+import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -27,7 +28,6 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,14 +39,6 @@ import java.util.stream.Collectors;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
-
-import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
-import com.coDevs.cohiChat.global.exception.CustomException;
-import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
-import com.coDevs.cohiChat.global.util.TokenHashUtil;
-import com.coDevs.cohiChat.member.entity.Member;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,7 +65,6 @@ public class MemberService {
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
-
                 validateDuplicate(request.getUsername(), request.getEmail());
 
                 String displayName = (request.getDisplayName() == null || request.getDisplayName().isBlank())
@@ -101,6 +92,8 @@ public class MemberService {
                                 }
                         });
 
+                log.info("[signup] [SUCCESS] role={}", role);
+
                 return new SignupResponseDTO(
                         member.getId(),
                         member.getUsername(),
@@ -124,11 +117,15 @@ public class MemberService {
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
                 if (member.getProvider() != Provider.LOCAL) {
+                        log.warn("[login] [FAIL] reason=SOCIAL_LOGIN_REQUIRED");
                         throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
                 }
                 if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
+                        log.warn("[login] [FAIL] reason=PASSWORD_MISMATCH");
                         throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
                 }
+
+                log.info("[login] [SUCCESS] provider={}", member.getProvider());
 
                 return tokenService.issueTokens(member);
         }
@@ -170,13 +167,16 @@ public class MemberService {
          * DB 트랜잭션 커밋 후 이벤트 리스너에서 Google Calendar 이벤트를 삭제하여 일관성 보장.
          */
         @Transactional
-        public void deleteMember(String username) {     
-                Member member = getMember(username);    
-                LocalDate today = LocalDate.now();      
+        public void deleteMember(String username) {
+                Member member = getMember(username);
+                LocalDate today = LocalDate.now();
 
                 // 1. 미래 예약 조회 (GCal 삭제 이벤트용)
                 List<Booking> hostBookings = findFutureHostBookings(member, today);
                 List<Booking> guestBookings = findFutureGuestBookings(member, today);
+
+                log.debug("[deleteMember] [START] hostBookings={} guestBookings={}",
+                        hostBookings.size(), guestBookings.size());
 
                 // 2. 예약 취소 처리
                 String cancellationReason = "회원 탈퇴로 인한 취소";
@@ -195,6 +195,9 @@ public class MemberService {
                         guestBookings,
                         today
                 ));
+
+                log.info("[deleteMember] [SUCCESS] hostBookingsCancelled={} guestBookingsCancelled={}",
+                        hostBookings.size(), guestBookings.size());
         }
 
         /**
