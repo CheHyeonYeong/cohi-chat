@@ -56,8 +56,17 @@ describe('useMyBookings', () => {
     const createWrapper = () => ({ children }: { children: React.ReactNode }) =>
         React.createElement(QueryClientProvider, { client: queryClient }, children);
 
-    const createAuthResult = (user: AuthUser | null, isAuthenticated = !!user) => ({
+    const createAuthResult = ({
+        user,
+        username = user?.username ?? null,
+        isAuthenticated = !!username,
+    }: {
+        user: AuthUser | null;
+        username?: string | null;
+        isAuthenticated?: boolean;
+    }) => ({
         data: user,
+        username,
         isAuthenticated,
         isLoading: false,
         isError: false,
@@ -92,14 +101,16 @@ describe('useMyBookings', () => {
         queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), aliceData);
         vi.mocked(useAuth).mockReturnValue(
             createAuthResult({
-                id: 'member-2',
-                username: 'bob',
-                displayName: 'Bob',
-                email: 'bob@example.com',
-                role: 'GUEST',
-                createdAt: '2026-03-01T00:00:00.000Z',
-                updatedAt: '2026-03-01T00:00:00.000Z',
-                isHost: false,
+                user: {
+                    id: 'member-2',
+                    username: 'bob',
+                    displayName: 'Bob',
+                    email: 'bob@example.com',
+                    role: 'GUEST',
+                    createdAt: '2026-03-01T00:00:00.000Z',
+                    updatedAt: '2026-03-01T00:00:00.000Z',
+                    isHost: false,
+                },
             })
         );
         vi.mocked(getMyBookings).mockResolvedValue(bobData);
@@ -118,8 +129,41 @@ describe('useMyBookings', () => {
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
     });
 
+    it('keeps booking query enabled while auth profile data is still loading if token username exists', async () => {
+        const bobData: IPaginatedBookingDetail = {
+            bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+            totalCount: 1,
+        };
+
+        vi.mocked(useAuth).mockReturnValue(
+            createAuthResult({
+                user: null,
+                username: 'bob',
+                isAuthenticated: true,
+            })
+        );
+        vi.mocked(getMyBookings).mockResolvedValue(bobData);
+
+        const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
+            wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+            expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(getMyBookings).toHaveBeenCalledTimes(1);
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
+    });
+
     it('does not run when auth state has no current user', () => {
-        vi.mocked(useAuth).mockReturnValue(createAuthResult(null, false));
+        vi.mocked(useAuth).mockReturnValue(
+            createAuthResult({
+                user: null,
+                username: null,
+                isAuthenticated: false,
+            })
+        );
 
         const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
             wrapper: createWrapper(),

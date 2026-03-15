@@ -5,8 +5,7 @@ import type { IBookingDetail, IBookingFile, IPaginatedBookingDetail } from '../t
 import { bookingKeys } from './queryKeys';
 
 export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
-    const { data: user, isAuthenticated } = useAuth();
-    const username = user?.username ?? null;
+    const { username, isAuthenticated } = useAuth();
 
     return useQuery<IPaginatedBookingDetail>({
         queryKey: bookingKeys.myBookings(page, pageSize, username),
@@ -16,8 +15,7 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
 }
 
 export function useBooking(id: number | null) {
-    const { data: user, isAuthenticated } = useAuth();
-    const username = user?.username ?? null;
+    const { username, isAuthenticated } = useAuth();
 
     return useQuery<IBookingDetail>({
         queryKey: bookingKeys.booking(id ?? 0, username),
