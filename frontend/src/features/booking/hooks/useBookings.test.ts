@@ -4,11 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 import { useAuth } from '~/features/member/hooks/useAuth';
-import { useMyBookings } from './useBooking';
+import { useBooking, useMyBookings } from './useBooking';
 import { bookingKeys } from './queryKeys';
-import { getMyBookings } from '../api';
+import { getBooking, getMyBookings } from '../api';
 import type { AuthUser } from '~/features/member';
-import type { IPaginatedBookingDetail } from '../types';
+import type { IBookingDetail, IPaginatedBookingDetail } from '../types';
 
 vi.mock('~/features/member/hooks/useAuth', () => ({
     useAuth: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('../api', () => ({
     deleteBookingFile: vi.fn(),
 }));
 
-describe('useMyBookings', () => {
+describe('booking hooks cache isolation', () => {
     let queryClient: QueryClient;
     const baseBooking = {
         startedAt: new Date('2026-03-15T10:00:00.000Z'),
@@ -78,6 +78,17 @@ describe('useMyBookings', () => {
         invalidateAuth: vi.fn(),
     }) as unknown as ReturnType<typeof useAuth>;
 
+    const createUser = (username: string): AuthUser => ({
+        id: `member-${username}`,
+        username,
+        displayName: username.toUpperCase(),
+        email: `${username}@example.com`,
+        role: 'GUEST',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        isHost: false,
+    });
+
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: {
@@ -88,88 +99,163 @@ describe('useMyBookings', () => {
         vi.clearAllMocks();
     });
 
-    it('uses a username-scoped cache key so another user cannot reuse previous booking data', async () => {
-        const aliceData: IPaginatedBookingDetail = {
-            bookings: [{ ...baseBooking, id: 1 }],
-            totalCount: 1,
-        };
-        const bobData: IPaginatedBookingDetail = {
-            bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
-            totalCount: 1,
-        };
+    describe('useMyBookings', () => {
+        it('uses a username-scoped cache key so another user cannot reuse previous booking data', async () => {
+            const aliceData: IPaginatedBookingDetail = {
+                bookings: [{ ...baseBooking, id: 1 }],
+                totalCount: 1,
+            };
+            const bobData: IPaginatedBookingDetail = {
+                bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+                totalCount: 1,
+            };
 
-        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), aliceData);
-        vi.mocked(useAuth).mockReturnValue(
-            createAuthResult({
-                user: {
-                    id: 'member-2',
+            queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), aliceData);
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: createUser('bob'),
+                })
+            );
+            vi.mocked(getMyBookings).mockResolvedValue(bobData);
+
+            const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+
+            expect(result.current.data).toEqual(bobData);
+            expect(getMyBookings).toHaveBeenCalledTimes(1);
+            expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toEqual(aliceData);
+            expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
+        });
+
+        it('keeps booking query enabled while auth profile data is still loading if token username exists', async () => {
+            const bobData: IPaginatedBookingDetail = {
+                bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+                totalCount: 1,
+            };
+
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: null,
                     username: 'bob',
-                    displayName: 'Bob',
-                    email: 'bob@example.com',
-                    role: 'GUEST',
-                    createdAt: '2026-03-01T00:00:00.000Z',
-                    updatedAt: '2026-03-01T00:00:00.000Z',
-                    isHost: false,
-                },
-            })
-        );
-        vi.mocked(getMyBookings).mockResolvedValue(bobData);
+                    isAuthenticated: true,
+                })
+            );
+            vi.mocked(getMyBookings).mockResolvedValue(bobData);
 
-        const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
-            wrapper: createWrapper(),
+            const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+
+            expect(getMyBookings).toHaveBeenCalledTimes(1);
+            expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
         });
 
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
-        });
+        it('does not run when auth state has no current user', () => {
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: null,
+                    username: null,
+                    isAuthenticated: false,
+                })
+            );
 
-        expect(result.current.data).toEqual(bobData);
-        expect(getMyBookings).toHaveBeenCalledTimes(1);
-        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toEqual(aliceData);
-        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
+            const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
+                wrapper: createWrapper(),
+            });
+
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(getMyBookings).not.toHaveBeenCalled();
+        });
     });
 
-    it('keeps booking query enabled while auth profile data is still loading if token username exists', async () => {
-        const bobData: IPaginatedBookingDetail = {
-            bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
-            totalCount: 1,
-        };
+    describe('useBooking', () => {
+        it('uses a username-scoped cache key so another user cannot reuse previous booking detail data', async () => {
+            const aliceDetail: IBookingDetail = {
+                ...baseBooking,
+                id: 1,
+                topic: 'alice topic',
+            };
+            const bobDetail: IBookingDetail = {
+                ...baseBooking,
+                id: 1,
+                topic: 'bob topic',
+                guestId: 'guest-2',
+            };
 
-        vi.mocked(useAuth).mockReturnValue(
-            createAuthResult({
-                user: null,
-                username: 'bob',
-                isAuthenticated: true,
-            })
-        );
-        vi.mocked(getMyBookings).mockResolvedValue(bobData);
+            queryClient.setQueryData(bookingKeys.booking(1, 'alice'), aliceDetail);
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: createUser('bob'),
+                })
+            );
+            vi.mocked(getBooking).mockResolvedValue(bobDetail);
 
-        const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
-            wrapper: createWrapper(),
+            const { result } = renderHook(() => useBooking(1), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+
+            expect(result.current.data).toEqual(bobDetail);
+            expect(getBooking).toHaveBeenCalledWith(1);
+            expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toEqual(aliceDetail);
+            expect(queryClient.getQueryData(bookingKeys.booking(1, 'bob'))).toEqual(bobDetail);
         });
 
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
+        it('keeps detail query enabled while auth profile data is still loading if token username exists', async () => {
+            const bobDetail: IBookingDetail = {
+                ...baseBooking,
+                id: 7,
+                guestId: 'guest-2',
+            };
+
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: null,
+                    username: 'bob',
+                    isAuthenticated: true,
+                })
+            );
+            vi.mocked(getBooking).mockResolvedValue(bobDetail);
+
+            const { result } = renderHook(() => useBooking(7), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+
+            expect(getBooking).toHaveBeenCalledWith(7);
+            expect(queryClient.getQueryData(bookingKeys.booking(7, 'bob'))).toEqual(bobDetail);
         });
 
-        expect(getMyBookings).toHaveBeenCalledTimes(1);
-        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
-    });
+        it('does not run when auth state has no current user', () => {
+            vi.mocked(useAuth).mockReturnValue(
+                createAuthResult({
+                    user: null,
+                    username: null,
+                    isAuthenticated: false,
+                })
+            );
 
-    it('does not run when auth state has no current user', () => {
-        vi.mocked(useAuth).mockReturnValue(
-            createAuthResult({
-                user: null,
-                username: null,
-                isAuthenticated: false,
-            })
-        );
+            const { result } = renderHook(() => useBooking(1), {
+                wrapper: createWrapper(),
+            });
 
-        const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
-            wrapper: createWrapper(),
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(getBooking).not.toHaveBeenCalled();
         });
-
-        expect(result.current.fetchStatus).toBe('idle');
-        expect(getMyBookings).not.toHaveBeenCalled();
     });
 });
