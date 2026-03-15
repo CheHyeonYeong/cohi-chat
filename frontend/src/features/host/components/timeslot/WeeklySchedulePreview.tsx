@@ -196,7 +196,7 @@ function WeeklyGrid({
 }
 
 
-export default function WeeklySchedulePreview({
+export function WeeklySchedulePreview({
     entries,
     onChange,
     onDuplicateBlocked,

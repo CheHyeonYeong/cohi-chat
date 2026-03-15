@@ -9,6 +9,7 @@ export { useUpdateMember } from './hooks/useUpdateMember';
 export { useRequestPasswordReset, useVerifyResetToken, useConfirmPasswordReset } from './hooks/usePasswordReset';
 
 // components
+export { AuthGuard } from './components/AuthGuard';
 export { LoginForm } from './components/LoginForm';
 export { SignupForm } from './components/SignupForm';
 export { ProfileEditForm } from './components/ProfileEditForm';

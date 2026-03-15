@@ -1,15 +1,17 @@
 package com.coDevs.cohiChat.testutil;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.member.MemberRepository;
@@ -20,37 +22,32 @@ import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * 테스트용 더미 데이터 생성기
- * src/test에 위치하여 프로덕션 빌드에 포함되지 않음
- */
 @Component
 @RequiredArgsConstructor
 public class TestDummyDataGenerator {
 
-    private static final String DUMMY_PREFIX = "dummy_";
-    private static final String DUMMY_PASSWORD = "dummy1234!";
+    public static final String DUMMY_PREFIX = "dummy_";
+    public static final String DUMMY_PASSWORD = "dummy1234!";
 
     private final MemberRepository memberRepository;
     private final CalendarRepository calendarRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final BookingRepository bookingRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * 더미 데이터 생성
-     * @param guestCount 생성할 게스트 수
-     * @param hostCount 생성할 호스트 수
-     * @param timeSlotsPerHost 호스트당 타임슬롯 수
-     * @return 생성된 데이터 요약
-     */
     @Transactional
     public GeneratedData generate(int guestCount, int hostCount, int timeSlotsPerHost) {
+        return generate(guestCount, hostCount, timeSlotsPerHost, 0);
+    }
+
+    @Transactional
+    public GeneratedData generate(int guestCount, int hostCount, int timeSlotsPerHost, int bookedBookingsPerHost) {
         String hashedPassword = passwordEncoder.encode(DUMMY_PASSWORD);
         List<Member> guests = new ArrayList<>();
         List<Member> hosts = new ArrayList<>();
         List<TimeSlot> timeSlots = new ArrayList<>();
+        List<Booking> bookings = new ArrayList<>();
 
-        // 게스트 생성
         for (int i = 0; i < guestCount; i++) {
             String username = DUMMY_PREFIX + "guest_" + UUID.randomUUID().toString().substring(0, 8);
             Member guest = Member.create(
@@ -63,7 +60,6 @@ public class TestDummyDataGenerator {
             guests.add(memberRepository.save(guest));
         }
 
-        // 호스트 생성 + Calendar + TimeSlot
         for (int i = 0; i < hostCount; i++) {
             String username = DUMMY_PREFIX + "host_" + UUID.randomUUID().toString().substring(0, 8);
             Member host = Member.create(
@@ -77,16 +73,14 @@ public class TestDummyDataGenerator {
             host.updateProfile("더미 직업 " + (i + 1), null);
             hosts.add(memberRepository.save(host));
 
-            // Calendar 생성
             Calendar calendar = Calendar.create(
                 host.getId(),
-                List.of("커피챗", "멘토링", "네트워킹"),
+                List.of("커피챗", "멘토링", "포트폴리오 리뷰"),
                 "더미 호스트 " + (i + 1) + "의 캘린더입니다.",
                 "dummy-calendar-id-" + host.getId()
             );
             calendarRepository.save(calendar);
 
-            // TimeSlot 생성
             for (int j = 0; j < timeSlotsPerHost; j++) {
                 int baseHour = 9 + (j % 8);
                 TimeSlot timeSlot = TimeSlot.create(
@@ -99,17 +93,49 @@ public class TestDummyDataGenerator {
             }
         }
 
-        return new GeneratedData(guests.size(), hosts.size(), timeSlots.size());
+        if (!guests.isEmpty() && bookedBookingsPerHost > 0) {
+            int guestCursor = 0;
+            for (int hostIndex = 0; hostIndex < hosts.size(); hostIndex++) {
+                Member host = hosts.get(hostIndex);
+                List<TimeSlot> hostTimeSlots = timeSlots.stream()
+                    .filter(slot -> slot.getUserId().equals(host.getId()))
+                    .toList();
+
+                int bookingLimit = Math.min(bookedBookingsPerHost, hostTimeSlots.size());
+                for (int bookingIndex = 0; bookingIndex < bookingLimit; bookingIndex++) {
+                    Member guest = guests.get(guestCursor % guests.size());
+                    TimeSlot timeSlot = hostTimeSlots.get(bookingIndex);
+                    LocalDate bookingDate = LocalDate.now().plusDays(bookingIndex + 1L + (hostIndex * 7L));
+
+                    Booking booking = Booking.create(
+                        timeSlot,
+                        guest.getId(),
+                        bookingDate,
+                        "더미 예약 " + (bookingIndex + 1),
+                        "이미 예약된 상태를 테스트하기 위한 더미 예약입니다."
+                    );
+                    bookings.add(bookingRepository.save(booking));
+                    guestCursor++;
+                }
+            }
+        }
+
+        return new GeneratedData(guests.size(), hosts.size(), timeSlots.size(), bookings.size());
     }
 
-    /**
-     * 더미 데이터 삭제 (DUMMY_PREFIX로 시작하는 데이터)
-     */
     @Transactional
     public void clear() {
         List<Member> dummyMembers = memberRepository.findAll().stream()
-            .filter(m -> m.getUsername().startsWith(DUMMY_PREFIX))
+            .filter(member -> member.getUsername().startsWith(DUMMY_PREFIX))
             .toList();
+        List<UUID> dummyGuestIds = dummyMembers.stream()
+            .filter(member -> member.getRole() == Role.GUEST)
+            .map(Member::getId)
+            .toList();
+
+        bookingRepository.findAll().stream()
+            .filter(booking -> dummyGuestIds.contains(booking.getGuestId()))
+            .forEach(bookingRepository::delete);
 
         for (Member member : dummyMembers) {
             timeSlotRepository.findByUserIdOrderByStartTimeAsc(member.getId())
@@ -122,5 +148,10 @@ public class TestDummyDataGenerator {
         }
     }
 
-    public record GeneratedData(int guestCount, int hostCount, int timeSlotCount) {}
+    public record GeneratedData(
+        int guestCount,
+        int hostCount,
+        int timeSlotCount,
+        int bookedBookingCount
+    ) {}
 }

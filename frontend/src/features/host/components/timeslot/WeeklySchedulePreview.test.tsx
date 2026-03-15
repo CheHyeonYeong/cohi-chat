@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import WeeklySchedulePreview from './WeeklySchedulePreview';
+import { WeeklySchedulePreview } from './WeeklySchedulePreview';
 import { commitDraggedEntry } from './dragUtils';
 import type { TimeSlotEntry } from './TimeSlotForm';
 

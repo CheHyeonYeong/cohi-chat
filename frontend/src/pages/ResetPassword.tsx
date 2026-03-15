@@ -1,5 +1,5 @@
 import { ResetPasswordForm } from '~/features/member';
 
-export default function ResetPassword() {
+export function ResetPassword() {
     return <ResetPasswordForm />;
 }
