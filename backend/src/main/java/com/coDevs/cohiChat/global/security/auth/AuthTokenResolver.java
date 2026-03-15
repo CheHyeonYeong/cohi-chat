@@ -15,10 +15,6 @@ public class AuthTokenResolver {
 
 	private final AuthProperties authProperties;
 
-	/**
-	 * 쿠키에서 access token을 먼저 읽고, 없으면 Authorization 헤더로 fallback한다.
-	 * 헤더 fallback은 Swagger UI, Postman 등 비브라우저 클라이언트를 위해 유지한다.
-	 */
 	public String resolveAccessToken(HttpServletRequest request) {
 		String accessToken = resolveCookieValue(request, authProperties.getCookie().getAccessTokenName());
 		if (StringUtils.hasText(accessToken)) {

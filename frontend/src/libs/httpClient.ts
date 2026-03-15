@@ -8,7 +8,6 @@ export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const REFRESH_URL = `${API_BASE}/members/v1/refresh`;
 
-// 백엔드 error.code 값과 일치해야 함 (변경 시 백엔드와 동기화 필요)
 const GRACE_WINDOW_HIT = 'GRACE_WINDOW_HIT';
 
 let refreshPromise: Promise<boolean> | null = null;
