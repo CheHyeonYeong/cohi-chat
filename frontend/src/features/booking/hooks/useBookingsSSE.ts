@@ -26,6 +26,10 @@ export function useBookingsSSEQuery({
             },
         );
 
+        eventSource.onopen = () => {
+            setConnectionError(null);
+        };
+
         eventSource.onmessage = (event) => {
             try {
                 const newData = snakeToCamel(JSON.parse(event.data)) as IBooking | ICalendarEvent;
@@ -40,6 +44,7 @@ export function useBookingsSSEQuery({
                     }
                     return prevData;
                 });
+                setConnectionError(null);
                 onMessageRef.current?.(newData);
             } catch {
                 // 파싱 실패한 메시지는 무시
