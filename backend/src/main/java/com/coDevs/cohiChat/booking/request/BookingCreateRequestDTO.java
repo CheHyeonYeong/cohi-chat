@@ -42,6 +42,6 @@ public class BookingCreateRequestDTO {
     @Size(max = 500, message = "장소는 500자 이내로 입력해주세요.")
     private String location;
 
-    @Size(max = 500, message = "미팅 링크는 500자 이내로 입력해주세요.")
+    @Size(max = 2000, message = "미팅 링크는 2000자 이내로 입력해주세요.")
     private String meetingLink;
 }
