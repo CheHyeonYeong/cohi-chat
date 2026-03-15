@@ -79,18 +79,32 @@ public class Booking {
     @Column(name = "cancelled_reason", length = 100)
     private String cancelledReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meeting_type", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ONLINE'")
+    private MeetingType meetingType = MeetingType.ONLINE;
+
+    @Column(name = "location", length = 500)
+    private String location;
+
+    @Column(name = "meeting_link", length = 2000, columnDefinition = "varchar(2000) default 'https://www.cohi-chat.com'")
+    private String meetingLink = "https://www.cohi-chat.com";
+
     public static Booking create(
         TimeSlot timeSlot,
         UUID guestId,
         LocalDate bookingDate,
         String topic,
-        String description
+        String description,
+        MeetingType meetingType,
+        String location,
+        String meetingLink
     ) {
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(guestId, "guestId must not be null");
         Objects.requireNonNull(bookingDate, "bookingDate must not be null");
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
+        Objects.requireNonNull(meetingType, "meetingType must not be null");
 
         Booking booking = new Booking();
         booking.timeSlot = timeSlot;
@@ -99,6 +113,9 @@ public class Booking {
         booking.topic = topic;
         booking.description = description;
         booking.attendanceStatus = AttendanceStatus.SCHEDULED;
+        booking.meetingType = meetingType;
+        booking.location = location;
+        booking.meetingLink = meetingLink;
         return booking;
     }
 
@@ -158,16 +175,28 @@ public class Booking {
         this.bookingDate = newBookingDate;
     }
 
-    public void update(String topic, String description, TimeSlot timeSlot, LocalDate bookingDate) {
+    public void update(
+        String topic,
+        String description,
+        TimeSlot timeSlot,
+        LocalDate bookingDate,
+        MeetingType meetingType,
+        String location,
+        String meetingLink
+    ) {
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(bookingDate, "bookingDate must not be null");
+        Objects.requireNonNull(meetingType, "meetingType must not be null");
 
         this.topic = topic;
         this.description = description;
         this.timeSlot = timeSlot;
         this.bookingDate = bookingDate;
+        this.meetingType = meetingType;
+        this.location = location;
+        this.meetingLink = meetingLink;
     }
 
     public void setGoogleEventId(String googleEventId) {

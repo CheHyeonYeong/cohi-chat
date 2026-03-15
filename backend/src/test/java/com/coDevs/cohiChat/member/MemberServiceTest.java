@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -581,7 +582,7 @@ class MemberServiceTest {
 		LocalDate futureDate = LocalDate.now().plusDays(7);
 
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
-		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명");
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명", MeetingType.ONLINE, null, null);
 
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
@@ -606,7 +607,7 @@ class MemberServiceTest {
 		LocalDate futureDate = LocalDate.now().plusDays(7);
 
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
-		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명");
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명", MeetingType.ONLINE, null, null);
 
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
 		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
@@ -665,7 +666,7 @@ class MemberServiceTest {
 		LocalDate futureDate = LocalDate.now().plusDays(7);
 
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
-		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명");
+		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명", MeetingType.ONLINE, null, null);
 
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
@@ -698,7 +699,7 @@ class MemberServiceTest {
 		LocalDate futureDate = LocalDate.now().plusDays(7);
 
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
-		Booking hostBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명");
+		Booking hostBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명", MeetingType.ONLINE, null, null);
 
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
 		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
