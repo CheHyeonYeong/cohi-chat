@@ -2,15 +2,17 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { AuthPageLayout } from './AuthPageLayout';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
 import { useLogin } from '../hooks/useLogin';
+import { useOAuthAuthorizationUrl } from '../hooks/useOAuthAuthorizationUrl';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
-import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
-import { getErrorMessage } from '~/libs/errorUtils';
 
 interface LoginFormValues {
     username: string;
     password: string;
 }
+
+const GENERIC_LOGIN_ERROR_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
 
 const validationRules: Record<keyof LoginFormValues, ValidationRule<string>> = {
     username: (value: string) => {
@@ -45,24 +47,19 @@ function KakaoIcon() {
 export function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [oAuthPending, setOAuthPending] = useState<string | null>(null);
-    const [oAuthError, setOAuthError] = useState<string | null>(null);
     const navigate = useNavigate();
     const loginMutation = useLogin();
+    const oAuthMutation = useOAuthAuthorizationUrl();
     const { fields, handleBlur, validateAll, getInputClassName } =
         useFormValidation<LoginFormValues>(validationRules);
 
-    const handleSocialLogin = async (provider: string) => {
-        if (oAuthPending) return;
-        setOAuthPending(provider);
-        setOAuthError(null);
-        try {
-            const url = await getOAuthAuthorizationUrlApi(provider);
-            window.location.href = url;
-        } catch {
-            setOAuthPending(null);
-            setOAuthError('소셜 로그인 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
-        }
+    const handleSocialLogin = (provider: string) => {
+        if (oAuthMutation.isPending) return;
+        oAuthMutation.mutate(provider, {
+            onSuccess: (url) => {
+                window.location.href = url;
+            },
+        });
     };
 
     const onBlur = useCallback(
@@ -89,6 +86,11 @@ export function LoginForm() {
     const isPending = loginMutation.isPending;
     const baseInputClass =
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
+    const loginErrorMessage = loginMutation.isError
+        ? isHttpError(loginMutation.error, 401)
+            ? GENERIC_LOGIN_ERROR_MESSAGE
+            : getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')
+        : null;
 
     return (
         <AuthPageLayout title="로그인">
@@ -133,10 +135,8 @@ export function LoginForm() {
                     </div>
                 </div>
 
-                {loginMutation.isError && (
-                    <div className="text-red-600 text-sm">
-                        {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
-                    </div>
+                {loginErrorMessage && (
+                    <div className="text-red-600 text-sm">{loginErrorMessage}</div>
                 )}
 
                 <Button
@@ -161,28 +161,30 @@ export function LoginForm() {
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('google')}
-                    disabled={!!oAuthPending || isPending}
+                    disabled={oAuthMutation.isPending || isPending}
                     className="w-full py-3 flex items-center justify-center gap-3 !bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <GoogleIcon />
                     <span className="text-sm font-medium">
-                        {oAuthPending === 'google' ? '연결 중...' : 'Google로 로그인'}
+                        {oAuthMutation.isPending && oAuthMutation.variables === 'google' ? '연결 중...' : 'Google로 로그인'}
                     </span>
                 </Button>
                 <Button
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('kakao')}
-                    disabled={!!oAuthPending || isPending}
+                    disabled={oAuthMutation.isPending || isPending}
                     className="w-full py-3 flex items-center justify-center gap-3 !bg-[#FEE500] !border-0 hover:!bg-[#F0D800] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <KakaoIcon />
                     <span className="text-sm font-medium text-[#3C1E1E]">
-                        {oAuthPending === 'kakao' ? '연결 중...' : '카카오로 로그인'}
+                        {oAuthMutation.isPending && oAuthMutation.variables === 'kakao' ? '연결 중...' : '카카오로 로그인'}
                     </span>
                 </Button>
-                {oAuthError && (
-                    <p className="text-xs text-red-500 text-center mt-1">{oAuthError}</p>
+                {oAuthMutation.isError && (
+                    <p className="text-xs text-red-500 text-center mt-1">
+                        {getErrorMessage(oAuthMutation.error, '소셜 로그인 연결에 실패했습니다. 잠시 후 다시 시도해주세요.')}
+                    </p>
                 )}
             </div>
 

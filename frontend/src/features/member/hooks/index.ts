@@ -1,6 +1,7 @@
 export { useAuth } from './useAuth';
 export { useLogin } from './useLogin';
 export { useOAuthLogin } from './useOAuthLogin';
+export { useOAuthAuthorizationUrl } from './useOAuthAuthorizationUrl';
 export { useLogout } from './useLogout';
 export { useSignup } from './useSignup';
 export { useUpdateMember } from './useUpdateMember';
