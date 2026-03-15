@@ -67,7 +67,7 @@ describe('useMyBookings', () => {
         fetchStatus: 'idle',
         refetch: vi.fn(),
         invalidateAuth: vi.fn(),
-    });
+    }) as unknown as ReturnType<typeof useAuth>;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -100,7 +100,7 @@ describe('useMyBookings', () => {
                 createdAt: '2026-03-01T00:00:00.000Z',
                 updatedAt: '2026-03-01T00:00:00.000Z',
                 isHost: false,
-            }) as ReturnType<typeof useAuth>
+            })
         );
         vi.mocked(getMyBookings).mockResolvedValue(bobData);
 
@@ -119,7 +119,7 @@ describe('useMyBookings', () => {
     });
 
     it('does not run when auth state has no current user', () => {
-        vi.mocked(useAuth).mockReturnValue(createAuthResult(null, false) as ReturnType<typeof useAuth>);
+        vi.mocked(useAuth).mockReturnValue(createAuthResult(null, false));
 
         const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
             wrapper: createWrapper(),
