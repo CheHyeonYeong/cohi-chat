@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
 class AuthCookieServiceTest {
@@ -55,6 +56,31 @@ class AuthCookieServiceTest {
 				.contains("SameSite=Lax"))
 			.anySatisfy(cookie -> assertThat(cookie)
 				.contains("cohi_refresh_token=refresh-token")
+				.contains("HttpOnly"));
+	}
+
+	@Test
+	@DisplayName("refresh 쿠키에 access/refresh 토큰이 갱신된다")
+	void addRefreshCookies_setsAccessAndRefreshCookies() {
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
+			.accessToken("new-access-token")
+			.refreshToken("new-refresh-token")
+			.build();
+
+		given(jwtTokenProvider.getAccessTokenExpirationMs()).willReturn(3_600_000L);
+		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604_800_000L);
+
+		authCookieService.addRefreshCookies(response, refreshResponse);
+
+		List<String> setCookieHeaders = response.getHeaders(HttpHeaders.SET_COOKIE);
+		assertThat(setCookieHeaders).hasSize(2);
+		assertThat(setCookieHeaders)
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_access_token=new-access-token")
+				.contains("HttpOnly"))
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_refresh_token=new-refresh-token")
 				.contains("HttpOnly"));
 	}
 

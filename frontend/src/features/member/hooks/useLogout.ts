@@ -9,10 +9,13 @@ export function useLogout() {
     const queryClient = useQueryClient();
 
     const logout = useCallback(async () => {
-        await logoutApi();
-        queryClient.clear();
-        clearAuthenticatedUser();
-        navigate({ to: '/login', replace: true });
+        try {
+            await logoutApi();
+        } finally {
+            queryClient.clear();
+            clearAuthenticatedUser();
+            navigate({ to: '/login', replace: true });
+        }
     }, [navigate, queryClient]);
 
     return { logout };
