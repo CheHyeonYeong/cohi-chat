@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,9 @@ public class BookingResponseDTO {
     private final Instant createdAt;
     private final String hostUsername;
     private final String hostDisplayName;
+    private final MeetingType meetingType;
+    private final String location;
+    private final String meetingLink;
 
     public static BookingResponseDTO from(Booking booking) {
         return from(booking, null, null);
@@ -53,6 +57,9 @@ public class BookingResponseDTO {
             .createdAt(booking.getCreatedAt())
             .hostUsername(hostUsername)
             .hostDisplayName(hostDisplayName)
+            .meetingType(booking.getMeetingType())
+            .location(booking.getLocation())
+            .meetingLink(booking.getMeetingLink())
             .build();
     }
 }

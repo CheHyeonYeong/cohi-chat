@@ -60,4 +60,12 @@ public enum AttendanceStatus {
         return this == SCHEDULED;
     }
 
+    /**
+     * 게스트가 호스트 노쇼 신고 가능한 상태인지 확인
+     * 예정(SCHEDULED) 상태만 신고 가능
+     */
+    public boolean isGuestReportable() {
+        return this == SCHEDULED;
+    }
+
 }

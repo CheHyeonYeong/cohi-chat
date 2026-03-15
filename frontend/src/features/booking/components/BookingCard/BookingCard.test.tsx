@@ -30,6 +30,9 @@ const mockBooking: IBookingDetail = {
     files: [],
     createdAt: '2024-02-01T00:00:00Z',
     updatedAt: '2024-02-01T00:00:00Z',
+    meetingType: 'ONLINE',
+    location: null,
+    meetingLink: 'https://meet.google.com/test',
 };
 
 describe('BookingCard', () => {

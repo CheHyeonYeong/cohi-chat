@@ -10,6 +10,8 @@ export type AttendanceStatus =
     | 'SAME_DAY_CANCEL'
     | 'LATE';
 
+export type MeetingType = 'ONLINE' | 'OFFLINE';
+
 export interface IBookingDetail {
     id: number;
     startedAt: Date;
@@ -24,6 +26,9 @@ export interface IBookingDetail {
     attendanceStatus: AttendanceStatus;
     hostId: string | null;
     guestId: string;
+    meetingType: MeetingType;
+    location: string | null;
+    meetingLink: string | null;
 }
 
 export interface INoShowHistoryItem {
@@ -43,6 +48,9 @@ export interface IBookingPayload {
     topic: string;
     description: string;
     timeSlotId: number;
+    meetingType: MeetingType;
+    location?: string;
+    meetingLink?: string;
 }
 
 export interface IPaginatedBookingDetail {

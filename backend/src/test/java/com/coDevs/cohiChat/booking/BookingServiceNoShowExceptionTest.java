@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
@@ -77,7 +78,16 @@ class BookingServiceNoShowExceptionTest {
     @DisplayName("reportHostNoShow rethrows unrelated integrity violations")
     void reportHostNoShowRethrowsOtherIntegrityViolations() {
         Long bookingId = 1L;
-        Booking booking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().minusDays(1), "topic", "desc");
+        Booking booking = Booking.create(
+            timeSlot,
+            GUEST_ID,
+            LocalDate.now().minusDays(1),
+            "topic",
+            "desc",
+            MeetingType.ONLINE,
+            null,
+            null
+        );
         DataIntegrityViolationException exception = new DataIntegrityViolationException(
             "foreign key violation",
             new ConstraintViolationException(

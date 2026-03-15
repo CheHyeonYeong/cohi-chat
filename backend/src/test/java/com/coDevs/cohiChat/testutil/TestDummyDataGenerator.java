@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.member.MemberRepository;
@@ -115,7 +116,10 @@ public class TestDummyDataGenerator {
                         guest.getId(),
                         bookingDate,
                         "더미 예약 " + (bookingIndex + 1),
-                        "이미 예약된 상태를 테스트하기 위한 더미 예약입니다."
+                        "이미 예약된 상태를 테스트하기 위한 더미 예약입니다.",
+                        MeetingType.ONLINE,
+                        null,
+                        null
                     );
                     bookings.add(bookingRepository.save(booking));
                     guestCursor++;
