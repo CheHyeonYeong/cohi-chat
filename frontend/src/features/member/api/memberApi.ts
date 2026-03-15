@@ -29,7 +29,7 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     if (!response) {
         throw new Error('로그인 응답을 받지 못했습니다.');
     }
-    if (!response.username) {
+    if (!response.username || !response.displayName) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 

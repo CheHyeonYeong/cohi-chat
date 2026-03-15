@@ -135,7 +135,9 @@ export function LoginForm() {
 
                 {loginMutation.isError && (
                     <div className="text-red-600 text-sm">
-                        {getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
+                        {loginMutation.error.cause === 401
+                            ? '아이디 또는 비밀번호가 올바르지 않습니다.'
+                            : getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
                     </div>
                 )}
 

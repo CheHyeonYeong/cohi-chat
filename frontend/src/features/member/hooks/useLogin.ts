@@ -11,7 +11,9 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             return response;
         },
         onError: (error) => {
-            console.error('Login error:', error);
+            if (error.cause !== 401) {
+                console.error('Login error:', error);
+            }
         },
     });
 }
