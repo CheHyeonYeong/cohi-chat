@@ -11,7 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
     ),
 }));
 
-import Footer from './Footer';
+import { Footer } from './Footer';
 
 describe('Footer', () => {
     afterEach(() => {

@@ -23,7 +23,7 @@ const variantStyles = {
     outline: "cohi-btn-outline",
 };
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ({ variant, size = "md", loading = false, asChild = false, disabled, className, children, ...props }, ref) => {
         const Comp = asChild ? Slot : "button";
         return (
@@ -45,6 +45,3 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 );
 
-Button.displayName = 'Button';
-
-export default Button;

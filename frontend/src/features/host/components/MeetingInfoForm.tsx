@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import Button from '~/components/button/Button';
-import Tag from '~/components/Tag';
+import { Button } from '~/components/button';
+import { Tag } from '~/components/Tag';
 
 export interface MeetingInfoFormData {
     topics: string[];
@@ -13,7 +13,7 @@ interface MeetingInfoFormProps {
     errors: Record<string, string>;
 }
 
-export default function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps) {
+export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps) {
     const [topicInput, setTopicInput] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 

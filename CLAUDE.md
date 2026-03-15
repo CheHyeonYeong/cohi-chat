@@ -55,7 +55,7 @@ cohiChat/
 ├── frontend/             # React 프론트엔드
 │   └── src/
 │       ├── components/   # 재사용 컴포넌트
-│       ├── features/     # 도메인별 기능 모듈 (member, calendar, host)
+│       ├── features/     # 도메인별 기능 모듈 (member, booking, host)
 │       ├── pages/        # 페이지
 │       ├── hooks/        # Custom Hooks
 │       ├── routes/       # 라우트 정의

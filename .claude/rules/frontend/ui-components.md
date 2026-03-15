@@ -27,3 +27,15 @@ paths: frontend/**/*.{ts,tsx}
   - `noShadow`: shadow 제거 (Card 안에 Card가 중첩될 때 사용)
 - 클릭 가능한 카드: `<Card asChild>` + `<button>` 조합 사용
   - 예: `<Card asChild size="sm"><button type="button">{content}</button></Card>`
+
+### PageLayout 사용 규칙
+- 일반 페이지(Header + 제목 + 콘텐츠)는 반드시 `<PageLayout>` 컴포넌트 사용 (`~/components`)
+- `div > Header > main > div.max-w > h1` 보일러플레이트 직접 조합 금지
+- Props:
+  - `title`: 페이지 제목 (`<h1>` 렌더링 + `document.title` 자동 설정)
+  - `headerCenter`: Header 중앙 슬롯 (예: StepIndicator)
+  - `maxWidth`: `'sm'` ~ `'6xl'` (기본 `'6xl'`)
+  - `className`: main 내부 추가 클래스
+- `AuthPageLayout`은 인증 페이지 전용 (로그인, 회원가입, 비밀번호 재설정)
+- `PageLayout`은 일반 페이지 전용 (설정, 예약 목록, 호스트 등록 등)
+- 예외: Home, Calendar 등 고유 레이아웃 페이지는 직접 구성

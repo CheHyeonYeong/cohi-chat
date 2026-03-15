@@ -1,9 +1,15 @@
 ### Header 사용 규칙
 - 페이지 상단 네비게이션 헤더는 반드시 `<Header>` 컴포넌트 사용 (`~/components/header`)
   - 로고(CoffeeCupIcon + "cohiChat") + 홈 링크가 자동 포함
-  - `center` prop: 중앙 영역 (예: StepIndicator, 브레드크럼)
-  - `right` prop: 우측 영역 (예: 인증 버튼, 아바타)
+  - 인증 상태에 따라 우측 영역을 자동 처리:
+    - 로그인 상태: `ProfileDropdown` (아바타 + 드롭다운 메뉴) 자동 표시
+    - 비로그인 상태: 로그인 `LinkButton` 자동 표시
+  - `center` prop: Header 중앙 슬롯 (예: StepIndicator)
   - `className` prop: 추가 스타일 (`cn()`으로 머지)
-- 각 페이지에서 `<header>` + 로고를 직접 작성 금지 → 반드시 `<Header>` 사용
-- 3-column 레이아웃(center 있을 때) 균형이 필요하면 빈 spacer를 `right`에 전달
+- `right` prop은 삭제됨 → 사용 금지
+- `showBreadcrumb` prop은 삭제됨 → 사용 금지
+- `Breadcrumb` 컴포넌트는 삭제됨 → 사용 금지
+- `PageHeader` 컴포넌트는 삭제됨 → 사용 금지
+- `ProfileDropdown`이 모든 인증 페이지 네비게이션 제공 (my-bookings, settings, host pages)
+- 각 페이지에서 `<header>` + 로고를 직접 작성 금지 → `<PageLayout>` 또는 `<Header>` 사용
 - LoginForm처럼 중앙 정렬 로고만 필요한 경우는 Header 대상 아님 (별도 인라인 처리)
