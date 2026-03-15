@@ -5,6 +5,7 @@ paths: frontend/**/*.{ts,tsx}
 ### Button 사용 규칙
 - 표준 버튼은 반드시 `<Button>` 컴포넌트 사용 (`~/components/button`)
 - 라우터 링크 + 버튼 스타일: `<LinkButton>` 사용 (`~/components/button/LinkButton`)
+  - barrel 예외: `LinkButton`은 모듈 최상위에서 `createLink()`를 호출하므로 barrel에서 제외됨
   - TanStack Router `Link`의 타입 안전성을 유지하면서 Button 스타일 적용
   - 예: `<LinkButton variant="primary" to="/path">텍스트</LinkButton>`
   - `<Link>` + `cohi-btn-*` 클래스 직접 조합 금지 → 반드시 `<LinkButton>` 사용
