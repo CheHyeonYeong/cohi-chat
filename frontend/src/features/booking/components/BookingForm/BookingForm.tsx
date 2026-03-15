@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCreateBooking } from '../../hooks';
 import { Button } from '~/components/button';
+import { Select } from '~/components/select';
 import type { ICalendar } from '~/components/calendar';
 import type { MeetingType } from '../../types';
 import { MeetingTypeSelector } from '../MeetingTypeSelector';
@@ -15,18 +16,18 @@ interface BookingFormProps {
 
 export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) {
     const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
-    const topicRef = useRef<HTMLSelectElement>(null);
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
     const locationRef = useRef<HTMLInputElement>(null);
     const meetingLinkRef = useRef<HTMLInputElement>(null);
 
+    const [topic, setTopic] = useState(calendar.topics[0] ?? '');
     const [meetingType, setMeetingType] = useState<MeetingType>('ONLINE');
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         createBookingMutation.mutate({
             timeSlotId,
-            topic: topicRef.current?.value ?? '',
+            topic,
             description: descriptionRef.current?.value ?? '',
             when: `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}-${String(when.getDate()).padStart(2, '0')}`,
             meetingType,
@@ -44,17 +45,15 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-                <label htmlFor="topic" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
                     주제
                 </label>
-                <select
-                    ref={topicRef}
-                    id="topic"
+                <Select
+                    value={topic}
+                    onValueChange={setTopic}
+                    options={calendar.topics.map((t) => ({ value: t, label: t }))}
                     data-testid="booking-topic-select"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
-                >
-                    {calendar.topics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
-                </select>
+                />
             </div>
 
             <MeetingTypeSelector
