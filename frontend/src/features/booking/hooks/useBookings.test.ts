@@ -7,6 +7,7 @@ import { getCurrentUsername } from '~/libs/jwt';
 import { useMyBookings } from './useBooking';
 import { bookingKeys } from './queryKeys';
 import { getMyBookings } from '../api';
+import type { IPaginatedBookingDetail } from '../types';
 
 vi.mock('~/libs/jwt', () => ({
     getCurrentUsername: vi.fn(),
@@ -23,6 +24,33 @@ vi.mock('../api', () => ({
 
 describe('useMyBookings', () => {
     let queryClient: QueryClient;
+    const baseBooking = {
+        startedAt: new Date('2026-03-15T10:00:00.000Z'),
+        endedAt: new Date('2026-03-15T11:00:00.000Z'),
+        topic: 'topic',
+        description: 'description',
+        timeSlot: {
+            id: 1,
+            userId: 'host-1',
+            startedAt: '2026-03-15T10:00:00.000Z',
+            endedAt: '2026-03-15T11:00:00.000Z',
+            weekdays: [1],
+            startDate: null,
+            endDate: null,
+            createdAt: '2026-03-01T00:00:00.000Z',
+            updatedAt: '2026-03-01T00:00:00.000Z',
+        },
+        host: {
+            username: 'host',
+            displayName: 'Host',
+        },
+        files: [],
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        attendanceStatus: 'SCHEDULED' as const,
+        hostId: 'host-1',
+        guestId: 'guest-1',
+    };
 
     const createWrapper = () => ({ children }: { children: React.ReactNode }) =>
         React.createElement(QueryClientProvider, { client: queryClient }, children);
@@ -38,8 +66,14 @@ describe('useMyBookings', () => {
     });
 
     it('uses a username-scoped cache key so another user cannot reuse previous booking data', async () => {
-        const aliceData = { bookings: [{ id: 1 }], totalCount: 1 };
-        const bobData = { bookings: [{ id: 2 }], totalCount: 1 };
+        const aliceData: IPaginatedBookingDetail = {
+            bookings: [{ ...baseBooking, id: 1 }],
+            totalCount: 1,
+        };
+        const bobData: IPaginatedBookingDetail = {
+            bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+            totalCount: 1,
+        };
 
         queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), aliceData);
         vi.mocked(getCurrentUsername).mockReturnValue('bob');
