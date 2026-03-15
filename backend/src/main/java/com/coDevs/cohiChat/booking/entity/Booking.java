@@ -86,8 +86,8 @@ public class Booking {
     @Column(name = "location", length = 500)
     private String location;
 
-    @Column(name = "meeting_link", length = 2000)
-    private String meetingLink;
+    @Column(name = "meeting_link", length = 2000, columnDefinition = "varchar(2000) default 'https://www.cohi-chat.com'")
+    private String meetingLink = "https://www.cohi-chat.com";
 
     public static Booking create(
         TimeSlot timeSlot,
