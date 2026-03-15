@@ -66,7 +66,6 @@ function LocationIcon({ className }: { className?: string }) {
 }
 
 interface TypeButtonProps {
-    type: MeetingType;
     selected: boolean;
     onClick: () => void;
     icon: React.ReactNode;
@@ -74,7 +73,7 @@ interface TypeButtonProps {
     testId: string;
 }
 
-function TypeButton({ type, selected, onClick, icon, label, testId }: TypeButtonProps) {
+function TypeButton({ selected, onClick, icon, label, testId }: TypeButtonProps) {
     return (
         <button
             type="button"
@@ -127,7 +126,6 @@ export function MeetingTypeSelector({
                 {typeButtons.map(({ type, label, icon, testId }) => (
                     <TypeButton
                         key={type}
-                        type={type}
                         selected={value === type}
                         onClick={() => onChange(type)}
                         icon={icon}
