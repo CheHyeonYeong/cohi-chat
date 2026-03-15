@@ -43,6 +43,7 @@ const makeBooking = (
 });
 
 const reportNoShow = vi.fn();
+const downloadFile = vi.fn();
 let mockBooking: IBookingDetail | null = null;
 
 vi.mock('@tanstack/react-router', () => ({
@@ -90,6 +91,7 @@ vi.mock('~/features/booking', () => ({
     useBooking: () => ({ data: mockBooking, isLoading: false, error: null, refetch: vi.fn() }),
     useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useDownloadBookingFile: () => ({ mutateAsync: downloadFile, error: null }),
     useReportHostNoShow: () => ({ mutate: reportNoShow, isPending: false, error: null, reset: vi.fn() }),
     getPresignedDownloadUrl: vi.fn(),
 }));
@@ -105,6 +107,7 @@ describe('Detail no-show reporting', () => {
         vi.useFakeTimers();
         vi.setSystemTime(MOCK_NOW);
         reportNoShow.mockClear();
+        downloadFile.mockClear();
         mockBooking = null;
     });
 
@@ -148,6 +151,22 @@ describe('Detail no-show reporting', () => {
         mockBooking = makeBooking(PAST_STARTED_AT, 'HOST_NO_SHOW');
 
         render(<Detail />);
+
+        expect(screen.queryByRole('button', { name: '호스트 노쇼 신고' })).not.toBeInTheDocument();
+        expect(screen.getByText('이미 신고한 예약입니다.')).toBeInTheDocument();
+    });
+
+    it('switches to the already reported state after a successful report', () => {
+        mockBooking = makeBooking(PAST_STARTED_AT);
+        reportNoShow.mockImplementation((_reason?: string, options?: { onSuccess?: () => void }) => {
+            mockBooking = makeBooking(PAST_STARTED_AT, 'HOST_NO_SHOW');
+            options?.onSuccess?.();
+        });
+
+        render(<Detail />);
+
+        fireEvent.click(screen.getByRole('button', { name: '호스트 노쇼 신고' }));
+        fireEvent.click(screen.getByRole('button', { name: '신고하기' }));
 
         expect(screen.queryByRole('button', { name: '호스트 노쇼 신고' })).not.toBeInTheDocument();
         expect(screen.getByText('이미 신고한 예약입니다.')).toBeInTheDocument();

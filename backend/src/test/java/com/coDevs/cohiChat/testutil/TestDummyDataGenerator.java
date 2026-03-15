@@ -105,7 +105,10 @@ public class TestDummyDataGenerator {
                 for (int bookingIndex = 0; bookingIndex < bookingLimit; bookingIndex++) {
                     Member guest = guests.get(guestCursor % guests.size());
                     TimeSlot timeSlot = hostTimeSlots.get(bookingIndex);
-                    LocalDate bookingDate = LocalDate.now().plusDays(bookingIndex + 1L + (hostIndex * 7L));
+                    LocalDate bookingDate = findNextBookingDate(
+                        LocalDate.now().plusDays(bookingIndex + 1L + (hostIndex * 7L)),
+                        timeSlot
+                    );
 
                     Booking booking = Booking.create(
                         timeSlot,
@@ -128,13 +131,15 @@ public class TestDummyDataGenerator {
         List<Member> dummyMembers = memberRepository.findAll().stream()
             .filter(member -> member.getUsername().startsWith(DUMMY_PREFIX))
             .toList();
-        List<UUID> dummyGuestIds = dummyMembers.stream()
-            .filter(member -> member.getRole() == Role.GUEST)
+        List<UUID> dummyMemberIds = dummyMembers.stream()
             .map(Member::getId)
             .toList();
 
         bookingRepository.findAll().stream()
-            .filter(booking -> dummyGuestIds.contains(booking.getGuestId()))
+            .filter(booking ->
+                dummyMemberIds.contains(booking.getGuestId())
+                    || (booking.getTimeSlot() != null && dummyMemberIds.contains(booking.getTimeSlot().getUserId()))
+            )
             .forEach(bookingRepository::delete);
 
         for (Member member : dummyMembers) {
@@ -146,6 +151,18 @@ public class TestDummyDataGenerator {
 
             memberRepository.delete(member);
         }
+    }
+
+    private LocalDate findNextBookingDate(LocalDate startDate, TimeSlot timeSlot) {
+        LocalDate bookingDate = startDate;
+        while (!timeSlot.getWeekdays().contains(toWeekdayValue(bookingDate))) {
+            bookingDate = bookingDate.plusDays(1);
+        }
+        return bookingDate;
+    }
+
+    private int toWeekdayValue(LocalDate date) {
+        return date.getDayOfWeek().getValue() % 7;
     }
 
     public record GeneratedData(

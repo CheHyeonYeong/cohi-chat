@@ -21,8 +21,8 @@ import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import {
-    getPresignedDownloadUrl,
     useBooking,
+    useDownloadBookingFile,
     useDeleteBookingFile,
     useReportHostNoShow,
     useUploadBookingFile,
@@ -117,6 +117,7 @@ export function Detail() {
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
+    const { mutateAsync: downloadFileAsync, error: downloadError } = useDownloadBookingFile(Number(id));
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } =
         useReportHostNoShow(Number(id));
@@ -125,7 +126,6 @@ export function Detail() {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
-    const [downloadError, setDownloadError] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -222,17 +222,9 @@ export function Detail() {
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
-            setDownloadError(null);
-            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            await downloadFileAsync({ fileId, fileName });
         } catch (downloadError) {
             console.error('Download error:', downloadError);
-            setDownloadError(getErrorMessage(downloadError, '파일 다운로드에 실패했습니다.'));
         }
     };
 
@@ -511,7 +503,11 @@ export function Detail() {
                         </div>
                     )}
 
-                    {downloadError && <p className="mt-1 text-sm text-red-500">{downloadError}</p>}
+                    {downloadError && (
+                        <p className="mt-1 text-sm text-red-500">
+                            {getErrorMessage(downloadError, '파일 다운로드에 실패했습니다.')}
+                        </p>
+                    )}
 
                     {fileOrder.length === 0 && <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>}
                 </Card>
