@@ -13,11 +13,13 @@ import static org.mockito.Mockito.verify;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -1450,7 +1453,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(20L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1466,7 +1469,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(19L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1482,7 +1485,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(1L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1498,7 +1501,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(21L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1546,7 +1549,14 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.save(any(NoShowHistory.class)))
-            .willThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+            .willThrow(new DataIntegrityViolationException(
+                "duplicate",
+                new ConstraintViolationException(
+                    "duplicate",
+                    new SQLException("duplicate key"),
+                    "uq_noshow_history_booking_id"
+                )
+            ));
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
