@@ -32,12 +32,16 @@ cd backend
 ### Frontend
 ```bash
 cd frontend
-pnpm install    # 의존성 설치
-pnpm dev        # 개발 서버 (port 3000)
-pnpm build      # 프로덕션 빌드
-pnpm test       # 테스트 (Vitest)
-pnpm lint       # ESLint 검사
+pnpm install      # 의존성 설치
+pnpm dev          # 개발 서버 (port 3000)
+pnpm build        # 프로덕션 빌드
+pnpm test run     # 테스트 단건 실행 (Vitest, CI/Claude용)
+pnpm test         # 테스트 watch 모드 (개발자가 직접 실행 - Claude는 사용 금지)
+pnpm lint         # ESLint 검사
 ```
+
+> **Claude 주의**: `pnpm test`는 watch 모드로 실행되어 프로세스가 종료되지 않는다.
+> 테스트 실행 시 반드시 `pnpm test run`을 사용한다.
 
 ### Docker
 ```bash
