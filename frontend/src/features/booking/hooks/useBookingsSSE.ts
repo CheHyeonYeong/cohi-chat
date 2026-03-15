@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { snakeToCamel } from '~/libs/utils';
 import type { IBooking, ICalendarEvent } from '~/components/calendar';
 
@@ -10,14 +10,21 @@ export function useBookingsSSEQuery({
     onMessage?: (data: IBooking | ICalendarEvent) => void;
 }) {
     const [data, setData] = useState<Array<IBooking | ICalendarEvent>>([]);
+    const [connectionError, setConnectionError] = useState<Event | null>(null);
+    const onMessageRef = useRef(onMessage);
+
+    useLayoutEffect(() => {
+        onMessageRef.current = onMessage;
+    }, [onMessage]);
 
     useEffect(() => {
-        const eventSource = new EventSource(
-            endpoint,
-            {
-                withCredentials: true
-            },
-        );
+        const eventSource = new EventSource(endpoint, {
+            withCredentials: true,
+        });
+
+        eventSource.onopen = () => {
+            setConnectionError(null);
+        };
 
         eventSource.onmessage = (event) => {
             try {
@@ -33,18 +40,19 @@ export function useBookingsSSEQuery({
                     }
                     return prevData;
                 });
-                onMessage?.(newData);
+                onMessageRef.current?.(newData);
             } catch (error) {
                 console.error('SSE message parsing error:', error);
             }
         };
 
         eventSource.onerror = (error) => {
+            setConnectionError(error);
             console.error('SSE connection error:', error);
         };
 
         return () => eventSource.close();
-    }, [endpoint, onMessage]);
+    }, [endpoint]);
 
-    return { data };
+    return { data, connectionError };
 }
