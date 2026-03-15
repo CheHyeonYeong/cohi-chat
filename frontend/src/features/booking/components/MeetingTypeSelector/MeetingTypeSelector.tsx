@@ -82,7 +82,7 @@ export function MeetingTypeSelector({
                         data-testid="meeting-link-input"
                         value={meetingLink}
                         onChange={(e) => onMeetingLinkChange?.(e.target.value)}
-                        placeholder="예: https://meet.google.com/xxx-xxxx-xxx"
+                        placeholder="예: https://www.cohi-chat.com"
                         className={inputStyles}
                     />
                     <p className="text-xs text-gray-500">
