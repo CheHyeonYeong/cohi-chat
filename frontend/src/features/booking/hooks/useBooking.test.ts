@@ -53,6 +53,9 @@ describe('booking hooks cache isolation', () => {
         guestId: 'guest-1',
     };
 
+    const createBookingDetail = (overrides: Partial<IBookingDetail> = {}) =>
+        ({ ...baseBooking, ...overrides }) as unknown as IBookingDetail;
+
     const createWrapper = () => ({ children }: { children: React.ReactNode }) =>
         React.createElement(QueryClientProvider, { client: queryClient }, children);
 
@@ -102,11 +105,11 @@ describe('booking hooks cache isolation', () => {
     describe('useMyBookings', () => {
         it('uses a username-scoped cache key so another user cannot reuse previous booking data', async () => {
             const aliceData: IPaginatedBookingDetail = {
-                bookings: [{ ...baseBooking, id: 1 }],
+                bookings: [createBookingDetail({ id: 1 })],
                 totalCount: 1,
             };
             const bobData: IPaginatedBookingDetail = {
-                bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+                bookings: [createBookingDetail({ id: 2, guestId: 'guest-2' })],
                 totalCount: 1,
             };
 
@@ -134,7 +137,7 @@ describe('booking hooks cache isolation', () => {
 
         it('keeps booking query enabled while auth profile data is still loading if token username exists', async () => {
             const bobData: IPaginatedBookingDetail = {
-                bookings: [{ ...baseBooking, id: 2, guestId: 'guest-2' }],
+                bookings: [createBookingDetail({ id: 2, guestId: 'guest-2' })],
                 totalCount: 1,
             };
 
@@ -179,17 +182,15 @@ describe('booking hooks cache isolation', () => {
 
     describe('useBooking', () => {
         it('uses a username-scoped cache key so another user cannot reuse previous booking detail data', async () => {
-            const aliceDetail: IBookingDetail = {
-                ...baseBooking,
+            const aliceDetail = createBookingDetail({
                 id: 1,
                 topic: 'alice topic',
-            };
-            const bobDetail: IBookingDetail = {
-                ...baseBooking,
+            });
+            const bobDetail = createBookingDetail({
                 id: 1,
                 topic: 'bob topic',
                 guestId: 'guest-2',
-            };
+            });
 
             queryClient.setQueryData(bookingKeys.booking(1, 'alice'), aliceDetail);
             vi.mocked(useAuth).mockReturnValue(
@@ -214,11 +215,10 @@ describe('booking hooks cache isolation', () => {
         });
 
         it('keeps detail query enabled while auth profile data is still loading if token username exists', async () => {
-            const bobDetail: IBookingDetail = {
-                ...baseBooking,
+            const bobDetail = createBookingDetail({
                 id: 7,
                 guestId: 'guest-2',
-            };
+            });
 
             vi.mocked(useAuth).mockReturnValue(
                 createAuthResult({
