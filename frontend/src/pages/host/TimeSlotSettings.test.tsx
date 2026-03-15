@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import TimeSlotSettings from './TimeSlotSettings';
+import { TimeSlotSettings } from './TimeSlotSettings';
 import {
     useCreateTimeslot,
     useDeleteTimeslot,
@@ -29,7 +29,7 @@ vi.mock('~/components/toast/useToast', () => ({
 }));
 
 vi.mock('~/features/host/components/timeslot/TimeSlotForm', () => ({
-    default: ({
+    TimeSlotForm: ({
         entries,
         onOverlapDetected,
     }: {
@@ -46,7 +46,7 @@ vi.mock('~/features/host/components/timeslot/TimeSlotForm', () => ({
 }));
 
 vi.mock('~/features/host/components/timeslot/WeeklySchedulePreview', () => ({
-    default: ({
+    WeeklySchedulePreview: ({
         entries,
         onDuplicateBlocked,
         onDeleteEntry,

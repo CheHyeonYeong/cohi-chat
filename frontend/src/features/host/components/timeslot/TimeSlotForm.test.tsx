@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-import TimeSlotForm, { type TimeSlotEntry } from './TimeSlotForm';
+import { TimeSlotForm, type TimeSlotEntry } from './TimeSlotForm';
 
 describe('TimeSlotForm', () => {
     afterEach(() => {

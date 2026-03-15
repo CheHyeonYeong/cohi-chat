@@ -1,4 +1,4 @@
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import type { Step1Data } from './RegisterStep1';
 import type { Step2Data } from './RegisterStep2';
@@ -22,7 +22,7 @@ function CheckCircleIcon({ className = '' }: { className?: string }) {
     );
 }
 
-export default function RegisterStep3({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) {
+export function RegisterStep3({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) {
     if (isSuccess) {
         return (
             <div className="w-full max-w-lg mx-auto text-center">
@@ -46,7 +46,7 @@ export default function RegisterStep3({ step1, step2, isPending, error, isSucces
     }
 
     return (
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
                 등록 정보 확인
             </h2>

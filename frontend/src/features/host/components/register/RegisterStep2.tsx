@@ -1,5 +1,5 @@
 import { CalendarIcon } from '~/components/icons';
-import GoogleCalendarSetup from '../GoogleCalendarSetup';
+import { GoogleCalendarSetup } from '../GoogleCalendarSetup';
 
 export interface Step2Data {
     googleCalendarId: string;
@@ -11,7 +11,7 @@ interface RegisterStep2Props {
     errors: Record<string, string>;
 }
 
-export default function RegisterStep2({ data, onChange, errors }: RegisterStep2Props) {
+export function RegisterStep2({ data, onChange, errors }: RegisterStep2Props) {
     return (
         <div className="w-full mx-auto">
             <div className="mb-8">

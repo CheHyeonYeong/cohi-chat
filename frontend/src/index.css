@@ -1,11 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: #1A8DF7;
+    --primary-foreground: #1A8DF7;
+    --secondary: #65BEFF;
+    --secondary-foreground: #65BEFF;
+    --error: #F04E4E;
+    --error-foreground: #F04E4E;
+    --success: #17BC6D;
+    --success-foreground: #17BC6D;
+    --warning: #FE9922;
+    --warning-foreground: #FE9922;
+    --info: #154093;
+    --info-foreground: #154093;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-white text-foreground p-0 m-0 break-keep;
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -47,8 +88,6 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
-
-
 
 /* cohiChat Global Styles */
 .cohi-bg-gradient {

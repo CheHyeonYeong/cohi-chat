@@ -1,5 +1,5 @@
-export { default as CoffeeCupIcon } from './CoffeeCupIcon';
-export { default as CalendarIcon } from './CalendarIcon';
-export { default as ExternalLinkIcon } from './ExternalLinkIcon';
-export { default as CopyIcon } from './CopyIcon';
-export { default as CheckIcon } from './CheckIcon';
+export { CoffeeCupIcon } from './CoffeeCupIcon';
+export { CalendarIcon } from './CalendarIcon';
+export { ExternalLinkIcon } from './ExternalLinkIcon';
+export { CopyIcon } from './CopyIcon';
+export { CheckIcon } from './CheckIcon';
