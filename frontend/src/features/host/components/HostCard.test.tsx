@@ -1,45 +1,35 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-    RouterProvider,
-    createRootRoute,
-    createRoute,
-    createRouter,
-    createMemoryHistory,
-} from '@tanstack/react-router';
 import { HostCard } from './HostCard';
 
-const createTestRouter = (component: React.ReactNode) => {
-    const rootRoute = createRootRoute({
-        component: () => component,
-    });
-
-    const hostRoute = createRoute({
-        getParentRoute: () => rootRoute,
-        path: '/host/$hostId',
-        component: () => <div>Host Profile</div>,
-    });
-
-    const router = createRouter({
-        routeTree: rootRoute.addChildren([hostRoute]),
-        history: createMemoryHistory({ initialEntries: ['/'] }),
-    });
-
-    return router;
-};
+vi.mock('@tanstack/react-router', () => ({
+    Link: ({
+        children,
+        to,
+        params,
+        ...props
+    }: {
+        children: React.ReactNode;
+        to: string;
+        params?: Record<string, string>;
+        [key: string]: unknown;
+    }) => {
+        const href = params ? to.replace('$hostId', params.hostId) : to;
+        return (
+            <a href={href} {...props}>
+                {children}
+            </a>
+        );
+    },
+}));
 
 const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
-    const router = createTestRouter(ui);
 
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-        </QueryClientProvider>,
-    );
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
 describe('HostCard', () => {

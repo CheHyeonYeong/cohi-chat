@@ -55,7 +55,7 @@ describe('Timeslots', () => {
                 data: undefined,
                 isLoading: false,
                 invalidateAuth: vi.fn(),
-            } as ReturnType<typeof useAuth>);
+            } as unknown as ReturnType<typeof useAuth>);
         });
 
         it('로그인 링크를 표시한다', () => {
