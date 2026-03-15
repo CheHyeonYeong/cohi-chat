@@ -1,10 +1,10 @@
 export const bookingKeys = {
     myBookingsAll: () => ['my-bookings'] as const,
-    myBookings: (page?: number, pageSize?: number, username?: string | null) =>
+    myBookings: (page?: number, pageSize?: number, username: string | null = null) =>
         username == null
             ? ['my-bookings', page, pageSize] as const
             : ['my-bookings', username, page, pageSize] as const,
-    booking: (id: number, username?: string | null) =>
+    booking: (id: number, username: string | null = null) =>
         username == null
             ? ['booking', id] as const
             : ['booking', id, username] as const,
