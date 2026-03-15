@@ -80,13 +80,13 @@ public class Booking {
     private String cancelledReason;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "meeting_type", nullable = false, length = 20)
-    private MeetingType meetingType;
+    @Column(name = "meeting_type", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ONLINE'")
+    private MeetingType meetingType = MeetingType.ONLINE;
 
     @Column(name = "location", length = 500)
     private String location;
 
-    @Column(name = "meeting_link", length = 500)
+    @Column(name = "meeting_link", length = 2000)
     private String meetingLink;
 
     public static Booking create(
