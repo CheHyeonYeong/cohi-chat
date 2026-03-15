@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -290,7 +291,7 @@ class BookingControllerTest {
     @DisplayName("성공: 내 예약 조회 (게스트) - 200 OK")
     void getMyBookingsAsGuestSuccess() throws Exception {
         // given
-        BookingResponseDTO response = BookingResponseDTO.builder()
+        BookingResponseDTO booking = BookingResponseDTO.builder()
             .id(1L)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(GUEST_ID)
@@ -302,15 +303,17 @@ class BookingControllerTest {
             .createdAt(Instant.now())
             .build();
 
-        given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of(response));
+        PaginatedBookingResponseDTO response = PaginatedBookingResponseDTO.of(List.of(booking), 1, 1, 10);
+        given(bookingService.getBookingsByGuestIdPaginated(GUEST_ID, 1, 10)).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data[0].id").value(1))
-            .andExpect(jsonPath("$.data[0].timeSlotId").value(TIME_SLOT_ID))
-            .andExpect(jsonPath("$.data[0].topic").value("프로젝트 상담"))
+            .andExpect(jsonPath("$.data.bookings[0].id").value(1))
+            .andExpect(jsonPath("$.data.bookings[0].timeSlotId").value(TIME_SLOT_ID))
+            .andExpect(jsonPath("$.data.bookings[0].topic").value("프로젝트 상담"))
+            .andExpect(jsonPath("$.data.totalCount").value(1))
             .andExpect(jsonPath("$.error").isEmpty());
     }
 
@@ -318,7 +321,7 @@ class BookingControllerTest {
     @DisplayName("성공: 내 예약 조회 (호스트) - 200 OK")
     void getMyBookingsAsHostSuccess() throws Exception {
         // given
-        BookingResponseDTO response = BookingResponseDTO.builder()
+        BookingResponseDTO booking = BookingResponseDTO.builder()
             .id(2L)
             .timeSlotId(TIME_SLOT_ID)
             .guestId(UUID.randomUUID())
@@ -330,14 +333,16 @@ class BookingControllerTest {
             .createdAt(Instant.now())
             .build();
 
-        given(bookingService.getBookingsByHostId(GUEST_ID)).willReturn(List.of(response));
+        PaginatedBookingResponseDTO response = PaginatedBookingResponseDTO.of(List.of(booking), 1, 1, 10);
+        given(bookingService.getBookingsByHostIdPaginated(GUEST_ID, 1, 10)).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/bookings/host/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data[0].id").value(2))
-            .andExpect(jsonPath("$.data[0].topic").value("기술 면접"))
+            .andExpect(jsonPath("$.data.bookings[0].id").value(2))
+            .andExpect(jsonPath("$.data.bookings[0].topic").value("기술 면접"))
+            .andExpect(jsonPath("$.data.totalCount").value(1))
             .andExpect(jsonPath("$.error").isEmpty());
     }
 
@@ -346,16 +351,17 @@ class BookingControllerTest {
     @DisplayName("성공: 인증된 사용자는 본인 예약만 조회 가능")
     void getMyBookingsOnlyReturnsOwnBookings() throws Exception {
         // given - 인증된 사용자의 ID로만 조회됨
-        given(bookingService.getBookingsByGuestId(GUEST_ID)).willReturn(List.of());
+        PaginatedBookingResponseDTO response = PaginatedBookingResponseDTO.of(List.of(), 0, 1, 10);
+        given(bookingService.getBookingsByGuestIdPaginated(GUEST_ID, 1, 10)).willReturn(response);
 
         // when
         mockMvc.perform(get("/bookings/guest/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data").isArray());
+            .andExpect(jsonPath("$.data.bookings").isArray());
 
         // then - 인증된 사용자의 ID로 서비스가 호출되었는지 검증
-        verify(bookingService).getBookingsByGuestId(GUEST_ID);
+        verify(bookingService).getBookingsByGuestIdPaginated(GUEST_ID, 1, 10);
     }
 
     // ===== 예약 일정 수정 테스트 (Issue #59) =====

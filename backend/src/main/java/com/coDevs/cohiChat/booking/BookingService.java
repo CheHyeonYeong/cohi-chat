@@ -15,6 +15,9 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,7 @@ import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -216,6 +220,22 @@ public class BookingService {
         try (Stream<Booking> bookingStream = bookingRepository.streamByHostIdOrderByBookingDateDesc(hostId)) {
             return processBookingStreamWithBatchFlush(bookingStream);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedBookingResponseDTO getBookingsByGuestIdPaginated(UUID guestId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId, pageable);
+        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
+        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedBookingResponseDTO getBookingsByHostIdPaginated(UUID hostId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId, pageable);
+        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
+        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
     }
 
     /**
