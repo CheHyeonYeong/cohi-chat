@@ -139,6 +139,15 @@ describe('Detail no-show reporting', () => {
         expect(screen.getByText('호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.')).toBeInTheDocument();
     });
 
+    it('keeps the report button enabled for guests after the meeting starts even when status is ATTENDED', () => {
+        mockBooking = makeBooking(PAST_STARTED_AT, 'ATTENDED');
+
+        render(<Detail />);
+
+        const button = screen.getByRole('button', { name: '호스트 노쇼 신고' });
+        expect(button).not.toBeDisabled();
+    });
+
     it('opens the report form when the enabled button is clicked', () => {
         mockBooking = makeBooking(PAST_STARTED_AT);
 
