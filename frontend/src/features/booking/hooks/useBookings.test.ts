@@ -3,14 +3,15 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-import { getCurrentUsername } from '~/libs/jwt';
+import { useAuth } from '~/features/member/hooks/useAuth';
 import { useMyBookings } from './useBooking';
 import { bookingKeys } from './queryKeys';
 import { getMyBookings } from '../api';
+import type { AuthUser } from '~/features/member';
 import type { IPaginatedBookingDetail } from '../types';
 
-vi.mock('~/libs/jwt', () => ({
-    getCurrentUsername: vi.fn(),
+vi.mock('~/features/member/hooks/useAuth', () => ({
+    useAuth: vi.fn(),
 }));
 
 vi.mock('../api', () => ({
@@ -55,6 +56,19 @@ describe('useMyBookings', () => {
     const createWrapper = () => ({ children }: { children: React.ReactNode }) =>
         React.createElement(QueryClientProvider, { client: queryClient }, children);
 
+    const createAuthResult = (user: AuthUser | null, isAuthenticated = !!user) => ({
+        data: user,
+        isAuthenticated,
+        isLoading: false,
+        isError: false,
+        isSuccess: !!user,
+        error: null,
+        status: user ? 'success' : 'pending',
+        fetchStatus: 'idle',
+        refetch: vi.fn(),
+        invalidateAuth: vi.fn(),
+    });
+
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: {
@@ -76,7 +90,18 @@ describe('useMyBookings', () => {
         };
 
         queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), aliceData);
-        vi.mocked(getCurrentUsername).mockReturnValue('bob');
+        vi.mocked(useAuth).mockReturnValue(
+            createAuthResult({
+                id: 'member-2',
+                username: 'bob',
+                displayName: 'Bob',
+                email: 'bob@example.com',
+                role: 'GUEST',
+                createdAt: '2026-03-01T00:00:00.000Z',
+                updatedAt: '2026-03-01T00:00:00.000Z',
+                isHost: false,
+            }) as ReturnType<typeof useAuth>
+        );
         vi.mocked(getMyBookings).mockResolvedValue(bobData);
 
         const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
@@ -91,5 +116,16 @@ describe('useMyBookings', () => {
         expect(getMyBookings).toHaveBeenCalledTimes(1);
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toEqual(aliceData);
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toEqual(bobData);
+    });
+
+    it('does not run when auth state has no current user', () => {
+        vi.mocked(useAuth).mockReturnValue(createAuthResult(null, false) as ReturnType<typeof useAuth>);
+
+        const { result } = renderHook(() => useMyBookings({ page: 1, pageSize: 10 }), {
+            wrapper: createWrapper(),
+        });
+
+        expect(result.current.fetchStatus).toBe('idle');
+        expect(getMyBookings).not.toHaveBeenCalled();
     });
 });

@@ -1,26 +1,28 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getCurrentUsername } from '~/libs/jwt';
+import { useAuth } from '~/features/member/hooks/useAuth';
 import { getBooking, getMyBookings, uploadBookingFileWithPresignedUrl, deleteBookingFile } from '../api';
 import type { IBookingDetail, IBookingFile, IPaginatedBookingDetail } from '../types';
 import { bookingKeys } from './queryKeys';
 
 export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
-    const username = getCurrentUsername();
+    const { data: user, isAuthenticated } = useAuth();
+    const username = user?.username ?? null;
 
     return useQuery<IPaginatedBookingDetail>({
         queryKey: bookingKeys.myBookings(page, pageSize, username),
         queryFn: () => getMyBookings({ page, pageSize }),
-        enabled: !!username,
+        enabled: isAuthenticated && !!username,
     });
 }
 
 export function useBooking(id: number | null) {
-    const username = getCurrentUsername();
+    const { data: user, isAuthenticated } = useAuth();
+    const username = user?.username ?? null;
 
     return useQuery<IBookingDetail>({
         queryKey: bookingKeys.booking(id ?? 0, username),
         queryFn: () => getBooking(id!),
-        enabled: id !== null && !!username,
+        enabled: id !== null && isAuthenticated && !!username,
     });
 }
 
