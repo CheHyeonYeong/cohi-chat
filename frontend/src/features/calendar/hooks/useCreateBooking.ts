@@ -12,7 +12,7 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
         mutationFn: (bookingData: IBookingPayload) => createBooking(slug, bookingData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: calendarKeys.bookings(year, month) });
-            queryClient.invalidateQueries({ queryKey: calendarKeys.myBookings() });
+            queryClient.invalidateQueries({ queryKey: calendarKeys.myBookingsAll() });
             navigate({
                 to: '/calendar/$slug',
                 params: { slug },

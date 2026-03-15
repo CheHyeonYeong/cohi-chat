@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
+import { getCurrentUsername } from '~/libs/jwt';
 import { snakeToCamel } from '~/libs/utils';
 import { API_URL, getBooking, getBookingsByDate, getMyBookings, uploadBookingFileWithPresignedUrl, deleteBookingFile } from '../api';
 import type { IBooking, IBookingDetail, ICalendarEvent, IPaginatedBookingDetail } from '../types';
@@ -14,17 +15,22 @@ export function useBookings(hostname: string, date: Date | null) {
 }
 
 export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
+    const username = getCurrentUsername();
+
     return useQuery<IPaginatedBookingDetail>({
-        queryKey: calendarKeys.myBookings(page, pageSize),
+        queryKey: calendarKeys.myBookings(page, pageSize, username),
         queryFn: () => getMyBookings({ page, pageSize }),
+        enabled: !!username,
     });
 }
 
 export function useBooking(id: number | null) {
+    const username = getCurrentUsername();
+
     return useQuery<IBookingDetail>({
-        queryKey: calendarKeys.booking(id ?? 0),
+        queryKey: calendarKeys.booking(id ?? 0, username),
         queryFn: () => getBooking(id!),
-        enabled: id !== null,
+        enabled: id !== null && !!username,
     });
 }
 
