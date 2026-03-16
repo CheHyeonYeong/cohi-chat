@@ -98,8 +98,8 @@ vi.mock('~/features/booking', () => ({
     useBooking: () => ({ data: mockBooking, isLoading: false, error: null, refetch: vi.fn() }),
     useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useDownloadBookingFile: () => ({ mutateAsync: downloadFile, error: null }),
     useReportHostNoShow: () => ({ mutate: reportNoShow, isPending: false, error: null, reset: vi.fn() }),
-    getPresignedDownloadUrl: vi.fn(),
 }));
 
 vi.mock('~/features/member', () => ({

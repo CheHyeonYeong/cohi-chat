@@ -507,8 +507,11 @@ public class TestDataGenerator {
             """;
 
         Timestamp now = Timestamp.from(Instant.now());
-        // 어제 날짜 (미팅이 이미 시작된 상태)
+        // 가장 최근 평일 (미팅이 이미 시작된 상태, 주말이면 금요일로)
         LocalDate yesterday = LocalDate.now().minusDays(1);
+        int dow = yesterday.getDayOfWeek().getValue();
+        if (dow == 6) yesterday = yesterday.minusDays(1); // 토 → 금
+        if (dow == 7) yesterday = yesterday.minusDays(2); // 일 → 금
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql)) {

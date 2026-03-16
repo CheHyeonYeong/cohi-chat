@@ -25,8 +25,8 @@ import {
     useBooking,
     useUploadBookingFile,
     useDeleteBookingFile,
+    useDownloadBookingFile,
     useReportHostNoShow,
-    getPresignedDownloadUrl,
 } from '~/features/booking';
 import type { AttendanceStatus, IBookingFile } from '~/features/booking';
 import { useAuth } from '~/features/member';
@@ -120,6 +120,7 @@ export function Detail() {
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
+    const { mutateAsync: downloadFileAsync, error: downloadError } = useDownloadBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } =
         useReportHostNoShow(Number(id));
 
@@ -128,7 +129,6 @@ export function Detail() {
     const [uploadProgress, setUploadProgress] = useState('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
-    const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [showReportForm, setShowReportForm] = useState(false);
@@ -223,19 +223,7 @@ export function Detail() {
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
-        try {
-            setDownloadError(null);
-            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
-            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
-        }
+        await downloadFileAsync({ fileId, fileName });
     };
 
     const handleDelete = async (fileId: number) => {
@@ -515,7 +503,7 @@ export function Detail() {
 
                     {downloadError && (
                         <p className="mt-1 text-sm text-red-500">
-                            {downloadError}
+                            {getErrorMessage(downloadError, '파일 다운로드에 실패했습니다.')}
                         </p>
                     )}
 
