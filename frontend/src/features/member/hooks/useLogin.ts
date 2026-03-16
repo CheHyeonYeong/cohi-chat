@@ -10,8 +10,5 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             saveAuthTokens(response);
             return response;
         },
-        onError: (error) => {
-            console.error('Login error:', error);
-        },
     });
 }

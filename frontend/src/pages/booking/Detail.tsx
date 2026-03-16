@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
+import { useToast } from '~/components/toast/useToast';
 import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/booking';
 import type { IBookingFile, AttendanceStatus } from '~/features/booking';
 import { useAuth } from '~/features/member';
@@ -116,6 +117,7 @@ function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFi
 
 export function Detail() {
     const { id } = useParams({ from: '/booking/$id' });
+    const { showToast } = useToast();
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
@@ -227,8 +229,7 @@ export function Detail() {
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch {
-            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
-            // 파일 선택은 유지하여 사용자가 다른 파일로 재시도 가능
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         } finally {
             setUploadProgress('');
         }
@@ -246,7 +247,6 @@ export function Detail() {
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            console.error('Download error:', err);
             setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
         }
     };
@@ -257,7 +257,7 @@ export function Detail() {
             await deleteFileAsync(fileId);
             refetch();
         } catch (err) {
-            console.error('Delete error:', err);
+            showToast(getErrorMessage(err, '파일 삭제에 실패했습니다.'), 'booking-delete-error');
         } finally {
             setDeletingFileId(null);
         }

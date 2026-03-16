@@ -16,8 +16,5 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
             saveAuthTokens(response);
             return response;
         },
-        onError: (error) => {
-            console.error('OAuth login error:', error);
-        },
     });
 }
