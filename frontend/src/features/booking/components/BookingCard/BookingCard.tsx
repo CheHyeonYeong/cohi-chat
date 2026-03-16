@@ -1,16 +1,22 @@
 import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
-import type { IBookingDetail } from '../../types';
+import { Tag } from '~/components/Tag';
+import type { IBookingDetail, BookingRole } from '../../types';
+import type { IUserSimple } from '~/types/user';
 
 interface BookingCardProps {
     booking: IBookingDetail;
     onSelect?: (id: number) => void;
     isSelected?: boolean;
     className?: string;
+    role?: BookingRole;
+    counterpart?: Pick<IUserSimple, 'username' | 'displayName'>;
 }
 
-export function BookingCard({ booking, onSelect, isSelected = false, className }: BookingCardProps) {
+export function BookingCard({ booking, onSelect, isSelected = false, className, role, counterpart }: BookingCardProps) {
     const { startedAt } = booking;
+    const displayName = counterpart?.displayName ?? booking.host.displayName;
+    const avatarInitial = counterpart?.displayName?.[0] ?? booking.host?.displayName?.[0] ?? '?';
 
     return (
         <Card
@@ -28,14 +34,24 @@ export function BookingCard({ booking, onSelect, isSelected = false, className }
                 type="button"
                 onClick={() => onSelect?.(booking.id)}
             >
-                {/* Host info */}
+                {/* Role tag + Host/Counterpart info */}
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-semibold text-[var(--cohi-primary)]">
-                            {booking.host?.displayName?.[0] ?? '?'}
+                        <span data-testid="booking-avatar-initial" className="text-sm font-semibold text-[var(--cohi-primary)]">
+                            {avatarInitial}
                         </span>
                     </div>
-                    <p className="font-semibold text-[var(--cohi-text-dark)]">{booking.host.displayName}님과</p>
+                    <p className="font-semibold text-[var(--cohi-text-dark)] flex-1 text-left">{displayName}님과</p>
+                    {role && (
+                        <span data-testid="booking-role-tag">
+                            <Tag
+                                color={role === 'guest' ? 'primary' : 'secondary'}
+                                size="sm"
+                            >
+                                {role === 'guest' ? '게스트' : '호스트'}
+                            </Tag>
+                        </span>
+                    )}
                 </div>
 
                 {/* Topic */}

@@ -19,9 +19,9 @@ import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
 import { useToast } from '~/components/toast/useToast';
-import { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel, FileDropZone } from '~/features/booking';
+import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel, FileDropZone } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
-import type { IBookingDetail } from '~/features/booking';
+import type { IBookingWithRole } from '~/features/booking';
 
 // Sortable wrapper for BookingCard
 function SortableBookingCard({
@@ -29,7 +29,7 @@ function SortableBookingCard({
     isSelected,
     onSelect,
 }: {
-    booking: IBookingDetail;
+    booking: IBookingWithRole;
     isSelected: boolean;
     onSelect: (id: number) => void;
 }) {
@@ -45,7 +45,7 @@ function SortableBookingCard({
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} />
+            <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} role={booking.role} counterpart={booking.counterpart} />
         </div>
     );
 }
@@ -54,7 +54,7 @@ export function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
+    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useAllMyBookings({ page, pageSize });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [sortedIds, setSortedIds] = useState<number[]>([]);
@@ -84,17 +84,19 @@ export function MyBookings() {
     // sortedIds가 비어있거나 데이터와 매칭되지 않으면 API 순서 사용
     const orderedBookings = (() => {
         if (!bookings?.bookings) return [];
-        // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면 
+        // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면
         // useEffect가 돌아서 setSortedIds를 해주기 전까지는 API 순서를 그대로 보여줌
-        if (sortedIds.length !== bookings.bookings.length || 
+        if (sortedIds.length !== bookings.bookings.length ||
             !bookings.bookings.every(b => sortedIds.includes(b.id))) {
             return bookings.bookings;
         }
-        
+
         return sortedIds
             .map((id) => bookings.bookings.find((b) => b.id === id))
-            .filter((b): b is IBookingDetail => b != null);
+            .filter((b): b is IBookingWithRole => b != null);
     })();
+
+    const selectedBookingWithRole = orderedBookings.find((b) => b.id === selectedId);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -208,6 +210,8 @@ export function MyBookings() {
                                     isUploading={isUploading}
                                     isDeleting={isDeleting}
                                     uploadError={uploadError}
+                                    role={selectedBookingWithRole?.role}
+                                    counterpart={selectedBookingWithRole?.counterpart}
                                 />
                                 <FileDropZone
                                     onFilesDropped={handleUpload}

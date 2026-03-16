@@ -20,6 +20,7 @@ export interface IBookingDetail {
     description: string;
     timeSlot: ITimeSlot;
     host: Pick<IUserSimple, 'username' | 'displayName'>;
+    guest: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
     createdAt: string;
     updatedAt: string;
@@ -55,6 +56,18 @@ export interface IBookingPayload {
 
 export interface IPaginatedBookingDetail {
     bookings: IBookingDetail[];
+    totalCount: number;
+}
+
+export type BookingRole = 'guest' | 'host';
+
+export interface IBookingWithRole extends IBookingDetail {
+    role: BookingRole;
+    counterpart: Pick<IUserSimple, 'username' | 'displayName'>;
+}
+
+export interface IPaginatedBookingWithRole {
+    bookings: IBookingWithRole[];
     totalCount: number;
 }
 

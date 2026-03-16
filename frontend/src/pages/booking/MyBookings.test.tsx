@@ -4,7 +4,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import type { IBookingDetail } from '~/features/booking';
+import type { IBookingWithRole } from '~/features/booking';
 import { MyBookings } from './MyBookings';
 
 const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
@@ -13,7 +13,7 @@ const uploadFileAsync = vi.fn().mockResolvedValue({});
 const deleteFileAsync = vi.fn().mockResolvedValue({});
 const showToast = vi.fn();
 
-const booking: IBookingDetail = {
+const guestBooking: IBookingWithRole = {
     id: 1,
     startedAt: new Date('2024-02-15T10:00:00+09:00'),
     endedAt: new Date('2024-02-15T11:00:00+09:00'),
@@ -31,6 +31,7 @@ const booking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'host', displayName: '호스트' },
+    guest: { username: 'guest', displayName: '게스트' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -40,14 +41,45 @@ const booking: IBookingDetail = {
     meetingType: 'ONLINE',
     location: null,
     meetingLink: 'https://meet.google.com/test',
+    role: 'guest',
+    counterpart: { username: 'host', displayName: '호스트' },
 };
 
-const myBookingsResponse = {
-    bookings: [booking],
-    totalCount: 1,
-    page: 1,
-    pageSize: 10,
-    totalPages: 1,
+const hostBooking: IBookingWithRole = {
+    id: 2,
+    startedAt: new Date('2024-02-16T14:00:00+09:00'),
+    endedAt: new Date('2024-02-16T15:00:00+09:00'),
+    topic: '호스트 예약 주제',
+    description: '호스트 설명',
+    timeSlot: {
+        id: 11,
+        userId: 'host-uuid',
+        startedAt: '14:00',
+        endedAt: '15:00',
+        weekdays: [5],
+        startDate: null,
+        endDate: null,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+    },
+    host: { username: 'me', displayName: '나' },
+    guest: { username: 'other-guest', displayName: '다른게스트' },
+    hostId: 'my-uuid',
+    guestId: 'other-guest-uuid',
+    attendanceStatus: 'SCHEDULED',
+    files: [],
+    createdAt: '2024-02-01T00:00:00Z',
+    updatedAt: '2024-02-01T00:00:00Z',
+    meetingType: 'OFFLINE',
+    location: '강남역',
+    meetingLink: null,
+    role: 'host',
+    counterpart: { username: 'other-guest', displayName: '다른게스트' },
+};
+
+const allMyBookingsResponse = {
+    bookings: [hostBooking, guestBooking],
+    totalCount: 2,
 };
 
 vi.mock('@tanstack/react-router', () => ({
@@ -102,14 +134,14 @@ vi.mock('~/components/toast/useToast', () => ({
 }));
 
 vi.mock('~/features/booking', () => ({
-    useMyBookings: () => ({
-        data: myBookingsResponse,
+    useAllMyBookings: () => ({
+        data: allMyBookingsResponse,
         isLoading: false,
         error: null,
         refetch: refetchMyBookings,
     }),
     useBooking: (id: number | null) => ({
-        data: id ? booking : null,
+        data: id ? allMyBookingsResponse.bookings.find(b => b.id === id) ?? null : null,
         refetch: refetchSelectedBooking,
     }),
     useUploadBookingFile: () => ({
@@ -123,9 +155,10 @@ vi.mock('~/features/booking', () => ({
         isPending: false,
     }),
     getPresignedDownloadUrl: vi.fn(),
-    BookingCard: ({ booking: b, onSelect }: { booking: IBookingDetail; onSelect?: (id: number) => void }) => (
-        <button type="button" onClick={() => onSelect?.(b.id)}>
-            select-booking
+    BookingCard: ({ booking: b, onSelect, role }: { booking: IBookingWithRole; onSelect?: (id: number) => void; role?: string }) => (
+        <button type="button" data-testid={`booking-card-${b.id}`} onClick={() => onSelect?.(b.id)}>
+            {role && <span data-testid="booking-role-tag">{role === 'guest' ? '게스트' : '호스트'}</span>}
+            select-booking-{b.id}
         </button>
     ),
     BookingDetailPanel: () => <div data-testid="booking-detail-panel" />,
@@ -142,7 +175,7 @@ vi.mock('~/features/booking', () => ({
     ),
 }));
 
-describe('MyBookings upload refresh', () => {
+describe('MyBookings', () => {
     beforeEach(() => {
         refetchMyBookings.mockClear();
         refetchSelectedBooking.mockClear();
@@ -169,7 +202,7 @@ describe('MyBookings upload refresh', () => {
     it('refetches both selected booking and booking list after upload', async () => {
         render(<MyBookings />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'select-booking' }));
+        fireEvent.click(screen.getByTestId('booking-card-2'));
         fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
 
         await waitFor(() => {
@@ -178,5 +211,23 @@ describe('MyBookings upload refresh', () => {
             expect(refetchSelectedBooking).toHaveBeenCalledTimes(1);
             expect(refetchMyBookings).toHaveBeenCalledTimes(1);
         });
+    });
+
+    it('게스트와 호스트 예약 카드를 모두 렌더링해야 한다', () => {
+        render(<MyBookings />);
+
+        expect(screen.getByTestId('booking-card-1')).toBeInTheDocument();
+        expect(screen.getByTestId('booking-card-2')).toBeInTheDocument();
+    });
+
+    it('각 카드에 역할 태그가 표시되어야 한다', () => {
+        render(<MyBookings />);
+
+        const tags = screen.getAllByTestId('booking-role-tag');
+        expect(tags).toHaveLength(2);
+
+        const tagTexts = tags.map(t => t.textContent);
+        expect(tagTexts).toContain('호스트');
+        expect(tagTexts).toContain('게스트');
     });
 });

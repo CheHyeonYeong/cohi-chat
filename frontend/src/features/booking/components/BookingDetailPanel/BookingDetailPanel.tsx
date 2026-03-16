@@ -3,7 +3,8 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { formatFileSize } from '~/libs/fileValidation';
-import type { IBookingDetail } from '../../types';
+import type { IBookingDetail, BookingRole } from '../../types';
+import type { IUserSimple } from '~/types/user';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 
 interface BookingDetailPanelProps {
@@ -14,9 +15,11 @@ interface BookingDetailPanelProps {
     isUploading: boolean;
     isDeleting?: boolean;
     uploadError?: Error | null;
+    role?: BookingRole;
+    counterpart?: Pick<IUserSimple, 'username' | 'displayName'>;
 }
 
-export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, isUploading, isDeleting, uploadError }: BookingDetailPanelProps) {
+export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, isUploading, isDeleting, uploadError, role, counterpart }: BookingDetailPanelProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!booking) {
@@ -48,12 +51,12 @@ export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, is
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-bold text-[var(--cohi-primary)]">
-                            {booking.host.displayName[0] || '?'}
+                            {(counterpart?.displayName?.[0] ?? booking.host.displayName[0]) || '?'}
                         </span>
                     </div>
                     <div>
-                        <h2 className="font-bold text-[var(--cohi-text-dark)]">{booking.host.displayName}</h2>
-                        <p className="text-xs text-gray-500">Host</p>
+                        <h2 className="font-bold text-[var(--cohi-text-dark)]">{counterpart?.displayName ?? booking.host.displayName}</h2>
+                        <p className="text-xs text-gray-500">{role === 'host' ? 'Guest' : 'Host'}</p>
                     </div>
                 </div>
                 <Link

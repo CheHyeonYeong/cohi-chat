@@ -13,6 +13,8 @@ export {
     uploadFileToS3,
     uploadBookingFileWithPresignedUrl,
     downloadFileWithPresignedUrl,
+    getMyHostBookings,
+    getAllMyBookings,
 } from './bookings';
 export { createBooking } from './createBooking';
 export {

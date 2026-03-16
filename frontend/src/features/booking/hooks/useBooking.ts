@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '~/features/member/hooks/useAuth';
-import { getBooking, getMyBookings, uploadBookingFileWithPresignedUrl, deleteBookingFile } from '../api';
-import type { IBookingDetail, IBookingFile, IPaginatedBookingDetail } from '../types';
+import { getBooking, getMyBookings, getAllMyBookings, uploadBookingFileWithPresignedUrl, deleteBookingFile } from '../api';
+import type { IBookingDetail, IBookingFile, IPaginatedBookingDetail, IPaginatedBookingWithRole } from '../types';
 import { bookingKeys } from './queryKeys';
 
 export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
@@ -11,6 +11,13 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
         queryKey: bookingKeys.myBookings(page, pageSize, username ?? ''),
         queryFn: () => getMyBookings({ page, pageSize }),
         enabled: isAuthenticated,
+    });
+}
+
+export function useAllMyBookings({ page, pageSize }: { page?: number; pageSize?: number }) {
+    return useQuery<IPaginatedBookingWithRole>({
+        queryKey: bookingKeys.allMyBookings(page, pageSize),
+        queryFn: () => getAllMyBookings({ page, pageSize }),
     });
 }
 

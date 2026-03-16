@@ -24,6 +24,7 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    guest: { username: 'guest1', displayName: '게스트1' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -71,6 +72,42 @@ describe('BookingCard', () => {
             <BookingCard booking={mockBooking} onSelect={vi.fn()} isSelected={false} />,
         );
         expect(getByRole('button').className).not.toContain('border-[var(--cohi-primary)]');
+    });
+
+    it('role이 guest이면 게스트 태그를 표시해야 한다', () => {
+        const { getByTestId } = render(
+            <BookingCard booking={mockBooking} role="guest" counterpart={{ username: 'hong', displayName: '홍길동' }} />,
+        );
+        const tag = getByTestId('booking-role-tag');
+        expect(tag.textContent).toContain('게스트');
+    });
+
+    it('role이 host이면 호스트 태그를 표시해야 한다', () => {
+        const { getByTestId } = render(
+            <BookingCard booking={mockBooking} role="host" counterpart={{ username: 'guest1', displayName: '게스트1' }} />,
+        );
+        const tag = getByTestId('booking-role-tag');
+        expect(tag.textContent).toContain('호스트');
+    });
+
+    it('counterpart가 주어지면 counterpart 이름을 표시해야 한다', () => {
+        const { container } = render(
+            <BookingCard booking={mockBooking} role="host" counterpart={{ username: 'guest1', displayName: '게스트1' }} />,
+        );
+        expect(container.textContent).toContain('게스트1님과');
+    });
+
+    it('counterpart가 주어지면 counterpart의 이니셜을 아바타에 표시해야 한다', () => {
+        const { getByTestId } = render(
+            <BookingCard booking={mockBooking} role="host" counterpart={{ username: 'guest1', displayName: '게스트1' }} />,
+        );
+        const avatar = getByTestId('booking-avatar-initial');
+        expect(avatar.textContent).toBe('게');
+    });
+
+    it('role이 없으면 태그를 표시하지 않아야 한다', () => {
+        const { queryByTestId } = render(<BookingCard booking={mockBooking} />);
+        expect(queryByTestId('booking-role-tag')).toBeNull();
     });
 
     it('파일이 있으면 첨부 개수 배지를 표시해야 한다', () => {

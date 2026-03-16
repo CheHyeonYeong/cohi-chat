@@ -1,5 +1,5 @@
 import { httpClient } from '~/libs/httpClient';
-import type { AttendanceStatus, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail, MeetingType } from '../types';
+import type { AttendanceStatus, IBookingDetail, IBookingFile, IBookingWithRole, INoShowHistoryItem, IPaginatedBookingDetail, IPaginatedBookingWithRole, MeetingType } from '../types';
 import { API_URL } from './constants';
 
 interface BookingFlatResponse {
@@ -15,6 +15,8 @@ interface BookingFlatResponse {
     createdAt: string;
     hostUsername: string | null;
     hostDisplayName: string | null;
+    guestUsername: string | null;
+    guestDisplayName: string | null;
     meetingType: MeetingType;
     location: string | null;
     meetingLink: string | null;
@@ -55,6 +57,10 @@ function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IB
             username: b.hostUsername ?? '',
             displayName: b.hostDisplayName ?? '',
         },
+        guest: {
+            username: b.guestUsername ?? '',
+            displayName: b.guestDisplayName ?? '',
+        },
         files,
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
@@ -81,6 +87,60 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
     return {
         bookings: response.bookings.map(b => toBookingDetail(b)),
         totalCount: response.totalCount,
+    };
+}
+
+export async function getMyHostBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/host/me`) ?? [];
+    const bookings = list.map(b => toBookingDetail(b));
+
+    const start = (page - 1) * pageSize;
+    return {
+        bookings: bookings.slice(start, start + pageSize),
+        totalCount: bookings.length,
+    };
+}
+
+export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingWithRole> {
+    const [guestResult, hostResult] = await Promise.all([
+        getMyBookings({ page: 1, pageSize: Number.MAX_SAFE_INTEGER }),
+        getMyHostBookings({ page: 1, pageSize: Number.MAX_SAFE_INTEGER }),
+    ]);
+
+    const guestBookings: IBookingWithRole[] = guestResult.bookings.map(b => ({
+        ...b,
+        role: 'guest' as const,
+        counterpart: b.host,
+    }));
+
+    const hostBookings: IBookingWithRole[] = hostResult.bookings.map(b => ({
+        ...b,
+        role: 'host' as const,
+        counterpart: b.guest,
+    }));
+
+    // Deduplicate by bookingId — prefer guest role if same booking appears in both
+    const seen = new Set<number>();
+    const merged: IBookingWithRole[] = [];
+
+    for (const b of guestBookings) {
+        seen.add(b.id);
+        merged.push(b);
+    }
+    for (const b of hostBookings) {
+        if (!seen.has(b.id)) {
+            merged.push(b);
+        }
+    }
+
+    // Sort by startedAt descending
+    merged.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+
+    // Client-side pagination
+    const start = (page - 1) * pageSize;
+    return {
+        bookings: merged.slice(start, start + pageSize),
+        totalCount: merged.length,
     };
 }
 

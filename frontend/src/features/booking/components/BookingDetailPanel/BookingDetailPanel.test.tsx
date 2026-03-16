@@ -25,6 +25,7 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    guest: { username: 'guest1', displayName: '게스트1' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',

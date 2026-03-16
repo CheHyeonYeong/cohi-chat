@@ -8,6 +8,7 @@ export { FileDropZone } from './components/FileDropZone';
 export {
     useCreateBooking,
     useMyBookings,
+    useAllMyBookings,
     useBooking,
     useUploadBookingFile,
     useDeleteBookingFile,
@@ -27,11 +28,16 @@ export type {
     IBookingFile,
     INoShowHistoryItem,
     AttendanceStatus,
+    BookingRole,
+    IBookingWithRole,
+    IPaginatedBookingWithRole,
 } from './types';
 
 // API
 export {
     getMyBookings,
+    getMyHostBookings,
+    getAllMyBookings,
     getBooking,
     uploadBookingFile,
     deleteBookingFile,

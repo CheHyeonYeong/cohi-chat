@@ -31,15 +31,22 @@ public class BookingResponseDTO {
     private final Instant createdAt;
     private final String hostUsername;
     private final String hostDisplayName;
+    private final String guestUsername;
+    private final String guestDisplayName;
     private final MeetingType meetingType;
     private final String location;
     private final String meetingLink;
 
     public static BookingResponseDTO from(Booking booking) {
-        return from(booking, null, null);
+        return from(booking, null, null, null, null);
     }
 
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
+        return from(booking, hostUsername, hostDisplayName, null, null);
+    }
+
+    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
+                                          String guestUsername, String guestDisplayName) {
         var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
 
@@ -57,6 +64,8 @@ public class BookingResponseDTO {
             .createdAt(booking.getCreatedAt())
             .hostUsername(hostUsername)
             .hostDisplayName(hostDisplayName)
+            .guestUsername(guestUsername)
+            .guestDisplayName(guestDisplayName)
             .meetingType(booking.getMeetingType())
             .location(booking.getLocation())
             .meetingLink(booking.getMeetingLink())
