@@ -26,7 +26,6 @@ import {
     useUploadBookingFile,
     useDeleteBookingFile,
     useReportHostNoShow,
-    useNoShowHistory,
     getPresignedDownloadUrl,
 } from '~/features/booking';
 import type { AttendanceStatus, IBookingFile } from '~/features/booking';
