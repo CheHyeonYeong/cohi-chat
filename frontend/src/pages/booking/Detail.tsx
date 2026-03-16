@@ -1,4 +1,4 @@
-﻿import { Link, useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     DndContext,
@@ -20,12 +20,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
+import { useToast } from '~/components/toast/useToast';
 import {
     useBooking,
-    useDownloadBookingFile,
+    useUploadBookingFile,
     useDeleteBookingFile,
     useReportHostNoShow,
-    useUploadBookingFile,
+    useNoShowHistory,
+    getPresignedDownloadUrl,
 } from '~/features/booking';
 import type { AttendanceStatus, IBookingFile } from '~/features/booking';
 import { useAuth } from '~/features/member';
@@ -114,10 +116,10 @@ function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFi
 
 export function Detail() {
     const { id } = useParams({ from: '/booking/$id' });
+    const { showToast } = useToast();
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
-    const { mutateAsync: downloadFileAsync, error: downloadError } = useDownloadBookingFile(Number(id));
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } =
         useReportHostNoShow(Number(id));
@@ -127,6 +129,7 @@ export function Detail() {
     const [uploadProgress, setUploadProgress] = useState('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [showReportForm, setShowReportForm] = useState(false);
@@ -214,7 +217,7 @@ export function Detail() {
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch {
-            // Keep selected files so the user can retry.
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         } finally {
             setUploadProgress('');
         }
@@ -222,9 +225,17 @@ export function Detail() {
 
     const handleDownload = async (fileId: number, fileName: string) => {
         try {
-            await downloadFileAsync({ fileId, fileName });
-        } catch (downloadError) {
-            console.error('Download error:', downloadError);
+            setDownloadError(null);
+            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
+            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
         }
     };
 
@@ -233,8 +244,8 @@ export function Detail() {
             setDeletingFileId(fileId);
             await deleteFileAsync(fileId);
             refetch();
-        } catch (deleteError) {
-            console.error('Delete error:', deleteError);
+        } catch (err) {
+            showToast(getErrorMessage(err, '파일 삭제에 실패했습니다.'), 'booking-delete-error');
         } finally {
             setDeletingFileId(null);
         }
@@ -505,7 +516,7 @@ export function Detail() {
 
                     {downloadError && (
                         <p className="mt-1 text-sm text-red-500">
-                            {getErrorMessage(downloadError, '파일 다운로드에 실패했습니다.')}
+                            {downloadError}
                         </p>
                     )}
 

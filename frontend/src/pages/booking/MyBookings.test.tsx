@@ -11,6 +11,7 @@ const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
 const refetchSelectedBooking = vi.fn().mockResolvedValue(undefined);
 const uploadFileAsync = vi.fn().mockResolvedValue({});
 const deleteFileAsync = vi.fn().mockResolvedValue({});
+const showToast = vi.fn();
 
 const booking: IBookingDetail = {
     id: 1,
@@ -96,6 +97,10 @@ vi.mock('~/components/button/LinkButton', () => ({
     LinkButton: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }));
 
+vi.mock('~/components/toast/useToast', () => ({
+    useToast: () => ({ showToast }),
+}));
+
 vi.mock('~/features/booking', () => ({
     useMyBookings: () => ({
         data: myBookingsResponse,
@@ -142,6 +147,23 @@ describe('MyBookings upload refresh', () => {
         refetchMyBookings.mockClear();
         refetchSelectedBooking.mockClear();
         uploadFileAsync.mockClear();
+        showToast.mockClear();
+    });
+
+    it('does not refetch after upload fails', async () => {
+        uploadFileAsync.mockRejectedValueOnce(new Error('업로드 실패'));
+
+        render(<MyBookings />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'select-booking' }));
+        fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
+
+        await waitFor(() => {
+            expect(uploadFileAsync).toHaveBeenCalledTimes(1);
+        });
+        expect(showToast).not.toHaveBeenCalled();
+        expect(refetchSelectedBooking).not.toHaveBeenCalled();
+        expect(refetchMyBookings).not.toHaveBeenCalled();
     });
 
     it('refetches both selected booking and booking list after upload', async () => {

@@ -32,6 +32,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.member.request.LoginRequestDTO;
@@ -260,6 +262,24 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.data.accessToken").value("test-access-token"))
 				.andExpect(jsonPath("$.data.username").value(TEST_USERNAME))
 				.andExpect(jsonPath("$.error").isEmpty());
+		}
+
+		@Test
+		@DisplayName("로그인 실패: 일반화된 자격증명 오류 응답 검증")
+		void loginFailWithGenericCredentialsMessage() throws Exception {
+			when(memberService.login(any())).thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
+
+			mockMvc.perform(post("/members/v1/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(
+						LoginRequestDTO.builder()
+							.username(TEST_USERNAME)
+							.password("wrongPassword")
+							.build())))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"))
+				.andExpect(jsonPath("$.error.message").value("아이디 또는 비밀번호가 올바르지 않습니다."));
 		}
 	}
 
