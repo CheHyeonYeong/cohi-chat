@@ -19,5 +19,28 @@ export default defineConfig({
                 inline: ['random-korean-nickname'],
             },
         },
+        coverage: {
+            provider: 'istanbul',
+            reporter: ['text', 'html', 'lcov'],
+            reportsDirectory: './coverage',
+            exclude: [
+                '**/node_modules/**',
+                '**/test/**',
+                '**/*.test.{ts,tsx}',
+                '**/index.ts',
+                '**/types/**',
+                '**/types.ts',
+                '**/*.d.ts',
+                '**/vite-env.d.ts',
+                '**/routeTree.gen.ts',
+                '**/main.tsx',
+            ],
+            thresholds: {
+                statements: 50,
+                branches: 50,
+                functions: 50,
+                lines: 50,
+            },
+        },
     },
 });

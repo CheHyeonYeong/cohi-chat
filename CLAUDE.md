@@ -35,7 +35,7 @@ cd frontend
 pnpm install    # 의존성 설치
 pnpm dev        # 개발 서버 (port 3000)
 pnpm build      # 프로덕션 빌드
-pnpm test       # 테스트 (Vitest)
+pnpm test run   # 테스트 실행 (watch 모드 아님)
 pnpm lint       # ESLint 검사
 ```
 

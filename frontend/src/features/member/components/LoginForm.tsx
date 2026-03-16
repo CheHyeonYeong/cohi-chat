@@ -2,15 +2,17 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { AuthPageLayout } from './AuthPageLayout';
+import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
+import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
-import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
-import { getErrorMessage } from '~/libs/errorUtils';
 
 interface LoginFormValues {
     username: string;
     password: string;
 }
+
+const GENERIC_LOGIN_ERROR_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
 
 const validationRules: Record<keyof LoginFormValues, ValidationRule<string>> = {
     username: (value: string) => {
@@ -89,6 +91,11 @@ export function LoginForm() {
     const isPending = loginMutation.isPending;
     const baseInputClass =
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
+    const loginErrorMessage = loginMutation.isError
+        ? isHttpError(loginMutation.error, 401)
+            ? GENERIC_LOGIN_ERROR_MESSAGE
+            : getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')
+        : null;
 
     return (
         <AuthPageLayout title="로그인">
@@ -133,12 +140,8 @@ export function LoginForm() {
                     </div>
                 </div>
 
-                {loginMutation.isError && (
-                    <div className="text-red-600 text-sm">
-                        {loginMutation.error.cause === 401
-                            ? '아이디 또는 비밀번호가 올바르지 않습니다.'
-                            : getErrorMessage(loginMutation.error, '로그인에 실패했습니다.')}
-                    </div>
+                {loginErrorMessage && (
+                    <div className="text-red-600 text-sm">{loginErrorMessage}</div>
                 )}
 
                 <Button

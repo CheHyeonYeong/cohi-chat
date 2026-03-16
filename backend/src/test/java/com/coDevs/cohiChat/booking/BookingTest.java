@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +38,10 @@ class BookingTest {
             TEST_GUEST_ID,
             TEST_BOOKING_DATE,
             TEST_TOPIC,
-            TEST_DESCRIPTION
+            TEST_DESCRIPTION,
+            MeetingType.ONLINE,
+            null,
+            "https://meet.google.com/test"
         );
 
         // then
@@ -48,6 +52,8 @@ class BookingTest {
         assertThat(booking.getDescription()).isEqualTo(TEST_DESCRIPTION);
         assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
         assertThat(booking.getGoogleEventId()).isNull();
+        assertThat(booking.getMeetingType()).isEqualTo(MeetingType.ONLINE);
+        assertThat(booking.getMeetingLink()).isEqualTo("https://meet.google.com/test");
     }
 
     @Test
@@ -59,11 +65,16 @@ class BookingTest {
             TEST_GUEST_ID,
             TEST_BOOKING_DATE,
             TEST_TOPIC,
-            TEST_DESCRIPTION
+            TEST_DESCRIPTION,
+            MeetingType.OFFLINE,
+            "스타벅스 강남역점",
+            null
         );
 
         // then
         assertThat(booking.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
+        assertThat(booking.getMeetingType()).isEqualTo(MeetingType.OFFLINE);
+        assertThat(booking.getLocation()).isEqualTo("스타벅스 강남역점");
     }
 
     @Test
@@ -71,7 +82,8 @@ class BookingTest {
     void reportHostNoShowSuccess() {
         // given
         Booking booking = Booking.create(
-            timeSlot, TEST_GUEST_ID, TEST_BOOKING_DATE, TEST_TOPIC, TEST_DESCRIPTION
+            timeSlot, TEST_GUEST_ID, TEST_BOOKING_DATE, TEST_TOPIC, TEST_DESCRIPTION,
+            MeetingType.ONLINE, null, "https://meet.google.com/test"
         );
 
         // when

@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
+import { useToast } from '~/components/toast/useToast';
 import { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel, FileDropZone } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingDetail } from '~/features/booking';
@@ -52,6 +53,7 @@ function SortableBookingCard({
 export function MyBookings() {
     const { page, pageSize } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -113,7 +115,7 @@ export function MyBookings() {
             }
             await Promise.all([refetchSelectedBooking(), refetchMyBookings()]);
         } catch {
-            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         }
     };
 
@@ -129,7 +131,7 @@ export function MyBookings() {
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            console.error(getErrorMessage(err, '파일 다운로드 실패'));
+            showToast(getErrorMessage(err, '파일 다운로드 실패'), 'my-bookings-download-error');
         }
     };
 
@@ -139,7 +141,7 @@ export function MyBookings() {
             await deleteFileAsync(fileId);
             await refetchSelectedBooking();
         } catch (err) {
-            console.error(getErrorMessage(err, '파일 삭제 실패'));
+            showToast(getErrorMessage(err, '파일 삭제 실패'), 'my-bookings-delete-error');
         }
     };
 

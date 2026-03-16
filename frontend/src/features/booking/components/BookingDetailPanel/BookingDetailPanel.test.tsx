@@ -31,6 +31,9 @@ const mockBooking: IBookingDetail = {
     files: [],
     createdAt: '2024-02-01T00:00:00Z',
     updatedAt: '2024-02-01T00:00:00Z',
+    meetingType: 'ONLINE',
+    location: null,
+    meetingLink: 'https://meet.google.com/test',
 };
 
 // Mock @tanstack/react-router to resolve parameters in the Link component
@@ -69,7 +72,7 @@ describe('BookingDetailPanel', () => {
 
     it('상세 페이지로 이동하는 링크가 있어야 한다', () => {
         const { getByRole } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
-        const link = getByRole('link');
+        const link = getByRole('link', { name: /상세보기/ });
         expect(link.getAttribute('href')).toBe('/booking/1');
     });
 

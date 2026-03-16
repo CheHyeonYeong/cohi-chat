@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.booking.request;
 
 import java.time.LocalDate;
 
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.FutureOrPresent;
@@ -34,4 +35,13 @@ public class BookingCreateRequestDTO {
     @NotBlank(message = "상담 설명은 필수 입력 항목입니다.")
     @Size(max = 2000, message = "상담 설명은 2000자 이내로 입력해주세요.")
     private String description;
+
+    @NotNull(message = "미팅 유형은 필수 입력 항목입니다.")
+    private MeetingType meetingType;
+
+    @Size(max = 500, message = "장소는 500자 이내로 입력해주세요.")
+    private String location;
+
+    @Size(max = 2000, message = "미팅 링크는 2000자 이내로 입력해주세요.")
+    private String meetingLink;
 }
