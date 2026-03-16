@@ -57,3 +57,11 @@ HELP.md
 *.db
 *.db-journal
 cohi-chat.db
+
+# ===========================
+# 시크릿 / 민감 정보
+# ===========================
+.env
+.env.*
+application-local-secret.properties
+*credentials*.json

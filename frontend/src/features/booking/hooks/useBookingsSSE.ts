@@ -15,12 +15,16 @@ export function useBookingsSSEQuery({
 
     useLayoutEffect(() => {
         onMessageRef.current = onMessage;
-    }, [onMessage]);
+    });
 
     useEffect(() => {
-        const eventSource = new EventSource(endpoint, {
-            withCredentials: true,
-        });
+        setConnectionError(null);
+        const eventSource = new EventSource(
+            endpoint,
+            {
+                withCredentials: true
+            },
+        );
 
         eventSource.onopen = () => {
             setConnectionError(null);
@@ -40,15 +44,15 @@ export function useBookingsSSEQuery({
                     }
                     return prevData;
                 });
+                setConnectionError(null);
                 onMessageRef.current?.(newData);
-            } catch (error) {
-                console.error('SSE message parsing error:', error);
+            } catch {
+                // 파싱 실패한 메시지는 무시
             }
         };
 
-        eventSource.onerror = (error) => {
-            setConnectionError(error);
-            console.error('SSE connection error:', error);
+        eventSource.onerror = (e) => {
+            setConnectionError(e);
         };
 
         return () => eventSource.close();

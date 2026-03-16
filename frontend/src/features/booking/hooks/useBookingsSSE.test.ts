@@ -1,46 +1,52 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBookingsSSEQuery } from './useBookingsSSE';
 
 class MockEventSource {
     static instances: MockEventSource[] = [];
 
-    url: string;
-    withCredentials: boolean;
     onopen: ((event: Event) => void) | null = null;
     onmessage: ((event: MessageEvent<string>) => void) | null = null;
     onerror: ((event: Event) => void) | null = null;
     close = vi.fn();
 
-    constructor(url: string, init?: EventSourceInit) {
-        this.url = url;
-        this.withCredentials = init?.withCredentials ?? false;
+    constructor(
+        public readonly url: string,
+        public readonly eventSourceInitDict?: EventSourceInit,
+    ) {
         MockEventSource.instances.push(this);
     }
 
-    emitOpen() {
-        this.onopen?.(new Event('open'));
+    emitOpen(event = new Event('open')) {
+        this.onopen?.(event);
     }
 
-    emitMessage(data: unknown) {
-        this.onmessage?.(new MessageEvent('message', { data: JSON.stringify(data) }));
+    emitMessage(data: string) {
+        this.onmessage?.(new MessageEvent('message', { data }));
     }
 
-    emitError() {
-        this.onerror?.(new Event('error'));
+    emitError(event = new Event('error')) {
+        this.onerror?.(event);
+    }
+
+    static reset() {
+        MockEventSource.instances = [];
     }
 }
 
 describe('useBookingsSSEQuery', () => {
+    const originalEventSource = globalThis.EventSource;
+
     beforeEach(() => {
-        MockEventSource.instances = [];
-        vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
-        vi.spyOn(console, 'error').mockImplementation(() => {});
+        MockEventSource.reset();
+        vi.stubGlobal('EventSource', MockEventSource);
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
         vi.unstubAllGlobals();
+        if (originalEventSource) {
+            globalThis.EventSource = originalEventSource;
+        }
     });
 
     it('uses the latest onMessage callback without recreating the EventSource', async () => {
@@ -57,7 +63,7 @@ describe('useBookingsSSEQuery', () => {
         rerender({ onMessage: secondHandler });
 
         act(() => {
-            MockEventSource.instances[0].emitMessage({ id: 1, started_at: '2026-03-15T10:00:00Z', ended_at: '2026-03-15T11:00:00Z' });
+            MockEventSource.instances[0].emitMessage(JSON.stringify({ id: 1, started_at: '2026-03-15T10:00:00Z', ended_at: '2026-03-15T11:00:00Z' }));
         });
 
         await waitFor(() => {
@@ -89,6 +95,58 @@ describe('useBookingsSSEQuery', () => {
 
         await waitFor(() => {
             expect(result.current.connectionError).toBeNull();
+        });
+    });
+
+    it('clears stale connectionError after reconnect and message resume', async () => {
+        const { result } = renderHook(() =>
+            useBookingsSSEQuery({ endpoint: '/bookings/stream' }),
+        );
+
+        const eventSource = MockEventSource.instances[0];
+        const errorEvent = new Event('error');
+
+        act(() => {
+            eventSource.emitError(errorEvent);
+        });
+
+        await waitFor(() => {
+            expect(result.current.connectionError).toBe(errorEvent);
+        });
+
+        act(() => {
+            eventSource.emitOpen();
+        });
+
+        await waitFor(() => {
+            expect(result.current.connectionError).toBeNull();
+        });
+
+        act(() => {
+            eventSource.emitError(errorEvent);
+        });
+
+        await waitFor(() => {
+            expect(result.current.connectionError).toBe(errorEvent);
+        });
+
+        act(() => {
+            eventSource.emitMessage(JSON.stringify({
+                id: 1,
+                started_at: '2026-03-15T10:00:00Z',
+                ended_at: '2026-03-15T11:00:00Z',
+            }));
+        });
+
+        await waitFor(() => {
+            expect(result.current.connectionError).toBeNull();
+            expect(result.current.data).toEqual([
+                {
+                    id: 1,
+                    startedAt: '2026-03-15T10:00:00Z',
+                    endedAt: '2026-03-15T11:00:00Z',
+                },
+            ]);
         });
     });
 });
