@@ -66,6 +66,12 @@
   --cohi-card-shadow: rgba(139, 105, 20, 0.1);
   --cohi-timeslot-existing: rgba(139, 105, 20, 0.2);
   --cohi-timeslot-drag: rgba(139, 105, 20, 0.4);
+
+  /* Role Tag Colors */
+  --cohi-role-guest: #0E7C6B;       /* Rich Teal — 게스트 */
+  --cohi-role-guest-bg: #E6F5F2;    /* Teal 10% */
+  --cohi-role-host: #C05621;        /* Warm Amber — 호스트 */
+  --cohi-role-host-bg: #FDF0E6;     /* Amber 10% */
 }
 
 ::selection {

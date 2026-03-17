@@ -8,11 +8,14 @@ paths: frontend/**/*.{ts,tsx}
 - raw `<span>` + Tailwind 클래스로 태그 스타일 직접 구현 금지
 - Props:
   - `variant`: `'filled'`(기본) | `'outlined'` | `'borderless'`
-  - `color`: `'primary'`(기본) | `'secondary'` | `'default'`
+  - `color`: `'primary'`(기본) | `'secondary'` | `'default'` | `'guest'` | `'host'`
   - `size`: `'sm'` | `'md'`(기본)
 - 삭제 가능한 태그: `<Tag>` 내부에 `<button>` 배치하여 구현
   - 예: `<Tag className="gap-1">{text}<button onClick={onRemove}>✕</button></Tag>`
 - 태그 목록은 `flex flex-wrap gap-2` 컨테이너로 감싼다
+- 토픽(topic) 표시 시 반드시 `<Tag>` 컴포넌트로 감싸야 한다
+  - 예: BookingCard, HostCard, HostProfileCard 등 모든 곳에서 동일하게 적용
+  - raw `<p>` 또는 `<span>`으로 토픽을 직접 표시 금지
 
 ### Card 사용 규칙
 - 콘텐츠 영역을 카드 형태로 감쌀 때 반드시 `<Card>` 컴포넌트 사용 (`~/components/card`)
