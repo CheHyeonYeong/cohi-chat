@@ -10,7 +10,6 @@
 set -euo pipefail
 
 COMPOSE="docker-compose -f docker-compose.prod.yml"
-HEALTH_URL_BLUE="http://localhost:8080/actuator/health"
 NGINX_UPSTREAM_FILE="./nginx/upstream.conf"
 HEALTH_TIMEOUT=120  # 헬스체크 최대 대기 시간(초)
 HEALTH_INTERVAL=5   # 헬스체크 재시도 간격(초)
@@ -92,7 +91,7 @@ main() {
 
     # 구버전 컨테이너 중지 (삭제 X - 롤백용으로 유지)
     echo "[cleanup] Stopping old backend-${active}..."
-    $COMPOSE stop "backend-${active}"
+    $COMPOSE stop "backend-${active}" || echo "[warn] backend-${active} was not running, skipping stop."
 
     echo "=============================="
     echo " Deploy Success: ${inactive} is now active"
