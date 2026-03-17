@@ -6,3 +6,4 @@ export { useReportHostNoShow } from './useReportHostNoShow';
 export { useNoShowHistory } from './useNoShowHistory';
 export { useTimeslots } from './useTimeslots';
 export { useBookings } from './useBookings';
+export { useUpdateBooking } from './useUpdateBooking';

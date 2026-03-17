@@ -1,5 +1,5 @@
-import { Link, useParams } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from '@tanstack/react-router';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
     DndContext,
     KeyboardSensor,
@@ -27,9 +27,13 @@ import {
     useDeleteBookingFile,
     useDownloadBookingFile,
     useReportHostNoShow,
+    BookingEditForm,
+    BookingMetaSection,
+    BookingHeader,
 } from '~/features/booking';
-import type { AttendanceStatus, IBookingFile } from '~/features/booking';
+import type { IBookingFile } from '~/features/booking';
 import { useAuth } from '~/features/member';
+import { useHostCalendar } from '~/features/host';
 import { cn } from '~/libs/cn';
 import { getErrorMessage } from '~/libs/errorUtils';
 import {
@@ -41,15 +45,7 @@ import {
 } from '~/libs/fileValidation';
 import { canUploadMoreFiles } from './bookingUploadUtils';
 
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-    SCHEDULED: '예약됨',
-    ATTENDED: '참석',
-    NO_SHOW: '게스트 노쇼',
-    HOST_NO_SHOW: '호스트 노쇼 신고됨',
-    CANCELLED: '취소됨',
-    SAME_DAY_CANCEL: '당일 취소',
-    LATE: '지각',
-};
+/* --- Sortable file item --------------------------------------------------- */
 
 interface SortableFileItemProps {
     file: IBookingFile;
@@ -131,6 +127,11 @@ export function Detail() {
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Edit mode state
+    const [isEditing, setIsEditing] = useState(false);
+    const { data: hostCalendar } = useHostCalendar(booking?.host.username ?? '');
+
+    // Host no-show report state
     const [showReportForm, setShowReportForm] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
@@ -163,8 +164,14 @@ export function Detail() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
+    // 현재 사용자가 이 예약의 게스트인지 판단
     const isGuest = !!currentUser && currentUser.id === booking?.guestId;
     const isAlreadyReported = booking?.attendanceStatus === 'HOST_NO_SHOW';
+    const canEdit = isGuest && booking?.attendanceStatus === 'SCHEDULED' && !isEditing;
+    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
+
+    const handleEditCancel = useCallback(() => setIsEditing(false), []);
+    const handleEditSuccess = useCallback(() => setIsEditing(false), []);
 
     const handleFileSelect = (files: FileList | null) => {
         if (!files || files.length === 0) {
@@ -283,60 +290,43 @@ export function Detail() {
         );
     }
 
-    const startedAt = booking.startedAt;
     const canUploadMore = canUploadMoreFiles(fileOrder.length);
 
     return (
-        <PageLayout maxWidth="3xl" className="pb-16">
+        <PageLayout title="예약 상세" maxWidth="3xl" className="pb-16">
             <div className="space-y-6">
-                <Link
-                    to="/booking/my-bookings"
-                    className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohi-primary)]"
-                >
-                    &larr; 내 예약 목록으로
-                </Link>
+                {/* Booking info card */}
+                <Card className="border border-gray-100 flex flex-col gap-6">
+                    <BookingHeader
+                        displayName={booking.host.displayName}
+                        roleLabel="Host"
+                        attendanceStatus={booking.attendanceStatus}
+                        actions={
+                            canEdit ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="text-xs font-medium text-[var(--cohi-primary)] hover:underline cursor-pointer"
+                                    data-testid="booking-edit-button"
+                                >
+                                    수정
+                                </button>
+                            ) : undefined
+                        }
+                    />
 
-                <Card className="border border-gray-100">
-                    <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--cohi-bg-warm)]">
-                                <span className="text-lg font-semibold text-[var(--cohi-primary)]">
-                                    {booking.host.displayName[0] ?? '?'}
-                                </span>
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-[var(--cohi-text-dark)]">
-                                    {booking.host.displayName}님과의 커피챗
-                                </h1>
-                                <p className="mt-0.5 text-sm text-gray-500">
-                                    {startedAt.toLocaleDateString('ko-KR', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}{' '}
-                                    {booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
-                                {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
-                            </span>
-                        </div>
-                    </div>
+                    <hr className="border-gray-100" />
 
-                    <div className="space-y-4">
-                        <div>
-                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">주제</span>
-                            <p className="mt-1 text-gray-800">{booking.topic}</p>
-                        </div>
-                        {booking.description && (
-                            <div>
-                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">설명</span>
-                                <p className="mt-1 text-sm leading-relaxed text-gray-600">{booking.description}</p>
-                            </div>
-                        )}
-                    </div>
+                    {isEditing && hostCalendar ? (
+                        <BookingEditForm
+                            booking={booking}
+                            topics={hostCalendar.topics}
+                            onCancel={handleEditCancel}
+                            onSuccess={handleEditSuccess}
+                        />
+                    ) : (
+                        <BookingMetaSection booking={booking} />
+                    )}
                 </Card>
 
                 {isGuest && (

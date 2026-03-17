@@ -17,6 +17,7 @@ export {
     getAllMyBookings,
 } from './bookings';
 export { createBooking } from './createBooking';
+export { updateBooking } from './updateBooking';
 export {
     getCalendarEvent,
     getTimeslots,

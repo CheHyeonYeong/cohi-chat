@@ -5,3 +5,4 @@ export { useMyTimeslots } from './useMyTimeslots';
 export { useCreateTimeslot } from './useCreateTimeslot';
 export { useDeleteTimeslot } from './useDeleteTimeslot';
 export { useServiceAccountEmail } from './useServiceAccountEmail';
+export { useHostCalendar } from './useHostProfile';

@@ -37,10 +37,36 @@ const mockBooking: IBookingDetail = {
     meetingLink: 'https://meet.google.com/test',
 };
 
-// Mock FileDropZone
+// Mock components
+vi.mock('~/components', () => ({
+    Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock('./BookingHeader', () => ({
+    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: React.ReactNode }) => (
+        <div data-testid="booking-header">
+            <span>{displayName}</span>
+            <span>{roleLabel}</span>
+            <span>{attendanceStatus}</span>
+            {actions}
+        </div>
+    ),
+}));
+
 vi.mock('../FileDropZone', () => ({
     FileDropZone: ({ disabled }: { onFilesDropped: (files: FileList) => void; disabled?: boolean }) => (
         <div data-testid="file-drop-zone">{disabled ? 'uploading' : 'drop-files-here'}</div>
+    ),
+}));
+
+vi.mock('../BookingMetaSection', () => ({
+    BookingMetaSection: ({ booking }: { booking: IBookingDetail }) => (
+        <div data-testid="booking-meta-section">
+            <span>{booking.topic}</span>
+            <span>{booking.startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</span>
+            <span>{booking.description || '설명이 없습니다.'}</span>
+        </div>
     ),
 }));
 
