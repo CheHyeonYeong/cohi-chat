@@ -15,6 +15,8 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final long NO_SHOW_BAN_THRESHOLD = 20;
 
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -471,28 +474,46 @@ public class BookingService {
             throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
         }
 
-        if (noShowHistoryRepository.existsByBookingId(bookingId)) {
-            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
-        }
-
         booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
         NoShowHistory history = NoShowHistory.create(booking, hostId, guestId, reason);
-        noShowHistoryRepository.save(history);
+        try {
+            noShowHistoryRepository.save(history);
+        } catch (DataIntegrityViolationException e) {
+            throw mapDuplicateNoShowException(e);
+        }
+
+        memberRepository.findByIdWithLock(hostId).ifPresent(host -> {
+            long reportCount = noShowHistoryRepository.countByHostId(hostId);
+            if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
+                host.ban();
+            }
+        });
 
         log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
 
         return toBookingResponseDTO(booking);
     }
 
-    private void validateMeetingStarted(Booking booking) {
-        String timezone = googleCalendarProperties.getTimezone();
-        ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+    private RuntimeException mapDuplicateNoShowException(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintViolationException) {
+                if ("uq_noshow_history_booking_id".equals(constraintViolationException.getConstraintName())) {
+                    return new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+                }
+                break;
+            }
+            cause = cause.getCause();
+        }
+        return exception;
+    }
 
+    private void validateMeetingStarted(Booking booking) {
         LocalDate bookingDate = booking.getBookingDate();
         LocalTime startTime = booking.getTimeSlot().getStartTime();
-        Instant meetingStart = bookingDate.atTime(startTime).atZone(zoneId).toInstant();
+        Instant meetingStart = bookingDate.atTime(startTime).atZone(calendarZoneId).toInstant();
 
         if (Instant.now().isBefore(meetingStart)) {
             throw new CustomException(ErrorCode.MEETING_NOT_STARTED);

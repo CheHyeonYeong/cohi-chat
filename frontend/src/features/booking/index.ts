@@ -11,6 +11,7 @@ export {
     useBooking,
     useUploadBookingFile,
     useDeleteBookingFile,
+    useDownloadBookingFile,
     useBookingsSSEQuery,
     useNoShowHistory,
     useReportHostNoShow,

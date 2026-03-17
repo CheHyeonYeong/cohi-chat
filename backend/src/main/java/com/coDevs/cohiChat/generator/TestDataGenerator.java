@@ -193,6 +193,12 @@ public class TestDataGenerator {
                 createBookingsParallel(guests, bookingCount, hosts);
             }
 
+            // 5. 과거 예약 생성 (노쇼 신고 테스트용)
+            if (!guests.isEmpty() && !hosts.isEmpty()) {
+                logInfo("=== 과거 예약 생성 시작 (노쇼 신고 테스트용) ===");
+                createPastBookings(guests, hosts);
+            }
+
             long elapsed = System.currentTimeMillis() - startTime;
             printSummary(hosts, guests, elapsed);
 
@@ -471,6 +477,60 @@ public class TestDataGenerator {
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         logSuccess("예약 생성 완료: " + bookingSuccess.get() + "건");
+    }
+
+    // ==================== 과거 예약 생성 (DB 직접 삽입) ====================
+
+    private void createPastBookings(List<GeneratedUser> guests, List<GeneratedUser> hosts) {
+        GeneratedUser targetHost = null;
+        Long timeSlotId = null;
+
+        for (GeneratedUser host : hosts) {
+            if (host.id() == null) continue;
+            String tsIdStr = findTimeSlot(host.id().toString());
+            if (tsIdStr != null) {
+                targetHost = host;
+                timeSlotId = Long.parseLong(tsIdStr);
+                break;
+            }
+        }
+
+        if (targetHost == null || timeSlotId == null) {
+            logWarn("타임슬롯이 있는 호스트가 없습니다. 과거 예약 생성을 건너뜁니다.");
+            return;
+        }
+
+        String sql = """
+            INSERT INTO booking (time_slot_id, guest_id, booking_date, topic, description,
+                attendance_status, meeting_type, meeting_link, created_at, updated_at)
+            VALUES (?, ?::uuid, ?, ?, ?, 'SCHEDULED', 'ONLINE', 'https://meet.google.com/past-test', ?, ?)
+            """;
+
+        Timestamp now = Timestamp.from(Instant.now());
+        // 가장 최근 평일 (미팅이 이미 시작된 상태, 주말이면 금요일로)
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        int dow = yesterday.getDayOfWeek().getValue();
+        if (dow == 6) yesterday = yesterday.minusDays(1); // 토 → 금
+        if (dow == 7) yesterday = yesterday.minusDays(2); // 일 → 금
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            GeneratedUser guest = guests.get(0);
+            ps.setLong(1, timeSlotId);
+            ps.setString(2, guest.id().toString());
+            ps.setObject(3, yesterday);
+            ps.setString(4, "커리어 상담");
+            ps.setString(5, "[노쇼 테스트용] 어제 진행된 미팅입니다.");
+            ps.setTimestamp(6, now);
+            ps.setTimestamp(7, now);
+            ps.executeUpdate();
+
+            logSuccess("과거 예약 생성 완료: guest=" + guest.username() + ", host=" + targetHost.username() + ", date=" + yesterday);
+
+        } catch (Exception e) {
+            logError("과거 예약 생성 오류: " + e.getMessage());
+        }
     }
 
     // ==================== HTTP 유틸리티 ====================

@@ -31,6 +31,7 @@ const TanStackRouterDevtools = import.meta.env.DEV
         }))
     )
     : () => null
+
 /* eslint-enable react-refresh/only-export-components */
 
 /* eslint-disable-next-line react-refresh/only-export-components */
