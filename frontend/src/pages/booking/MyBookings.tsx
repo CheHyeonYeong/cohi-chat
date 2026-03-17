@@ -19,7 +19,7 @@ import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
 import { useToast } from '~/components/toast/useToast';
-import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel, FileDropZone } from '~/features/booking';
+import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingWithRole } from '~/features/booking';
 
@@ -201,23 +201,17 @@ export function MyBookings() {
                     {/* Right: detail panel */}
                     <div className="flex-1 min-w-0">
                         {selectedId && selectedBooking ? (
-                            <div className="flex flex-col gap-4">
-                                <BookingDetailPanel
-                                    booking={selectedBooking}
-                                    onUpload={handleUpload}
-                                    onDownload={handleDownload}
-                                    onDelete={handleDelete}
-                                    isUploading={isUploading}
-                                    isDeleting={isDeleting}
-                                    uploadError={uploadError}
-                                    role={selectedBookingWithRole?.role}
-                                    counterpart={selectedBookingWithRole?.counterpart}
-                                />
-                                <FileDropZone
-                                    onFilesDropped={handleUpload}
-                                    disabled={isUploading}
-                                />
-                            </div>
+                            <BookingDetailPanel
+                                booking={selectedBooking}
+                                onUpload={handleUpload}
+                                onDownload={handleDownload}
+                                onDelete={handleDelete}
+                                isUploading={isUploading}
+                                isDeleting={isDeleting}
+                                uploadError={uploadError}
+                                role={selectedBookingWithRole?.role}
+                                counterpart={selectedBookingWithRole?.counterpart}
+                            />
                         ) : (
                             <div className="flex items-center justify-center h-64 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm">
                                         예약을 선택하면 상세 정보를 볼 수 있습니다

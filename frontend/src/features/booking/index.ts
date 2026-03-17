@@ -2,7 +2,7 @@
 export { BookingCard } from './components/BookingCard';
 export { BookingDetailPanel } from './components/BookingDetailPanel';
 export { BookingForm } from './components/BookingForm';
-export { FileDropZone } from './components/FileDropZone';
+
 
 // Hooks
 export {

@@ -37,6 +37,13 @@ const mockBooking: IBookingDetail = {
     meetingLink: 'https://meet.google.com/test',
 };
 
+// Mock FileDropZone
+vi.mock('../FileDropZone', () => ({
+    FileDropZone: ({ disabled }: { onFilesDropped: (files: FileList) => void; disabled?: boolean }) => (
+        <div data-testid="file-drop-zone">{disabled ? 'uploading' : 'drop-files-here'}</div>
+    ),
+}));
+
 // Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
     Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
@@ -75,6 +82,11 @@ describe('BookingDetailPanel', () => {
         const { getByRole } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
         const link = getByRole('link', { name: /상세보기/ });
         expect(link.getAttribute('href')).toBe('/booking/1');
+    });
+
+    it('파일이 없으면 FileDropZone을 표시해야 한다', () => {
+        const { getByTestId } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByTestId('file-drop-zone')).toBeInTheDocument();
     });
 
     it('파일이 있으면 파일 목록을 표시해야 한다', () => {

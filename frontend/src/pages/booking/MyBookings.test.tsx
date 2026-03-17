@@ -161,17 +161,18 @@ vi.mock('~/features/booking', () => ({
             select-booking-{b.id}
         </button>
     ),
-    BookingDetailPanel: () => <div data-testid="booking-detail-panel" />,
-    FileDropZone: ({ onFilesDropped }: { onFilesDropped: (files: FileList) => void }) => (
-        <button
-            type="button"
-            onClick={() => {
-                const files = [new File(['x'], 'resume.pdf', { type: 'application/pdf' })];
-                onFilesDropped(files as unknown as FileList);
-            }}
-        >
-            trigger-upload
-        </button>
+    BookingDetailPanel: ({ onUpload }: { onUpload: (files: FileList) => void }) => (
+        <div data-testid="booking-detail-panel">
+            <button
+                type="button"
+                onClick={() => {
+                    const files = [new File(['x'], 'resume.pdf', { type: 'application/pdf' })];
+                    onUpload(files as unknown as FileList);
+                }}
+            >
+                trigger-upload
+            </button>
+        </div>
     ),
 }));
 

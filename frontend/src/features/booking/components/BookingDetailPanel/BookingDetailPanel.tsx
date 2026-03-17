@@ -6,6 +6,7 @@ import { formatFileSize } from '~/libs/fileValidation';
 import type { IBookingDetail, BookingRole } from '../../types';
 import type { IUserSimple } from '~/types/user';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
+import { FileDropZone } from '../FileDropZone';
 
 interface BookingDetailPanelProps {
     booking: IBookingDetail | null;
@@ -167,10 +168,7 @@ export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, is
 
                 {/* File list */}
                 {booking.files.length === 0 ? (
-                    <div className="py-8 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center">
-                        <span className="text-xl mb-1 opacity-20">📎</span>
-                        <p className="text-xs text-gray-400">첨부된 파일이 없습니다.</p>
-                    </div>
+                    <FileDropZone onFilesDropped={onUpload} disabled={isUploading} />
                 ) : (
                     <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                         {booking.files.map((file) => (
