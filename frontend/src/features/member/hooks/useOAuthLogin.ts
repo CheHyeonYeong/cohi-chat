@@ -15,10 +15,12 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
     return useMutation<LoginResponse, Error, OAuthLoginParams>({
         mutationFn: async ({ provider, code, state }) => {
             const response = await oAuthCallbackApi(provider, code, state);
-            queryClient.removeQueries({ queryKey: ['my-bookings'] });
-            queryClient.removeQueries({ queryKey: ['booking'] });
             saveAuthTokens(response);
             return response;
+        },
+        onSuccess: () => {
+            queryClient.removeQueries({ queryKey: ['my-bookings'] });
+            queryClient.removeQueries({ queryKey: ['booking'] });
         },
     });
 }

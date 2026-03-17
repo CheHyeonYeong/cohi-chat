@@ -9,10 +9,12 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
     return useMutation<LoginResponse, Error, LoginCredentials>({
         mutationFn: async (credentials) => {
             const response = await loginApi(credentials);
-            queryClient.removeQueries({ queryKey: ['my-bookings'] });
-            queryClient.removeQueries({ queryKey: ['booking'] });
             saveAuthTokens(response);
             return response;
+        },
+        onSuccess: () => {
+            queryClient.removeQueries({ queryKey: ['my-bookings'] });
+            queryClient.removeQueries({ queryKey: ['booking'] });
         },
     });
 }

@@ -10,7 +10,7 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
     return useQuery<IPaginatedBookingDetail>({
         queryKey: bookingKeys.myBookings(page, pageSize, username),
         queryFn: () => getMyBookings({ page, pageSize }),
-        enabled: isAuthenticated && !!username,
+        enabled: isAuthenticated,
     });
 }
 
@@ -20,7 +20,7 @@ export function useBooking(id: number | null) {
     return useQuery<IBookingDetail>({
         queryKey: bookingKeys.booking(id ?? 0, username),
         queryFn: () => getBooking(id!),
-        enabled: id !== null && isAuthenticated && !!username,
+        enabled: id !== null && isAuthenticated,
     });
 }
 

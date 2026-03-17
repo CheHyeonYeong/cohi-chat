@@ -60,7 +60,7 @@ describe('useLogin', () => {
         expect(saveAuthTokens).toHaveBeenCalledWith(response);
     });
 
-    it('clears booking caches before saving new auth tokens', async () => {
+    it('clears booking caches on login', async () => {
         const response = {
             accessToken: 'new-access-token',
             refreshToken: 'new-refresh-token',
