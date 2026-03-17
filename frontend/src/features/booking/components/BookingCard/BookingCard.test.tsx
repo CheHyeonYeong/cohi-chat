@@ -94,7 +94,7 @@ describe('BookingCard', () => {
         const { container } = render(
             <BookingCard booking={mockBooking} role="host" counterpart={{ username: 'guest1', displayName: '게스트1' }} />,
         );
-        expect(container.textContent).toContain('게스트1님과');
+        expect(container.textContent).toContain('게스트1님과의 커피챗');
     });
 
     it('counterpart가 주어지면 counterpart의 이니셜을 아바타에 표시해야 한다', () => {
@@ -108,6 +108,17 @@ describe('BookingCard', () => {
     it('role이 없으면 태그를 표시하지 않아야 한다', () => {
         const { queryByTestId } = render(<BookingCard booking={mockBooking} />);
         expect(queryByTestId('booking-role-tag')).toBeNull();
+    });
+
+    it('description이 있으면 표시해야 한다', () => {
+        const { container } = render(<BookingCard booking={mockBooking} />);
+        expect(container.textContent).toContain('포트폴리오 피드백 요청드립니다.');
+    });
+
+    it('description이 없으면 표시하지 않아야 한다', () => {
+        const bookingWithoutDesc: IBookingDetail = { ...mockBooking, description: '' };
+        const { container } = render(<BookingCard booking={bookingWithoutDesc} />);
+        expect(container.textContent).not.toContain('포트폴리오 피드백 요청드립니다.');
     });
 
     it('파일이 있으면 첨부 개수 배지를 표시해야 한다', () => {
