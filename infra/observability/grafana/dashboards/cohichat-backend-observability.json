@@ -398,7 +398,7 @@
           "url_options": {
             "body_type": "raw",
             "content_type": "application/json",
-            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT timestamp, coalesce(nullIf(properties.request_id, ''), 'N/A') AS request_id, coalesce(nullIf(properties.context, ''), 'none') AS context, coalesce(nullIf(properties.action, ''), 'unclassified') AS action, coalesce(nullIf(properties.status, ''), 'NONE') AS status, coalesce(nullIf(properties.level, ''), 'INFO') AS level, coalesce(nullIf(properties.logger, ''), 'unknown') AS logger, coalesce(properties.details, properties.message, '') AS details FROM events WHERE event = 'backend_log' AND properties.action != 'unclassified' AND (properties.status IN ('FAIL', 'SLOW') OR properties.level IN ('WARN', 'ERROR')) AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) ORDER BY timestamp DESC LIMIT 100\"}}",
+            "data": "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"SELECT ts AS timestamp, request_id, context, action, status, level, logger, details FROM (SELECT max(timestamp) AS ts, coalesce(nullIf(properties.request_id, ''), 'N/A') AS request_id, any(coalesce(nullIf(properties.context, ''), 'none')) AS context, coalesce(argMaxIf(properties.action, timestamp, equals(properties.action, 'http')), argMax(properties.action, timestamp), 'unclassified') AS action, coalesce(argMaxIf(properties.status, timestamp, equals(properties.action, 'http')), argMax(properties.status, timestamp), 'NONE') AS status, coalesce(argMaxIf(properties.level, timestamp, equals(properties.action, 'http')), argMax(properties.level, timestamp), 'INFO') AS level, coalesce(argMaxIf(properties.logger, timestamp, equals(properties.action, 'http')), argMax(properties.logger, timestamp), 'unknown') AS logger, if(greater(countIf(equals(properties.action, 'context')), 0), argMaxIf(coalesce(properties.details, properties.message, ''), timestamp, equals(properties.action, 'context')), argMax(coalesce(properties.details, properties.message, ''), timestamp)) AS details FROM events WHERE event = 'backend_log' AND (properties.status IN ('FAIL', 'SLOW') OR properties.level IN ('WARN', 'ERROR')) AND timestamp >= toDateTime(${__from} / 1000) AND timestamp <= toDateTime(${__to} / 1000) GROUP BY request_id) ORDER BY ts DESC LIMIT 100\"}}",
             "method": "POST"
           }
         }
@@ -423,7 +423,7 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "Asia/Seoul",
   "title": "CohiChat Backend Observability",
   "uid": "cohichat-backend-observability",
   "version": 1,

@@ -24,6 +24,7 @@ if exists(.log) {
 if .raw_log == "" {
   .raw_log = encode_json(.)
 }
+.raw_log = strip_whitespace(.raw_log)
 
 parsed, err = parse_regex(.raw_log, r'^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<request_id>[^\]]+)\] (?P<level>[A-Z]+)\s+(?P<logger>[^ ]+) - (?P<message>.*)$')
 if err == null {

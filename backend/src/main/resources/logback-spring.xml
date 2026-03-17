@@ -2,22 +2,6 @@
 <configuration>
 
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{request-id:-N/A}] %-5level %logger{36} - %msg%n"/>
-    <property name="LOG_FILE" value="logs/backend.log"/>
-
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_FILE}</file>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/archive/backend.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>200MB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
     <!-- Local profile: 콘솔 출력 (개발 편의) -->
     <springProfile name="local">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -29,7 +13,6 @@
 
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
         </root>
 
         <logger name="com.coDevs.cohiChat" level="DEBUG"/>
@@ -47,7 +30,6 @@
 
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
         </root>
 
         <logger name="com.coDevs.cohiChat" level="INFO"/>

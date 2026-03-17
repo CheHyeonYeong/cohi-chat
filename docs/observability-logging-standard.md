@@ -17,16 +17,16 @@
 ## Log Format
 
 ```text
-2026-03-12 10:30:45.101 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.observability.SlowQueryLoggingListener - [slowquery] [SLOW] context=request datasource=cohichat-datasource durationMs=214 thresholdMs=100 queryCount=1 statementType=Prepared query="select ..."
-2026-03-12 10:30:45.123 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.exception.GlobalExceptionHandler - [context] [FAIL] context=request method=POST path=/api/members/v1/login status=404 code=USER_NOT_FOUND
-2026-03-12 10:30:45.124 [a1b2c3d4] WARN  com.coDevs.cohiChat.global.observability.HttpLoggingFilter - [http] [FAIL] context=request method=POST path=/api/members/v1/login status=404 durationMs=231
+2026-03-12 10:30:45.101 [550e8400-e29b-41d4-a716-446655440000] WARN  com.coDevs.cohiChat.global.observability.SlowQueryLoggingListener - [slowquery] [SLOW] context=request datasource=cohichat-datasource durationMs=214 thresholdMs=100 queryCount=1 statementType=Prepared query="select ..."
+2026-03-12 10:30:45.123 [550e8400-e29b-41d4-a716-446655440000] WARN  com.coDevs.cohiChat.global.exception.GlobalExceptionHandler - [context] [FAIL] context=request method=POST path=/api/members/v1/login status=404 code=USER_NOT_FOUND
+2026-03-12 10:30:45.124 [550e8400-e29b-41d4-a716-446655440000] WARN  com.coDevs.cohiChat.global.observability.HttpLoggingFilter - [http] [FAIL] context=request method=POST path=/api/members/v1/login status=404 durationMs=231
 ```
 
 - Prefix every structured observability log message with `[action] [status]`
 - Use the same `request-id` across `slowquery`, `context`, and `http` logs for a single request
 - Add `context=<request|async|integration|system>` in details for cross-cutting logs
 - `request-id` is the only request-scoped MDC field
-- Prefer safe identifiers such as `bookingId`; avoid UUID, email, IP, token, calendar ID
+- `request-id` uses a server-generated UUID; for other log fields prefer safe identifiers such as `bookingId` and avoid email, IP, token, calendar ID
 
 ## Levels
 

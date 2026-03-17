@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.global.observability;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 import java.util.UUID;
 
 import org.slf4j.MDC;
@@ -25,7 +24,6 @@ public class RequestIdFilter extends OncePerRequestFilter {
 
     public static final String REQUEST_ID = "request-id";
     public static final String REQUEST_ID_HEADER = "X-Request-ID";
-    private static final Pattern SAFE_REQUEST_ID_PATTERN = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
     @Override
     protected void doFilterInternal(
@@ -46,9 +44,13 @@ public class RequestIdFilter extends OncePerRequestFilter {
     }
 
     private String resolveRequestId(String headerValue) {
-        if (headerValue != null && SAFE_REQUEST_ID_PATTERN.matcher(headerValue).matches()) {
-            return headerValue;
+        if (headerValue != null && !headerValue.isBlank()) {
+            try {
+                return UUID.fromString(headerValue.trim()).toString();
+            } catch (IllegalArgumentException ignored) {
+                // Fallback to a server-generated request UUID when the incoming header is invalid.
+            }
         }
-        return UUID.randomUUID().toString().substring(0, 8);
+        return UUID.randomUUID().toString();
     }
 }

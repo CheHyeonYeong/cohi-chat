@@ -11,6 +11,8 @@ services:
     ports:
       - "8687:8687"
     restart: unless-stopped
+    networks:
+      observability:
 
   fluent-bit:
     image: cr.fluentbit.io/fluent/fluent-bit:3.0.0
@@ -20,8 +22,12 @@ services:
         condition: service_started
     volumes:
       - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-      - ../../backend/logs:/var/log/cohichat:ro
+    ports:
+      - "24224:24224"
     restart: unless-stopped
+    networks:
+      observability:
+        ipv4_address: 172.29.0.10
 
   grafana:
     image: grafana/grafana:latest
@@ -43,3 +49,12 @@ services:
     ports:
       - "3001:3000"
     restart: unless-stopped
+    networks:
+      observability:
+
+networks:
+  observability:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
