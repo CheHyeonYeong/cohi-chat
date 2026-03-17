@@ -32,6 +32,7 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
         >
             <button
                 type="button"
+                className="w-full"
                 onClick={() => onSelect?.(booking.id)}
             >
                 {/* Role tag + Host/Counterpart info */}
@@ -41,11 +42,11 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
                             {avatarInitial}
                         </span>
                     </div>
-                    <p className="font-semibold text-[var(--cohi-text-dark)] flex-1 text-left">{displayName}님과</p>
+                    <p className="font-semibold text-[var(--cohi-text-dark)] flex-1 text-left truncate">{displayName}님과의 커피챗</p>
                     {role && (
                         <span data-testid="booking-role-tag">
                             <Tag
-                                color={role === 'guest' ? 'primary' : 'secondary'}
+                                color={role === 'guest' ? 'guest' : 'host'}
                                 size="sm"
                             >
                                 {role === 'guest' ? '게스트' : '호스트'}
@@ -55,7 +56,16 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
                 </div>
 
                 {/* Topic */}
-                <p className="text-base font-medium text-gray-800 mb-3 line-clamp-2">{booking.topic}</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                    {booking.topic.split(',').map((t) => (
+                        <Tag key={t.trim()} size="sm">{t.trim()}</Tag>
+                    ))}
+                </div>
+
+                {/* Description */}
+                {booking.description && (
+                    <p className="text-sm text-gray-500 text-left truncate mb-3">{booking.description}</p>
+                )}
 
                 {/* Date / Time */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
