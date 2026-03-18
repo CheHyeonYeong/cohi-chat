@@ -31,6 +31,12 @@ paths: frontend/**/*.{ts,tsx}
 - 클릭 가능한 카드: `<Card asChild>` + `<button>` 조합 사용
   - 예: `<Card asChild size="sm"><button type="button">{content}</button></Card>`
 
+### Pagination 사용 규칙
+- 페이지네이션은 반드시 `<Pagination>` 컴포넌트 사용 (`~/components/Pagination`)
+- 버튼은 `variant="outline"` 사용 (디자인 시스템 `--cohi-primary` 톤 통일)
+- 문구는 한글: "이전" / "다음" / "{page} / {totalPages} 페이지"
+- 목록-상세 레이아웃에서 Pagination은 목록 하단에 고정 배치 (목록 크기에 따라 y 위치가 변하지 않도록)
+
 ### PageLayout 사용 규칙
 - 일반 페이지(Header + 제목 + 콘텐츠)는 반드시 `<PageLayout>` 컴포넌트 사용 (`~/components`)
 - `div > Header > main > div.max-w > h1` 보일러플레이트 직접 조합 금지

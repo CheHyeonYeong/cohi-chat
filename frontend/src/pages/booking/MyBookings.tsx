@@ -176,26 +176,28 @@ export function MyBookings() {
             {bookings && bookings.bookings.length > 0 && (
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Left: booking list */}
-                    <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col gap-4">
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <SortableContext
-                                items={orderedBookings.map((b) => b.id)}
-                                strategy={verticalListSortingStrategy}
+                    <div className="w-full lg:w-[380px] lg:h-[calc(100vh-12rem)] flex-shrink-0 flex flex-col">
+                        <div className="flex-1 overflow-y-auto flex flex-col gap-4">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
                             >
-                                {orderedBookings.map((booking) => (
-                                    <SortableBookingCard
-                                        key={booking.id}
-                                        booking={booking}
-                                        isSelected={selectedId === booking.id}
-                                        onSelect={handleCardSelect}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
+                                <SortableContext
+                                    items={orderedBookings.map((b) => b.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {orderedBookings.map((booking) => (
+                                        <SortableBookingCard
+                                            key={booking.id}
+                                            booking={booking}
+                                            isSelected={selectedId === booking.id}
+                                            onSelect={handleCardSelect}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        </div>
 
                         <Pagination
                             page={page}
