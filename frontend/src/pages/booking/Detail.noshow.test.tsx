@@ -34,6 +34,7 @@ const makeBooking = (
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'host', displayName: '호스트' },
+    guest: { username: 'guest', displayName: '게스트' },
     hostId: HOST_ID,
     guestId: GUEST_ID,
     attendanceStatus,
@@ -100,10 +101,20 @@ vi.mock('~/features/booking', () => ({
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useDownloadBookingFile: () => ({ mutateAsync: downloadFile, error: null }),
     useReportHostNoShow: () => ({ mutate: reportNoShow, isPending: false, error: null, reset: vi.fn() }),
+    useNoShowHistory: () => ({ data: null }),
+    getPresignedDownloadUrl: vi.fn(),
+    BookingHeader: ({ displayName, attendanceStatus }: { displayName: string; attendanceStatus: string }) => <div>{displayName} {attendanceStatus}</div>,
+    BookingMetaSection: () => <div>meta</div>,
+    BookingEditForm: () => <div>edit</div>,
+    BookingFileSection: () => <div>files</div>,
 }));
 
 vi.mock('~/features/member', () => ({
     useAuth: () => ({ data: { id: GUEST_ID, username: 'guest' } }),
+}));
+
+vi.mock('~/features/host', () => ({
+    useHostCalendar: () => ({ data: null }),
 }));
 
 import { Detail } from './Detail';
