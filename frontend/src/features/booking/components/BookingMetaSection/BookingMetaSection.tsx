@@ -3,11 +3,9 @@ import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 
 interface BookingMetaSectionProps {
     booking: IBookingDetail;
-    showDayName?: boolean;
-    descriptionFallback?: string;
 }
 
-export function BookingMetaSection({ booking, showDayName, descriptionFallback }: BookingMetaSectionProps) {
+export function BookingMetaSection({ booking }: BookingMetaSectionProps) {
     const { startedAt } = booking;
 
     const dateText = startedAt.toLocaleDateString('ko-KR', {
@@ -15,10 +13,7 @@ export function BookingMetaSection({ booking, showDayName, descriptionFallback }
         month: 'long',
         day: 'numeric',
     });
-    const dayLabel = showDayName ? ` (${DAY_NAMES[startedAt.getDay() as Weekday]})` : '';
-
-    const showDescription = descriptionFallback ? true : !!booking.description;
-    const descriptionText = booking.description || descriptionFallback;
+    const dayLabel = ` (${DAY_NAMES[startedAt.getDay() as Weekday]})`;
 
     return (
         <>
@@ -72,12 +67,10 @@ export function BookingMetaSection({ booking, showDayName, descriptionFallback }
                     </div>
                 </div>
             </section>
-            {showDescription && (
-                <section className="mt-3">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">설명</span>
-                    <p className="text-sm text-gray-600 mt-1 leading-relaxed whitespace-pre-wrap">{descriptionText}</p>
-                </section>
-            )}
+            <section className="mt-3">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">설명</span>
+                <p className="text-sm text-gray-600 mt-1 leading-relaxed whitespace-pre-wrap">{booking.description}</p>
+            </section>
         </>
     );
 }
