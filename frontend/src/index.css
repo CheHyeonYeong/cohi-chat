@@ -123,7 +123,7 @@ h1 {
 }
 
 .cohi-btn-outline {
-  background-color: transparent;
+  background-color: white;
   border: 1px solid var(--cohi-primary);
   color: var(--cohi-primary);
   transition: all 0.2s ease;
