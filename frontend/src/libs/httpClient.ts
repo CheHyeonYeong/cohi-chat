@@ -31,7 +31,6 @@ async function performRefresh(): Promise<boolean> {
                 ? (payload as { error?: { code?: string } }).error?.code
                 : undefined;
             if (errorCode === GRACE_WINDOW_HIT) {
-                clearAuthenticatedUser(); // 세션 무효화 시 즉시 정리
                 throw new Error(GRACE_WINDOW_HIT);
             }
             return false;
