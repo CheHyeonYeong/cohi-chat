@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import type { IBookingDetail } from '../../types';
+import type { IBookingFile } from '../../types';
 import React from 'react';
 
 const mockBooking: IBookingDetail = {
@@ -53,9 +54,14 @@ vi.mock('./BookingHeader', () => ({
     ),
 }));
 
-vi.mock('../FileDropZone', () => ({
-    FileDropZone: ({ disabled }: { onFilesDropped: (files: FileList) => void; disabled?: boolean }) => (
-        <div data-testid="file-drop-zone">{disabled ? 'uploading' : 'drop-files-here'}</div>
+vi.mock('../BookingFileSection', () => ({
+    BookingFileSection: ({ files }: { files: IBookingFile[] }) => (
+        <div data-testid="booking-file-section">
+            {files.length === 0
+                ? <span>drop-files-here</span>
+                : files.map((f) => <span key={f.id}>{f.originalFileName}</span>)
+            }
+        </div>
     ),
 }));
 
@@ -110,9 +116,10 @@ describe('BookingDetailPanel', () => {
         expect(link.getAttribute('href')).toBe('/booking/1');
     });
 
-    it('파일이 없으면 FileDropZone을 표시해야 한다', () => {
+    it('파일이 없으면 빈 상태를 표시해야 한다', () => {
         const { getByTestId } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
-        expect(getByTestId('file-drop-zone')).toBeInTheDocument();
+        expect(getByTestId('booking-file-section')).toBeInTheDocument();
+        expect(getByTestId('booking-file-section')).toHaveTextContent('drop-files-here');
     });
 
     it('파일이 있으면 파일 목록을 표시해야 한다', () => {

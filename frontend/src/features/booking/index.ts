@@ -5,6 +5,7 @@ export { BookingHeader } from './components/BookingDetailPanel';
 export { BookingForm } from './components/BookingForm';
 export { BookingEditForm } from './components/BookingEditForm';
 export { BookingMetaSection } from './components/BookingMetaSection';
+export { BookingFileSection } from './components/BookingFileSection';
 
 
 // Hooks

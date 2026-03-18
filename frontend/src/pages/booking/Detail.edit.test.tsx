@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Detail } from './Detail';
-import type { IBookingDetail } from '~/features/booking';
+import type { IBookingDetail, IBookingFile } from '~/features/booking';
 
 // Mock data
 const mockBooking: IBookingDetail = {
@@ -67,6 +67,9 @@ vi.mock('~/features/booking', async () => {
                 {actions}
             </div>
         ),
+        BookingFileSection: ({ files }: { files: IBookingFile[] }) => (
+            <div data-testid="booking-file-section">파일 {files.length}개</div>
+        ),
     };
 });
 
@@ -95,46 +98,6 @@ vi.mock('~/components/card', () => ({
             {children}
         </div>
     ),
-}));
-
-vi.mock('~/libs/fileValidation', () => ({
-    validateFiles: () => ({ errors: [] }),
-    getAcceptedFileTypes: () => '*',
-    formatFileSize: (size: number) => `${size}B`,
-    FILE_UPLOAD_LIMITS: { MAX_FILES_PER_BOOKING: 5, MAX_FILE_SIZE: 1024, ALLOWED_EXTENSIONS: ['.pdf'] },
-}));
-
-vi.mock('./bookingUploadUtils', () => ({
-    canUploadMoreFiles: () => true,
-}));
-
-vi.mock('~/libs/cn', () => ({
-    cn: (...args: unknown[]) => args.filter(Boolean).join(' '),
-}));
-
-vi.mock('~/libs/errorUtils', () => ({
-    getErrorMessage: (_err: unknown, fallback: string) => fallback,
-}));
-
-vi.mock('@dnd-kit/core', () => ({
-    DndContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    closestCenter: vi.fn(),
-    KeyboardSensor: vi.fn(),
-    PointerSensor: vi.fn(),
-    useSensor: () => ({}),
-    useSensors: () => [],
-}));
-
-vi.mock('@dnd-kit/sortable', () => ({
-    SortableContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    sortableKeyboardCoordinates: vi.fn(),
-    verticalListSortingStrategy: vi.fn(),
-    useSortable: () => ({ attributes: {}, listeners: {}, setNodeRef: vi.fn(), transform: null, transition: null, isDragging: false }),
-    arrayMove: vi.fn(),
-}));
-
-vi.mock('@dnd-kit/utilities', () => ({
-    CSS: { Transform: { toString: () => '' } },
 }));
 
 const createWrapper = () => {
