@@ -70,7 +70,7 @@ class OAuthControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"code\": \"test-auth-code\", \"state\": \"test-state\"}"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.accessToken").value("test-access-token"))
+			.andExpect(jsonPath("$.accessToken").doesNotExist())
 			.andExpect(jsonPath("$.username").value("google_123"));
 
 		verify(authCookieService).addLoginCookies(any(), eq(loginResponse));
