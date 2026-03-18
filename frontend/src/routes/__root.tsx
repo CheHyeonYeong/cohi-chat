@@ -74,7 +74,7 @@ const myBookingsRoute = createRoute({
 const bookingRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/booking/$id',
-    component: BookingDetail,
+    component: () => <AuthGuard><BookingDetail /></AuthGuard>,
     params: z.object({
         id: z.string().transform<number>((val) => parseInt(val, 10)).pipe(z.number().min(1)),
     }),
