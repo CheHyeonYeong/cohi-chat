@@ -11,6 +11,8 @@ export function useLogout() {
     const logout = useCallback(async () => {
         try {
             await logoutApi();
+        } catch {
+            // 로그아웃 API 실패 시에도 로컬 상태는 항상 정리
         } finally {
             queryClient.clear();
             clearAuthenticatedUser();

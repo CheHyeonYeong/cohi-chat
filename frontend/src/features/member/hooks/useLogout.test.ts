@@ -83,7 +83,7 @@ describe('useLogout', () => {
             wrapper: createWrapper(),
         });
 
-        await expect(result.current.logout()).rejects.toThrow('Network error');
+        await result.current.logout();
         expect(localStorage.getItem('username')).toBeNull();
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });

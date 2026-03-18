@@ -38,7 +38,8 @@ export function useAuth() {
                     isHost: data.role === 'HOST',
                 };
             } catch (error) {
-                if (error instanceof Error && (error.cause === 401 || error.cause === 403)) {
+                if (error instanceof Error && typeof error.cause === 'number' && (error.cause === 401 || error.cause === 403)) {
+                    queryClient.clear();
                     clearAuthenticatedUser();
                 }
                 throw error;
