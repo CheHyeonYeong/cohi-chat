@@ -13,10 +13,17 @@ HEALTH_INTERVAL=5
 
 # ── 현재 활성 컨테이너 감지 ──────────────────────────────────────────────────
 detect_active() {
-    if grep -q "backend-blue" "$NGINX_UPSTREAM_FILE"; then
+    # Docker 실행 상태 기반 감지 — upstream.conf는 배포마다 git reset으로 초기화되므로 신뢰 불가
+    local blue_status green_status
+    blue_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-blue" 2>/dev/null || echo "missing")
+    green_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-green" 2>/dev/null || echo "missing")
+
+    if [ "$blue_status" = "running" ] && [ "$green_status" != "running" ]; then
         echo "blue"
-    else
+    elif [ "$green_status" = "running" ] && [ "$blue_status" != "running" ]; then
         echo "green"
+    else
+        grep -q "backend-blue" "$NGINX_UPSTREAM_FILE" && echo "blue" || echo "green"
     fi
 }
 
@@ -85,7 +92,8 @@ main() {
 
     # 이전 버전 컨테이너 상태 확인
     if container_running "$previous"; then
-        echo "[info] backend-${previous} is already running. Switching traffic immediately."
+        echo "[info] backend-${previous} is already running. Waiting for health."
+        wait_healthy "$previous"
     else
         echo "[info] backend-${previous} is stopped. Starting it..."
         $COMPOSE start "backend-${previous}"

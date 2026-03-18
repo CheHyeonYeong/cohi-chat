@@ -16,11 +16,18 @@ HEALTH_INTERVAL=5   # 헬스체크 재시도 간격(초)
 
 # ── 현재 활성 컨테이너 감지 ──────────────────────────────────────────────────
 detect_active() {
-    # upstream.conf 에서 활성 서버 이름 추출
-    if grep -q "backend-blue" "$NGINX_UPSTREAM_FILE"; then
+    # Docker 실행 상태 기반 감지 — upstream.conf는 배포마다 git reset으로 초기화되므로 신뢰 불가
+    local blue_status green_status
+    blue_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-blue" 2>/dev/null || echo "missing")
+    green_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-green" 2>/dev/null || echo "missing")
+
+    if [ "$blue_status" = "running" ] && [ "$green_status" != "running" ]; then
         echo "blue"
-    else
+    elif [ "$green_status" = "running" ] && [ "$blue_status" != "running" ]; then
         echo "green"
+    else
+        # 둘 다 running이거나 둘 다 중지 시 upstream.conf fallback
+        grep -q "backend-blue" "$NGINX_UPSTREAM_FILE" && echo "blue" || echo "green"
     fi
 }
 
@@ -52,8 +59,10 @@ wait_healthy() {
 # ── Nginx upstream 전환 ───────────────────────────────────────────────────────
 switch_upstream() {
     local target=$1
+    local backup="${NGINX_UPSTREAM_FILE}.bak"
 
     echo "[nginx] Switching upstream to backend-${target}"
+    cp "$NGINX_UPSTREAM_FILE" "$backup"
     cat > "$NGINX_UPSTREAM_FILE" <<EOF
 # Blue-Green 배포에서 동적으로 교체되는 upstream 설정
 upstream backend {
@@ -61,7 +70,23 @@ upstream backend {
 }
 EOF
 
-    docker exec cohi-chat-nginx nginx -s reload
+    if ! docker exec cohi-chat-nginx nginx -t >/dev/null 2>&1; then
+        echo "[nginx] configuration test failed, reverting upstream"
+        cp "$backup" "$NGINX_UPSTREAM_FILE"
+        docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1 || true
+        rm -f "$backup"
+        return 1
+    fi
+
+    if ! docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1; then
+        echo "[nginx] reload failed, reverting upstream"
+        cp "$backup" "$NGINX_UPSTREAM_FILE"
+        docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1 || true
+        rm -f "$backup"
+        return 1
+    fi
+
+    rm -f "$backup"
     echo "[nginx] Reloaded. Traffic now routed to backend-${target}."
 }
 
