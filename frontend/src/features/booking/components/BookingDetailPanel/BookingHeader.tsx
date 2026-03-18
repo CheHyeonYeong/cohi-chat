@@ -19,8 +19,8 @@ export function BookingHeader({ displayName, roleLabel, attendanceStatus, action
                     </span>
                 </div>
                 <div>
-                    <h2 className="font-bold text-[var(--cohi-text-dark)]">
-                        {displayName}{' '}
+                    <h2 className="flex items-center gap-2 font-bold text-[var(--cohi-text-dark)]">
+                        {displayName}
                         <Tag variant="filled" color="default" size="sm">
                             {STATUS_LABELS[attendanceStatus] ?? attendanceStatus}
                         </Tag>
