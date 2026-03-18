@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '~/features/member/hooks/useAuth';
 import { getBooking, getMyBookings, getAllMyBookings, uploadBookingFileWithPresignedUrl, deleteBookingFile } from '../api';
 import type { IBookingDetail, IBookingFile, IPaginatedBookingDetail, IPaginatedBookingWithRole } from '../types';
@@ -28,6 +28,7 @@ export function useBooking(id: number | null) {
         queryKey: bookingKeys.booking(id ?? 0, username),
         queryFn: () => getBooking(id!),
         enabled: id !== null && isAuthenticated,
+        placeholderData: keepPreviousData,
     });
 }
 

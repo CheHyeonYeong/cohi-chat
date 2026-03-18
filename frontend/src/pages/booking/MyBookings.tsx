@@ -51,12 +51,11 @@ function SortableBookingCard({
 }
 
 export function MyBookings() {
-    const { page, pageSize } = useSearch({ from: '/booking/my-bookings' });
+    const PAGE_SIZE = 5;
+    const { page, selectedId } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useAllMyBookings({ page, pageSize });
-
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useAllMyBookings({ page, pageSize: PAGE_SIZE });
     const [sortedIds, setSortedIds] = useState<number[]>([]);
 
     useEffect(() => {
@@ -66,19 +65,27 @@ export function MyBookings() {
     }, [bookings]);
 
     // 선택된 예약 full detail (파일 포함)
-    const { data: selectedBooking, refetch: refetchSelectedBooking } = useBooking(selectedId);
+    const { data: selectedBooking, refetch: refetchSelectedBooking } = useBooking(selectedId ?? null);
+
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError, reset: resetUploadError } = useUploadBookingFile(selectedId ?? 0);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(selectedId ?? 0);
+
+    const setSelectedId = (id: number | undefined) => {
+        navigate({
+            to: '/booking/my-bookings',
+            search: { page, selectedId: id },
+            replace: true,
+        });
+    };
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     const handlePageChange = (newPage: number) => {
-        setSelectedId(null);
-        navigate({ to: '/booking/my-bookings', search: { page: newPage, pageSize } });
+        navigate({ to: '/booking/my-bookings', search: { page: newPage } });
     };
 
     const handleCardSelect = (id: number) => {
-        setSelectedId((prev) => (prev === id ? null : id));
+        setSelectedId(selectedId === id ? undefined : id);
     };
 
     // sortedIds가 비어있거나 데이터와 매칭되지 않으면 API 순서 사용
@@ -192,7 +199,7 @@ export function MyBookings() {
 
                         <Pagination
                             page={page}
-                            pageSize={pageSize}
+                            pageSize={PAGE_SIZE}
                             totalCount={bookings.totalCount}
                             onPageChange={handlePageChange}
                         />

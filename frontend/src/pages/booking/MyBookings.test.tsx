@@ -82,9 +82,15 @@ const allMyBookingsResponse = {
     totalCount: 2,
 };
 
+const mockSearchState = { page: 1, selectedId: undefined as number | undefined };
+const mockNavigate = vi.fn().mockImplementation((opts: { search?: Record<string, unknown> }) => {
+    if (opts.search) {
+        Object.assign(mockSearchState, opts.search);
+    }
+});
 vi.mock('@tanstack/react-router', () => ({
-    useSearch: () => ({ page: 1, pageSize: 10 }),
-    useNavigate: () => vi.fn(),
+    useSearch: () => mockSearchState,
+    useNavigate: () => mockNavigate,
     useRouterState: () => ({ location: { pathname: '/booking/my-bookings' } }),
     Link: ({ children, to, ...props }: { children: ReactNode; to: string; [key: string]: unknown }) =>
         <a href={to as string} {...props}>{children}</a>,
@@ -182,14 +188,17 @@ describe('MyBookings', () => {
         refetchSelectedBooking.mockClear();
         uploadFileAsync.mockClear();
         showToast.mockClear();
+        mockNavigate.mockClear();
+        mockSearchState.page = 1;
+        mockSearchState.selectedId = undefined;
     });
 
     it('does not refetch after upload fails', async () => {
         uploadFileAsync.mockRejectedValueOnce(new Error('업로드 실패'));
+        mockSearchState.selectedId = 2;
 
         render(<MyBookings />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'select-booking' }));
         fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
 
         await waitFor(() => {
@@ -201,9 +210,9 @@ describe('MyBookings', () => {
     });
 
     it('refetches both selected booking and booking list after upload', async () => {
+        mockSearchState.selectedId = 2;
         render(<MyBookings />);
 
-        fireEvent.click(screen.getByTestId('booking-card-2'));
         fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
 
         await waitFor(() => {
