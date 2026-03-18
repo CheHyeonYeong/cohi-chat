@@ -75,11 +75,11 @@ class MemberControllerTest {
 	private static final String TEST_DISPLAY_NAME = "testDisplayName";
 
 	@Nested
-	@DisplayName("由ы봽?덉떆 API")
+	@DisplayName("리프레시 API")
 	class Refresh {
 
 		@Test
-		@DisplayName("由ы봽?덉떆 ?깃났 ?묐떟 ?뺤떇 寃利?")
+		@DisplayName("리프레시 성공 응답 형식 검증")
 		void refreshSuccess() throws Exception {
 			RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
 				.accessToken("new-access-token")
