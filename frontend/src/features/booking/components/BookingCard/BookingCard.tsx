@@ -48,6 +48,9 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
                             <Tag
                                 color={role === 'guest' ? 'guest' : 'host'}
                                 size="sm"
+                                title={role === 'guest'
+                                    ? `내가 ${displayName}님에게 커피챗을 신청했습니다`
+                                    : `${displayName}님이 나에게 커피챗을 신청했습니다`}
                             >
                                 {role === 'guest' ? '게스트' : '호스트'}
                             </Tag>

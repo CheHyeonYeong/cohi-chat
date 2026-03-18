@@ -5,6 +5,7 @@ interface TagProps {
     variant?: 'filled' | 'outlined' | 'borderless';
     color?: 'primary' | 'secondary' | 'default' | 'guest' | 'host';
     size?: 'sm' | 'md';
+    title?: string;
     className?: string;
 }
 
@@ -44,10 +45,12 @@ export function Tag({
     variant = 'filled',
     color = 'primary',
     size = 'md',
+    title,
     className,
 }: TagProps) {
     return (
         <span
+            title={title}
             className={cn(
                 'inline-flex items-center rounded-md font-medium',
                 variantColorStyles[`${variant}-${color}`],
