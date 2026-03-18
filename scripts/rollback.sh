@@ -105,7 +105,7 @@ main() {
 
     # 문제 있는 현재 버전 중지
     echo "[cleanup] Stopping problematic backend-${active}..."
-    $COMPOSE stop "backend-${active}"
+    $COMPOSE stop "backend-${active}" || echo "[warn] backend-${active} was not running, skipping stop."
 
     echo "=============================="
     echo " Rollback Success: ${previous} is now active"
