@@ -38,8 +38,8 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
         with:
           host: ${{ secrets.GRAFANA_EC2_HOST }}
-          username: ${{ secrets.GRAFANA_EC2_USER }}
-          key: ${{ secrets.GRAFANA_EC2_SSH_KEY }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           command_timeout: 10m
           script: |
