@@ -36,7 +36,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: true,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -56,7 +55,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -75,7 +73,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -94,7 +91,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: false },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -115,7 +111,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: true },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -132,7 +127,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: true },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(

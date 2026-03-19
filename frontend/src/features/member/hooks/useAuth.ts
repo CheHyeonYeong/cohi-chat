@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useSyncExternalStore } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSyncExternalStore } from 'react';
 import { getUserApi } from '../api/memberApi';
 import { clearAuthenticatedUser, getStoredUsername } from '../utils/authStorage';
 import { subscribeAuthChange } from '../utils/authEvent';
@@ -14,16 +14,11 @@ function getServerUsernameSnapshot() {
 }
 
 export function useAuth() {
-    const queryClient = useQueryClient();
     const username = useSyncExternalStore(
         subscribeAuthChange,
         getUsernameSnapshot,
         getServerUsernameSnapshot,
     );
-
-    const invalidateAuth = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ['auth'] });
-    }, [queryClient]);
 
     const query = useQuery<AuthUser>({
         queryKey: ['auth', username],
@@ -39,7 +34,6 @@ export function useAuth() {
                 };
             } catch (error) {
                 if (error instanceof Error && typeof error.cause === 'number' && (error.cause === 401 || error.cause === 403)) {
-                    queryClient.clear();
                     clearAuthenticatedUser();
                 }
                 throw error;
@@ -53,6 +47,5 @@ export function useAuth() {
     return {
         ...query,
         isAuthenticated: !!username,
-        invalidateAuth,
     };
 }

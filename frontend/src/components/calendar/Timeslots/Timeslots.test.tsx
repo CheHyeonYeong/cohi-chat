@@ -54,7 +54,6 @@ describe('Timeslots', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
         });
 
@@ -92,7 +91,6 @@ describe('Timeslots', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test User', isHost: false },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
         });
 
@@ -169,7 +167,6 @@ describe('Timeslots', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test User', isHost: false },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
         });
 
