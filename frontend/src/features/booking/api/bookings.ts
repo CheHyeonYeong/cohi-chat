@@ -67,14 +67,20 @@ function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IB
     };
 }
 
-export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
-    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/guest/me`) ?? [];
-    const bookings = list.map(b => toBookingDetail(b));
+interface PaginatedBookingResponse {
+    bookings: BookingFlatResponse[];
+    totalCount: number;
+    page: number;
+    size: number;
+}
 
-    const start = (page - 1) * pageSize;
+export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+    const response = await httpClient<PaginatedBookingResponse>(
+        `${API_URL}/bookings/guest/me?page=${page}&size=${pageSize}`
+    );
     return {
-        bookings: bookings.slice(start, start + pageSize),
-        totalCount: bookings.length,
+        bookings: response.bookings.map(b => toBookingDetail(b)),
+        totalCount: response.totalCount,
     };
 }
 

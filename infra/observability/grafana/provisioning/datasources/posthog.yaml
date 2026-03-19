@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: PostHog Observability
+    uid: posthog-observability
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    url: ${POSTHOG_APP_HOST}/api/projects/${POSTHOG_PROJECT_ID}/query/
+    basicAuth: false
+    isDefault: false
+    editable: false
+    jsonData:
+      allowedHosts:
+        - ${POSTHOG_APP_HOST}
+      httpHeaderName1: Authorization
+      httpHeaderName2: Content-Type
+    secureJsonData:
+      httpHeaderValue1: Bearer ${POSTHOG_PERSONAL_API_KEY}
+      httpHeaderValue2: application/json

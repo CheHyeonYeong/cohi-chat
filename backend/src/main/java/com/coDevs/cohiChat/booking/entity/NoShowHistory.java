@@ -16,8 +16,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,9 +26,14 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "noshow_history", indexes = {
-    @Index(name = "idx_noshow_history_host_id", columnList = "host_id")
-})
+@Table(name = "noshow_history",
+    indexes = {
+        @Index(name = "idx_noshow_history_host_id", columnList = "host_id")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_noshow_history_booking_id", columnNames = "booking_id")
+    }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NoShowHistory {
@@ -36,7 +42,7 @@ public class NoShowHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 

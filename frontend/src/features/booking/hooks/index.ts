@@ -1,5 +1,6 @@
 export { useCreateBooking } from './useCreateBooking';
 export { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile } from './useBooking';
+export { useDownloadBookingFile } from './useDownloadBookingFile';
 export { useBookingsSSEQuery } from './useBookingsSSE';
 export { useReportHostNoShow } from './useReportHostNoShow';
 export { useNoShowHistory } from './useNoShowHistory';

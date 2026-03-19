@@ -9,6 +9,7 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}

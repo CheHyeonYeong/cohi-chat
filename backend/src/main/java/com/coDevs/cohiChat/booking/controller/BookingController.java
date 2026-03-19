@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.coDevs.cohiChat.booking.BookingService;
@@ -24,6 +25,7 @@ import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.NoShowReportRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -80,32 +82,36 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
-    @Operation(summary = "내 예약 조회 (게스트)", description = "내가 게스트로 신청한 예약 목록을 조회합니다.")
+    @Operation(summary = "내 예약 조회 (게스트)", description = "내가 게스트로 신청한 예약 목록을 페이지 단위로 조회합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @GetMapping("/guest/me")
-    public ResponseEntity<ApiResponseDTO<List<BookingResponseDTO>>> getMyBookingsAsGuest(
-            @AuthenticationPrincipal UserDetails userDetails
+    public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsGuest(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
-        List<BookingResponseDTO> responses = bookingService.getBookingsByGuestId(member.getId());
-        return ResponseEntity.ok(ApiResponseDTO.success(responses));
+        PaginatedBookingResponseDTO response = bookingService.getBookingsByGuestIdPaginated(member.getId(), page, size);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
-    @Operation(summary = "내 예약 조회 (호스트)", description = "내가 호스트로 받은 예약 목록을 조회합니다.")
+    @Operation(summary = "내 예약 조회 (호스트)", description = "내가 호스트로 받은 예약 목록을 페이지 단위로 조회합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
         @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @GetMapping("/host/me")
-    public ResponseEntity<ApiResponseDTO<List<BookingResponseDTO>>> getMyBookingsAsHost(
-            @AuthenticationPrincipal UserDetails userDetails
+    public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsHost(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
-        List<BookingResponseDTO> responses = bookingService.getBookingsByHostId(member.getId());
-        return ResponseEntity.ok(ApiResponseDTO.success(responses));
+        PaginatedBookingResponseDTO response = bookingService.getBookingsByHostIdPaginated(member.getId(), page, size);
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
     @Operation(summary = "예약 일정 수정", description = "호스트가 예약의 일정(날짜, 타임슬롯)을 수정합니다. 호스트만 수정 가능합니다.")

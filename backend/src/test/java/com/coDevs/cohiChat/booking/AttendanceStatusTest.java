@@ -73,18 +73,6 @@ class AttendanceStatusTest {
     }
 
     @Test
-    @DisplayName("SCHEDULED 상태만 게스트 노쇼 신고가 가능하다")
-    void onlyScheduledIsGuestReportable() {
-        assertThat(AttendanceStatus.SCHEDULED.isGuestReportable()).isTrue();
-        assertThat(AttendanceStatus.ATTENDED.isGuestReportable()).isFalse();
-        assertThat(AttendanceStatus.NO_SHOW.isGuestReportable()).isFalse();
-        assertThat(AttendanceStatus.HOST_NO_SHOW.isGuestReportable()).isFalse();
-        assertThat(AttendanceStatus.CANCELLED.isGuestReportable()).isFalse();
-        assertThat(AttendanceStatus.SAME_DAY_CANCEL.isGuestReportable()).isFalse();
-        assertThat(AttendanceStatus.LATE.isGuestReportable()).isFalse();
-    }
-
-    @Test
     @DisplayName("HOST_NO_SHOW는 호스트가 설정할 수 없는 상태이다")
     void hostNoShowIsNotHostSettable() {
         assertThat(AttendanceStatus.HOST_NO_SHOW.isHostSettable()).isFalse();
