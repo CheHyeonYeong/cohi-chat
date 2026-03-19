@@ -47,7 +47,7 @@ export function Detail() {
         for (const file of Array.from(files)) {
             await uploadFileAsync(file);
         }
-        refetch();
+        await refetch();
     };
 
     const handleDownload = (fileId: number, fileName: string) => {
@@ -56,7 +56,7 @@ export function Detail() {
 
     const handleDelete = async (fileId: number) => {
         await deleteFileAsync(fileId);
-        refetch();
+        await refetch();
     };
 
     const handleReportSubmit = () => {
