@@ -122,7 +122,7 @@ public class MemberService {
                 }
                 if (!passwordEncoder.matches(request.getPassword(), member.getHashedPassword())) {
                         log.warn("[login] [FAIL] reason=PASSWORD_MISMATCH");
-                        throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+                        throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
                 }
 
                 log.info("[login] [SUCCESS] provider={}", member.getProvider());
