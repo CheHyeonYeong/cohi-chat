@@ -76,16 +76,16 @@ describe('useLogout', () => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
-    it('clears local state and navigates even if API call fails', async () => {
+    it('API 실패 시 예외를 던지고 로컬 상태와 네비게이션을 실행하지 않는다', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
-        await result.current.logout();
-        expect(localStorage.getItem('username')).toBeNull();
-        expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
+        await expect(result.current.logout()).rejects.toThrow('로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        expect(localStorage.getItem('username')).toBe('testuser'); // 로컬 상태 유지 (서버 세션과 일치)
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('still calls API when username is missing', async () => {

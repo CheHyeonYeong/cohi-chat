@@ -29,7 +29,11 @@ public class AuthProperties {
 		private String accessTokenName = "cohi_access_token";
 		private String refreshTokenName = "cohi_refresh_token";
 		private String path = "/api";
-		private String sameSite = "Lax";
+		private SameSitePolicy sameSite = SameSitePolicy.Lax;
 		private boolean secure = false;
+	}
+
+	public enum SameSitePolicy {
+		Strict, Lax, None
 	}
 }

@@ -22,38 +22,36 @@ public class AuthCookieService {
 	private final JwtTokenProvider jwtTokenProvider;
 
 	public void addLoginCookies(HttpServletResponse response, LoginResponseDTO loginResponse) {
-		addCookie(
+		// 신규 발급 토큰이므로 설정값 기반 전체 만료 시간을 사용
+		addTokenCookies(
 			response,
-			authProperties.getCookie().getAccessTokenName(),
 			loginResponse.getAccessToken(),
-			Duration.ofMillis(jwtTokenProvider.getAccessTokenExpirationMs())
-		);
-		addCookie(
-			response,
-			authProperties.getCookie().getRefreshTokenName(),
 			loginResponse.getRefreshToken(),
 			Duration.ofMillis(jwtTokenProvider.getRefreshTokenExpirationMs())
 		);
 	}
 
 	public void addRefreshCookies(HttpServletResponse response, RefreshTokenResponseDTO refreshResponse) {
-		addCookie(
+		// refresh token은 기존 토큰 재사용이므로 남은 유효 시간을 그대로 반영
+		long remainingSeconds = Math.max(jwtTokenProvider.getExpirationSeconds(refreshResponse.getRefreshToken()), 0);
+		addTokenCookies(
 			response,
-			authProperties.getCookie().getAccessTokenName(),
 			refreshResponse.getAccessToken(),
-			Duration.ofMillis(jwtTokenProvider.getAccessTokenExpirationMs())
-		);
-		addCookie(
-			response,
-			authProperties.getCookie().getRefreshTokenName(),
 			refreshResponse.getRefreshToken(),
-			Duration.ofMillis(jwtTokenProvider.getRefreshTokenExpirationMs())
+			Duration.ofSeconds(remainingSeconds)
 		);
 	}
 
 	public void clearAuthCookies(HttpServletResponse response) {
 		expireCookie(response, authProperties.getCookie().getAccessTokenName());
 		expireCookie(response, authProperties.getCookie().getRefreshTokenName());
+	}
+
+	private void addTokenCookies(HttpServletResponse response, String accessToken, String refreshToken,
+		Duration refreshMaxAge) {
+		addCookie(response, authProperties.getCookie().getAccessTokenName(), accessToken,
+			Duration.ofMillis(jwtTokenProvider.getAccessTokenExpirationMs()));
+		addCookie(response, authProperties.getCookie().getRefreshTokenName(), refreshToken, refreshMaxAge);
 	}
 
 	private void addCookie(HttpServletResponse response, String name, String value, Duration maxAge) {
@@ -71,7 +69,7 @@ public class AuthCookieService {
 		return ResponseCookie.from(name, value)
 			.httpOnly(true)
 			.secure(authProperties.getCookie().isSecure())
-			.sameSite(authProperties.getCookie().getSameSite())
+			.sameSite(authProperties.getCookie().getSameSite().name())
 			.path(authProperties.getCookie().getPath())
 			.maxAge(maxAge)
 			.build();

@@ -104,6 +104,28 @@ class MemberControllerTest {
 			verify(memberService).refreshAccessToken("body-refresh-token");
 			verify(authCookieService).addRefreshCookies(any(), eq(refreshResponse));
 		}
+
+		@Test
+		@DisplayName("리프레시 성공 - 쿠키에서 토큰 읽기")
+		void refreshSuccessFromCookie() throws Exception {
+			RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
+				.accessToken("new-access-token")
+				.refreshToken("new-refresh-token")
+				.expiredInMinutes(60)
+				.build();
+
+			when(authTokenResolver.resolveRefreshToken(any())).thenReturn("cookie-refresh-token");
+			when(memberService.refreshAccessToken("cookie-refresh-token")).thenReturn(refreshResponse);
+
+			mockMvc.perform(post("/members/v1/refresh"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+				.andExpect(jsonPath("$.error").isEmpty());
+
+			verify(memberService).refreshAccessToken("cookie-refresh-token");
+			verify(authCookieService).addRefreshCookies(any(), eq(refreshResponse));
+		}
 	}
 
 	@Nested

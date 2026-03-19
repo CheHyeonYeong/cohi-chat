@@ -81,6 +81,7 @@ public class MemberController {
                 HttpServletResponse response) {
 
                 String refreshToken = authTokenResolver.resolveRefreshToken(httpRequest);
+                // TODO: body fallback은 쿠키 기반 전환 완료 후 제거 예정 (하위 호환성 임시 지원)
                 if (!StringUtils.hasText(refreshToken) && request != null) {
                         refreshToken = request.getRefreshToken();
                 }

@@ -147,6 +147,10 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
         throw new Error(`Invalid JSON response`, { cause: response.status });
     }
     if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        if ((data as { success: boolean }).success === false) {
+            const msg = (data as { error?: { message?: string } }).error?.message ?? `API error`;
+            throw new Error(msg, { cause: response.status });
+        }
         return (data as { success: boolean; data: T }).data;
     }
     return data as T;

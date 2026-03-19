@@ -31,16 +31,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		String token = authTokenResolver.resolveAccessToken(request);
 
-		if (token != null && jwtTokenProvider.validateToken(token)) {
+		if (token != null) {
 			try {
+				// getAuthentication() 내부에서 JWT를 파싱하므로 validateToken() 이중 파싱 불필요
 				if (isBlacklisted(token)) {
 					SecurityContextHolder.clearContext();
 				} else {
 					Authentication auth = jwtTokenProvider.getAuthentication(token);
 					SecurityContextHolder.getContext().setAuthentication(auth);
 				}
-			} catch (io.jsonwebtoken.JwtException e) {
-				log.warn("JWT 토큰 파싱 오류: {}", e.getMessage());
+			} catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+				log.warn("유효하지 않은 JWT 토큰: {}", e.getMessage());
 				SecurityContextHolder.clearContext();
 			} catch (org.springframework.dao.DataAccessException e) {
 				log.error("Redis 연결 오류 (블랙리스트 확인 실패): {}", e.getMessage());

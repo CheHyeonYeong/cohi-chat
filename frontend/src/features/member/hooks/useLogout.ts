@@ -11,13 +11,15 @@ export function useLogout() {
     const logout = useCallback(async () => {
         try {
             await logoutApi();
-        } catch {
-            // 로그아웃 API 실패 시에도 로컬 상태는 항상 정리
-        } finally {
-            queryClient.clear();
-            clearAuthenticatedUser();
-            navigate({ to: '/login', replace: true });
+        } catch (error) {
+            console.warn('Logout API error:', error);
+            // 서버 HttpOnly 쿠키는 JS로 직접 삭제 불가하므로 API 실패 시 세션이 남을 수 있음
+            throw new Error('로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.');
         }
+
+        queryClient.clear();
+        clearAuthenticatedUser();
+        navigate({ to: '/login', replace: true });
     }, [navigate, queryClient]);
 
     return { logout };

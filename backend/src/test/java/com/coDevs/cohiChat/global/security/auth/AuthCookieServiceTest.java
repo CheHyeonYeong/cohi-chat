@@ -56,12 +56,13 @@ class AuthCookieServiceTest {
 				.contains("SameSite=Lax"))
 			.anySatisfy(cookie -> assertThat(cookie)
 				.contains("cohi_refresh_token=refresh-token")
-				.contains("HttpOnly"));
+				.contains("HttpOnly")
+				.contains("Max-Age=604800")); // 신규 발급 → 전체 만료 시간 사용
 	}
 
 	@Test
-	@DisplayName("refresh 쿠키에 access/refresh 토큰이 갱신된다")
-	void addRefreshCookies_setsAccessAndRefreshCookies() {
+	@DisplayName("refresh 쿠키의 refresh token maxAge는 토큰 남은 유효 시간을 사용한다")
+	void addRefreshCookies_usesRemainingExpirationForRefreshToken() {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
 			.accessToken("new-access-token")
@@ -69,7 +70,7 @@ class AuthCookieServiceTest {
 			.build();
 
 		given(jwtTokenProvider.getAccessTokenExpirationMs()).willReturn(3_600_000L);
-		given(jwtTokenProvider.getRefreshTokenExpirationMs()).willReturn(604_800_000L);
+		given(jwtTokenProvider.getExpirationSeconds("new-refresh-token")).willReturn(259_200L); // 3일 남음
 
 		authCookieService.addRefreshCookies(response, refreshResponse);
 
@@ -78,10 +79,33 @@ class AuthCookieServiceTest {
 		assertThat(setCookieHeaders)
 			.anySatisfy(cookie -> assertThat(cookie)
 				.contains("cohi_access_token=new-access-token")
-				.contains("HttpOnly"))
+				.contains("HttpOnly")
+				.contains("Max-Age=3600"))
 			.anySatisfy(cookie -> assertThat(cookie)
 				.contains("cohi_refresh_token=new-refresh-token")
-				.contains("HttpOnly"));
+				.contains("HttpOnly")
+				.contains("Max-Age=259200")); // 전체 7일이 아닌 남은 3일
+	}
+
+	@Test
+	@DisplayName("refresh token이 이미 만료됐으면 maxAge=0으로 즉시 만료 처리한다")
+	void addRefreshCookies_treatsNegativeExpirationAsZero() {
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		RefreshTokenResponseDTO refreshResponse = RefreshTokenResponseDTO.builder()
+			.accessToken("new-access-token")
+			.refreshToken("expired-refresh-token")
+			.build();
+
+		given(jwtTokenProvider.getAccessTokenExpirationMs()).willReturn(3_600_000L);
+		given(jwtTokenProvider.getExpirationSeconds("expired-refresh-token")).willReturn(-10L);
+
+		authCookieService.addRefreshCookies(response, refreshResponse);
+
+		List<String> setCookieHeaders = response.getHeaders(HttpHeaders.SET_COOKIE);
+		assertThat(setCookieHeaders)
+			.anySatisfy(cookie -> assertThat(cookie)
+				.contains("cohi_refresh_token=expired-refresh-token")
+				.contains("Max-Age=0"));
 	}
 
 	@Test
