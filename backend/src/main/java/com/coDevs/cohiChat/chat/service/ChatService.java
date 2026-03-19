@@ -1,18 +1,26 @@
 package com.coDevs.cohiChat.chat.service;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.Message;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
+import com.coDevs.cohiChat.chat.entity.RoomRole;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
 import com.coDevs.cohiChat.chat.repository.MessageRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
+import com.coDevs.cohiChat.global.exception.CustomException;
+import com.coDevs.cohiChat.global.exception.ErrorCode;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,25 +30,38 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ChatService {
 
+    private static final String EXTERNAL_REF_RESERVATION = "RESERVATION";
+
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final MessageRepository messageRepository;
+    private final ObjectMapper objectMapper;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createRoomForBooking(Booking booking) {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
 
         ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
-            .orElseGet(() -> createNewRoom(hostId, guestId));
+            .orElseGet(() -> createNewRoom(hostId, guestId, booking.getId()));
 
         insertReservationCard(room, booking);
     }
 
-    private ChatRoom createNewRoom(UUID hostId, UUID guestId) {
-        ChatRoom room = chatRoomRepository.save(ChatRoom.create());
-        roomMemberRepository.save(RoomMember.create(room, hostId, "HOST"));
-        roomMemberRepository.save(RoomMember.create(room, guestId, "GUEST"));
+    @Transactional(readOnly = true)
+    public ChatRoomResponseDTO getChatRoom(UUID hostId, UUID guestId) {
+        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
+            .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        return new ChatRoomResponseDTO(room.getId());
+    }
+
+    private ChatRoom createNewRoom(UUID hostId, UUID guestId, Long bookingId) {
+        ChatRoom room = chatRoomRepository.save(
+            ChatRoom.create(EXTERNAL_REF_RESERVATION, uuidFromLong(bookingId))
+        );
+        roomMemberRepository.save(RoomMember.create(room, hostId, RoomRole.HOST));
+        roomMemberRepository.save(RoomMember.create(room, guestId, RoomRole.GUEST));
         return room;
     }
 
@@ -50,19 +71,25 @@ public class ChatService {
     }
 
     private String buildReservationCardPayload(Booking booking) {
-        return String.format(
-            "{\"topic\":\"%s\",\"bookingDate\":\"%s\",\"startTime\":\"%s\",\"endTime\":\"%s\"}",
-            booking.getTopic(),
-            booking.getBookingDate(),
-            booking.getTimeSlot().getStartTime(),
-            booking.getTimeSlot().getEndTime()
-        );
+        try {
+            Map<String, String> data = Map.of(
+                "topic", booking.getTopic(),
+                "bookingDate", booking.getBookingDate().toString(),
+                "startTime", booking.getTimeSlot().getStartTime().toString(),
+                "endTime", booking.getTimeSlot().getEndTime().toString()
+            );
+            return objectMapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            log.error("RESERVATION_CARD payload 직렬화 실패 (bookingId={})", booking.getId(), e);
+            return "{}";
+        }
     }
 
-    @Transactional(readOnly = true)
-    public ChatRoomResponseDTO getChatRoomByBooking(Long bookingId, UUID hostId, UUID guestId) {
-        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
-            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
-        return new ChatRoomResponseDTO(room.getId());
+    /**
+     * Booking ID(Long)를 UUID로 변환. external_ref_id(UUID) 컬럼에 저장하기 위한 임시 변환.
+     * 추후 Booking ID를 UUID로 전환 시 제거 예정.
+     */
+    private UUID uuidFromLong(Long id) {
+        return id != null ? new UUID(0L, id) : null;
     }
 }

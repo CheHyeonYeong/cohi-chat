@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,11 +32,13 @@ public class ChatRoom {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
-    private String type = "ONE_TO_MANY";
+    private ChatRoomType type;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "ACTIVE";
+    private ChatRoomStatus status = ChatRoomStatus.ACTIVE;
 
     @Column(name = "external_ref_type", length = 50)
     private String externalRefType;
@@ -53,11 +57,11 @@ public class ChatRoom {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public static ChatRoom create() {
-        return new ChatRoom();
-    }
-
-    public void restore() {
-        this.deletedAt = null;
+    public static ChatRoom create(String externalRefType, UUID externalRefId) {
+        ChatRoom room = new ChatRoom();
+        room.type = ChatRoomType.ONE_TO_MANY;
+        room.externalRefType = externalRefType;
+        room.externalRefId = externalRefId;
+        return room;
     }
 }

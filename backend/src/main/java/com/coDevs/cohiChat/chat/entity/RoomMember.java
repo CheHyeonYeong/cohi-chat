@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -40,8 +42,9 @@ public class RoomMember {
     @Column(name = "member_id", nullable = false, columnDefinition = "uuid")
     private UUID memberId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
-    private String role;
+    private RoomRole role;
 
     @Column(name = "last_read_message_id", columnDefinition = "uuid")
     private UUID lastReadMessageId;
@@ -57,7 +60,7 @@ public class RoomMember {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public static RoomMember create(ChatRoom room, UUID memberId, String role) {
+    public static RoomMember create(ChatRoom room, UUID memberId, RoomRole role) {
         RoomMember member = new RoomMember();
         member.room = room;
         member.memberId = memberId;
