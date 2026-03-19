@@ -11,6 +11,7 @@ export function useUpdateBooking(bookingId: number) {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: bookingKeys.booking(bookingId) }),
                 queryClient.invalidateQueries({ queryKey: bookingKeys.myBookingsAll() }),
+                queryClient.invalidateQueries({ queryKey: bookingKeys.allMyBookingsAll() }),
             ]);
         },
     });

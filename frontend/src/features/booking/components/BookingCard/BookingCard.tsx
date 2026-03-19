@@ -15,8 +15,9 @@ interface BookingCardProps {
 
 export function BookingCard({ booking, onSelect, isSelected = false, className, role, counterpart }: BookingCardProps) {
     const { startedAt } = booking;
-    const displayName = counterpart?.displayName ?? booking.host.displayName;
-    const avatarInitial = counterpart?.displayName?.[0] ?? booking.host?.displayName?.[0] ?? '?';
+    const fallback = role === 'host' ? booking.guest : booking.host;
+    const displayName = (counterpart?.displayName || counterpart?.username) || (fallback.displayName || fallback.username) || '상대방';
+    const avatarInitial = displayName[0] ?? '?';
 
     return (
         <Card

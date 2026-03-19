@@ -105,22 +105,22 @@ export function Detail() {
                 {/* Booking info card */}
                 <Card className="border border-gray-100 flex flex-col gap-6">
                     <BookingHeader
-                            displayName={booking.host.displayName}
-                            roleLabel="Host"
-                            attendanceStatus={booking.attendanceStatus}
-                            actions={
-                                canEdit ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditing(true)}
-                                        className="text-xs font-medium text-[var(--cohi-primary)] hover:underline cursor-pointer"
-                                        data-testid="booking-edit-button"
-                                    >
-                                        수정
-                                    </button>
-                                ) : undefined
-                            }
-                        />
+                        displayName={booking.host.displayName}
+                        roleLabel="Host"
+                        attendanceStatus={booking.attendanceStatus}
+                        actions={
+                            canEdit ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="text-xs font-medium text-[var(--cohi-primary)] hover:underline cursor-pointer"
+                                    data-testid="booking-edit-button"
+                                >
+                                    수정
+                                </button>
+                            ) : undefined
+                        }
+                    />
 
                     <hr className="border-gray-100" />
 

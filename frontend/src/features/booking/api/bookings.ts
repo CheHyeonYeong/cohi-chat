@@ -140,7 +140,7 @@ export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: num
     const start = (page - 1) * pageSize;
     return {
         bookings: merged.slice(start, start + pageSize),
-        totalCount: guestResult.totalCount + hostResult.totalCount,
+        totalCount: merged.length,
     };
 }
 

@@ -209,7 +209,7 @@ export function MyBookings() {
 
                     {/* Right: detail panel */}
                     <div className="flex-1 min-w-0">
-                        {selectedId && selectedBooking ? (
+                        {selectedId && selectedBooking && selectedBooking.id === selectedId ? (
                             <BookingDetailPanel
                                 booking={selectedBooking}
                                 onUpload={handleUpload}
