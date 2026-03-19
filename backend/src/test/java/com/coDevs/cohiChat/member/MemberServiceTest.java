@@ -232,7 +232,7 @@ class MemberServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 INVALID_CREDENTIALS 반환")
+	@DisplayName("실패: OAuth 가입 멤버가 로컬 로그인 시도 시 SOCIAL_LOGIN_REQUIRED 반환")
 	void loginFailOAuthMemberLocalLogin() {
 		Member oAuthMember = Member.createOAuth(
 			TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "test-provider-id", Provider.GOOGLE, Role.GUEST
@@ -246,7 +246,7 @@ class MemberServiceTest {
 
 		assertThatThrownBy(() -> memberService.login(request))
 			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_CREDENTIALS);
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.SOCIAL_LOGIN_REQUIRED);
 	}
 
 	@Test
