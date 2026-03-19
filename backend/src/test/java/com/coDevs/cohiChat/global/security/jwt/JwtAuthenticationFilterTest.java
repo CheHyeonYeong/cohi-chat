@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.global.security.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 
 import java.util.Collections;
 
@@ -49,7 +50,6 @@ class JwtAuthenticationFilterTest {
 		MockFilterChain chain = new MockFilterChain();
 
 		given(authTokenResolver.resolveAccessToken(request)).willReturn("valid-token");
-		given(jwtTokenProvider.validateToken("valid-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("valid-token"))).willReturn(false);
 		given(jwtTokenProvider.getAuthentication("valid-token"))
 			.willReturn(new UsernamePasswordAuthenticationToken("user", null, Collections.emptyList()));
@@ -68,7 +68,6 @@ class JwtAuthenticationFilterTest {
 		MockFilterChain chain = new MockFilterChain();
 
 		given(authTokenResolver.resolveAccessToken(request)).willReturn("blacklisted-token");
-		given(jwtTokenProvider.validateToken("blacklisted-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("blacklisted-token"))).willReturn(true);
 
 		filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
@@ -97,7 +96,8 @@ class JwtAuthenticationFilterTest {
 		MockFilterChain chain = new MockFilterChain();
 
 		given(authTokenResolver.resolveAccessToken(request)).willReturn("invalid-token");
-		given(jwtTokenProvider.validateToken("invalid-token")).willReturn(false);
+		willThrow(new io.jsonwebtoken.JwtException("invalid token"))
+			.given(jwtTokenProvider).getAuthentication("invalid-token");
 
 		filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
 
@@ -112,7 +112,6 @@ class JwtAuthenticationFilterTest {
 		MockFilterChain chain = new MockFilterChain();
 
 		given(authTokenResolver.resolveAccessToken(request)).willReturn("valid-token");
-		given(jwtTokenProvider.validateToken("valid-token")).willReturn(true);
 		given(accessTokenBlacklistRepository.existsById(TokenHashUtil.hash("valid-token")))
 			.willThrow(new DataAccessResourceFailureException("Redis connection refused"));
 

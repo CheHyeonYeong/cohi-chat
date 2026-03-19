@@ -27,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.coDevs.cohiChat.config.EmbeddedRedisConfig;
+import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -51,6 +52,9 @@ class MemberControllerIntegrationTest {
 
 	@MockitoBean
 	private MemberService memberService;
+
+	@MockitoBean
+	private AuthCookieService authCookieService;
 
 	private static final String TEST_USERNAME = "testuser";
 	private static final String OTHER_USERNAME = "otheruser";
