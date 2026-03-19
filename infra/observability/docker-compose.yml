@@ -1,0 +1,60 @@
+services:
+  vector:
+    image: timberio/vector:0.53.0-debian
+    container_name: cohichat-vector
+    command: ["--config", "/etc/vector/vector.toml"]
+    environment:
+      POSTHOG_CAPTURE_HOST: ${POSTHOG_CAPTURE_HOST}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY}
+    volumes:
+      - ./vector.toml:/etc/vector/vector.toml:ro
+    ports:
+      - "8686:8686"
+    restart: unless-stopped
+    networks:
+      observability:
+
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:3.0.0
+    container_name: cohichat-fluent-bit
+    depends_on:
+      vector:
+        condition: service_started
+    volumes:
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+    ports:
+      - "24224:24224"
+    restart: unless-stopped
+    networks:
+      observability:
+        ipv4_address: 172.29.0.10
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cohichat-grafana
+    depends_on:
+      vector:
+        condition: service_started
+    environment:
+      POSTHOG_APP_HOST: ${POSTHOG_APP_HOST}
+      POSTHOG_PROJECT_ID: ${POSTHOG_PROJECT_ID}
+      POSTHOG_PERSONAL_API_KEY: ${POSTHOG_PERSONAL_API_KEY}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_PLUGINS_PREINSTALL: yesoreyeram-infinity-datasource
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    networks:
+      observability:
+
+networks:
+  observability:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24

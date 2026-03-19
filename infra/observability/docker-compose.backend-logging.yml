@@ -1,0 +1,8 @@
+services:
+  backend:
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: 172.29.0.10:24224
+        fluentd-async: "true"
+        tag: cohichat.backend

@@ -23,7 +23,9 @@ import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CalendarService {
@@ -45,6 +47,7 @@ public class CalendarService {
 
         // GUEST → HOST 자동 승격
         if (member.getRole() == Role.GUEST) {
+            log.info("[promoteToHost] [SUCCESS] trigger=createCalendar");
             member.promoteToHost();
             memberRepository.save(member);
         }
@@ -61,8 +64,11 @@ public class CalendarService {
 
         try {
             Calendar savedCalendar = calendarRepository.save(calendar);
+            int topicCount = request.getTopics() == null ? 0 : request.getTopics().size();
+            log.info("[createCalendar] [SUCCESS] topicCount={}", topicCount);
             return CalendarResponseDTO.from(savedCalendar);
         } catch (DataIntegrityViolationException e) {
+            log.warn("[createCalendar] [FAIL] reason=CALENDAR_ALREADY_EXISTS");
             throw new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS);
         }
     }
