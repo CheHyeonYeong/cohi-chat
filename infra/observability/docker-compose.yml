@@ -9,7 +9,7 @@ services:
     volumes:
       - ./vector.toml:/etc/vector/vector.toml:ro
     ports:
-      - "8687:8687"
+      - "8686:8686"
     restart: unless-stopped
     networks:
       observability:

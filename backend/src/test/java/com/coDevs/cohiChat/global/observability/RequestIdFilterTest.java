@@ -19,10 +19,12 @@ class RequestIdFilterTest {
     void generateUuidWhenHeaderMissing() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
 
-        filter.doFilterInternal(request, response, new MockFilterChain());
+        filter.doFilterInternal(request, response, chain);
 
         assertThat(UUID.fromString(response.getHeader(RequestIdFilter.REQUEST_ID_HEADER))).isNotNull();
+        assertThat(chain.getRequest()).as("필터 체인이 전달되어야 한다").isNotNull();
     }
 
     @Test
@@ -31,11 +33,13 @@ class RequestIdFilterTest {
         String requestId = UUID.randomUUID().toString();
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
         request.addHeader(RequestIdFilter.REQUEST_ID_HEADER, requestId);
 
-        filter.doFilterInternal(request, response, new MockFilterChain());
+        filter.doFilterInternal(request, response, chain);
 
         assertThat(response.getHeader(RequestIdFilter.REQUEST_ID_HEADER)).isEqualTo(requestId);
+        assertThat(chain.getRequest()).as("필터 체인이 전달되어야 한다").isNotNull();
     }
 
     @Test
@@ -43,12 +47,14 @@ class RequestIdFilterTest {
     void replaceInvalidHeaderWithGeneratedUuid() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
         request.addHeader(RequestIdFilter.REQUEST_ID_HEADER, "not-a-uuid");
 
-        filter.doFilterInternal(request, response, new MockFilterChain());
+        filter.doFilterInternal(request, response, chain);
 
         String generatedRequestId = response.getHeader(RequestIdFilter.REQUEST_ID_HEADER);
         assertThat(generatedRequestId).isNotEqualTo("not-a-uuid");
         assertThat(UUID.fromString(generatedRequestId)).isNotNull();
+        assertThat(chain.getRequest()).as("필터 체인이 전달되어야 한다").isNotNull();
     }
 }
