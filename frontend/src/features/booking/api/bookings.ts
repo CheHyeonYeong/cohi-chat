@@ -1,5 +1,5 @@
 import { httpClient } from '~/libs/httpClient';
-import type { AttendanceStatus, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail } from '../types';
+import type { AttendanceStatus, IBookingDetail, IBookingFile, INoShowHistoryItem, IPaginatedBookingDetail, MeetingType } from '../types';
 import { API_URL } from './constants';
 
 interface BookingFlatResponse {
@@ -15,6 +15,9 @@ interface BookingFlatResponse {
     createdAt: string;
     hostUsername: string | null;
     hostDisplayName: string | null;
+    meetingType: MeetingType;
+    location: string | null;
+    meetingLink: string | null;
 }
 
 /** ISO 8601 datetime 문자열을 로컬 Date 객체로 파싱. */
@@ -58,6 +61,9 @@ function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IB
         attendanceStatus: b.attendanceStatus as AttendanceStatus,
         hostId: b.hostId,
         guestId: b.guestId,
+        meetingType: b.meetingType,
+        location: b.location,
+        meetingLink: b.meetingLink,
     };
 }
 

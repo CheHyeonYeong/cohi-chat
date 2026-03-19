@@ -67,4 +67,5 @@ public enum AttendanceStatus {
     public boolean isGuestReportable() {
         return this == SCHEDULED;
     }
+
 }

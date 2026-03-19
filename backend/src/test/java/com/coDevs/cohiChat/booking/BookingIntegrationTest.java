@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
@@ -115,6 +116,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("프로젝트 상담")
             .description("Spring Boot 프로젝트 관련 질문")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when
@@ -140,6 +142,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("프로젝트 상담")
             .description("자기 자신에게 예약 시도")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -157,6 +160,7 @@ class BookingIntegrationTest {
             .bookingDate(LocalDate.now().minusDays(1))
             .topic("프로젝트 상담")
             .description("과거 날짜에 예약 시도")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -174,6 +178,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("첫 번째 상담")
             .description("첫 번째 예약")
+            .meetingType(MeetingType.ONLINE)
             .build();
         bookingService.createBooking(guest, firstRequest);
 
@@ -193,6 +198,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("두 번째 상담")
             .description("두 번째 예약 시도")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // then
@@ -211,6 +217,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("프로젝트 상담")
             .description("존재하지 않는 타임슬롯")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -233,6 +240,7 @@ class BookingIntegrationTest {
             .bookingDate(futureSaturday)
             .topic("프로젝트 상담")
             .description("토요일에 예약 시도")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -250,6 +258,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("첫 번째 상담")
             .description("첫 번째 예약")
+            .meetingType(MeetingType.ONLINE)
             .build();
         bookingService.createBooking(guest, firstRequest);
 
@@ -260,6 +269,7 @@ class BookingIntegrationTest {
             .bookingDate(nextMonday)
             .topic("두 번째 상담")
             .description("다음 주 월요일 예약")
+            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when
@@ -279,6 +289,7 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("첫 번째 상담")
             .description("첫 번째 예약 - 취소 예정")
+            .meetingType(MeetingType.ONLINE)
             .build();
         BookingResponseDTO firstResponse = bookingService.createBooking(guest, firstRequest);
 
@@ -303,6 +314,8 @@ class BookingIntegrationTest {
             .bookingDate(futureMonday)
             .topic("재예약 상담")
             .description("취소 후 재예약")
+            .meetingType(MeetingType.OFFLINE)
+            .location("스타벅스 강남역점")
             .build();
         BookingResponseDTO rebookResponse = bookingService.createBooking(anotherGuest, rebookRequest);
 

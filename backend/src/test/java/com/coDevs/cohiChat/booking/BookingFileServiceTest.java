@@ -28,6 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.booking.entity.BookingFile;
 import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
@@ -76,7 +77,7 @@ class BookingFileServiceTest {
         timeSlot = TimeSlot.create(HOST_ID, java.time.LocalTime.of(9, 0), java.time.LocalTime.of(10, 0), List.of(1, 2, 3));
         ReflectionTestUtils.setField(timeSlot, "id", 1L);
 
-        booking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(1), "Topic", "Description");
+        booking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(1), "Topic", "Description", MeetingType.ONLINE, null, null);
         ReflectionTestUtils.setField(booking, "id", BOOKING_ID);
 
         bookingFile = BookingFile.create(
@@ -279,7 +280,7 @@ class BookingFileServiceTest {
         @DisplayName("실패: 파일이 해당 예약에 속하지 않음")
         void deleteFileFailsWhenFileBelongsToDifferentBooking() {
             // given
-            Booking otherBooking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(2), "Other", "Desc");
+            Booking otherBooking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(2), "Other", "Desc", MeetingType.ONLINE, null, null);
             ReflectionTestUtils.setField(otherBooking, "id", 999L);
 
             BookingFile otherBookingFile = BookingFile.create(

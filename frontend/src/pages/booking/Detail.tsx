@@ -1,37 +1,44 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     DndContext,
-    closestCenter,
     KeyboardSensor,
     PointerSensor,
+    closestCenter,
+    type DragEndEvent,
     useSensor,
     useSensors,
-    type DragEndEvent,
 } from '@dnd-kit/core';
 import {
     SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-    useSortable,
     arrayMove,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, useNoShowHistory, getPresignedDownloadUrl } from '~/features/booking';
-import type { IBookingFile, AttendanceStatus } from '~/features/booking';
-import { useAuth } from '~/features/member';
+import { useToast } from '~/components/toast/useToast';
 import {
-    validateFiles,
-    getAcceptedFileTypes,
-    formatFileSize,
-    FILE_UPLOAD_LIMITS,
-    type FileValidationError,
-} from '~/libs/fileValidation';
-import { getErrorMessage } from '~/libs/errorUtils';
+    useBooking,
+    useUploadBookingFile,
+    useDeleteBookingFile,
+    useDownloadBookingFile,
+    useReportHostNoShow,
+} from '~/features/booking';
+import type { AttendanceStatus, IBookingFile } from '~/features/booking';
+import { useAuth } from '~/features/member';
 import { cn } from '~/libs/cn';
+import { getErrorMessage } from '~/libs/errorUtils';
+import {
+    FILE_UPLOAD_LIMITS,
+    formatFileSize,
+    getAcceptedFileTypes,
+    type FileValidationError,
+    validateFiles,
+} from '~/libs/fileValidation';
 import { canUploadMoreFiles } from './bookingUploadUtils';
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -43,8 +50,6 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
     SAME_DAY_CANCEL: '당일 취소',
     LATE: '지각',
 };
-
-/* --- Sortable file item --------------------------------------------------- */
 
 interface SortableFileItemProps {
     file: IBookingFile;
@@ -68,43 +73,39 @@ function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFi
             ref={setNodeRef}
             style={style}
             className={cn(
-                'flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100',
+                'flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3',
                 isDragging && 'opacity-50 shadow-lg',
             )}
         >
-            {/* Drag handle */}
             <button
                 type="button"
                 {...attributes}
                 {...listeners}
                 aria-label="드래그로 순서 변경"
-                className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 select-none px-1"
+                className="flex-shrink-0 cursor-grab select-none px-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
             >
                 <span aria-hidden="true">&#8801;</span>
             </button>
 
-            {/* File name (download on click) */}
             <button
                 type="button"
                 onClick={() =>
                     onDownload(file.id, file.originalFileName || file.fileName.split('/').pop() || 'download')
                 }
-                className="text-blue-600 hover:underline flex-1 truncate text-left text-sm"
+                className="flex-1 truncate text-left text-sm text-blue-600 hover:underline"
             >
                 {file.originalFileName || file.fileName.split('/').pop()}
             </button>
 
-            {/* File size */}
             {file.fileSize != null && (
-                <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.fileSize)}</span>
+                <span className="flex-shrink-0 text-xs text-gray-400">{formatFileSize(file.fileSize)}</span>
             )}
 
-            {/* Delete button */}
             <button
                 type="button"
                 onClick={() => onDelete(file.id)}
                 disabled={isDeleting}
-                className="text-xs text-red-500 hover:text-red-700 flex-shrink-0 disabled:opacity-50"
+                className="flex-shrink-0 text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
             >
                 {isDeleting ? '...' : '삭제'}
             </button>
@@ -112,33 +113,27 @@ function SortableFileItem({ file, onDownload, onDelete, isDeleting }: SortableFi
     );
 }
 
-/* --- Main page ------------------------------------------------------------ */
-
 export function Detail() {
     const { id } = useParams({ from: '/booking/$id' });
+    const { showToast } = useToast();
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
-    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
-    const { data: noShowHistory } = useNoShowHistory(booking?.hostId ?? undefined);
+    const { mutateAsync: downloadFileAsync, error: downloadError } = useDownloadBookingFile(Number(id));
+    const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } =
+        useReportHostNoShow(Number(id));
 
-    // File upload state
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [uploadProgress, setUploadProgress] = useState<string>('');
+    const [uploadProgress, setUploadProgress] = useState('');
     const [isDraggingOver, setIsDraggingOver] = useState(false);
-    const [downloadError, setDownloadError] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Host no-show report state
     const [showReportForm, setShowReportForm] = useState(false);
     const [reportReason, setReportReason] = useState('');
-
-    // Sortable file list – preserves DnD order across refetches
     const [fileOrder, setFileOrder] = useState<IBookingFile[]>([]);
-
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -154,24 +149,22 @@ export function Detail() {
     useEffect(() => {
         if (!booking) return;
         setFileOrder((prev) => {
-            // Keep user's custom order; append only newly added files at the end
-            const existingIds = new Set(prev.map((f) => f.id));
-            const valid = prev.filter((f) => booking.files.some((bf) => bf.id === f.id));
-            const added = booking.files.filter((f) => !existingIds.has(f.id));
+            const existingIds = new Set(prev.map((file) => file.id));
+            const valid = prev.filter((file) => booking.files.some((bookingFile) => bookingFile.id === file.id));
+            const added = booking.files.filter((file) => !existingIds.has(file.id));
             return [...valid, ...added];
         });
     }, [booking]);
 
-    // Stable items array for SortableContext (avoids recreating on every render)
-    const fileIds = useMemo(() => fileOrder.map((f) => String(f.id)), [fileOrder]);
+    const fileIds = useMemo(() => fileOrder.map((file) => String(file.id)), [fileOrder]);
 
-    // DnD sensors
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
-    /* -- Handlers ---------------------------------------------------------- */
+    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
+    const isAlreadyReported = booking?.attendanceStatus === 'HOST_NO_SHOW';
 
     const handleFileSelect = (files: FileList | null) => {
         if (!files || files.length === 0) {
@@ -179,41 +172,37 @@ export function Detail() {
             setValidationErrors([]);
             return;
         }
+
         const existingCount = booking?.files.length ?? 0;
-        const existingSize = booking?.files.reduce((sum, f) => sum + (f.fileSize || 0), 0) ?? 0;
+        const existingSize = booking?.files.reduce((sum, file) => sum + (file.fileSize || 0), 0) ?? 0;
         const result = validateFiles(files, existingCount, existingSize);
         setValidationErrors(result.errors);
         setSelectedFiles(Array.from(files));
     };
 
-    // 현재 사용자가 이 예약의 게스트인지 판단
-    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
-    const canReport = isGuest && booking?.attendanceStatus === 'SCHEDULED' && isMeetingStarted;
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        handleFileSelect(e.target.files);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        handleFileSelect(event.target.files);
     };
 
-    // Desktop drag-and-drop into upload zone
-    const handleDropZoneDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
+    const handleDropZoneDragOver = (event: React.DragEvent) => {
+        event.preventDefault();
         setIsDraggingOver(true);
     };
 
-    const handleDropZoneDragLeave = (e: React.DragEvent) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    const handleDropZoneDragLeave = (event: React.DragEvent) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
             setIsDraggingOver(false);
         }
     };
 
-    const handleDropZoneDrop = (e: React.DragEvent) => {
-        e.preventDefault();
+    const handleDropZoneDrop = (event: React.DragEvent) => {
+        event.preventDefault();
         setIsDraggingOver(false);
-        handleFileSelect(e.dataTransfer.files);
+        handleFileSelect(event.dataTransfer.files);
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
         if (validationErrors.length > 0 || selectedFiles.length === 0) return;
 
         try {
@@ -221,34 +210,20 @@ export function Detail() {
                 setUploadProgress(`${i + 1}/${selectedFiles.length} 업로드 중...`);
                 await uploadFileAsync(selectedFiles[i]);
             }
+
             refetch();
-            // 성공 시에만 파일 선택 초기화
             setSelectedFiles([]);
             setValidationErrors([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch {
-            // 에러는 uploadError 상태로 자동 관리됨 (useMutation)
-            // 파일 선택은 유지하여 사용자가 다른 파일로 재시도 가능
+            // 파일 선택 유지하여 사용자가 다른 파일로 재시도 가능
         } finally {
             setUploadProgress('');
         }
     };
 
     const handleDownload = async (fileId: number, fileName: string) => {
-        try {
-            setDownloadError(null);
-            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
-            const { url } = await getPresignedDownloadUrl(Number(id), fileId);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            console.error('Download error:', err);
-            setDownloadError(getErrorMessage(err, '파일 다운로드에 실패했습니다.'));
-        }
+        await downloadFileAsync({ fileId, fileName });
     };
 
     const handleDelete = async (fileId: number) => {
@@ -257,7 +232,7 @@ export function Detail() {
             await deleteFileAsync(fileId);
             refetch();
         } catch (err) {
-            console.error('Delete error:', err);
+            showToast(getErrorMessage(err, '파일 삭제에 실패했습니다.'), 'booking-delete-error');
         } finally {
             setDeletingFileId(null);
         }
@@ -267,8 +242,8 @@ export function Detail() {
         const { active, over } = event;
         if (over && active.id !== over.id) {
             setFileOrder((items) => {
-                const oldIndex = items.findIndex((f) => String(f.id) === active.id);
-                const newIndex = items.findIndex((f) => String(f.id) === over.id);
+                const oldIndex = items.findIndex((file) => String(file.id) === active.id);
+                const newIndex = items.findIndex((file) => String(file.id) === over.id);
                 if (oldIndex === -1 || newIndex === -1) return items;
                 return arrayMove(items, oldIndex, newIndex);
             });
@@ -284,11 +259,9 @@ export function Detail() {
         });
     };
 
-    /* -- Loading / error states -------------------------------------------- */
-
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="flex min-h-screen w-full items-center justify-center bg-[var(--cohi-bg-light)]">
                 <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
             </div>
         );
@@ -296,7 +269,7 @@ export function Detail() {
 
     if (error) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="flex min-h-screen w-full items-center justify-center bg-[var(--cohi-bg-light)]">
                 <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
             </div>
         );
@@ -304,7 +277,7 @@ export function Detail() {
 
     if (!booking) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="flex min-h-screen w-full items-center justify-center bg-[var(--cohi-bg-light)]">
                 <p className="text-gray-500">예약 정보를 찾을 수 없습니다.</p>
             </div>
         );
@@ -316,19 +289,17 @@ export function Detail() {
     return (
         <PageLayout maxWidth="3xl" className="pb-16">
             <div className="space-y-6">
-                {/* Back link */}
                 <Link
                     to="/booking/my-bookings"
                     className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--cohi-primary)]"
                 >
-                        &larr; 내 예약 목록으로
+                    &larr; 내 예약 목록으로
                 </Link>
 
-                {/* Booking info card */}
                 <Card className="border border-gray-100">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                    <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--cohi-bg-warm)]">
                                 <span className="text-lg font-semibold text-[var(--cohi-primary)]">
                                     {booking.host.displayName[0] ?? '?'}
                                 </span>
@@ -337,7 +308,7 @@ export function Detail() {
                                 <h1 className="text-xl font-bold text-[var(--cohi-text-dark)]">
                                     {booking.host.displayName}님과의 커피챗
                                 </h1>
-                                <p className="text-sm text-gray-500 mt-0.5">
+                                <p className="mt-0.5 text-sm text-gray-500">
                                     {startedAt.toLocaleDateString('ko-KR', {
                                         year: 'numeric',
                                         month: 'long',
@@ -348,7 +319,7 @@ export function Detail() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
+                            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
                                 {STATUS_LABELS[booking.attendanceStatus] ?? booking.attendanceStatus}
                             </span>
                         </div>
@@ -356,55 +327,59 @@ export function Detail() {
 
                     <div className="space-y-4">
                         <div>
-                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">주제</span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">주제</span>
                             <p className="mt-1 text-gray-800">{booking.topic}</p>
                         </div>
                         {booking.description && (
                             <div>
-                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">설명</span>
-                                <p className="mt-1 text-gray-600 text-sm leading-relaxed">{booking.description}</p>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">설명</span>
+                                <p className="mt-1 text-sm leading-relaxed text-gray-600">{booking.description}</p>
                             </div>
                         )}
                     </div>
                 </Card>
 
-                {/* Host No-show report section */}
-                {canReport && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold mb-2 text-amber-900">호스트 노쇼 신고</h2>
-                        {!showReportForm ? (
+                {isGuest && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                        <h2 className="mb-2 text-lg font-semibold text-amber-900">호스트 노쇼 신고</h2>
+                        {isAlreadyReported ? (
+                            <p className="text-sm text-amber-800">이미 신고한 예약입니다.</p>
+                        ) : !showReportForm ? (
                             <div className="space-y-3">
-                                <p className="text-sm text-amber-800">호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.</p>
+                                <p className="text-sm text-amber-800">
+                                    {isMeetingStarted
+                                        ? '호스트가 약속 장소에 나타나지 않았나요? 신고를 통해 알려주세요.'
+                                        : '미팅 시작 이후부터 신고할 수 있습니다.'}
+                                </p>
                                 <Button
                                     type="button"
                                     variant="primary"
+                                    disabled={!isMeetingStarted}
                                     onClick={() => setShowReportForm(true)}
-                                    className="rounded-xl"
+                                    className={cn('rounded-xl', isMeetingStarted && 'bg-red-600 hover:bg-red-700')}
                                 >
-                                        호스트 노쇼 신고
+                                    호스트 노쇼 신고
                                 </Button>
                             </div>
                         ) : (
                             <div className="flex flex-col space-y-3">
                                 <textarea
-                                    className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                    className="w-full resize-none rounded-xl border border-amber-200 p-3 text-sm focus:border-amber-500 focus:ring-amber-500"
                                     rows={3}
                                     placeholder="신고 사유를 입력해주세요 (선택)"
                                     value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
+                                    onChange={(event) => setReportReason(event.target.value)}
                                 />
-                                {reportError && (
-                                    <p className="text-red-600 text-sm">{reportError.message}</p>
-                                )}
+                                {reportError && <p className="text-sm text-red-600">{reportError.message}</p>}
                                 <div className="flex flex-row space-x-2">
                                     <Button
                                         type="button"
                                         variant="primary"
                                         loading={isReporting}
                                         onClick={handleReportSubmit}
-                                        className="rounded-xl px-6"
+                                        className="rounded-xl bg-red-600 px-6 hover:bg-red-700"
                                     >
-                                            신고하기
+                                        신고하기
                                     </Button>
                                     <Button
                                         type="button"
@@ -416,7 +391,7 @@ export function Detail() {
                                         }}
                                         className="rounded-xl px-6"
                                     >
-                                            취소
+                                        취소
                                     </Button>
                                 </div>
                             </div>
@@ -424,57 +399,36 @@ export function Detail() {
                     </div>
                 )}
 
-                {isGuest && noShowHistory && noShowHistory.length > 0 && (
-                    <div className="bg-red-50 border border-red-100 rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold mb-3 text-red-800">
-                                이 호스트의 노쇼 이력 {noShowHistory.length}건
-                        </h2>
-                        <ul className="space-y-2">
-                            {noShowHistory.map((item) => (
-                                <li key={item.id} className="text-sm text-red-600 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                    {new Date(item.bookingStartedAt).toLocaleDateString('ko-KR')} 노쇼 발생
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {/* File section */}
-                <Card className="border border-gray-100 space-y-5" title="파일 첨부">
-
-                    {/* Capacity info */}
-                    <div className="text-xs text-gray-400 flex flex-wrap gap-x-4 gap-y-1">
+                <Card className="space-y-5 border border-gray-100" title="파일 첨부">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
                         <span>허용 형식: {FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.join(', ')}</span>
                         <span>최대 크기: {formatFileSize(FILE_UPLOAD_LIMITS.MAX_FILE_SIZE)}</span>
                         <span>첨부 {fileOrder.length}/{FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING}개</span>
                     </div>
 
-                    {/* Upload form */}
                     {canUploadMore ? (
                         <form onSubmit={handleSubmit} className="space-y-3">
-                            {/* Drop zone */}
                             <div
                                 onDragOver={handleDropZoneDragOver}
                                 onDragLeave={handleDropZoneDragLeave}
                                 onDrop={handleDropZoneDrop}
                                 onClick={() => fileInputRef.current?.click()}
                                 className={cn(
-                                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+                                    'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 transition-colors',
                                     isDraggingOver
                                         ? 'border-[var(--cohi-primary)] bg-[var(--cohi-primary)]/5'
                                         : 'border-gray-200 hover:border-[var(--cohi-primary)]/50 hover:bg-gray-50',
                                 )}
                             >
-                                <span className="text-2xl select-none" aria-hidden="true">&#8679;</span>
+                                <span className="select-none text-2xl" aria-hidden="true">
+                                    &#8679;
+                                </span>
                                 <p className="text-sm text-gray-500">
-                                    {isDraggingOver
-                                        ? '파일을 놓으세요'
-                                        : '파일을 드래그하거나 클릭해서 선택'}
+                                    {isDraggingOver ? '파일을 놓으세요' : '파일을 드래그하거나 클릭해서 선택'}
                                 </p>
                                 {selectedFiles.length > 0 && (
-                                    <p className="text-sm text-[var(--cohi-primary)] font-medium">
-                                        {selectedFiles.map((f) => f.name).join(', ')}
+                                    <p className="text-sm font-medium text-[var(--cohi-primary)]">
+                                        {selectedFiles.map((file) => file.name).join(', ')}
                                     </p>
                                 )}
                                 <input
@@ -488,22 +442,20 @@ export function Detail() {
                                 />
                             </div>
 
-                            {/* Validation errors */}
                             {validationErrors.length > 0 && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                    <p className="text-red-700 font-medium text-sm mb-1">파일 업로드 오류</p>
-                                    <ul className="list-disc pl-4 text-red-600 text-sm space-y-0.5">
-                                        {validationErrors.map((err, i) => (
-                                            <li key={i}>{err.message}</li>
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                                    <p className="mb-1 text-sm font-medium text-red-700">파일 업로드 오류</p>
+                                    <ul className="list-disc space-y-0.5 pl-4 text-sm text-red-600">
+                                        {validationErrors.map((validationError, index) => (
+                                            <li key={index}>{validationError.message}</li>
                                         ))}
                                     </ul>
                                 </div>
                             )}
 
-                            {/* Upload API error */}
                             {uploadError && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                    <p className="text-red-600 text-sm">업로드 실패: {uploadError.message}</p>
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                                    <p className="text-sm text-red-600">업로드 실패: {uploadError.message}</p>
                                 </div>
                             )}
 
@@ -514,20 +466,19 @@ export function Detail() {
                                 disabled={validationErrors.length > 0 || selectedFiles.length === 0}
                                 loading={isUploading}
                             >
-                                {isUploading ? (uploadProgress || '업로드 중...') : '첨부하기'}
+                                {isUploading ? uploadProgress || '업로드 중...' : '첨부하기'}
                             </Button>
                         </form>
                     ) : (
                         <p className="text-sm text-red-500">
-                                최대 파일 개수에 도달했습니다. 더 파일을 첨부하려면 기존 파일을 삭제해주세요.
+                            최대 파일 개수에 도달했습니다. 더 파일을 첨부하려면 기존 파일을 삭제해주세요.
                         </p>
                     )}
 
-                    {/* Attached file list (sortable) */}
                     {fileOrder.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-gray-600">첨부된 파일</p>
-                            <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다. (현재 세션에서만 유지됨)</p>
+                            <p className="text-xs text-gray-400">드래그해서 순서를 변경할 수 있습니다. 현재 세션에서만 유지됩니다.</p>
                             <DndContext
                                 sensors={sensors}
                                 collisionDetection={closestCenter}
@@ -551,12 +502,12 @@ export function Detail() {
                     )}
 
                     {downloadError && (
-                        <p className="mt-1 text-sm text-red-500">{downloadError}</p>
+                        <p className="mt-1 text-sm text-red-500">
+                            {getErrorMessage(downloadError, '파일 다운로드에 실패했습니다.')}
+                        </p>
                     )}
 
-                    {fileOrder.length === 0 && (
-                        <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>
-                    )}
+                    {fileOrder.length === 0 && <p className="text-sm text-gray-400">첨부 파일이 없습니다.</p>}
                 </Card>
             </div>
         </PageLayout>
