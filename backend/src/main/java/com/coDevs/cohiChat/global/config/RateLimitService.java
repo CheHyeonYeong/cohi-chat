@@ -22,42 +22,52 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class RateLimitService implements RateLimitServiceBase {
 
-	private static final String RATE_LIMIT_KEY_PREFIX = "rate-limit:";
+    private static final String RATE_LIMIT_KEY_PREFIX = "rate-limit:";
 
-	private final LettuceBasedProxyManager<String> proxyManager;
-	private final RateLimitProperties properties;
+    private final LettuceBasedProxyManager<String> proxyManager;
+    private final RateLimitProperties properties;
 
-	private volatile BucketConfiguration cachedConfiguration;
+    private volatile BucketConfiguration cachedConfiguration;
 
-	@Override
-	public long checkRateLimit(String key) {
-		String bucketKey = RATE_LIMIT_KEY_PREFIX + key;
+    @Override
+    public long checkRateLimit(String key) {
+        String bucketKey = RATE_LIMIT_KEY_PREFIX + key;
 
-		BucketProxy bucket = proxyManager.builder()
-			.build(bucketKey, this::getOrCreateBucketConfiguration);
+        BucketProxy bucket = proxyManager.builder()
+            .build(bucketKey, this::getOrCreateBucketConfiguration);
 
-		ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
-		if (probe.isConsumed()) {
-			return probe.getRemainingTokens();
-		}
+        if (probe.isConsumed()) {
+            return probe.getRemainingTokens();
+        }
 
-		log.warn("Rate limit 초과 - key: {}", key);
-		throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED);
-	}
+        log.warn("[rateLimit] [FAIL] scope={}", extractScope(key));
+        throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED);
+    }
 
-	private BucketConfiguration getOrCreateBucketConfiguration() {
-		if (cachedConfiguration == null) {
-			cachedConfiguration = BucketConfiguration.builder()
-				.addLimit(
-					Bandwidth.builder()
-						.capacity(properties.getCapacity())
-						.refillGreedy(properties.getRefillTokens(),
-							Duration.ofSeconds(properties.getRefillDurationSeconds()))
-						.build()
-				)
-				.build();
-		}
-		return cachedConfiguration;
-	}
+    private BucketConfiguration getOrCreateBucketConfiguration() {
+        if (cachedConfiguration == null) {
+            cachedConfiguration = BucketConfiguration.builder()
+                .addLimit(
+                    Bandwidth.builder()
+                        .capacity(properties.getCapacity())
+                        .refillGreedy(
+                            properties.getRefillTokens(),
+                            Duration.ofSeconds(properties.getRefillDurationSeconds())
+                        )
+                        .build()
+                )
+                .build();
+        }
+        return cachedConfiguration;
+    }
+
+    private String extractScope(String key) {
+        int separatorIndex = key.indexOf(':');
+        if (separatorIndex < 0) {
+            return "global";
+        }
+        return key.substring(0, separatorIndex);
+    }
 }

@@ -1,0 +1,83 @@
+name: Grafana Deploy Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/observability/**'
+      - '.github/workflows/grafana-deploy-prod.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: grafana-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Grafana EC2
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        with:
+          host: ${{ secrets.GRAFANA_EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.GRAFANA_SSH_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          command_timeout: 10m
+          script: |
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            export AWS_DEFAULT_REGION=$AWS_REGION
+
+            set -euo pipefail
+
+            # Git 저장소 동기화
+            if [ ! -d ~/cohi-chat ]; then
+              git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
+            fi
+            cd ~/cohi-chat
+            git fetch origin
+            git reset --hard origin/${{ github.ref_name }}
+
+            # Grafana 디렉토리로 이동
+            cd infra/observability
+
+            # Secrets Manager에서 Grafana 환경변수 로드
+            aws secretsmanager get-secret-value \
+              --secret-id cohi-chat/grafana \
+              --query SecretString \
+              --output text | \
+              python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
+
+            # Docker 정리 (24시간 이상 된 이미지만)
+            docker image prune -af --filter "until=24h" || true
+
+            # Grafana 배포
+            docker-compose -f docker-compose.grafana-only.yml pull
+            docker-compose -f docker-compose.grafana-only.yml up -d
+
+            echo "Waiting for Grafana to start..."
+            sleep 10
+
+            docker-compose -f docker-compose.grafana-only.yml ps
+            docker-compose -f docker-compose.grafana-only.yml logs --tail=20 grafana
+
+            echo "Deploy success: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"

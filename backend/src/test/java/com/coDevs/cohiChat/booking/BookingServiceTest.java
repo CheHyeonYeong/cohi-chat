@@ -13,11 +13,13 @@ import static org.mockito.Mockito.verify;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -90,6 +93,9 @@ class BookingServiceTest {
 
     @Mock
     private Member guestMember;
+
+    @Mock
+    private Member hostMember;
 
     @Mock
     private TimeSlot timeSlot;
@@ -1467,7 +1473,6 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(false);
         given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
@@ -1476,6 +1481,94 @@ class BookingServiceTest {
         // then
         assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.HOST_NO_SHOW);
         verify(noShowHistoryRepository).save(any(NoShowHistory.class));
+    }
+
+    @Test
+    @DisplayName("성공: 신고 누적 20회 시 호스트가 자동 밴된다")
+    void reportHostNoShowTriggersBanAt20() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(20L);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+
+        // when
+        bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
+
+        // then
+        verify(hostMember).ban();
+    }
+
+    @Test
+    @DisplayName("성공: 신고 누적 19회 시 밴되지 않는다")
+    void reportHostNoShowDoesNotBanBelow20() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(19L);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+
+        // when
+        bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
+
+        // then
+        verify(hostMember, never()).ban();
+    }
+
+    @Test
+    @DisplayName("성공: 신고 누적 1회 시 밴되지 않는다")
+    void reportHostNoShowDoesNotBanAt1() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(1L);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+
+        // when
+        bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
+
+        // then
+        verify(hostMember, never()).ban();
+    }
+
+    @Test
+    @DisplayName("성공: 신고 누적 21회 시에도 밴이 유지된다")
+    void reportHostNoShowKeepsBanAbove20() {
+        // given
+        Long bookingId = 1L;
+        LocalDate pastDate = LocalDate.now().minusDays(1);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(21L);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+
+        // when
+        bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
+
+        // then
+        verify(hostMember).ban();
     }
 
     @Test
@@ -1520,7 +1613,15 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.existsByBookingId(bookingId)).willReturn(true);
+        given(noShowHistoryRepository.save(any(NoShowHistory.class)))
+            .willThrow(new DataIntegrityViolationException(
+                "duplicate",
+                new ConstraintViolationException(
+                    "duplicate",
+                    new SQLException("duplicate key"),
+                    "uq_noshow_history_booking_id"
+                )
+            ));
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
@@ -1536,6 +1637,7 @@ class BookingServiceTest {
         LocalDate pastDate = LocalDate.now().minusDays(1);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         booking.updateStatus(AttendanceStatus.ATTENDED);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));

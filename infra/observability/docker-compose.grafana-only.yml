@@ -1,0 +1,23 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cohichat-grafana
+    environment:
+      POSTHOG_APP_HOST: ${POSTHOG_APP_HOST}
+      POSTHOG_PROJECT_ID: ${POSTHOG_PROJECT_ID}
+      POSTHOG_PERSONAL_API_KEY: ${POSTHOG_PERSONAL_API_KEY}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_PLUGINS_PREINSTALL: yesoreyeram-infinity-datasource
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
+    driver: local

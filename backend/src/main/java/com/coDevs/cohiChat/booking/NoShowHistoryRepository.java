@@ -15,4 +15,6 @@ public interface NoShowHistoryRepository extends JpaRepository<NoShowHistory, Lo
     List<NoShowHistory> findByHostIdOrderByReportedAtDesc(@Param("hostId") UUID hostId);
 
     boolean existsByBookingId(Long bookingId);
+
+    long countByHostId(UUID hostId);
 }

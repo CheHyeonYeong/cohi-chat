@@ -82,6 +82,11 @@ public enum ErrorCode {
 		"Google Calendar 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
 	/**
+	 * 채팅 관련 예외들.
+	 */
+	CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
+
+	/**
 	 * 파일 관련 예외들.
 	 */
 	FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
