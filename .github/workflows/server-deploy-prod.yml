@@ -8,6 +8,7 @@ on:
       - 'docker-compose.prod.yml'
       - 'nginx/**'
       - 'scripts/blue-green-deploy.sh'
+      - 'scripts/rollback.sh'
       - 'scripts/ec2-deploy-common.sh'
       - '.github/workflows/server-deploy-prod.yml'
   workflow_dispatch:

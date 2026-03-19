@@ -23,7 +23,8 @@ detect_active() {
     elif [ "$green_status" = "running" ] && [ "$blue_status" != "running" ]; then
         echo "green"
     else
-        grep -q "backend-blue" "$NGINX_UPSTREAM_FILE" && echo "blue" || echo "green"
+        echo "[error] Active backend is ambiguous. blue=${blue_status}, green=${green_status}" >&2
+        return 1
     fi
 }
 
@@ -63,8 +64,10 @@ wait_healthy() {
 # ── Nginx upstream 전환 ───────────────────────────────────────────────────────
 switch_upstream() {
     local target=$1
+    local backup="${NGINX_UPSTREAM_FILE}.bak"
 
     echo "[nginx] Switching upstream to backend-${target}"
+    cp "$NGINX_UPSTREAM_FILE" "$backup"
     cat > "$NGINX_UPSTREAM_FILE" <<EOF
 # Blue-Green 배포에서 동적으로 교체되는 upstream 설정
 upstream backend {
@@ -72,7 +75,23 @@ upstream backend {
 }
 EOF
 
-    docker exec cohi-chat-nginx nginx -s reload
+    if ! docker exec cohi-chat-nginx nginx -t >/dev/null 2>&1; then
+        echo "[nginx] configuration test failed, reverting upstream"
+        cp "$backup" "$NGINX_UPSTREAM_FILE"
+        docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1 || true
+        rm -f "$backup"
+        return 1
+    fi
+
+    if ! docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1; then
+        echo "[nginx] reload failed, reverting upstream"
+        cp "$backup" "$NGINX_UPSTREAM_FILE"
+        docker exec cohi-chat-nginx nginx -s reload >/dev/null 2>&1 || true
+        rm -f "$backup"
+        return 1
+    fi
+
+    rm -f "$backup"
     echo "[nginx] Reloaded. Traffic now routed to backend-${target}."
 }
 
@@ -84,7 +103,10 @@ main() {
     echo "=============================="
 
     local active
-    active=$(detect_active)
+    active=$(detect_active) || {
+        echo "[error] Cannot determine active backend safely. Aborting rollback."
+        exit 1
+    }
     local previous
     previous=$([ "$active" = "blue" ] && echo "green" || echo "blue")
 

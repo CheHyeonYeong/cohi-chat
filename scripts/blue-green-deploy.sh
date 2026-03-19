@@ -26,8 +26,8 @@ detect_active() {
     elif [ "$green_status" = "running" ] && [ "$blue_status" != "running" ]; then
         echo "green"
     else
-        # 둘 다 running이거나 둘 다 중지 시 upstream.conf fallback
-        grep -q "backend-blue" "$NGINX_UPSTREAM_FILE" && echo "blue" || echo "green"
+        echo "[error] Active backend is ambiguous. blue=${blue_status}, green=${green_status}" >&2
+        return 1
     fi
 }
 
@@ -98,7 +98,10 @@ main() {
     echo "=============================="
 
     local active
-    active=$(detect_active)
+    active=$(detect_active) || {
+        echo "[error] Cannot determine active backend safely. Aborting deploy."
+        exit 1
+    }
     local inactive
     inactive=$([ "$active" = "blue" ] && echo "green" || echo "blue")
 

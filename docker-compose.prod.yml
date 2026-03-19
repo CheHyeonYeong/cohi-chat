@@ -7,9 +7,6 @@ services:
     volumes:
       - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf
-    depends_on:
-      backend-blue:
-        condition: service_healthy
     networks:
       - cohi-chat-network
     restart: unless-stopped

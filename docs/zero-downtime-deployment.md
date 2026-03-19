@@ -2,7 +2,7 @@
 
 ## 아키텍처
 
-```
+```text
 사용자
   │
   ▼
@@ -47,7 +47,7 @@ cat nginx/upstream.conf
 
 GitHub Actions `server-deploy-prod.yml` 이 자동으로 수행합니다.
 
-```
+```text
 main 브랜치 push
   └─▶ CI 빌드 & JAR → S3
         └─▶ EC2 SSH
