@@ -1,5 +1,5 @@
 import { ForgotPasswordForm } from '~/features/member';
 
-export default function ForgotPassword() {
+export function ForgotPassword() {
     return <ForgotPasswordForm />;
 }

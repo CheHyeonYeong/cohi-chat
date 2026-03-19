@@ -35,7 +35,7 @@ cd frontend
 pnpm install    # 의존성 설치
 pnpm dev        # 개발 서버 (port 3000)
 pnpm build      # 프로덕션 빌드
-pnpm test       # 테스트 (Vitest)
+pnpm test run   # 테스트 실행 (watch 모드 아님)
 pnpm lint       # ESLint 검사
 ```
 
@@ -55,7 +55,7 @@ cohiChat/
 ├── frontend/             # React 프론트엔드
 │   └── src/
 │       ├── components/   # 재사용 컴포넌트
-│       ├── features/     # 도메인별 기능 모듈 (member, calendar, host)
+│       ├── features/     # 도메인별 기능 모듈 (member, booking, host)
 │       ├── pages/        # 페이지
 │       ├── hooks/        # Custom Hooks
 │       ├── routes/       # 라우트 정의

@@ -1,8 +1,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
-import { WEEKDAYS } from '~/libs/constants/days';
+import { DAY_NAMES, WEEKDAYS, type Weekday } from '~/libs/constants/days';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -46,7 +46,25 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     return `${String(h).padStart(2, '0')}:${m}`;
 });
 
-export default function TimeSlotForm({
+function formatWeekdaySummary(weekdays: number[]): string {
+    const sorted = [...weekdays].sort((a, b) => a - b);
+    if (sorted.length === 0) return '요일 미선택';
+
+    const names = sorted.map((day) => DAY_NAMES[day as Weekday]);
+    const isConsecutive = sorted.every((day, index) => index === 0 || day === sorted[index - 1] + 1);
+
+    if (isConsecutive && sorted.length >= 2) {
+        return `${names[0]}~${names[names.length - 1]}`;
+    }
+
+    return names.join(', ');
+}
+
+function formatEntrySummary(entry: TimeSlotEntry): string {
+    return `${formatWeekdaySummary(entry.weekdays)} ${entry.startTime} - ${entry.endTime}`;
+}
+
+export function TimeSlotForm({
     entries,
     onChange,
     onSave,
@@ -132,19 +150,27 @@ export default function TimeSlotForm({
                     >
                         <div
                             data-testid="entry-header"
-                            className="flex justify-between items-center cursor-pointer"
+                            className="flex cursor-pointer items-start justify-between gap-3"
                             onClick={() => setExpandedIndex(expandedIndex === index ? -1 : index)}
                         >
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
                                     시간대 {index + 1}
-                                </span>
-                                {entry.existingId != null && (
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>
-                                )}
-                                {(timeValidationErrors[index] || overlapErrors[index]) && (
-                                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                                )}
+                                    </span>
+                                    {entry.existingId != null && (
+                                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">저장됨</span>
+                                    )}
+                                    {(timeValidationErrors[index] || overlapErrors[index]) && (
+                                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                                    )}
+                                </div>
+                                <p
+                                    data-testid={`entry-summary-${index}`}
+                                    className="mt-1 text-sm text-gray-500"
+                                >
+                                    {formatEntrySummary(entry)}
+                                </p>
                             </div>
                             {entry.existingId != null && onDelete ? (
                                 <button

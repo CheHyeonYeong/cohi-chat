@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
@@ -53,7 +54,10 @@ class BookingRepositoryTest {
             guestId,
             LocalDate.of(2025, 1, 20),
             "프로젝트 상담",
-            "Spring Boot 프로젝트 관련 질문"
+            "Spring Boot 프로젝트 관련 질문",
+            MeetingType.ONLINE,
+            null,
+            null
         );
         savedBooking = bookingRepository.save(booking);
     }

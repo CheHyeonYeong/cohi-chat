@@ -1,4 +1,4 @@
-import MeetingInfoForm from '../MeetingInfoForm';
+import { MeetingInfoForm } from '../MeetingInfoForm';
 
 export interface Step1Data {
     topics: string[];
@@ -11,9 +11,9 @@ interface RegisterStep1Props {
     errors: Record<string, string>;
 }
 
-export default function RegisterStep1({ data, onChange, errors }: RegisterStep1Props) {
+export function RegisterStep1({ data, onChange, errors }: RegisterStep1Props) {
     return (
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
                 기본 정보 입력
             </h2>

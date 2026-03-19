@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Button from '~/components/button/Button';
+import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { CheckIcon, CopyIcon, ExternalLinkIcon } from '~/components/icons';
 import { useServiceAccountEmail } from '~/features/host/hooks/useServiceAccountEmail';
@@ -18,7 +18,7 @@ interface GoogleCalendarSetupProps {
     noShadow?: boolean;
 }
 
-export default function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
+export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [emailCopied, setEmailCopied] = useState(false);

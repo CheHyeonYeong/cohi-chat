@@ -56,6 +56,13 @@ $RECYCLE.BIN/
 *.ipr
 *.iws
 
+# Zellij
+*.kdl
+
+# Local workspace
+jobs.yaml
+plans/
+
 # ===========================
 # 빌드 / 의존성
 # ===========================

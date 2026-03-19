@@ -23,7 +23,7 @@ const sizeStyles = {
     lg: "p-8",
 };
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
+export const Card = forwardRef<HTMLDivElement, CardProps>(
     ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ...props }, ref) => {
         const cardClassName = cn(
             "rounded-2xl",
@@ -52,6 +52,3 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     }
 );
 
-Card.displayName = "Card";
-
-export default Card;

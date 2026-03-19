@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '~/components/card';
-import { Header } from '~/components/header';
+import { PageLayout } from '~/components';
 import { useToast } from '~/components/toast/useToast';
-import TimeSlotForm, { type TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
-import WeeklySchedulePreview from '~/features/host/components/timeslot/WeeklySchedulePreview';
+import { TimeSlotForm, WeeklySchedulePreview, type TimeSlotEntry } from '~/features/host/components/timeslot';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
 import { useAuth, useUpdateProfile } from '~/features/member';
 import { useHost } from '~/hooks/useHost';
-import Button from '~/components/button/Button';
-import LinkButton from '~/components/button/LinkButton';
+import { Button } from '~/components/button';
+import { LinkButton } from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
@@ -25,33 +24,46 @@ function formatWeekdaySummary(weekdays: number[]): string {
     return names.join(', ');
 }
 
-function normalizeTime(time: string): string {
-    return time.slice(0, 5);
+function normalizeTime(time?: string | null): string {
+    return typeof time === 'string' ? time.slice(0, 5) : '';
+}
+
+function readTimeslotStart(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('startedAt' in ts ? ts.startedAt : undefined) ??
+        ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
+        null,
+    );
+}
+
+function readTimeslotEnd(ts: TimeSlotResponse): string {
+    return normalizeTime(
+        ('endedAt' in ts ? ts.endedAt : undefined) ??
+        ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
+        null,
+    );
 }
 
 function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
     if (timeslots.length === 0) return [];
-    return timeslots.map((ts) => ({
-        weekdays: ts.weekdays,
-        startTime: normalizeTime(ts.startedAt),
-        endTime: normalizeTime(ts.endedAt),
-        startDate: ts.startDate ?? undefined,
-        endDate: ts.endDate ?? undefined,
-        existingId: ts.id,
-    }));
+    return timeslots
+        .map((ts) => ({
+            weekdays: ts.weekdays,
+            startTime: readTimeslotStart(ts),
+            endTime: readTimeslotEnd(ts),
+            startDate: ts.startDate ?? undefined,
+            endDate: ts.endDate ?? undefined,
+            existingId: ts.id,
+        }))
+        .filter((entry) => entry.startTime && entry.endTime);
 }
 
-const defaultEntry: TimeSlotEntry = {
-    weekdays: [1, 2, 3, 4, 5],
-    startTime: '09:00',
-    endTime: '18:00',
-};
-
-export default function TimeSlotSettings() {
-    const [entries, setEntries] = useState<TimeSlotEntry[]>([{ ...defaultEntry }]);
+export function TimeSlotSettings() {
+    const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
 
     const { data: user } = useAuth();
@@ -101,15 +113,11 @@ export default function TimeSlotSettings() {
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         const loaded = toEntries(existingTimeslots);
-        if (loaded.length > 0) {
-            setEntries(loaded);
-            const latestUpdate = existingTimeslots
-                .map((ts) => new Date(ts.updatedAt))
-                .sort((a, b) => b.getTime() - a.getTime())[0];
-            if (latestUpdate) setLastSaved(latestUpdate);
-        } else {
-            setEntries([{ ...defaultEntry }]);
-        }
+        setEntries(loaded);
+        const latestUpdate = existingTimeslots
+            .map((ts) => new Date(ts.updatedAt))
+            .sort((a, b) => b.getTime() - a.getTime())[0];
+        if (latestUpdate) setLastSaved(latestUpdate);
         syncedRef.current = true;
     }, [existingTimeslots]);
 
@@ -175,132 +183,136 @@ export default function TimeSlotSettings() {
     };
 
     const handleDelete = async (existingId: number) => {
+        if (deletingIdsRef.current.has(existingId)) return;
+        deletingIdsRef.current.add(existingId);
+
         try {
             setDeletingId(existingId);
             await deleteTimeslotMutation.mutateAsync(existingId);
-            setEntries((prev) => {
-                const remaining = prev.filter((e) => e.existingId !== existingId);
-                return remaining.length > 0 ? remaining : [{ ...defaultEntry }];
-            });
+            setEntries((prev) => prev.filter((e) => e.existingId !== existingId));
             syncedRef.current = false;
         } catch (err) {
             setErrors({ delete: getErrorMessage(err, '삭제 중 오류가 발생했습니다.') });
         } finally {
-            setDeletingId(null);
+            deletingIdsRef.current.delete(existingId);
+            setDeletingId((current) => (current === existingId ? null : current));
         }
     };
 
-    const summaryText = entries
-        .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
-        .join(' / ');
+    const handlePreviewDelete = (entry: TimeSlotEntry, index: number) => {
+        if (entry.existingId != null) {
+            void handleDelete(entry.existingId);
+            return;
+        }
+
+        setEntries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    };
+
+    const summaryText = entries.length > 0
+        ? entries
+            .map((e) => formatWeekdaySummary(e.weekdays) + ', ' + e.startTime + ' - ' + e.endTime)
+            .join(' / ')
+        : '설정된 시간대 없음';
 
     const isCalendarMissing = loadError != null && (loadError as Error).cause === 404;
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
-                <p className="text-gray-500">불러오는 중...</p>
-            </div>
+            <PageLayout title="시간대 설정">
+                <div className="flex items-center justify-center py-20">
+                    <p className="text-gray-500">불러오는 중...</p>
+                </div>
+            </PageLayout>
         );
     }
 
     if (isCalendarMissing) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <p className="text-lg text-gray-700">캘린더를 먼저 연동해야 시간대를 설정할 수 있습니다.</p>
-                    <LinkButton variant="primary" to="/host/register">
-                        캘린더 연동하기
-                    </LinkButton>
+            <PageLayout title="시간대 설정">
+                <div className="flex items-center justify-center py-12">
+                    <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
+                        <div className="text-5xl">⏰</div>
+                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <p className="text-gray-600">
+                            시간대를 설정하려면 먼저 Google 캘린더를 연동해야 합니다.
+                        </p>
+                        <LinkButton variant="primary" to="/host/register" size="lg" className="w-full">
+                            캘린더 연동하기
+                        </LinkButton>
+                    </Card>
                 </div>
-            </div>
+            </PageLayout>
         );
     }
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
-            <Header
-                center={
-                    <nav className="text-sm text-gray-500">
-                        <span>호스트 대시보드</span>
-                        <span className="mx-1.5">&gt;</span>
-                        <span className="text-[var(--cohi-text-dark)] font-medium">시간대 설정</span>
-                    </nav>
-                }
-                right={
-                    <div className="w-9 h-9 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center">
-                        <span className="text-sm text-[var(--cohi-primary)]">👤</span>
-                    </div>
-                }
-            />
-
-            <main className="w-full px-6 py-8 pb-20">
-                <div className="max-w-6xl mx-auto space-y-8">
-                    <Card title="내 프로필">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
-                                <input
-                                    type="text"
-                                    value={job}
-                                    onChange={(e) => setJob(e.target.value)}
-                                    placeholder="예: 백엔드 개발자 @ 스타트업"
-                                    maxLength={100}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
-                                <input
-                                    type="url"
-                                    value={profileImageUrl}
-                                    onChange={(e) => setProfileImageUrl(e.target.value)}
-                                    placeholder="https://..."
-                                    maxLength={500}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                                />
-                            </div>
-                            <div className="flex items-end gap-2">
-                                <Button
-                                    variant="primary"
-                                    onClick={handleProfileSave}
-                                    loading={updateProfileMutation.isPending}
-                                >
-                                    저장
-                                </Button>
-                                {profileSaved && (
-                                    <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
-                                )}
-                            </div>
-                        </div>
-                        {updateProfileMutation.isError && (
-                            <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
-                        )}
-                    </Card>
-
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        <div className="w-full lg:w-[400px] flex-shrink-0">
-                            <TimeSlotForm
-                                entries={entries}
-                                onChange={setEntries}
-                                onSave={handleSave}
-                                onDelete={handleDelete}
-                                onOverlapDetected={handleDuplicateBlocked}
-                                isPending={createTimeslotMutation.isPending}
-                                deletingId={deletingId}
-                                errors={errors}
+        <PageLayout title="시간대 설정" className="pb-20">
+            <div className="space-y-8">
+                <Card title="내 프로필">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
+                            <input
+                                type="text"
+                                value={job}
+                                onChange={(e) => setJob(e.target.value)}
+                                placeholder="예: 백엔드 개발자 @ 스타트업"
+                                maxLength={100}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
                             />
                         </div>
                         <div className="flex-1">
-                            <WeeklySchedulePreview
-                                entries={entries}
-                                onChange={setEntries}
-                                onDuplicateBlocked={handleDuplicateBlocked}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
+                            <input
+                                type="url"
+                                value={profileImageUrl}
+                                onChange={(e) => setProfileImageUrl(e.target.value)}
+                                placeholder="https://..."
+                                maxLength={500}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
                             />
                         </div>
+                        <div className="flex items-end gap-2">
+                            <Button
+                                variant="primary"
+                                onClick={handleProfileSave}
+                                loading={updateProfileMutation.isPending}
+                            >
+                                    저장
+                            </Button>
+                            {profileSaved && (
+                                <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
+                            )}
+                        </div>
+                    </div>
+                    {updateProfileMutation.isError && (
+                        <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
+                    )}
+                </Card>
+
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="w-full flex-1">
+                        <WeeklySchedulePreview
+                            entries={entries}
+                            onChange={setEntries}
+                            onDuplicateBlocked={handleDuplicateBlocked}
+                            onDeleteEntry={handlePreviewDelete}
+                        />
+                    </div>
+                    <div className="w-full lg:w-[400px] flex-shrink-0">
+                        <TimeSlotForm
+                            entries={entries}
+                            onChange={setEntries}
+                            onSave={handleSave}
+                            onDelete={handleDelete}
+                            onOverlapDetected={handleDuplicateBlocked}
+                            isPending={createTimeslotMutation.isPending}
+                            deletingId={deletingId}
+                            errors={errors}
+                        />
                     </div>
                 </div>
-            </main>
+            </div>
 
             <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-gray-500">
@@ -313,6 +325,6 @@ export default function TimeSlotSettings() {
                     )}
                 </div>
             </footer>
-        </div>
+        </PageLayout>
     );
 }

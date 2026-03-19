@@ -114,7 +114,7 @@ public class MemberService {
         @Transactional
         public LoginResponseDTO login(LoginRequestDTO request){
                 Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                        .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
                 if (member.getProvider() != Provider.LOCAL) {
                         log.warn("[login] [FAIL] reason=SOCIAL_LOGIN_REQUIRED");

@@ -1,0 +1,12 @@
+### Pages = Routes 구조 규칙
+- `pages/` 디렉토리 구조는 라우트 경로와 1:1 매핑되어야 한다
+  - `/member/settings` → `pages/member/Settings.tsx`
+  - `/host/timeslots` → `pages/host/TimeSlotSettings.tsx`
+  - `/booking/my-bookings` → `pages/booking/MyBookings.tsx`
+  - `/host/$hostId` → `pages/host/Profile.tsx`
+- 페이지 파일명에 도메인 prefix를 붙이지 않는다 (디렉토리가 namespace)
+  - Good: `pages/host/Profile.tsx`, `pages/member/Settings.tsx`
+  - Bad: `pages/host/HostProfile.tsx`, `pages/member/MemberSettings.tsx`
+- 페이지 컴포넌트는 얇은 레이어로, 비즈니스 로직은 features/ 에 위치
+- Guard 로직은 `routes/__root.tsx`에서 `<AuthGuard>` 또는 `<HostGuard>`로 래핑
+- 별도의 `*Guarded.tsx` 래퍼 파일 생성 금지
