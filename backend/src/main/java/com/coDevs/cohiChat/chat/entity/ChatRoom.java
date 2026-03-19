@@ -59,7 +59,7 @@ public class ChatRoom {
 
     public static ChatRoom create(String externalRefType, UUID externalRefId) {
         ChatRoom room = new ChatRoom();
-        room.type = ChatRoomType.ONE_TO_MANY;
+        room.type = ChatRoomType.ONE_TO_ONE;
         room.externalRefType = externalRefType;
         room.externalRefId = externalRefId;
         return room;
