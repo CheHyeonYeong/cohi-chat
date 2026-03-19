@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
@@ -65,6 +66,7 @@ public class BookingService {
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
     private final EntityManager entityManager;
+    private final ChatService chatService;
 
     private volatile ZoneId calendarZoneId;
 
@@ -110,6 +112,12 @@ public class BookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
+
+        try {
+            chatService.createRoomForBooking(savedBooking);
+        } catch (Exception e) {
+            log.error("채팅방 생성 실패 (bookingId={}): {}", savedBooking.getId(), e.getMessage(), e);
+        }
 
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());
