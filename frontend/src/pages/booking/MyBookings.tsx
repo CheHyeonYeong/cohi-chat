@@ -19,7 +19,7 @@ import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
 import { useToast } from '~/components/toast/useToast';
-import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel } from '~/features/booking';
+import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, useDownloadBookingFile, BookingCard, BookingDetailPanel } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingWithRole } from '~/features/booking';
 
@@ -69,6 +69,7 @@ export function MyBookings() {
 
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError, reset: resetUploadError } = useUploadBookingFile(selectedId ?? 0);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(selectedId ?? 0);
+    const { mutate: downloadFile } = useDownloadBookingFile(selectedId ?? 0);
 
     const setSelectedId = (id: number | undefined) => {
         navigate({
@@ -128,20 +129,9 @@ export function MyBookings() {
         }
     };
 
-    const handleDownload = async (fileId: number, fileName: string) => {
+    const handleDownload = (fileId: number, fileName: string) => {
         if (!selectedId) return;
-        try {
-            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
-            const { url } = await getPresignedDownloadUrl(selectedId, fileId);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            showToast(getErrorMessage(err, '파일 다운로드 실패'), 'my-bookings-download-error');
-        }
+        downloadFile({ fileId, fileName });
     };
 
     const handleDelete = async (fileId: number) => {

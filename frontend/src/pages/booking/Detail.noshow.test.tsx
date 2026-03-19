@@ -47,7 +47,6 @@ const makeBooking = (
 });
 
 const reportNoShow = vi.fn();
-const downloadFile = vi.fn();
 let mockBooking: IBookingDetail | null = null;
 
 vi.mock('@tanstack/react-router', () => ({
@@ -99,10 +98,9 @@ vi.mock('~/features/booking', () => ({
     useBooking: () => ({ data: mockBooking, isLoading: false, error: null, refetch: vi.fn() }),
     useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useDownloadBookingFile: () => ({ mutateAsync: downloadFile, error: null }),
+    useDownloadBookingFile: () => ({ mutate: vi.fn() }),
     useReportHostNoShow: () => ({ mutate: reportNoShow, isPending: false, error: null, reset: vi.fn() }),
     useNoShowHistory: () => ({ data: null }),
-    getPresignedDownloadUrl: vi.fn(),
     BookingHeader: ({ displayName, attendanceStatus }: { displayName: string; attendanceStatus: string }) => <div>{displayName} {attendanceStatus}</div>,
     BookingMetaSection: () => <div>meta</div>,
     BookingEditForm: () => <div>edit</div>,
@@ -124,7 +122,6 @@ describe('Detail no-show reporting', () => {
         vi.useFakeTimers();
         vi.setSystemTime(MOCK_NOW);
         reportNoShow.mockClear();
-        downloadFile.mockClear();
         mockBooking = null;
     });
 

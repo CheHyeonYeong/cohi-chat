@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
-import { useBooking, useUploadBookingFile, useDeleteBookingFile, useReportHostNoShow, getPresignedDownloadUrl, BookingEditForm, BookingMetaSection, BookingHeader, BookingFileSection } from '~/features/booking';
+import { useBooking, useUploadBookingFile, useDeleteBookingFile, useDownloadBookingFile, useReportHostNoShow, BookingEditForm, BookingMetaSection, BookingHeader, BookingFileSection } from '~/features/booking';
 import { useAuth } from '~/features/member';
 import { useHostCalendar } from '~/features/host';
 
@@ -13,6 +13,7 @@ export function Detail() {
     const { data: currentUser } = useAuth();
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError } = useUploadBookingFile(id);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
+    const { mutate: downloadFile } = useDownloadBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
     // Edit mode state
     const [isEditing, setIsEditing] = useState(false);
@@ -49,14 +50,8 @@ export function Detail() {
         refetch();
     };
 
-    const handleDownload = async (fileId: number, fileName: string) => {
-        const { url } = await getPresignedDownloadUrl(Number(id), fileId);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    const handleDownload = (fileId: number, fileName: string) => {
+        downloadFile({ fileId, fileName });
     };
 
     const handleDelete = async (fileId: number) => {

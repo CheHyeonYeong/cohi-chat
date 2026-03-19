@@ -85,7 +85,9 @@ const allMyBookingsResponse = {
 const mockSearchState = { page: 1, selectedId: undefined as number | undefined };
 const mockNavigate = vi.fn().mockImplementation((opts: { search?: Record<string, unknown> }) => {
     if (opts.search) {
-        Object.assign(mockSearchState, opts.search);
+        // search 객체를 교체하여 누락된 키는 undefined로 처리
+        mockSearchState.page = (opts.search.page as number) ?? 1;
+        mockSearchState.selectedId = opts.search.selectedId as number | undefined;
     }
 });
 vi.mock('@tanstack/react-router', () => ({
@@ -160,7 +162,9 @@ vi.mock('~/features/booking', () => ({
         mutateAsync: deleteFileAsync,
         isPending: false,
     }),
-    getPresignedDownloadUrl: vi.fn(),
+    useDownloadBookingFile: () => ({
+        mutate: vi.fn(),
+    }),
     BookingCard: ({ booking: b, onSelect, role }: { booking: IBookingWithRole; onSelect?: (id: number) => void; role?: string }) => (
         <button type="button" data-testid={`booking-card-${b.id}`} onClick={() => onSelect?.(b.id)}>
             {role && <span data-testid="booking-role-tag">{role === 'guest' ? '게스트' : '호스트'}</span>}

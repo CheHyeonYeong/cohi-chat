@@ -43,8 +43,8 @@ vi.mock('~/features/booking', async () => {
         useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
         useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
         useReportHostNoShow: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+        useDownloadBookingFile: () => ({ mutate: vi.fn() }),
         useNoShowHistory: () => ({ data: null }),
-        getPresignedDownloadUrl: vi.fn(),
         BookingEditForm: ({ onCancel, onSuccess }: { onCancel: () => void; onSuccess: () => void }) => (
             <div data-testid="booking-edit-form">
                 <button data-testid="booking-edit-cancel-button" onClick={onCancel}>취소</button>
