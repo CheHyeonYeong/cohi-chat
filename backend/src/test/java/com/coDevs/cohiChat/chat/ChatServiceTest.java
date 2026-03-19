@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.chat;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -28,6 +27,7 @@ import com.coDevs.cohiChat.chat.repository.MessageRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
 import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -35,6 +35,7 @@ class ChatServiceTest {
     @Mock private ChatRoomRepository chatRoomRepository;
     @Mock private RoomMemberRepository roomMemberRepository;
     @Mock private MessageRepository messageRepository;
+    @Mock private ObjectMapper objectMapper;
     @Mock private TimeSlot timeSlot;
 
     @InjectMocks
@@ -45,14 +46,17 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("새로운 예약 - 채팅방 신규 생성")
-    void createRoomForBooking_새로운방_생성() {
+    void createRoomForBooking_새로운방_생성() throws Exception {
         // given
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(java.time.LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(java.time.LocalTime.of(11, 0));
         given(chatRoomRepository.findActiveRoomByHostAndGuest(HOST_ID, GUEST_ID))
             .willReturn(Optional.empty());
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom savedRoom = ChatRoom.create();
+        ChatRoom savedRoom = ChatRoom.create("RESERVATION", UUID.randomUUID());
         given(chatRoomRepository.save(any(ChatRoom.class))).willReturn(savedRoom);
         given(roomMemberRepository.save(any(RoomMember.class))).willAnswer(inv -> inv.getArgument(0));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
@@ -68,12 +72,15 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("기존 호스트-게스트 재예약 - 기존 채팅방 재사용 (room/member INSERT 없음)")
-    void createRoomForBooking_이미존재하는방_재사용() {
+    void createRoomForBooking_이미존재하는방_재사용() throws Exception {
         // given
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(java.time.LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(java.time.LocalTime.of(11, 0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom existingRoom = ChatRoom.create();
+        ChatRoom existingRoom = ChatRoom.create("RESERVATION", UUID.randomUUID());
         given(chatRoomRepository.findActiveRoomByHostAndGuest(HOST_ID, GUEST_ID))
             .willReturn(Optional.of(existingRoom));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
@@ -82,9 +89,9 @@ class ChatServiceTest {
         chatService.createRoomForBooking(booking);
 
         // then
-        verify(chatRoomRepository, never()).save(any(ChatRoom.class));    // 새 room 생성 없음
+        verify(chatRoomRepository, never()).save(any(ChatRoom.class));     // 새 room 생성 없음
         verify(roomMemberRepository, never()).save(any(RoomMember.class)); // 새 member 생성 없음
-        verify(messageRepository).save(any(Message.class));               // RESERVATION_CARD만 추가
+        verify(messageRepository).save(any(Message.class));                // RESERVATION_CARD만 추가
     }
 
     private Booking makeBooking() {
