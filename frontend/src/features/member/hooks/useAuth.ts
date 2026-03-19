@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSyncExternalStore } from 'react';
 import { getUserApi } from '../api/memberApi';
@@ -26,23 +27,28 @@ export function useAuth() {
             if (!username) {
                 throw new Error('Not authenticated');
             }
-            try {
-                const data: MemberResponseDTO = await getUserApi(username);
-                return {
-                    ...data,
-                    isHost: data.role === 'HOST',
-                };
-            } catch (error) {
-                if (error instanceof Error && typeof error.cause === 'number' && (error.cause === 401 || error.cause === 403)) {
-                    clearAuthenticatedUser();
-                }
-                throw error;
-            }
+            const data: MemberResponseDTO = await getUserApi(username);
+            return {
+                ...data,
+                isHost: data.role === 'HOST',
+            };
         },
         retry: false,
         enabled: !!username,
         staleTime: 5 * 60 * 1000,
     });
+
+    // queryFn 안에서 부수효과를 일으키면 리패치 시마다 호출될 수 있으므로 useEffect로 분리
+    useEffect(() => {
+        if (
+            query.error instanceof Error &&
+            typeof query.error.cause === 'number' &&
+            (query.error.cause === 401 || query.error.cause === 403) &&
+            username !== null
+        ) {
+            clearAuthenticatedUser();
+        }
+    }, [query.error, username]);
 
     return {
         ...query,

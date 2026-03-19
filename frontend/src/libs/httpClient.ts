@@ -116,7 +116,8 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
             throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.', { cause: 401 });
         } catch (error) {
             if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {
-                clearAuthenticatedUser();
+                // GRACE_WINDOW_HIT는 유예 기간 중 경쟁 상태로, 재시도가 가능한 임시 상태
+                // 인증 상태를 유지해야 사용자가 재시도할 수 있음
                 throw new Error('토큰 재발급 대기 중입니다. 다시 시도해 주세요.', { cause: 401 });
             }
             clearAuthenticatedUser();

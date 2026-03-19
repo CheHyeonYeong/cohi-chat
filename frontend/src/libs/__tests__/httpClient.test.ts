@@ -39,7 +39,8 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
         vi.restoreAllMocks();
     });
 
-    it('GRACE_WINDOW_HIT 수신 시 username을 로컬 스토리지에서 삭제한다', async () => {
+    it('GRACE_WINDOW_HIT 수신 시 인증 상태를 유지하고 재시도 안내 에러를 던진다', async () => {
+        // GRACE_WINDOW_HIT는 유예 기간 중 경쟁 상태(임시적). 사용자가 재시도할 수 있도록 인증 상태를 유지해야 함
         vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
             const url = input.toString();
             if (url.includes('/members/v1/refresh')) {
@@ -53,12 +54,15 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
             return Promise.resolve(makeResponse({}, 401));
         });
 
-        await expect(httpClient(`${API_BASE}/some-endpoint`)).rejects.toThrow();
+        await expect(httpClient(`${API_BASE}/some-endpoint`)).rejects.toThrow(
+            '토큰 재발급 대기 중입니다. 다시 시도해 주세요.',
+        );
 
-        expect(localStorage.getItem('username')).toBeNull();
+        // 재시도 가능한 상태이므로 username을 삭제하지 않음
+        expect(localStorage.getItem('username')).toBe('testuser');
     });
 
-    it('GRACE_WINDOW_HIT 수신 시 auth-change 이벤트를 발행한다', async () => {
+    it('GRACE_WINDOW_HIT 수신 시 auth-change 이벤트를 발행하지 않는다', async () => {
         const authChangeHandler = vi.fn();
         window.addEventListener('auth-change', authChangeHandler);
 
@@ -78,7 +82,8 @@ describe('httpClient - GRACE_WINDOW_HIT 처리', () => {
 
             await expect(httpClient(`${API_BASE}/some-endpoint`)).rejects.toThrow();
 
-            expect(authChangeHandler).toHaveBeenCalledTimes(1);
+            // 인증 상태를 건드리지 않으므로 auth-change 이벤트 미발행
+            expect(authChangeHandler).not.toHaveBeenCalled();
         } finally {
             window.removeEventListener('auth-change', authChangeHandler);
         }
