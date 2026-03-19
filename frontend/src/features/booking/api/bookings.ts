@@ -91,20 +91,20 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
 }
 
 export async function getMyHostBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
-    const list = await httpClient<BookingFlatResponse[]>(`${API_URL}/bookings/host/me`) ?? [];
-    const bookings = list.map(b => toBookingDetail(b));
-
-    const start = (page - 1) * pageSize;
+    const response = await httpClient<PaginatedBookingResponse>(
+        `${API_URL}/bookings/host/me?page=${page}&size=${pageSize}`
+    );
     return {
-        bookings: bookings.slice(start, start + pageSize),
-        totalCount: bookings.length,
+        bookings: response.bookings.map(b => toBookingDetail(b)),
+        totalCount: response.totalCount,
     };
 }
 
 export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingWithRole> {
+    const fetchSize = page * pageSize;
     const [guestResult, hostResult] = await Promise.all([
-        getMyBookings({ page: 1, pageSize: Number.MAX_SAFE_INTEGER }),
-        getMyHostBookings({ page: 1, pageSize: Number.MAX_SAFE_INTEGER }),
+        getMyBookings({ page: 1, pageSize: fetchSize }),
+        getMyHostBookings({ page: 1, pageSize: fetchSize }),
     ]);
 
     const guestBookings: IBookingWithRole[] = guestResult.bookings.map(b => ({
@@ -140,7 +140,7 @@ export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: num
     const start = (page - 1) * pageSize;
     return {
         bookings: merged.slice(start, start + pageSize),
-        totalCount: merged.length,
+        totalCount: guestResult.totalCount + hostResult.totalCount,
     };
 }
 
