@@ -47,6 +47,10 @@ public class TestDummyDataGenerator {
 
     @Transactional
     public GeneratedData generate(int guestCount, int hostCount, int timeSlotsPerHost, int pastBookingsPerHost) {
+        if (guestCount < 0 || hostCount < 0 || timeSlotsPerHost < 0 || pastBookingsPerHost < 0) {
+            throw new IllegalArgumentException("Counts must be non-negative");
+        }
+
         clear();
 
         String hashedPassword = passwordEncoder.encode(DUMMY_PASSWORD);
@@ -147,9 +151,13 @@ public class TestDummyDataGenerator {
             .filter(member -> member.getRole() == Role.GUEST)
             .map(Member::getId)
             .toList();
+        List<java.util.UUID> dummyMemberIds = dummyMembers.stream()
+            .map(Member::getId)
+            .toList();
 
         bookingRepository.findAll().stream()
-            .filter(booking -> dummyGuestIds.contains(booking.getGuestId()))
+            .filter(booking -> dummyGuestIds.contains(booking.getGuestId())
+                || (booking.getTimeSlot() != null && dummyMemberIds.contains(booking.getTimeSlot().getUserId())))
             .forEach(bookingRepository::delete);
 
         for (Member member : dummyMembers) {

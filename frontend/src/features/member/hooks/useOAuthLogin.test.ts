@@ -6,6 +6,7 @@ import React from 'react';
 import { useOAuthLogin } from './useOAuthLogin';
 import { oAuthCallbackApi } from '../api/oAuthApi';
 import { saveAuthTokens } from '../utils/authStorage';
+import { bookingKeys } from '../../booking/hooks/queryKeys';
 
 vi.mock('../api/oAuthApi', () => ({
     oAuthCallbackApi: vi.fn(),
@@ -41,8 +42,8 @@ describe('useOAuthLogin', () => {
             displayName: 'OAuth Bob',
         };
 
-        queryClient.setQueryData(['my-bookings', 'alice', 1, 10], { bookings: [{ id: 1 }], totalCount: 1 });
-        queryClient.setQueryData(['booking', 1, 'alice'], { id: 1, topic: 'Alice booking' });
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), { bookings: [{ id: 1 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(1, 'alice'), { id: 1, topic: 'Alice booking' });
 
         vi.mocked(oAuthCallbackApi).mockResolvedValue(response);
 
@@ -56,7 +57,7 @@ describe('useOAuthLogin', () => {
             expect(saveAuthTokens).toHaveBeenCalledWith(response);
         });
 
-        expect(queryClient.getQueryData(['my-bookings', 'alice', 1, 10])).toBeUndefined();
-        expect(queryClient.getQueryData(['booking', 1, 'alice'])).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toBeUndefined();
     });
 });

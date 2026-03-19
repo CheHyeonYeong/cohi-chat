@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
+import { bookingKeys } from '~/features/booking/hooks/queryKeys';
 import { oAuthCallbackApi } from '../api/oAuthApi';
 import { saveAuthTokens } from '../utils/authStorage';
 import type { LoginResponse } from '../types';
@@ -19,8 +20,8 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
             return response;
         },
         onSuccess: () => {
-            queryClient.removeQueries({ queryKey: ['my-bookings'] });
-            queryClient.removeQueries({ queryKey: ['booking'] });
+            queryClient.removeQueries({ queryKey: bookingKeys.myBookingsAll() });
+            queryClient.removeQueries({ queryKey: bookingKeys.bookingAll() });
         },
     });
 }

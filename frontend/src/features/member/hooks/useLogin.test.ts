@@ -5,6 +5,7 @@ import { createElement, type ReactNode } from 'react';
 import { useLogin } from './useLogin';
 import { loginApi } from '../api/memberApi';
 import { saveAuthTokens } from '../utils/authStorage';
+import { bookingKeys } from '../../booking/hooks/queryKeys';
 
 vi.mock('../api/memberApi', () => ({
     loginApi: vi.fn(),
@@ -70,8 +71,8 @@ describe('useLogin', () => {
         };
         vi.mocked(loginApi).mockResolvedValue(response);
 
-        queryClient.setQueryData(['my-bookings', 'alice', 1, 10], { bookings: [{ id: 1 }], totalCount: 1 });
-        queryClient.setQueryData(['booking', 1, 'alice'], { id: 1, topic: 'Alice booking' });
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), { bookings: [{ id: 1 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(1, 'alice'), { id: 1, topic: 'Alice booking' });
 
         const { result } = renderHook(() => useLogin(), {
             wrapper: createWrapper(),
@@ -83,8 +84,8 @@ describe('useLogin', () => {
             expect(saveAuthTokens).toHaveBeenCalledWith(response);
         });
 
-        expect(queryClient.getQueryData(['my-bookings', 'alice', 1, 10])).toBeUndefined();
-        expect(queryClient.getQueryData(['booking', 1, 'alice'])).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toBeUndefined();
     });
 
     it('clears previously cached booking data on repeated account switches', async () => {
@@ -111,16 +112,16 @@ describe('useLogin', () => {
             wrapper: createWrapper(),
         });
 
-        queryClient.setQueryData(['my-bookings', 'alice', 1, 10], { bookings: [{ id: 1 }], totalCount: 1 });
-        queryClient.setQueryData(['booking', 1, 'alice'], { id: 1, topic: 'Alice booking' });
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), { bookings: [{ id: 1 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(1, 'alice'), { id: 1, topic: 'Alice booking' });
 
         await result.current.mutateAsync({ username: 'bob', password: 'secret' });
 
-        expect(queryClient.getQueryData(['my-bookings', 'alice', 1, 10])).toBeUndefined();
-        expect(queryClient.getQueryData(['booking', 1, 'alice'])).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toBeUndefined();
 
-        queryClient.setQueryData(['my-bookings', 'bob', 1, 10], { bookings: [{ id: 2 }], totalCount: 1 });
-        queryClient.setQueryData(['booking', 2, 'bob'], { id: 2, topic: 'Bob booking' });
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'bob'), { bookings: [{ id: 2 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(2, 'bob'), { id: 2, topic: 'Bob booking' });
 
         await result.current.mutateAsync({ username: 'alice', password: 'secret' });
 
@@ -129,8 +130,8 @@ describe('useLogin', () => {
             expect(saveAuthTokens).toHaveBeenNthCalledWith(2, aliceResponse);
         });
 
-        expect(queryClient.getQueryData(['my-bookings', 'bob', 1, 10])).toBeUndefined();
-        expect(queryClient.getQueryData(['booking', 2, 'bob'])).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(2, 'bob'))).toBeUndefined();
     });
 
     it('does not write console.error for expected login failures', async () => {

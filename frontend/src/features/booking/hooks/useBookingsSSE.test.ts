@@ -78,6 +78,7 @@ describe('useBookingsSSEQuery', () => {
             useBookingsSSEQuery({ endpoint: '/sse/bookings' })
         );
 
+        expect(MockEventSource.instances).toHaveLength(1);
         const source = MockEventSource.instances[0];
 
         act(() => {

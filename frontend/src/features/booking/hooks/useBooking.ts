@@ -8,7 +8,7 @@ export function useMyBookings({ page, pageSize }: { page?: number; pageSize?: nu
     const { username, isAuthenticated } = useAuth();
 
     return useQuery<IPaginatedBookingDetail>({
-        queryKey: bookingKeys.myBookings(page, pageSize, username),
+        queryKey: bookingKeys.myBookings(page, pageSize, username ?? ''),
         queryFn: () => getMyBookings({ page, pageSize }),
         enabled: isAuthenticated,
     });

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
+import { bookingKeys } from '~/features/booking/hooks/queryKeys';
 import { loginApi } from '../api/memberApi';
 import { saveAuthTokens } from '../utils/authStorage';
 import type { LoginCredentials, LoginResponse } from '../types';
@@ -13,8 +14,8 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             return response;
         },
         onSuccess: () => {
-            queryClient.removeQueries({ queryKey: ['my-bookings'] });
-            queryClient.removeQueries({ queryKey: ['booking'] });
+            queryClient.removeQueries({ queryKey: bookingKeys.myBookingsAll() });
+            queryClient.removeQueries({ queryKey: bookingKeys.bookingAll() });
         },
     });
 }
