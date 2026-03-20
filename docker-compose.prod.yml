@@ -1,10 +1,21 @@
 services:
-  backend:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cohi-chat-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf
+    networks:
+      - cohi-chat-network
+    restart: unless-stopped
+
+  backend-blue:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    container_name: cohi-chat-backend-blue
     env_file:
       - .env
     environment:
@@ -22,6 +33,45 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - cohi-chat-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+
+  backend-green:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cohi-chat-backend-green
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # Supabase PostgreSQL
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
+      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
+      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
+      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cohi-chat-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
     restart: unless-stopped
 
   redis:
@@ -30,12 +80,18 @@ services:
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    networks:
+      - cohi-chat-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+networks:
+  cohi-chat-network:
+    driver: bridge
 
 volumes:
   redis-data:

@@ -6,6 +6,10 @@ on:
     paths:
       - 'backend/**'
       - 'docker-compose.prod.yml'
+      - 'nginx/**'
+      - 'scripts/blue-green-deploy.sh'
+      - 'scripts/rollback.sh'
+      - 'scripts/ec2-deploy-common.sh'
       - '.github/workflows/server-deploy-prod.yml'
   workflow_dispatch:
 
@@ -84,15 +88,14 @@ jobs:
 
             run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
-            # Backend 배포
+            # 새 JAR 다운로드
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
-            docker-compose -f docker-compose.prod.yml build backend
-            docker-compose -f docker-compose.prod.yml up -d redis backend
+            # Redis + Nginx 초기 기동 (이미 떠있으면 no-op)
+            docker-compose -f docker-compose.prod.yml up -d redis nginx
 
-            echo "Waiting for backend to start..."
-            sleep 30
+            # Blue-Green 무중단 배포
+            bash scripts/blue-green-deploy.sh
 
             docker-compose -f docker-compose.prod.yml ps
-            docker-compose -f docker-compose.prod.yml logs --tail=50 backend
             log_deploy_success
