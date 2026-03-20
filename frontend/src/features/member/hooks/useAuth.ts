@@ -41,6 +41,7 @@ export function useAuth() {
 
     return {
         ...query,
+        username,
         isAuthenticated: !!token && !!username,
         invalidateAuth,
     };

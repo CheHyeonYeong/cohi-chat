@@ -5,6 +5,7 @@ import { createElement, type ReactNode } from 'react';
 import { useLogin } from './useLogin';
 import { loginApi } from '../api/memberApi';
 import { saveAuthTokens } from '../utils/authStorage';
+import { bookingKeys } from '../../booking/hooks/queryKeys';
 
 vi.mock('../api/memberApi', () => ({
     loginApi: vi.fn(),
@@ -15,19 +16,18 @@ vi.mock('../utils/authStorage', () => ({
 }));
 
 describe('useLogin', () => {
-    const createWrapper = () => {
-        const queryClient = new QueryClient({
+    let queryClient: QueryClient;
+
+    const createWrapper = () => ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+
+    beforeEach(() => {
+        queryClient = new QueryClient({
             defaultOptions: {
                 queries: { retry: false },
                 mutations: { retry: false },
             },
         });
-
-        return ({ children }: { children: ReactNode }) =>
-            createElement(QueryClientProvider, { client: queryClient }, children);
-    };
-
-    beforeEach(() => {
         vi.clearAllMocks();
     });
 
@@ -59,6 +59,79 @@ describe('useLogin', () => {
             password: 'password',
         });
         expect(saveAuthTokens).toHaveBeenCalledWith(response);
+    });
+
+    it('clears booking caches on login', async () => {
+        const response = {
+            accessToken: 'new-access-token',
+            refreshToken: 'new-refresh-token',
+            expiredInMinutes: 60,
+            username: 'bob',
+            displayName: 'Bob',
+        };
+        vi.mocked(loginApi).mockResolvedValue(response);
+
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), { bookings: [{ id: 1 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(1, 'alice'), { id: 1, topic: 'Alice booking' });
+
+        const { result } = renderHook(() => useLogin(), {
+            wrapper: createWrapper(),
+        });
+
+        await result.current.mutateAsync({ username: 'bob', password: 'secret' });
+
+        await waitFor(() => {
+            expect(saveAuthTokens).toHaveBeenCalledWith(response);
+        });
+
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toBeUndefined();
+    });
+
+    it('clears previously cached booking data on repeated account switches', async () => {
+        const bobResponse = {
+            accessToken: 'bob-access-token',
+            refreshToken: 'bob-refresh-token',
+            expiredInMinutes: 60,
+            username: 'bob',
+            displayName: 'Bob',
+        };
+        const aliceResponse = {
+            accessToken: 'alice-access-token',
+            refreshToken: 'alice-refresh-token',
+            expiredInMinutes: 60,
+            username: 'alice',
+            displayName: 'Alice',
+        };
+
+        vi.mocked(loginApi)
+            .mockResolvedValueOnce(bobResponse)
+            .mockResolvedValueOnce(aliceResponse);
+
+        const { result } = renderHook(() => useLogin(), {
+            wrapper: createWrapper(),
+        });
+
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'alice'), { bookings: [{ id: 1 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(1, 'alice'), { id: 1, topic: 'Alice booking' });
+
+        await result.current.mutateAsync({ username: 'bob', password: 'secret' });
+
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(1, 'alice'))).toBeUndefined();
+
+        queryClient.setQueryData(bookingKeys.myBookings(1, 10, 'bob'), { bookings: [{ id: 2 }], totalCount: 1 });
+        queryClient.setQueryData(bookingKeys.booking(2, 'bob'), { id: 2, topic: 'Bob booking' });
+
+        await result.current.mutateAsync({ username: 'alice', password: 'secret' });
+
+        await waitFor(() => {
+            expect(saveAuthTokens).toHaveBeenNthCalledWith(1, bobResponse);
+            expect(saveAuthTokens).toHaveBeenNthCalledWith(2, aliceResponse);
+        });
+
+        expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toBeUndefined();
+        expect(queryClient.getQueryData(bookingKeys.booking(2, 'bob'))).toBeUndefined();
     });
 
     it('does not write console.error for expected login failures', async () => {
