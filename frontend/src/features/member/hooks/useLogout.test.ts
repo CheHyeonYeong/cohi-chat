@@ -10,6 +10,7 @@ vi.mock('../api/memberApi', () => ({
 }));
 
 const mockNavigate = vi.fn();
+const mockShowToast = vi.fn();
 
 vi.mock('@tanstack/react-router', async () => {
     const actual = await vi.importActual('@tanstack/react-router');
@@ -18,6 +19,10 @@ vi.mock('@tanstack/react-router', async () => {
         useNavigate: () => mockNavigate,
     };
 });
+
+vi.mock('~/components/toast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}));
 
 describe('useLogout', () => {
     let queryClient: QueryClient;
@@ -76,14 +81,18 @@ describe('useLogout', () => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
-    it('API 실패 시 예외를 던지고 로컬 상태와 네비게이션을 실행하지 않는다', async () => {
+    it('API 실패 시 토스트를 표시하고 로컬 상태와 네비게이션을 실행하지 않는다', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
-        await expect(result.current.logout()).rejects.toThrow('로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        await result.current.logout();
+        expect(mockShowToast).toHaveBeenCalledWith(
+            '로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+            'logout-error',
+        );
         expect(localStorage.getItem('username')).toBe('testuser'); // 로컬 상태 유지 (서버 세션과 일치)
         expect(mockNavigate).not.toHaveBeenCalled();
     });
