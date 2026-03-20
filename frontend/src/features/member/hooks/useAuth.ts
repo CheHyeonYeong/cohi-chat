@@ -52,6 +52,7 @@ export function useAuth() {
 
     return {
         ...query,
+        username,
         isAuthenticated: !!username,
     };
 }

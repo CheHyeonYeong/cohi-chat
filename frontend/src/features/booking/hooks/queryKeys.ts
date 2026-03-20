@@ -1,7 +1,10 @@
 export const bookingKeys = {
     myBookingsAll: () => ['my-bookings'] as const,
-    myBookings: (page?: number, pageSize?: number) => ['my-bookings', page, pageSize] as const,
-    booking: (id: number) => ['booking', id] as const,
+    myBookings: (page?: number, pageSize?: number, username: string = '') =>
+        ['my-bookings', username, page, pageSize] as const,
+    bookingAll: () => ['booking'] as const,
+    booking: (id: number, username: string | null = null) =>
+        ['booking', id, username] as const,
     noShowHistory: (hostId: string) => ['noshow-history', hostId] as const,
 };
 
