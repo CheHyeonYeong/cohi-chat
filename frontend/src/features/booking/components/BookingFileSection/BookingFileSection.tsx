@@ -35,10 +35,7 @@ export function BookingFileSection({
 
     const canUploadMore = canUploadMoreFiles(files.length);
 
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-
-        const selectedFiles = e.target.files;
+    const handleFilesSelected = (selectedFiles: FileList) => {
         const existingSize = files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
         const result = validateFiles(selectedFiles, files.length, existingSize);
 
@@ -48,7 +45,11 @@ export function BookingFileSection({
             setValidationErrors([]);
             onUpload(selectedFiles);
         }
+    };
 
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        handleFilesSelected(e.target.files);
         e.target.value = '';
     };
 
@@ -110,7 +111,7 @@ export function BookingFileSection({
             )}
 
             {files.length === 0 ? (
-                canUploadMore && <FileDropZone onFilesDropped={onUpload} disabled={isUploading} />
+                canUploadMore && <FileDropZone onFilesDropped={handleFilesSelected} disabled={isUploading} accept={getAcceptedFileTypes()} />
             ) : (
                 <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                     {files.map((file) => (
