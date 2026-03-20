@@ -1,26 +1,25 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useSyncExternalStore } from 'react';
-import { getCurrentUsername, getValidToken } from '~/libs/jwt';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSyncExternalStore } from 'react';
 import { getUserApi } from '../api/memberApi';
+import { clearAuthenticatedUser, getStoredUsername } from '../utils/authStorage';
 import { subscribeAuthChange } from '../utils/authEvent';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
-function getTokenSnapshot() {
-    return getValidToken();
+function getUsernameSnapshot() {
+    return getStoredUsername();
 }
 
-function getServerTokenSnapshot() {
+function getServerUsernameSnapshot() {
     return null;
 }
 
 export function useAuth() {
-    const queryClient = useQueryClient();
-    const token = useSyncExternalStore(subscribeAuthChange, getTokenSnapshot, getServerTokenSnapshot);
-    const username = token ? getCurrentUsername() : null;
-
-    const invalidateAuth = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ['auth'] });
-    }, [queryClient]);
+    const username = useSyncExternalStore(
+        subscribeAuthChange,
+        getUsernameSnapshot,
+        getServerUsernameSnapshot,
+    );
 
     const query = useQuery<AuthUser>({
         queryKey: ['auth', username],
@@ -39,10 +38,21 @@ export function useAuth() {
         staleTime: 5 * 60 * 1000,
     });
 
+    // queryFn 안에서 부수효과를 일으키면 리패치 시마다 호출될 수 있으므로 useEffect로 분리
+    useEffect(() => {
+        if (
+            query.error instanceof Error &&
+            typeof query.error.cause === 'number' &&
+            (query.error.cause === 401 || query.error.cause === 403) &&
+            username !== null
+        ) {
+            clearAuthenticatedUser();
+        }
+    }, [query.error, username]);
+
     return {
         ...query,
         username,
-        isAuthenticated: !!token && !!username,
-        invalidateAuth,
+        isAuthenticated: !!username,
     };
 }

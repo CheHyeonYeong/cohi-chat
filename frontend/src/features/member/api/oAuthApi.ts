@@ -16,8 +16,9 @@ export async function oAuthCallbackApi(provider: string, code: string, state: st
     const response = await httpClient<LoginResponse>(`${OAUTH_API}/${provider}/callback`, {
         method: 'POST',
         body: { code, state },
+        skipAuthRefresh: true,
     });
-    if (!response?.accessToken) {
+    if (!response?.username) {
         throw new Error('소셜 로그인 응답이 올바르지 않습니다.');
     }
     return response;

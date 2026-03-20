@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { useLogin } from './useLogin';
 import { loginApi } from '../api/memberApi';
-import { saveAuthTokens } from '../utils/authStorage';
+import { saveAuthenticatedUser } from '../utils/authStorage';
 import { bookingKeys } from '../../booking/hooks/queryKeys';
 
 vi.mock('../api/memberApi', () => ({
@@ -12,7 +12,7 @@ vi.mock('../api/memberApi', () => ({
 }));
 
 vi.mock('../utils/authStorage', () => ({
-    saveAuthTokens: vi.fn(),
+    saveAuthenticatedUser: vi.fn(),
 }));
 
 describe('useLogin', () => {
@@ -58,7 +58,7 @@ describe('useLogin', () => {
             username: 'tester',
             password: 'password',
         });
-        expect(saveAuthTokens).toHaveBeenCalledWith(response);
+        expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
     });
 
     it('clears booking caches on login', async () => {
@@ -81,7 +81,7 @@ describe('useLogin', () => {
         await result.current.mutateAsync({ username: 'bob', password: 'secret' });
 
         await waitFor(() => {
-            expect(saveAuthTokens).toHaveBeenCalledWith(response);
+            expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
@@ -126,8 +126,8 @@ describe('useLogin', () => {
         await result.current.mutateAsync({ username: 'alice', password: 'secret' });
 
         await waitFor(() => {
-            expect(saveAuthTokens).toHaveBeenNthCalledWith(1, bobResponse);
-            expect(saveAuthTokens).toHaveBeenNthCalledWith(2, aliceResponse);
+            expect(saveAuthenticatedUser).toHaveBeenNthCalledWith(1, bobResponse);
+            expect(saveAuthenticatedUser).toHaveBeenNthCalledWith(2, aliceResponse);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toBeUndefined();

@@ -5,7 +5,7 @@ import React from 'react';
 
 import { useOAuthLogin } from './useOAuthLogin';
 import { oAuthCallbackApi } from '../api/oAuthApi';
-import { saveAuthTokens } from '../utils/authStorage';
+import { saveAuthenticatedUser } from '../utils/authStorage';
 import { bookingKeys } from '../../booking/hooks/queryKeys';
 
 vi.mock('../api/oAuthApi', () => ({
@@ -13,7 +13,7 @@ vi.mock('../api/oAuthApi', () => ({
 }));
 
 vi.mock('../utils/authStorage', () => ({
-    saveAuthTokens: vi.fn(),
+    saveAuthenticatedUser: vi.fn(),
 }));
 
 describe('useOAuthLogin', () => {
@@ -54,7 +54,7 @@ describe('useOAuthLogin', () => {
         await result.current.mutateAsync({ provider: 'google', code: 'code', state: 'state' });
 
         await waitFor(() => {
-            expect(saveAuthTokens).toHaveBeenCalledWith(response);
+            expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();

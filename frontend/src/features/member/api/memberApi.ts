@@ -1,4 +1,4 @@
-import { httpClient, publicHttpClient } from '~/libs/httpClient';
+import { httpClient } from '~/libs/httpClient';
 import type {
     LoginRequest,
     LoginResponse,
@@ -20,13 +20,16 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
         provider: 'LOCAL',
     };
 
-    // 401 자동 refresh 인터셉터를 타면 안 되므로 publicHttpClient 사용
-    const response = await publicHttpClient<LoginResponse>(`${MEMBER_API}/login`, {
+    const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
         body: request,
+        skipAuthRefresh: true, // 로그인 요청은 401 시 refresh 재시도 불필요
     });
 
-    if (!response?.accessToken) {
+    if (!response) {
+        throw new Error('로그인 응답을 받지 못했습니다.');
+    }
+    if (!response.username || !response.displayName) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
@@ -52,19 +55,10 @@ export async function logoutApi(): Promise<void> {
     });
 }
 
-export async function refreshTokenApi(): Promise<LoginResponse> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-        throw new Error('Refresh token이 없습니다.');
-    }
-    const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
+export async function refreshTokenApi(): Promise<void> {
+    await httpClient<void>(`${MEMBER_API}/refresh`, {
         method: 'POST',
-        body: { refreshToken },
     });
-    if (!response || !response.accessToken) {
-        throw new Error('토큰 갱신에 실패했습니다.');
-    }
-    return response;
 }
 
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {
