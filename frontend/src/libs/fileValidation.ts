@@ -139,3 +139,10 @@ export function validateFiles(
 export function getAcceptedFileTypes(): string {
     return FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',');
 }
+
+/**
+ * 추가 파일 업로드 가능 여부 확인
+ */
+export function canUploadMoreFiles(currentFileCount: number): boolean {
+    return currentFileCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
+}

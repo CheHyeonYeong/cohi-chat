@@ -19,9 +19,9 @@ import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
 import { useToast } from '~/components/toast/useToast';
-import { useMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, getPresignedDownloadUrl, BookingCard, BookingDetailPanel, FileDropZone } from '~/features/booking';
+import { useAllMyBookings, useBooking, useUploadBookingFile, useDeleteBookingFile, useDownloadBookingFile, BookingCard, BookingDetailPanel } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
-import type { IBookingDetail } from '~/features/booking';
+import type { IBookingWithRole } from '~/features/booking';
 
 // Sortable wrapper for BookingCard
 function SortableBookingCard({
@@ -29,7 +29,7 @@ function SortableBookingCard({
     isSelected,
     onSelect,
 }: {
-    booking: IBookingDetail;
+    booking: IBookingWithRole;
     isSelected: boolean;
     onSelect: (id: number) => void;
 }) {
@@ -45,18 +45,17 @@ function SortableBookingCard({
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} />
+            <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} role={booking.role} counterpart={booking.counterpart} />
         </div>
     );
 }
 
 export function MyBookings() {
-    const { page, pageSize } = useSearch({ from: '/booking/my-bookings' });
+    const PAGE_SIZE = 5;
+    const { page, selectedId } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useMyBookings({ page, pageSize });
-
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const { data: bookings, isLoading, error, refetch: refetchMyBookings } = useAllMyBookings({ page, pageSize: PAGE_SIZE });
     const [sortedIds, setSortedIds] = useState<number[]>([]);
 
     useEffect(() => {
@@ -66,35 +65,46 @@ export function MyBookings() {
     }, [bookings]);
 
     // 선택된 예약 full detail (파일 포함)
-    const { data: selectedBooking, refetch: refetchSelectedBooking } = useBooking(selectedId);
+    const { data: selectedBooking, refetch: refetchSelectedBooking } = useBooking(selectedId ?? null);
+
     const { mutateAsync: uploadFileAsync, isPending: isUploading, error: uploadError, reset: resetUploadError } = useUploadBookingFile(selectedId ?? 0);
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(selectedId ?? 0);
+    const { mutate: downloadFile } = useDownloadBookingFile(selectedId ?? 0);
+
+    const setSelectedId = (id: number | undefined) => {
+        navigate({
+            to: '/booking/my-bookings',
+            search: { page, selectedId: id },
+            replace: true,
+        });
+    };
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     const handlePageChange = (newPage: number) => {
-        setSelectedId(null);
-        navigate({ to: '/booking/my-bookings', search: { page: newPage, pageSize } });
+        navigate({ to: '/booking/my-bookings', search: { page: newPage } });
     };
 
     const handleCardSelect = (id: number) => {
-        setSelectedId((prev) => (prev === id ? null : id));
+        setSelectedId(selectedId === id ? undefined : id);
     };
 
     // sortedIds가 비어있거나 데이터와 매칭되지 않으면 API 순서 사용
     const orderedBookings = (() => {
         if (!bookings?.bookings) return [];
-        // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면 
+        // 페이지가 바뀌어서 데이터 개수가 다르거나, 현재 데이터 중 일부가 sortedIds에 없으면
         // useEffect가 돌아서 setSortedIds를 해주기 전까지는 API 순서를 그대로 보여줌
-        if (sortedIds.length !== bookings.bookings.length || 
+        if (sortedIds.length !== bookings.bookings.length ||
             !bookings.bookings.every(b => sortedIds.includes(b.id))) {
             return bookings.bookings;
         }
-        
+
         return sortedIds
             .map((id) => bookings.bookings.find((b) => b.id === id))
-            .filter((b): b is IBookingDetail => b != null);
+            .filter((b): b is IBookingWithRole => b != null);
     })();
+
+    const selectedBookingWithRole = orderedBookings.find((b) => b.id === selectedId);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -119,20 +129,9 @@ export function MyBookings() {
         }
     };
 
-    const handleDownload = async (fileId: number, fileName: string) => {
+    const handleDownload = (fileId: number, fileName: string) => {
         if (!selectedId) return;
-        try {
-            // Pre-signed URL을 사용하여 S3에서 직접 다운로드
-            const { url } = await getPresignedDownloadUrl(selectedId, fileId);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            showToast(getErrorMessage(err, '파일 다운로드 실패'), 'my-bookings-download-error');
-        }
+        downloadFile({ fileId, fileName });
     };
 
     const handleDelete = async (fileId: number) => {
@@ -167,30 +166,32 @@ export function MyBookings() {
             {bookings && bookings.bookings.length > 0 && (
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Left: booking list */}
-                    <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col gap-4">
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <SortableContext
-                                items={orderedBookings.map((b) => b.id)}
-                                strategy={verticalListSortingStrategy}
+                    <div className="w-full lg:w-[380px] lg:h-[calc(100vh-12rem)] flex-shrink-0 flex flex-col">
+                        <div className="flex-1 overflow-y-auto flex flex-col gap-4">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
                             >
-                                {orderedBookings.map((booking) => (
-                                    <SortableBookingCard
-                                        key={booking.id}
-                                        booking={booking}
-                                        isSelected={selectedId === booking.id}
-                                        onSelect={handleCardSelect}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
+                                <SortableContext
+                                    items={orderedBookings.map((b) => b.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {orderedBookings.map((booking) => (
+                                        <SortableBookingCard
+                                            key={booking.id}
+                                            booking={booking}
+                                            isSelected={selectedId === booking.id}
+                                            onSelect={handleCardSelect}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        </div>
 
                         <Pagination
                             page={page}
-                            pageSize={pageSize}
+                            pageSize={PAGE_SIZE}
                             totalCount={bookings.totalCount}
                             onPageChange={handlePageChange}
                         />
@@ -198,22 +199,18 @@ export function MyBookings() {
 
                     {/* Right: detail panel */}
                     <div className="flex-1 min-w-0">
-                        {selectedId && selectedBooking ? (
-                            <div className="flex flex-col gap-4">
-                                <BookingDetailPanel
-                                    booking={selectedBooking}
-                                    onUpload={handleUpload}
-                                    onDownload={handleDownload}
-                                    onDelete={handleDelete}
-                                    isUploading={isUploading}
-                                    isDeleting={isDeleting}
-                                    uploadError={uploadError}
-                                />
-                                <FileDropZone
-                                    onFilesDropped={handleUpload}
-                                    disabled={isUploading}
-                                />
-                            </div>
+                        {selectedId && selectedBooking && selectedBooking.id === selectedId ? (
+                            <BookingDetailPanel
+                                booking={selectedBooking}
+                                onUpload={handleUpload}
+                                onDownload={handleDownload}
+                                onDelete={handleDelete}
+                                isUploading={isUploading}
+                                isDeleting={isDeleting}
+                                uploadError={uploadError}
+                                role={selectedBookingWithRole?.role}
+                                counterpart={selectedBookingWithRole?.counterpart}
+                            />
                         ) : (
                             <div className="flex items-center justify-center h-64 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm">
                                         예약을 선택하면 상세 정보를 볼 수 있습니다

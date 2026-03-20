@@ -67,7 +67,7 @@ const myBookingsRoute = createRoute({
     component: () => <AuthGuard><MyBookings /></AuthGuard>,
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
-        pageSize: z.number().min(1).optional().default(() => 10),
+        selectedId: z.number().optional(),
     }),
 })
 

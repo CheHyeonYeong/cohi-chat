@@ -4,6 +4,7 @@ import {
     validateFiles,
     formatFileSize,
     getAcceptedFileTypes,
+    canUploadMoreFiles,
     FILE_UPLOAD_LIMITS,
 } from './fileValidation';
 
@@ -125,6 +126,16 @@ describe('fileValidation', () => {
             const result = validateFiles(files, 2, 1024 * 1024); // 2개 있고 1MB 사용 중
             expect(result.valid).toBe(true);
             expect(result.errors).toHaveLength(0);
+        });
+    });
+
+    describe('canUploadMoreFiles', () => {
+        it('allows upload when current files are one below the max', () => {
+            expect(canUploadMoreFiles(FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING - 1)).toBe(true);
+        });
+
+        it('blocks upload when current files reached the max', () => {
+            expect(canUploadMoreFiles(FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING)).toBe(false);
         });
     });
 

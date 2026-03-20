@@ -1,16 +1,23 @@
 import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
-import type { IBookingDetail } from '../../types';
+import { Tag } from '~/components/Tag';
+import type { IBookingDetail, BookingRole } from '../../types';
+import type { IUserSimple } from '~/types/user';
 
 interface BookingCardProps {
     booking: IBookingDetail;
     onSelect?: (id: number) => void;
     isSelected?: boolean;
     className?: string;
+    role?: BookingRole;
+    counterpart?: Pick<IUserSimple, 'username' | 'displayName'>;
 }
 
-export function BookingCard({ booking, onSelect, isSelected = false, className }: BookingCardProps) {
+export function BookingCard({ booking, onSelect, isSelected = false, className, role, counterpart }: BookingCardProps) {
     const { startedAt } = booking;
+    const fallback = role === 'host' ? booking.guest : booking.host;
+    const displayName = (counterpart?.displayName || counterpart?.username) || (fallback.displayName || fallback.username) || '상대방';
+    const avatarInitial = displayName[0] ?? '?';
 
     return (
         <Card
@@ -26,20 +33,43 @@ export function BookingCard({ booking, onSelect, isSelected = false, className }
         >
             <button
                 type="button"
+                className="w-full"
                 onClick={() => onSelect?.(booking.id)}
             >
-                {/* Host info */}
+                {/* Role tag + Host/Counterpart info */}
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-semibold text-[var(--cohi-primary)]">
-                            {booking.host?.displayName?.[0] ?? '?'}
+                        <span data-testid="booking-avatar-initial" className="text-sm font-semibold text-[var(--cohi-primary)]">
+                            {avatarInitial}
                         </span>
                     </div>
-                    <p className="font-semibold text-[var(--cohi-text-dark)]">{booking.host.displayName}님과</p>
+                    <p className="font-semibold text-[var(--cohi-text-dark)] flex-1 text-left truncate">{displayName}님과의 커피챗</p>
+                    {role && (
+                        <span data-testid="booking-role-tag">
+                            <Tag
+                                color={role === 'guest' ? 'guest' : 'host'}
+                                size="sm"
+                                title={role === 'guest'
+                                    ? `내가 ${displayName}님에게 커피챗을 신청했습니다`
+                                    : `${displayName}님이 나에게 커피챗을 신청했습니다`}
+                            >
+                                {role === 'guest' ? '게스트' : '호스트'}
+                            </Tag>
+                        </span>
+                    )}
                 </div>
 
                 {/* Topic */}
-                <p className="text-base font-medium text-gray-800 mb-3 line-clamp-2">{booking.topic}</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                    {booking.topic.split(',').map((t) => (
+                        <Tag key={t.trim()} size="sm">{t.trim()}</Tag>
+                    ))}
+                </div>
+
+                {/* Description */}
+                {booking.description && (
+                    <p className="text-sm text-gray-500 text-left truncate mb-3">{booking.description}</p>
+                )}
 
                 {/* Date / Time */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">

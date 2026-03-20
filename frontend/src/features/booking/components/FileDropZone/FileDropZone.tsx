@@ -4,10 +4,11 @@ import { cn } from '~/libs/cn';
 interface FileDropZoneProps {
     onFilesDropped: (files: FileList) => void;
     disabled?: boolean;
+    accept?: string;
     className?: string;
 }
 
-export function FileDropZone({ onFilesDropped, disabled = false, className }: FileDropZoneProps) {
+export function FileDropZone({ onFilesDropped, disabled = false, accept, className }: FileDropZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +64,7 @@ export function FileDropZone({ onFilesDropped, disabled = false, className }: Fi
                 ref={fileInputRef}
                 type="file"
                 multiple
+                accept={accept}
                 className="hidden"
                 onChange={handleFileChange}
                 aria-hidden

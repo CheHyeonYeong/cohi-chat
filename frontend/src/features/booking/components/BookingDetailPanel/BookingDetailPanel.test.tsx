@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import type { IBookingDetail } from '../../types';
+import type { IBookingFile } from '../../types';
 import React from 'react';
 
 const mockBooking: IBookingDetail = {
@@ -25,6 +26,7 @@ const mockBooking: IBookingDetail = {
         updatedAt: '2024-01-01T00:00:00Z',
     },
     host: { username: 'hong', displayName: '홍길동' },
+    guest: { username: 'guest1', displayName: '게스트1' },
     hostId: 'host-uuid',
     guestId: 'guest-uuid',
     attendanceStatus: 'SCHEDULED',
@@ -35,6 +37,44 @@ const mockBooking: IBookingDetail = {
     location: null,
     meetingLink: 'https://meet.google.com/test',
 };
+
+// Mock components
+vi.mock('~/components', () => ({
+    Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock('./BookingHeader', () => ({
+    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: React.ReactNode }) => (
+        <div data-testid="booking-header">
+            <span>{displayName}</span>
+            <span>{roleLabel}</span>
+            <span>{attendanceStatus}</span>
+            {actions}
+        </div>
+    ),
+}));
+
+vi.mock('../BookingFileSection', () => ({
+    BookingFileSection: ({ files }: { files: IBookingFile[] }) => (
+        <div data-testid="booking-file-section">
+            {files.length === 0
+                ? <span>drop-files-here</span>
+                : files.map((f) => <span key={f.id}>{f.originalFileName}</span>)
+            }
+        </div>
+    ),
+}));
+
+vi.mock('../BookingMetaSection', () => ({
+    BookingMetaSection: ({ booking }: { booking: IBookingDetail }) => (
+        <div data-testid="booking-meta-section">
+            <span>{booking.topic}</span>
+            <span>{booking.startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</span>
+            <span>{booking.description || '설명이 없습니다.'}</span>
+        </div>
+    ),
+}));
 
 // Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
@@ -74,6 +114,12 @@ describe('BookingDetailPanel', () => {
         const { getByRole } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
         const link = getByRole('link', { name: /상세보기/ });
         expect(link.getAttribute('href')).toBe('/booking/1');
+    });
+
+    it('파일이 없으면 빈 상태를 표시해야 한다', () => {
+        const { getByTestId } = render(<BookingDetailPanel booking={mockBooking} onUpload={vi.fn()} isUploading={false} />);
+        expect(getByTestId('booking-file-section')).toBeInTheDocument();
+        expect(getByTestId('booking-file-section')).toHaveTextContent('drop-files-here');
     });
 
     it('파일이 있으면 파일 목록을 표시해야 한다', () => {

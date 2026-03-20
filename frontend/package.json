@@ -68,6 +68,7 @@
     "postcss-less": "^6.0.0",
     "postcss-nesting": "^13.0.1",
     "postcss-preset-env": "^10.1.1",
+    "react-grab": "^0.1.28",
     "tailwind-children": "^0.5.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss": "^3.4.15",
