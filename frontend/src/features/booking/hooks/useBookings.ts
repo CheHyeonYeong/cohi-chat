@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBookingsByDate } from '../api/calendar';
-import type { IBooking } from '~/components/calendar';
 import { calendarKeys } from './queryKeys';
 
-export function useBookings(hostname: string, date: Date | null) {
-    return useQuery<IBooking[]>({
-        queryKey: date ? calendarKeys.bookings(date.getFullYear(), date.getMonth() + 1) : ['bookings'],
-        queryFn: () => getBookingsByDate(hostname, { year: date!.getFullYear(), month: date!.getMonth() + 1 }),
-        enabled: !!date,
+interface UseBookingsParams {
+    hostname: string;
+    year: number;
+    month: number;
+}
+
+export function useBookings({ hostname, year, month }: UseBookingsParams) {
+    return useQuery({
+        queryKey: calendarKeys.bookings(hostname, year, month),
+        queryFn: () => getBookingsByDate(hostname, { year, month }),
+        enabled: !!hostname && year > 0 && month > 0,
     });
 }
