@@ -22,6 +22,7 @@ public class MemberResponseDTO {
 	private String displayName;
 	private String email;
 	private Role role;
+	private String profileImageUrl;
 	private Instant createdAt;
 	private Instant updatedAt;
 
@@ -32,6 +33,7 @@ public class MemberResponseDTO {
 			.displayName(member.getDisplayName())
 			.email(member.getEmail())
 			.role(member.getRole())
+			.profileImageUrl(member.getProfileImageUrl())
 			.createdAt(member.getCreatedAt())
 			.updatedAt(member.getUpdatedAt())
 			.build();

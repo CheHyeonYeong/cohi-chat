@@ -6,6 +6,7 @@ export interface MemberResponseDTO {
     displayName: string;
     email: string;
     role: Role;
+    profileImageUrl?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -67,4 +68,19 @@ export interface UpdateProfilePayload {
 export interface UpdateMemberPayload {
     displayName?: string;
     password?: string;
+}
+
+export interface ProfileImageUploadRequest {
+    fileName: string;
+    contentType: string;
+    fileSize: number;
+}
+
+export interface ProfileImageUploadResponse {
+    uploadUrl: string;
+    objectKey: string;
+}
+
+export interface ProfileImageConfirmRequest {
+    objectKey: string;
 }
