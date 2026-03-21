@@ -1,12 +1,28 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { Button } from '~/components/button';
 import { useAuth } from '../hooks/useAuth';
 import { useUploadProfileImage } from '../hooks/useUploadProfileImage';
 import { useDeleteProfileImage } from '../hooks/useDeleteProfileImage';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+type AllowedMimeType = typeof ALLOWED_TYPES[number];
+
+function isAllowedType(type: string): type is AllowedMimeType {
+    return (ALLOWED_TYPES as readonly string[]).includes(type);
+}
+
+function validateFile(file: File): string | null {
+    if (!isAllowedType(file.type)) {
+        return '허용되지 않은 이미지 형식입니다. (허용: jpg, jpeg, png, gif, webp)';
+    }
+    if (file.size > MAX_FILE_SIZE) {
+        return '프로필 이미지 크기가 5MB를 초과합니다.';
+    }
+    return null;
+}
 
 export function ProfileImageUpload() {
     const { data: user } = useAuth();
@@ -19,23 +35,18 @@ export function ProfileImageUpload() {
     const deleteMutation = useDeleteProfileImage();
 
     const currentImageUrl = preview || user?.profileImageUrl;
+    const isLoading = uploadMutation.isPending || deleteMutation.isPending;
 
-    const validateFile = (file: File): string | null => {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-            return '허용되지 않은 이미지 형식입니다. (허용: jpg, jpeg, png, gif, webp)';
-        }
-        if (file.size > MAX_FILE_SIZE) {
-            return '프로필 이미지 크기가 5MB를 초과합니다.';
-        }
-        return null;
-    };
+    const clearMessages = useCallback(() => {
+        setError(null);
+        setSuccessMessage(null);
+    }, []);
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setError(null);
-        setSuccessMessage(null);
+        clearMessages();
 
         const validationError = validateFile(file);
         if (validationError) {
@@ -43,37 +54,30 @@ export function ProfileImageUpload() {
             return;
         }
 
-        // 미리보기 설정
         const reader = new FileReader();
-        reader.onload = (e) => {
-            setPreview(e.target?.result as string);
+        reader.onload = (event) => {
+            setPreview(event.target?.result as string);
         };
         reader.readAsDataURL(file);
 
-        // 업로드 시작
-        uploadMutation.mutate(
-            { file },
-            {
-                onSuccess: () => {
-                    setSuccessMessage('프로필 이미지가 변경되었습니다.');
-                    setPreview(null);
-                },
-                onError: (err) => {
-                    setError(getErrorMessage(err, '프로필 이미지 업로드에 실패했습니다.'));
-                    setPreview(null);
-                },
-            }
-        );
+        uploadMutation.mutate(file, {
+            onSuccess: () => {
+                setSuccessMessage('프로필 이미지가 변경되었습니다.');
+                setPreview(null);
+            },
+            onError: (err) => {
+                setError(getErrorMessage(err, '프로필 이미지 업로드에 실패했습니다.'));
+                setPreview(null);
+            },
+        });
 
-        // 같은 파일 재선택 가능하도록 초기화
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-    };
+    }, [clearMessages, uploadMutation]);
 
-    const handleDelete = () => {
-        setError(null);
-        setSuccessMessage(null);
+    const handleDelete = useCallback(() => {
+        clearMessages();
 
         deleteMutation.mutate(undefined, {
             onSuccess: () => {
@@ -84,13 +88,11 @@ export function ProfileImageUpload() {
                 setError(getErrorMessage(err, '프로필 이미지 삭제에 실패했습니다.'));
             },
         });
-    };
+    }, [clearMessages, deleteMutation]);
 
-    const handleButtonClick = () => {
+    const handleButtonClick = useCallback(() => {
         fileInputRef.current?.click();
-    };
-
-    const isLoading = uploadMutation.isPending || deleteMutation.isPending;
+    }, []);
 
     return (
         <div className="flex flex-col gap-4" data-testid="profile-image-upload">

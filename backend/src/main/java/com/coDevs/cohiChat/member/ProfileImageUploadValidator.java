@@ -40,7 +40,7 @@ public class ProfileImageUploadValidator {
             throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
         }
 
-        String extension = extractExtension(fileName);
+        var extension = extractExtension(fileName);
         if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
             throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
         }
@@ -58,10 +58,9 @@ public class ProfileImageUploadValidator {
 
     private String extractExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
-            return "";
-        }
-        return fileName.substring(lastDotIndex + 1);
+        return (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1)
+            ? ""
+            : fileName.substring(lastDotIndex + 1);
     }
 
     public long getMaxFileSize() {

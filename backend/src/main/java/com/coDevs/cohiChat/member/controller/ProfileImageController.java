@@ -43,11 +43,11 @@ public class ProfileImageController {
             @Valid @RequestBody ProfileImageUploadRequestDTO request,
             Principal principal) {
 
-        ProfileImageUploadResponseDTO response = profileImageService.generatePresignedUploadUrl(
+        var response = profileImageService.generatePresignedUploadUrl(
                 principal.getName(),
-                request.getFileName(),
-                request.getContentType(),
-                request.getFileSize()
+                request.fileName(),
+                request.contentType(),
+                request.fileSize()
         );
 
         return ResponseEntity.ok(ApiResponseDTO.success(response));
@@ -66,9 +66,9 @@ public class ProfileImageController {
             @Valid @RequestBody ProfileImageConfirmRequestDTO request,
             Principal principal) {
 
-        String profileImageUrl = profileImageService.confirmUpload(
+        var profileImageUrl = profileImageService.confirmUpload(
                 principal.getName(),
-                request.getObjectKey()
+                request.objectKey()
         );
 
         return ResponseEntity.ok(ApiResponseDTO.success(profileImageUrl));
