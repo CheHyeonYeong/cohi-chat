@@ -375,6 +375,19 @@ class MemberControllerTest {
 	@Nested
 	@DisplayName("회원 조회 API")
 	class GetMember {
+		@Test
+		void getCurrentMemberSuccess() throws Exception {
+			Member member = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.GUEST);
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(member);
+
+			mockMvc.perform(get("/members/v1/me")
+					.principal(() -> TEST_USERNAME))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.username").value(TEST_USERNAME))
+				.andExpect(jsonPath("$.data.displayName").value(TEST_DISPLAY_NAME))
+				.andExpect(jsonPath("$.error").isEmpty());
+		}
 
 		@Test
 		@DisplayName("회원 조회 성공 응답 형식 검증")

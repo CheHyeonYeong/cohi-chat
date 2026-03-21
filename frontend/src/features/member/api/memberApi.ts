@@ -61,6 +61,12 @@ export async function refreshTokenApi(): Promise<void> {
     });
 }
 
+export async function getCurrentUserApi(): Promise<MemberResponseDTO> {
+    return httpClient<MemberResponseDTO>(`${MEMBER_API}/me`, {
+        clearAuthOnFailure: false,
+    });
+}
+
 export async function getUserApi(username: string): Promise<MemberResponseDTO> {
     return httpClient<MemberResponseDTO>(
         `${MEMBER_API}/${encodeURIComponent(username)}`

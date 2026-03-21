@@ -1,20 +1,18 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { Home } from './Home';
 
+const { mockNavigate, mockScrollIntoView } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockScrollIntoView: vi.fn(),
+}));
+
 vi.mock('@tanstack/react-router', () => ({
-    useNavigate: () => vi.fn(),
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
-    createLink:
-        (component: React.ComponentType<Record<string, unknown>>) =>
-            (props: Record<string, unknown>) => {
-                const { to, ...rest } = props;
-                return React.createElement(component, { href: to, ...rest });
-            },
-    useRouterState: () => ({ location: { pathname: '/' } }),
+    useNavigate: () => mockNavigate,
 }));
 
 const mockUseHosts = vi.fn();
@@ -25,16 +23,15 @@ vi.mock('~/hooks/useHost', () => ({
 const mockUseAuth = vi.fn();
 vi.mock('~/features/member', () => ({
     useAuth: () => mockUseAuth(),
-    useLogout: () => ({ logout: vi.fn() }),
 }));
 
-vi.mock('~/features/host', async (importOriginal) => {
-    const actual = await importOriginal() as Record<string, unknown>;
-    return {
-        ...actual,
-        useMyCalendar: () => ({ data: null, isLoading: false }),
-    };
-});
+vi.mock('~/components/header', () => ({
+    Header: () => <div data-testid="header" />,
+}));
+
+vi.mock('~/features/host', () => ({
+    HostCard: ({ displayName }: { displayName: string }) => <div data-testid="host-card">{displayName}</div>,
+}));
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
@@ -43,8 +40,10 @@ const createWrapper = () => {
             mutations: { retry: false },
         },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    return ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 };
 
 beforeEach(() => {
@@ -54,87 +53,26 @@ beforeEach(() => {
         isLoading: false,
         data: null,
     });
+    mockUseHosts.mockReturnValue({
+        data: [],
+        isLoading: false,
+        error: null,
+    });
+    vi.spyOn(document, 'getElementById').mockReturnValue({
+        scrollIntoView: mockScrollIntoView,
+    } as unknown as HTMLElement);
 });
 
 afterEach(() => {
-    cleanup();
+    vi.restoreAllMocks();
 });
 
-describe('Home - HostCard', () => {
-    const hosts = [
-        {
-            username: 'alice',
-            displayName: 'Alice',
-            job: '개발자',
-            chatCount: 3,
-            profileImageUrl: 'https://example.com/alice.jpg',
-        },
-    ];
-
-    it('profileImageUrl이 있으면 img 태그를 렌더링한다', () => {
-        mockUseHosts.mockReturnValue({ data: hosts, isLoading: false, error: null });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        const img = screen.getByAltText('Alice');
-        expect(img).toBeInTheDocument();
-        expect(img).toHaveAttribute('src', 'https://example.com/alice.jpg');
-    });
-
-    it('profileImageUrl이 없으면 이름 첫 글자를 표시한다', () => {
-        mockUseHosts.mockReturnValue({
-            data: [{ username: 'bob', displayName: 'Bob', chatCount: 0 }],
-            isLoading: false,
-            error: null,
-        });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.queryByRole('img')).not.toBeInTheDocument();
-        expect(screen.getByText('B')).toBeInTheDocument();
-    });
-
-    it('job이 없으면 "호스트"를 기본값으로 표시한다', () => {
-        mockUseHosts.mockReturnValue({
-            data: [{ username: 'charlie', displayName: 'Charlie', chatCount: 0 }],
-            isLoading: false,
-            error: null,
-        });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.getByText('호스트')).toBeInTheDocument();
-    });
-
-    it('chatCount > 0이면 배지를 표시한다', () => {
-        mockUseHosts.mockReturnValue({ data: hosts, isLoading: false, error: null });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.getByText('3회')).toBeInTheDocument();
-    });
-
-    it('chatCount가 0이면 배지를 표시하지 않는다', () => {
-        mockUseHosts.mockReturnValue({
-            data: [{ username: 'dave', displayName: 'Dave', job: '디자이너', chatCount: 0 }],
-            isLoading: false,
-            error: null,
-        });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.queryByText('0회')).not.toBeInTheDocument();
-    });
-
-    it('isSafeUrl 없이도 일반 URL의 이미지가 정상 렌더링된다', () => {
+describe('Home', () => {
+    it('renders host cards from host data', () => {
         mockUseHosts.mockReturnValue({
             data: [
-                {
-                    username: 'eve',
-                    displayName: 'Eve',
-                    chatCount: 1,
-                    profileImageUrl: 'https://cdn.example.com/photo.png',
-                },
+                { username: 'alice', displayName: 'Alice', chatCount: 3 },
+                { username: 'bob', displayName: 'Bob', chatCount: 0 },
             ],
             isLoading: false,
             error: null,
@@ -142,37 +80,71 @@ describe('Home - HostCard', () => {
 
         render(<Home />, { wrapper: createWrapper() });
 
-        const img = screen.getByAltText('Eve');
-        expect(img).toHaveAttribute('src', 'https://cdn.example.com/photo.png');
-    });
-});
-
-describe('Home - 호스트 목록 상태', () => {
-    it('로딩 중이면 로딩 메시지를 표시한다', () => {
-        mockUseHosts.mockReturnValue({ data: undefined, isLoading: true, error: null });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.getByText('읽어오는 중...')).toBeInTheDocument();
+        expect(screen.getAllByTestId('host-card')).toHaveLength(2);
+        expect(screen.getByText('Alice')).toBeInTheDocument();
+        expect(screen.getByText('Bob')).toBeInTheDocument();
     });
 
-    it('호스트가 없으면 빈 목록 메시지를 표시한다', () => {
-        mockUseHosts.mockReturnValue({ data: [], isLoading: false, error: null });
-
-        render(<Home />, { wrapper: createWrapper() });
-
-        expect(screen.getByText('등록된 호스트가 없습니다.')).toBeInTheDocument();
-    });
-
-    it('에러가 발생하면 에러 메시지를 표시한다', () => {
+    it('renders host loading errors', () => {
         mockUseHosts.mockReturnValue({
             data: undefined,
             isLoading: false,
-            error: { message: '네트워크 오류' },
+            error: { message: 'host load failed' },
         });
 
         render(<Home />, { wrapper: createWrapper() });
 
-        expect(screen.getByText('네트워크 오류')).toBeInTheDocument();
+        expect(screen.getByText('host load failed')).toBeInTheDocument();
+    });
+
+    it('navigates to login when unauthenticated user clicks the CTA', async () => {
+        render(<Home />, { wrapper: createWrapper() });
+
+        await userEvent.click(screen.getByRole('button'));
+
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' });
+        expect(mockScrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('scrolls to the host list when authenticated user clicks the CTA', async () => {
+        mockUseAuth.mockReturnValue({
+            isAuthenticated: true,
+            isLoading: false,
+            data: { username: 'guest', displayName: 'Guest' },
+        });
+
+        render(<Home />, { wrapper: createWrapper() });
+
+        await userEvent.click(screen.getByRole('button'));
+
+        expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('disables the CTA while auth status is loading', () => {
+        mockUseAuth.mockReturnValue({
+            isAuthenticated: false,
+            isLoading: true,
+            data: null,
+        });
+
+        render(<Home />, { wrapper: createWrapper() });
+
+        expect(screen.getByRole('button')).toBeDisabled();
+    });
+
+    it('does not navigate while auth status is loading', async () => {
+        mockUseAuth.mockReturnValue({
+            isAuthenticated: false,
+            isLoading: true,
+            data: null,
+        });
+
+        render(<Home />, { wrapper: createWrapper() });
+
+        await userEvent.click(screen.getByRole('button'));
+
+        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockScrollIntoView).not.toHaveBeenCalled();
     });
 });

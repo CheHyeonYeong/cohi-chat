@@ -109,6 +109,14 @@ public class MemberController {
                 return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
         }
 
+        @GetMapping("/v1/me")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getCurrentMember(Principal principal) {
+                Member member = memberService.getMember(principal.getName());
+                MemberResponseDTO response = MemberResponseDTO.from(member);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
+
         @GetMapping("/v1/{username}")
         @PreAuthorize("isAuthenticated() and #username == authentication.name")
         public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getMember(@PathVariable(name = "username") String username) {

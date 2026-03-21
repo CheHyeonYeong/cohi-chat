@@ -13,13 +13,12 @@ describe('httpClient', () => {
     const originalFetch = globalThis.fetch;
 
     beforeEach(() => {
-        localStorage.clear();
+        vi.clearAllMocks();
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         globalThis.fetch = originalFetch;
-        localStorage.clear();
     });
 
     it('sends requests with credentials include', async () => {
@@ -35,23 +34,48 @@ describe('httpClient', () => {
         );
     });
 
-    it('clears stored username when refresh retry fails after 401', async () => {
-        localStorage.setItem('username', 'testuser');
+    it('dispatches auth-change when refresh retry fails after 401', async () => {
+        const authChangeHandler = vi.fn();
+        window.addEventListener('auth-change', authChangeHandler);
 
         const fetchMock = vi.fn()
             .mockResolvedValueOnce(createJsonResponse({ error: { message: 'unauthorized' } }, 401))
             .mockResolvedValueOnce(createJsonResponse({ error: { message: 'refresh failed' } }, 401));
         globalThis.fetch = fetchMock as typeof fetch;
 
-        await expect(
-            httpClient('http://localhost:8080/api/members/v1/testuser'),
-        ).rejects.toThrow();
+        try {
+            await expect(
+                httpClient('http://localhost:8080/api/members/v1/testuser'),
+            ).rejects.toThrow();
+        } finally {
+            window.removeEventListener('auth-change', authChangeHandler);
+        }
 
-        expect(localStorage.getItem('username')).toBeNull();
+        expect(authChangeHandler).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
             'http://localhost:8080/api/members/v1/refresh',
             expect.objectContaining({ credentials: 'include', method: 'POST' }),
         );
+    });
+
+    it('does not dispatch auth-change when clearAuthOnFailure is false', async () => {
+        const authChangeHandler = vi.fn();
+        window.addEventListener('auth-change', authChangeHandler);
+
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(createJsonResponse({ error: { message: 'unauthorized' } }, 401))
+            .mockResolvedValueOnce(createJsonResponse({ error: { message: 'refresh failed' } }, 401));
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        try {
+            await expect(
+                httpClient('http://localhost:8080/api/members/v1/me', { clearAuthOnFailure: false }),
+            ).rejects.toThrow();
+        } finally {
+            window.removeEventListener('auth-change', authChangeHandler);
+        }
+
+        expect(authChangeHandler).not.toHaveBeenCalled();
     });
 });

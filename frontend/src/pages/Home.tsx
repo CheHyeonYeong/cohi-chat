@@ -8,10 +8,14 @@ import { HostCard } from '~/features/host';
 
 export function Home() {
     const hosts = useHosts();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 
     const handleFindHosts = () => {
+        if (isLoading) {
+            return;
+        }
+
         if (isAuthenticated) {
             document.getElementById('host-list')?.scrollIntoView({ behavior: 'smooth' });
         } else {
@@ -47,6 +51,7 @@ export function Home() {
                                 variant="primary"
                                 size="lg"
                                 onClick={handleFindHosts}
+                                disabled={isLoading}
                                 className="rounded-full px-8 shadow-lg hover:shadow-xl transition-all"
                             >
                                 호스트 찾아보기
