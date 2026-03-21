@@ -163,4 +163,48 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         """)
     Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
+    /**
+     * 전체 예약 수 조회
+     */
+    long count();
+
+    /**
+     * 상태별 예약 수 집계 (단일 쿼리)
+     */
+    @Query("""
+        SELECT b.attendanceStatus AS status, COUNT(b) AS count
+        FROM Booking b
+        GROUP BY b.attendanceStatus
+        """)
+    List<StatusCount> countByStatus();
+
+    /**
+     * 기간별 예약 수 집계 (오늘, 이번 주, 이번 달)
+     */
+    @Query("""
+        SELECT
+            SUM(CASE WHEN b.bookingDate = :today THEN 1 ELSE 0 END) AS todayCount,
+            SUM(CASE WHEN b.bookingDate >= :weekStart AND b.bookingDate < :weekEnd THEN 1 ELSE 0 END) AS weekCount,
+            SUM(CASE WHEN b.bookingDate >= :monthStart AND b.bookingDate < :monthEnd THEN 1 ELSE 0 END) AS monthCount
+        FROM Booking b
+        """)
+    PeriodCount countByPeriods(
+        @Param("today") LocalDate today,
+        @Param("weekStart") LocalDate weekStart,
+        @Param("weekEnd") LocalDate weekEnd,
+        @Param("monthStart") LocalDate monthStart,
+        @Param("monthEnd") LocalDate monthEnd
+    );
+
+    interface StatusCount {
+        AttendanceStatus getStatus();
+        long getCount();
+    }
+
+    interface PeriodCount {
+        Long getTodayCount();
+        Long getWeekCount();
+        Long getMonthCount();
+    }
+
 }
