@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.member;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -45,16 +44,11 @@ public class ProfileImageService {
     ) {
         validator.validate(fileName, contentType, fileSize);
 
-        Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        var member = findMemberByUsername(username);
+        var objectKey = generateObjectKey(member.getId(), fileName);
+        var uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, contentType);
 
-        String objectKey = generateObjectKey(member.getId(), fileName);
-        String uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, contentType);
-
-        return ProfileImageUploadResponseDTO.builder()
-                .uploadUrl(uploadUrl)
-                .objectKey(objectKey)
-                .build();
+        return ProfileImageUploadResponseDTO.of(uploadUrl, objectKey);
     }
 
     /**
@@ -62,31 +56,15 @@ public class ProfileImageService {
      */
     @Transactional
     public String confirmUpload(String username, String objectKey) {
-        Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        var member = findMemberByUsername(username);
 
-        // S3에 파일이 존재하는지 확인
-        Optional<S3ObjectMetadata> metadata = s3PresignedUrlService.getObjectMetadata(objectKey);
-        if (metadata.isEmpty()) {
-            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
-        }
+        var metadata = s3PresignedUrlService.getObjectMetadata(objectKey)
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        // 파일 크기 및 타입 재검증
-        S3ObjectMetadata meta = metadata.get();
-        validator.validateFileSize(meta.contentLength());
-        validator.validateMimeType(meta.contentType());
+        validateUploadedFile(metadata);
+        deleteExistingProfileImage(member);
 
-        // 기존 프로필 이미지가 있으면 삭제
-        String oldImageUrl = member.getProfileImageUrl();
-        if (oldImageUrl != null && !oldImageUrl.isBlank()) {
-            String oldObjectKey = extractObjectKeyFromUrl(oldImageUrl);
-            if (oldObjectKey != null) {
-                s3PresignedUrlService.deleteObjectQuietly(oldObjectKey);
-            }
-        }
-
-        // 새 프로필 이미지 URL 생성 및 저장
-        String profileImageUrl = generatePublicUrl(objectKey);
+        var profileImageUrl = generatePublicUrl(objectKey);
         member.updateProfile(null, profileImageUrl);
         memberRepository.save(member);
 
@@ -98,35 +76,48 @@ public class ProfileImageService {
      */
     @Transactional
     public void deleteProfileImage(String username) {
-        Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        var member = findMemberByUsername(username);
+        var profileImageUrl = member.getProfileImageUrl();
 
-        String profileImageUrl = member.getProfileImageUrl();
         if (profileImageUrl == null || profileImageUrl.isBlank()) {
-            return; // 이미 없음, 정상 처리
+            return;
         }
 
-        // S3에서 파일 삭제
-        String objectKey = extractObjectKeyFromUrl(profileImageUrl);
-        if (objectKey != null) {
-            s3PresignedUrlService.deleteObjectQuietly(objectKey);
-        }
+        extractObjectKeyFromUrl(profileImageUrl)
+                .ifPresent(s3PresignedUrlService::deleteObjectQuietly);
 
-        // DB에서 URL 제거
         member.updateProfile(null, "");
         memberRepository.save(member);
     }
 
+    private Member findMemberByUsername(String username) {
+        return memberRepository.findByUsernameAndIsDeletedFalse(username)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private void validateUploadedFile(S3ObjectMetadata metadata) {
+        validator.validateFileSize(metadata.contentLength());
+        validator.validateMimeType(metadata.contentType());
+    }
+
+    private void deleteExistingProfileImage(Member member) {
+        var oldImageUrl = member.getProfileImageUrl();
+        if (oldImageUrl != null && !oldImageUrl.isBlank()) {
+            extractObjectKeyFromUrl(oldImageUrl)
+                    .ifPresent(s3PresignedUrlService::deleteObjectQuietly);
+        }
+    }
+
     private String generateObjectKey(UUID memberId, String fileName) {
-        String extension = extractExtension(fileName);
-        String uniqueFileName = UUID.randomUUID().toString();
-        return PROFILE_IMAGE_PREFIX + memberId.toString() + "/" + uniqueFileName + "." + extension;
+        var extension = extractExtension(fileName);
+        var uniqueFileName = UUID.randomUUID().toString();
+        return PROFILE_IMAGE_PREFIX + memberId + "/" + uniqueFileName + "." + extension;
     }
 
     private String extractExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
-            return "jpg"; // 기본값
+            return "jpg";
         }
         return fileName.substring(lastDotIndex + 1).toLowerCase();
     }
@@ -135,28 +126,25 @@ public class ProfileImageService {
         if (cloudfrontDomain != null && !cloudfrontDomain.isBlank()) {
             return "https://" + cloudfrontDomain + "/" + objectKey;
         }
-        // CloudFront 미설정 시 S3 직접 URL 사용
         return "https://" + bucketName + ".s3.amazonaws.com/" + objectKey;
     }
 
-    private String extractObjectKeyFromUrl(String url) {
+    private java.util.Optional<String> extractObjectKeyFromUrl(String url) {
         if (url == null || url.isBlank()) {
-            return null;
+            return java.util.Optional.empty();
         }
 
-        // CloudFront URL에서 추출
         if (cloudfrontDomain != null && !cloudfrontDomain.isBlank() && url.contains(cloudfrontDomain)) {
             int prefixIndex = url.indexOf(cloudfrontDomain);
-            return url.substring(prefixIndex + cloudfrontDomain.length() + 1);
+            return java.util.Optional.of(url.substring(prefixIndex + cloudfrontDomain.length() + 1));
         }
 
-        // S3 URL에서 추출
-        String s3Prefix = bucketName + ".s3.amazonaws.com/";
+        var s3Prefix = bucketName + ".s3.amazonaws.com/";
         if (url.contains(s3Prefix)) {
             int prefixIndex = url.indexOf(s3Prefix);
-            return url.substring(prefixIndex + s3Prefix.length());
+            return java.util.Optional.of(url.substring(prefixIndex + s3Prefix.length()));
         }
 
-        return null;
+        return java.util.Optional.empty();
     }
 }
