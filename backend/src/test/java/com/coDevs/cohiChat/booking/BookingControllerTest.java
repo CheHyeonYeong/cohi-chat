@@ -789,4 +789,74 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.data").isEmpty());
     }
 
+    // ===== 페이지네이션 파라미터 유효성 검증 테스트 (Issue #459) =====
+
+    @Test
+    @DisplayName("실패: page=0으로 게스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsGuestFailInvalidPage() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/guest/me")
+                .param("page", "0")
+                .param("size", "10"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    @DisplayName("실패: size=0으로 게스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsGuestFailInvalidSize() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/guest/me")
+                .param("page", "1")
+                .param("size", "0"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    @DisplayName("실패: 음수 page로 게스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsGuestFailNegativePage() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/guest/me")
+                .param("page", "-1")
+                .param("size", "10"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("실패: page=0으로 호스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsHostFailInvalidPage() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/host/me")
+                .param("page", "0")
+                .param("size", "10"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    @DisplayName("실패: size=0으로 호스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsHostFailInvalidSize() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/host/me")
+                .param("page", "1")
+                .param("size", "0"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    @DisplayName("실패: 음수 size로 호스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsHostFailNegativeSize() throws Exception {
+        // when & then
+        mockMvc.perform(get("/bookings/host/me")
+                .param("page", "1")
+                .param("size", "-5"))
+            .andExpect(status().isBadRequest());
+    }
+
 }

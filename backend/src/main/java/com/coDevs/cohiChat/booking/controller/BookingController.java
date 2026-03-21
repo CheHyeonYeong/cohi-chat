@@ -35,8 +35,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 
+@Validated
 @Tag(name = "Booking", description = "예약 관리 API")
 @RestController
 @RequestMapping("/bookings")
@@ -85,13 +88,14 @@ public class BookingController {
     @Operation(summary = "내 예약 조회 (게스트)", description = "내가 게스트로 신청한 예약 목록을 페이지 단위로 조회합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (page < 1 또는 size < 1)"),
         @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @GetMapping("/guest/me")
     public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsGuest(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.") int page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.") int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         PaginatedBookingResponseDTO response = bookingService.getBookingsByGuestIdPaginated(member.getId(), page, size);
@@ -101,13 +105,14 @@ public class BookingController {
     @Operation(summary = "내 예약 조회 (호스트)", description = "내가 호스트로 받은 예약 목록을 페이지 단위로 조회합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (page < 1 또는 size < 1)"),
         @ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @GetMapping("/host/me")
     public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsHost(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.") int page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.") int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         PaginatedBookingResponseDTO response = bookingService.getBookingsByHostIdPaginated(member.getId(), page, size);
