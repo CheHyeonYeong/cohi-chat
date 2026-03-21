@@ -113,7 +113,7 @@ class HostServiceTest {
 		void getHostProfileSuccess() {
 			Member host = createHostMember();
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
-			when(calendarRepository.existsByUserId(host.getId())).thenReturn(true);
+			when(calendarRepository.existsByMemberId(host.getId())).thenReturn(true);
 
 			HostProfileResponseDTO result = hostService.getHostProfile(TEST_USERNAME);
 
@@ -138,7 +138,7 @@ class HostServiceTest {
 		void hostWithoutCalendarReturnsFalse() {
 			Member host = createHostMember();
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
-			when(calendarRepository.existsByUserId(host.getId())).thenReturn(false);
+			when(calendarRepository.existsByMemberId(host.getId())).thenReturn(false);
 
 			HostProfileResponseDTO result = hostService.getHostProfile(TEST_USERNAME);
 
@@ -155,7 +155,7 @@ class HostServiceTest {
 			assertThrows(CustomException.class,
 				() -> hostService.getHostProfile(TEST_USERNAME));
 
-			verify(calendarRepository, never()).existsByUserId(guest.getId());
+			verify(calendarRepository, never()).existsByMemberId(guest.getId());
 		}
 	}
 
@@ -168,7 +168,7 @@ class HostServiceTest {
 		void updateHostProfileSuccess() {
 			Member host = createHostMember();
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
-			when(calendarRepository.existsByUserId(host.getId())).thenReturn(false);
+			when(calendarRepository.existsByMemberId(host.getId())).thenReturn(false);
 
 			HostProfileResponseDTO result = hostService.updateHostProfile(TEST_USERNAME, "NewDisplayName");
 
@@ -192,7 +192,7 @@ class HostServiceTest {
 		void updateHostProfileWithCalendarConnected() {
 			Member host = createHostMember();
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(host);
-			when(calendarRepository.existsByUserId(host.getId())).thenReturn(true);
+			when(calendarRepository.existsByMemberId(host.getId())).thenReturn(true);
 
 			HostProfileResponseDTO result = hostService.updateHostProfile(TEST_USERNAME, "UpdatedName");
 
@@ -209,7 +209,7 @@ class HostServiceTest {
 			assertThrows(CustomException.class,
 				() -> hostService.updateHostProfile(TEST_USERNAME, "NewName"));
 
-			verify(calendarRepository, never()).existsByUserId(guest.getId());
+			verify(calendarRepository, never()).existsByMemberId(guest.getId());
 		}
 	}
 }

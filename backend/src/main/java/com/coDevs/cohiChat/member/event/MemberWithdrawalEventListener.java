@@ -32,7 +32,7 @@ public class MemberWithdrawalEventListener {
     public void handleMemberWithdrawal(MemberWithdrawalEvent event) {
         // 호스트인 경우: 호스트 캘린더 한 번만 조회하여 재사용
         if (event.getMemberRole() == Role.HOST) {
-            Calendar hostCalendar = calendarRepository.findById(event.getMemberId()).orElse(null);
+            Calendar hostCalendar = calendarRepository.findByMemberId(event.getMemberId()).orElse(null);
             if (hostCalendar != null) {
                 for (Booking booking : event.getHostBookings()) {
                     deleteGoogleCalendarEventSafely(booking, hostCalendar.getGoogleCalendarId());
@@ -43,7 +43,7 @@ public class MemberWithdrawalEventListener {
         // 게스트 예약: 각 호스트의 캘린더에서 이벤트 삭제
         for (Booking booking : event.getGuestBookings()) {
             UUID hostId = booking.getTimeSlot().getUserId();
-            calendarRepository.findById(hostId).ifPresent(calendar ->
+            calendarRepository.findByMemberId(hostId).ifPresent(calendar ->
                 deleteGoogleCalendarEventSafely(booking, calendar.getGoogleCalendarId())
             );
         }

@@ -31,7 +31,7 @@ public class TimeSlotService {
     public TimeSlotResponseDTO createTimeSlot(Member member, TimeSlotCreateRequestDTO request) {
         validateHostPermission(member);
 
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
+        Calendar calendar = calendarRepository.findByMemberId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         validateNoOverlappingTimeSlots(calendar.getUserId(), request);
@@ -77,7 +77,7 @@ public class TimeSlotService {
     }
 
     private List<TimeSlotResponseDTO> getTimeSlotsByUserId(UUID userId) {
-        calendarRepository.findByUserId(userId)
+        calendarRepository.findByMemberId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         return timeSlotRepository.findByUserIdOrderByStartTimeAsc(userId).stream()

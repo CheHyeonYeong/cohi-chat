@@ -73,7 +73,7 @@ class CalendarServiceTest {
 
     private void givenSuccessfulCreateMocks() {
         givenHostMember();
-        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(false);
+        given(calendarRepository.existsByMemberId(TEST_USER_ID)).willReturn(false);
         given(calendarRepository.save(any(Calendar.class))).willAnswer(inv -> inv.getArgument(0));
     }
 
@@ -98,7 +98,7 @@ class CalendarServiceTest {
         // given
         given(hostMember.getId()).willReturn(TEST_USER_ID);
         given(hostMember.getRole()).willReturn(Role.GUEST);
-        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(false);
+        given(calendarRepository.existsByMemberId(TEST_USER_ID)).willReturn(false);
         given(calendarRepository.save(any(Calendar.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
@@ -115,7 +115,7 @@ class CalendarServiceTest {
     void createCalendarFailWhenAlreadyExists() {
         // given
         given(hostMember.getId()).willReturn(TEST_USER_ID);
-        given(calendarRepository.existsByUserId(TEST_USER_ID)).willReturn(true);
+        given(calendarRepository.existsByMemberId(TEST_USER_ID)).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> calendarService.createCalendar(hostMember, requestDTO))
@@ -128,8 +128,8 @@ class CalendarServiceTest {
     void getCalendarSuccess() {
         // given
         givenHostMember();
-        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.checkCalendarAccess(TEST_GOOGLE_CALENDAR_ID)).willReturn(true);
 
         // when
@@ -147,9 +147,9 @@ class CalendarServiceTest {
     void getCalendarSuccessWhenAccessibleAlreadyCached() {
         // given
         givenHostMember();
-        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        Calendar calendar = Calendar.create(hostMember, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
         calendar.setCalendarAccessible(true);
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.of(calendar));
 
         // when
         CalendarResponseDTO response = calendarService.getCalendar(hostMember);
@@ -176,7 +176,7 @@ class CalendarServiceTest {
     void getCalendarFailWhenNotFound() {
         // given
         givenHostMember();
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.empty());
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> calendarService.getCalendar(hostMember))
@@ -189,8 +189,8 @@ class CalendarServiceTest {
     void updateCalendarSuccess() {
         // given
         givenHostMember();
-        Calendar calendar = Calendar.create(TEST_USER_ID, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, TEST_TOPICS, TEST_DESCRIPTION, TEST_GOOGLE_CALENDAR_ID);
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.of(calendar));
 
         List<String> updatedTopics = List.of("새로운 주제");
         String updatedDescription = "수정된 설명입니다. 10자 이상입니다.";
@@ -234,7 +234,7 @@ class CalendarServiceTest {
     void updateCalendarFailWhenNotFound() {
         // given
         givenHostMember();
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.empty());
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.empty());
 
         CalendarUpdateRequestDTO updateRequest = CalendarUpdateRequestDTO.builder()
             .topics(List.of("새로운 주제"))
