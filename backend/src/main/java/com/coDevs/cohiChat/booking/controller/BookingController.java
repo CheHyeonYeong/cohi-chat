@@ -35,7 +35,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 
@@ -94,8 +94,8 @@ public class BookingController {
     @GetMapping("/guest/me")
     public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsGuest(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.") int page,
-            @RequestParam(defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.") int size
+            @RequestParam(defaultValue = "1") @Positive int page,
+            @RequestParam(defaultValue = "10") @Positive int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         PaginatedBookingResponseDTO response = bookingService.getBookingsByGuestIdPaginated(member.getId(), page, size);
@@ -111,8 +111,8 @@ public class BookingController {
     @GetMapping("/host/me")
     public ResponseEntity<ApiResponseDTO<PaginatedBookingResponseDTO>> getMyBookingsAsHost(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "1") @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다.") int page,
-            @RequestParam(defaultValue = "10") @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.") int size
+            @RequestParam(defaultValue = "1") @Positive int page,
+            @RequestParam(defaultValue = "10") @Positive int size
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         PaginatedBookingResponseDTO response = bookingService.getBookingsByHostIdPaginated(member.getId(), page, size);
