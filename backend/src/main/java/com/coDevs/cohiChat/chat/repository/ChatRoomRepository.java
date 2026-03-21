@@ -27,4 +27,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, UUID> {
         AND r.deletedAt IS NULL
         """)
     Optional<ChatRoom> findActiveRoomByHostAndGuest(@Param("hostId") UUID hostId, @Param("guestId") UUID guestId);
+
+    @Query("SELECT r FROM ChatRoom r WHERE r.externalRefType = 'RESERVATION' AND r.externalRefId = :externalRefId AND r.deletedAt IS NULL")
+    Optional<ChatRoom> findByBookingExternalRef(@Param("externalRefId") UUID externalRefId);
 }

@@ -56,6 +56,12 @@ public class ChatService {
         return new ChatRoomResponseDTO(room.getId());
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<UUID> getChatRoomIdByBookingId(Long bookingId) {
+        return chatRoomRepository.findByBookingExternalRef(uuidFromLong(bookingId))
+            .map(ChatRoom::getId);
+    }
+
     private ChatRoom createNewRoom(UUID hostId, UUID guestId, Long bookingId) {
         ChatRoom room = chatRoomRepository.save(
             ChatRoom.create(EXTERNAL_REF_RESERVATION, uuidFromLong(bookingId))
