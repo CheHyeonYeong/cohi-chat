@@ -86,6 +86,9 @@ dependencies {
     // Observability
     implementation 'net.ttddyy:datasource-proxy:1.10'
 
+    // Prometheus Metrics
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // Google Calendar API
     implementation 'com.google.api-client:google-api-client:2.7.0'
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'

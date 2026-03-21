@@ -40,4 +40,22 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 	@Query("SELECT m FROM Member m WHERE m.id = :id")
 	Optional<Member> findByIdWithLock(@Param("id") UUID id);
 
+	/**
+	 * 전체 활성 회원 수 조회
+	 */
+	@Query("SELECT COUNT(m) FROM Member m WHERE m.isDeleted = false")
+	long countActiveMembers();
+
+	/**
+	 * 역할별 활성 회원 수 조회
+	 */
+	@Query("SELECT COUNT(m) FROM Member m WHERE m.role = :role AND m.isDeleted = false")
+	long countByRoleAndIsDeletedFalse(@Param("role") Role role);
+
+	/**
+	 * OAuth 제공자별 활성 회원 수 조회
+	 */
+	@Query("SELECT COUNT(m) FROM Member m WHERE m.provider = :provider AND m.isDeleted = false")
+	long countByProviderAndIsDeletedFalse(@Param("provider") Provider provider);
+
 }

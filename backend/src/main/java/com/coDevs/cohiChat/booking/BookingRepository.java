@@ -163,4 +163,27 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         """)
     Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
+    /**
+     * 전체 예약 수 조회
+     */
+    long count();
+
+    /**
+     * 상태별 예약 수 조회
+     */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.attendanceStatus = :status")
+    long countByAttendanceStatus(@Param("status") AttendanceStatus status);
+
+    /**
+     * 오늘 예약 수 조회
+     */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.bookingDate = :date")
+    long countByBookingDate(@Param("date") LocalDate date);
+
+    /**
+     * 날짜 범위 내 예약 수 조회
+     */
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.bookingDate >= :startDate AND b.bookingDate < :endDate")
+    long countByBookingDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
 }
