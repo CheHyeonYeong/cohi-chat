@@ -325,6 +325,7 @@ class MemberControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.accessToken").doesNotExist())
+				.andExpect(jsonPath("$.data.refreshToken").doesNotExist())
 				.andExpect(jsonPath("$.data.username").value(TEST_USERNAME))
 				.andExpect(jsonPath("$.error").isEmpty());
 

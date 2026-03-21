@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.global.security.auth.AuthCookieService;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
+import com.coDevs.cohiChat.member.response.SafeLoginResponseDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,14 +40,14 @@ public class OAuthController {
 
 	@Operation(summary = "OAuth 콜백 처리", description = "인가 코드를 교환하여 JWT를 발급합니다")
 	@PostMapping("/{provider}/callback")
-	public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> socialLoginCallback(
+	public ResponseEntity<ApiResponseDTO<SafeLoginResponseDTO>> socialLoginCallback(
 		@PathVariable String provider,
 		@Valid @RequestBody OAuthCallbackRequest request,
 		HttpServletResponse response
 	) {
 		LoginResponseDTO loginResponse = oAuthService.socialLogin(provider, request.code(), request.state());
 		authCookieService.addLoginCookies(response, loginResponse);
-		return ResponseEntity.ok(ApiResponseDTO.success(loginResponse));
+		return ResponseEntity.ok(ApiResponseDTO.success(loginResponse.toSafeResponse()));
 	}
 
 	public record OAuthCallbackRequest(
