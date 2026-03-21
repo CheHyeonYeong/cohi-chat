@@ -166,7 +166,7 @@ describe('Detail no-show reporting', () => {
 
         fireEvent.click(screen.getByRole('button', { name: '호스트 노쇼 신고' }));
 
-        expect(screen.getByPlaceholderText('신고 사유를 입력해주세요 (선택)')).toBeInTheDocument();
+        expect(screen.getByLabelText('신고 사유 (선택)')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '신고하기' })).toBeInTheDocument();
     });
 

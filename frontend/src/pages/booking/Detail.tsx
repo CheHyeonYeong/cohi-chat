@@ -168,13 +168,22 @@ export function Detail() {
                             </div>
                         ) : (
                             <div className="flex flex-col space-y-3">
-                                <textarea
-                                    className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
-                                    rows={3}
-                                    placeholder="신고 사유를 입력해주세요 (선택)"
-                                    value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
-                                />
+                                <div className="flex flex-col space-y-1">
+                                    <label
+                                        htmlFor="noshow-report-reason"
+                                        className="text-sm font-medium text-amber-800"
+                                    >
+                                        신고 사유 (선택)
+                                    </label>
+                                    <textarea
+                                        id="noshow-report-reason"
+                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                        rows={3}
+                                        placeholder="신고 사유를 입력해주세요"
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                    />
+                                </div>
                                 {reportError && (
                                     <p className="text-red-600 text-sm">{reportError.message}</p>
                                 )}
