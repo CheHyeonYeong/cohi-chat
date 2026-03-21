@@ -3,10 +3,10 @@ import { getBookingsByDate } from '../api/calendar';
 import type { IBooking } from '~/components/calendar';
 import { calendarKeys } from './queryKeys';
 
-export function useBookings(hostname: string, date: Date | null) {
+export function useBookings(hostname: string, year: number, month: number) {
     return useQuery<IBooking[]>({
-        queryKey: date ? calendarKeys.bookings(date.getFullYear(), date.getMonth() + 1) : ['bookings'],
-        queryFn: () => getBookingsByDate(hostname, { year: date!.getFullYear(), month: date!.getMonth() + 1 }),
-        enabled: !!date,
+        queryKey: calendarKeys.bookings(year, month),
+        queryFn: () => getBookingsByDate(hostname, { year, month }),
+        enabled: !!hostname && year > 0 && month > 0,
     });
 }

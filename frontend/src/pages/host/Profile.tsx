@@ -31,7 +31,7 @@ export function Profile() {
     const [selectedTimeslot, setSelectedTimeslot] = useState<ITimeSlot | null>(null);
 
     const { data: bookings = [], refetch: refetchBookings } = useBookings(
-        host?.username ?? '', selectedDate
+        host?.username ?? '', year, month
     );
 
     const timeslotsRef = useRef<HTMLDivElement>(null);
