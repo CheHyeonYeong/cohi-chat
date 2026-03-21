@@ -1,13 +1,17 @@
 package com.coDevs.cohiChat.metrics;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.EnumMap;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
+import com.coDevs.cohiChat.booking.BookingRepository.PeriodCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -27,62 +31,70 @@ public class MetricsService {
 
 	@Transactional(readOnly = true)
 	public BusinessMetricsDTO getBusinessMetrics() {
-		return BusinessMetricsDTO.builder()
-			.generatedAt(Instant.now())
-			.members(getMemberMetrics())
-			.bookings(getBookingMetrics())
-			.build();
+		return new BusinessMetricsDTO(
+			Instant.now(),
+			getMemberMetrics(),
+			getBookingMetrics()
+		);
 	}
 
 	private MemberMetricsDTO getMemberMetrics() {
-		long guestCount = memberRepository.countByRoleAndIsDeletedFalse(Role.GUEST);
-		long hostCount = memberRepository.countByRoleAndIsDeletedFalse(Role.HOST);
-		long adminCount = memberRepository.countByRoleAndIsDeletedFalse(Role.ADMIN);
-		long totalMembers = guestCount + hostCount + adminCount;
+		Map<Role, Long> roleCounts = memberRepository.countByRole().stream()
+			.collect(() -> new EnumMap<>(Role.class),
+				(map, rc) -> map.put(rc.getRole(), rc.getCount()),
+				EnumMap::putAll);
 
-		long localAuthCount = memberRepository.countByProviderAndIsDeletedFalse(Provider.LOCAL);
-		long googleAuthCount = memberRepository.countByProviderAndIsDeletedFalse(Provider.GOOGLE);
-		long kakaoAuthCount = memberRepository.countByProviderAndIsDeletedFalse(Provider.KAKAO);
+		Map<Provider, Long> providerCounts = memberRepository.countByProvider().stream()
+			.collect(() -> new EnumMap<>(Provider.class),
+				(map, pc) -> map.put(pc.getProvider(), pc.getCount()),
+				EnumMap::putAll);
 
-		return MemberMetricsDTO.builder()
-			.totalMembers(totalMembers)
-			.guestCount(guestCount)
-			.hostCount(hostCount)
-			.adminCount(adminCount)
-			.localAuthCount(localAuthCount)
-			.googleAuthCount(googleAuthCount)
-			.kakaoAuthCount(kakaoAuthCount)
-			.build();
+		long guestCount = roleCounts.getOrDefault(Role.GUEST, 0L);
+		long hostCount = roleCounts.getOrDefault(Role.HOST, 0L);
+		long adminCount = roleCounts.getOrDefault(Role.ADMIN, 0L);
+
+		return new MemberMetricsDTO(
+			guestCount + hostCount + adminCount,
+			guestCount,
+			hostCount,
+			adminCount,
+			providerCounts.getOrDefault(Provider.LOCAL, 0L),
+			providerCounts.getOrDefault(Provider.GOOGLE, 0L),
+			providerCounts.getOrDefault(Provider.KAKAO, 0L)
+		);
 	}
 
 	private BookingMetricsDTO getBookingMetrics() {
+		Map<AttendanceStatus, Long> statusCounts = bookingRepository.countByStatus().stream()
+			.collect(() -> new EnumMap<>(AttendanceStatus.class),
+				(map, sc) -> map.put(sc.getStatus(), sc.getCount()),
+				EnumMap::putAll);
+
 		LocalDate today = LocalDate.now();
-		LocalDate weekStart = today.with(java.time.DayOfWeek.MONDAY);
+		LocalDate weekStart = today.with(DayOfWeek.MONDAY);
 		LocalDate monthStart = today.with(TemporalAdjusters.firstDayOfMonth());
-		LocalDate nextMonth = monthStart.plusMonths(1);
-		LocalDate nextWeek = weekStart.plusWeeks(1);
 
-		long totalBookings = bookingRepository.count();
-		long scheduledBookings = bookingRepository.countByAttendanceStatus(AttendanceStatus.SCHEDULED);
-		long attendedBookings = bookingRepository.countByAttendanceStatus(AttendanceStatus.ATTENDED);
-		long cancelledBookings = bookingRepository.countByAttendanceStatus(AttendanceStatus.CANCELLED)
-			+ bookingRepository.countByAttendanceStatus(AttendanceStatus.SAME_DAY_CANCEL);
-		long noShowBookings = bookingRepository.countByAttendanceStatus(AttendanceStatus.NO_SHOW)
-			+ bookingRepository.countByAttendanceStatus(AttendanceStatus.HOST_NO_SHOW);
+		PeriodCount periodCount = bookingRepository.countByPeriods(
+			today, weekStart, weekStart.plusWeeks(1), monthStart, monthStart.plusMonths(1)
+		);
 
-		long todayBookings = bookingRepository.countByBookingDate(today);
-		long thisWeekBookings = bookingRepository.countByBookingDateBetween(weekStart, nextWeek);
-		long thisMonthBookings = bookingRepository.countByBookingDateBetween(monthStart, nextMonth);
+		long totalBookings = statusCounts.values().stream().mapToLong(Long::longValue).sum();
 
-		return BookingMetricsDTO.builder()
-			.totalBookings(totalBookings)
-			.scheduledBookings(scheduledBookings)
-			.attendedBookings(attendedBookings)
-			.cancelledBookings(cancelledBookings)
-			.noShowBookings(noShowBookings)
-			.todayBookings(todayBookings)
-			.thisWeekBookings(thisWeekBookings)
-			.thisMonthBookings(thisMonthBookings)
-			.build();
+		return new BookingMetricsDTO(
+			totalBookings,
+			statusCounts.getOrDefault(AttendanceStatus.SCHEDULED, 0L),
+			statusCounts.getOrDefault(AttendanceStatus.ATTENDED, 0L),
+			statusCounts.getOrDefault(AttendanceStatus.CANCELLED, 0L)
+				+ statusCounts.getOrDefault(AttendanceStatus.SAME_DAY_CANCEL, 0L),
+			statusCounts.getOrDefault(AttendanceStatus.NO_SHOW, 0L)
+				+ statusCounts.getOrDefault(AttendanceStatus.HOST_NO_SHOW, 0L),
+			nullToZero(periodCount.getTodayCount()),
+			nullToZero(periodCount.getWeekCount()),
+			nullToZero(periodCount.getMonthCount())
+		);
+	}
+
+	private static long nullToZero(Long value) {
+		return value != null ? value : 0L;
 	}
 }
