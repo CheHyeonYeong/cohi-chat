@@ -85,7 +85,7 @@ public class TestDummyDataGenerator {
             hosts.add(memberRepository.save(host));
 
             Calendar calendar = Calendar.create(
-                host.getId(),
+                host,
                 List.of("커피챗", "멘토링", "노쇼 테스트"),
                 "더미 호스트 " + (i + 1) + "의 캘린더입니다.",
                 "dummy-calendar-id-" + host.getId()
@@ -164,7 +164,7 @@ public class TestDummyDataGenerator {
             timeSlotRepository.findByUserIdOrderByStartTimeAsc(member.getId())
                 .forEach(timeSlotRepository::delete);
 
-            calendarRepository.findByUserId(member.getId())
+            calendarRepository.findByMemberId(member.getId())
                 .ifPresent(calendarRepository::delete);
 
             memberRepository.delete(member);
