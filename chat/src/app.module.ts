@@ -13,9 +13,10 @@ import { AuthModule } from './auth/auth.module';
       envFilePath: '.env',
     }),
 
-    // Spring의 DataSource 설정 역할 — TypeORM은 JPA의 Node.js 대응
+    // Spring의 SecurityConfig + JwtTokenProvider 역할
     AuthModule,
 
+    // Spring의 DataSource 설정 역할 — TypeORM은 JPA의 Node.js 대응
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({

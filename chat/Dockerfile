@@ -1,8 +1,10 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS base
+RUN corepack enable
+
+# ---- builder ----
+FROM base AS builder
 
 WORKDIR /app
-
-RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -11,11 +13,9 @@ COPY . .
 RUN pnpm run build
 
 # ---- production image ----
-FROM node:22-alpine
+FROM base
 
 WORKDIR /app
-
-RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
