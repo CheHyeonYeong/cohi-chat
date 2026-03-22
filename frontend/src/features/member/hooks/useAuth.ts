@@ -29,6 +29,6 @@ export function useAuth() {
     return {
         ...query,
         username: query.data?.username ?? null,
-        isAuthenticated: !!query.data,
+        isAuthenticated: query.isSuccess && !!query.data,
     };
 }
