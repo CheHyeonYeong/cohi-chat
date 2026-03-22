@@ -71,6 +71,7 @@ class MemberControllerIntegrationTest {
 	class GetMemberAuthorizationTest {
 		@Test
 		@WithMockUser(username = TEST_USERNAME)
+		@DisplayName("현재 로그인한 회원 조회 시 200 OK 반환")
 		void getCurrentMemberAccessAllowed() throws Exception {
 			Member mockMember = Member.create(TEST_USERNAME, "Display", "test@test.com", "hashed", Role.GUEST);
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(mockMember);

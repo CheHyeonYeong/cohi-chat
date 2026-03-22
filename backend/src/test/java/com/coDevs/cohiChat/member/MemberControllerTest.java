@@ -376,6 +376,7 @@ class MemberControllerTest {
 	@DisplayName("회원 조회 API")
 	class GetMember {
 		@Test
+		@DisplayName("현재 로그인한 회원 조회 성공 응답 형식 검증")
 		void getCurrentMemberSuccess() throws Exception {
 			Member member = Member.create(TEST_USERNAME, TEST_DISPLAY_NAME, TEST_EMAIL, "hashedPassword", Role.GUEST);
 			when(memberService.getMember(TEST_USERNAME)).thenReturn(member);

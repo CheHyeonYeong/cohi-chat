@@ -5,8 +5,17 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
+    Link: ({
+        children,
+        to,
+        params,
+        ...props
+    }: React.PropsWithChildren<{ to: string; params?: Record<string, string> } & Record<string, unknown>>) => {
+        const href = params
+            ? Object.entries(params).reduce((acc, [key, val]) => acc.replace(`$${key}`, val), to)
+            : to;
+        return React.createElement('a', { href, ...props }, children);
+    },
 }));
 
 const mockLogout = vi.fn();
@@ -125,7 +134,7 @@ describe('ProfileDropdown', () => {
 
         expect(screen.getByTestId('menu-item-my-bookings')).toHaveAttribute('href', '/booking/my-bookings');
         expect(screen.getByTestId('menu-item-settings')).toHaveAttribute('href', '/member/settings');
-        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveAttribute('href', '/host/$hostId');
+        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveAttribute('href', `/host/${hostUser.username}`);
         expect(screen.getByTestId('menu-item-host-timeslots')).toHaveAttribute('href', '/host/timeslots');
         expect(screen.getByTestId('menu-item-host-calendar')).toHaveAttribute('href', '/host/settings');
     });

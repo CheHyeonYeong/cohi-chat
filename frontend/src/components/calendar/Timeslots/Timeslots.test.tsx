@@ -150,7 +150,7 @@ describe('Timeslots', () => {
             />,
         );
 
-        expect(screen.getByRole('status')).toBeInTheDocument();
+        expect(screen.getByLabelText('no-timeslots')).toBeInTheDocument();
         expect(screen.queryByRole('link')).not.toBeInTheDocument();
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });

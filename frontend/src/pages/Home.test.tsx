@@ -133,7 +133,7 @@ describe('Home', () => {
         expect(screen.getByRole('button')).toBeDisabled();
     });
 
-    it('does not navigate while auth status is loading', async () => {
+    it('does not navigate while auth status is loading', () => {
         mockUseAuth.mockReturnValue({
             isAuthenticated: false,
             isLoading: true,
@@ -142,8 +142,7 @@ describe('Home', () => {
 
         render(<Home />, { wrapper: createWrapper() });
 
-        await userEvent.click(screen.getByRole('button'));
-
+        expect(screen.getByRole('button')).toBeDisabled();
         expect(mockNavigate).not.toHaveBeenCalled();
         expect(mockScrollIntoView).not.toHaveBeenCalled();
     });

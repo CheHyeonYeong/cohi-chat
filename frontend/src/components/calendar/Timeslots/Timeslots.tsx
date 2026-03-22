@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { Link } from '@tanstack/react-router';
 
 import { Button } from '~/components/button';
@@ -41,8 +40,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
     return (
-        <Suspense fallback={<div>Loading timeslots...</div>}>
-            <div className="flex flex-col gap-4 items-center justify-start mx-auto">
+        <div className="flex flex-col gap-4 items-center justify-start mx-auto">
                 <h3 className="text-2xl font-bold">{`${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`}</h3>
 
                 {isLoading && (
@@ -74,7 +72,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
 
                 {!isLoading && isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
                     <Button
-                        key={`${timeslot.startedAt}-${timeslot.endedAt}`}
+                        key={timeslot.id}
                         variant="primary"
                         type="button"
                         data-testid={`timeslot-${timeslot.id}`}
@@ -84,7 +82,6 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                         <span role="time">{timeslot.startedAt}</span>
                     </Button>
                 ))}
-            </div>
-        </Suspense>
+        </div>
     );
 }
