@@ -1,5 +1,5 @@
 export { dispatchAuthChange, subscribeAuthChange } from './authEvent';
-export { saveAuthenticatedUser, getStoredUsername, clearAuthenticatedUser } from './authStorage';
+export { saveAuthenticatedUser, clearAuthenticatedUser } from './authStorage';
 export {
     validateUsername,
     validateEmail,

@@ -109,6 +109,19 @@ public class MemberController {
                 return ResponseEntity.ok(ApiResponseDTO.success(LogoutResponseDTO.success()));
         }
 
+        @Operation(summary = "현재 로그인한 회원 조회", description = "쿠키 기반 세션을 통해 현재 인증된 사용자 정보를 반환합니다.")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "조회 성공"),
+                @ApiResponse(responseCode = "401", description = "인증 필요")
+        })
+        @GetMapping("/v1/me")
+        @PreAuthorize("isAuthenticated()")
+        public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getCurrentMember(Principal principal) {
+                Member member = memberService.getMember(principal.getName());
+                MemberResponseDTO response = MemberResponseDTO.from(member);
+                return ResponseEntity.ok(ApiResponseDTO.success(response));
+        }
+
         @GetMapping("/v1/{username}")
         @PreAuthorize("isAuthenticated() and #username == authentication.name")
         public ResponseEntity<ApiResponseDTO<MemberResponseDTO>> getMember(@PathVariable(name = "username") String username) {

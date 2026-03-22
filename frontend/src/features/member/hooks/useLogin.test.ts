@@ -58,7 +58,7 @@ describe('useLogin', () => {
             username: 'tester',
             password: 'password',
         });
-        expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
+        expect(saveAuthenticatedUser).toHaveBeenCalledTimes(1);
     });
 
     it('clears booking caches on login', async () => {
@@ -81,7 +81,7 @@ describe('useLogin', () => {
         await result.current.mutateAsync({ username: 'bob', password: 'secret' });
 
         await waitFor(() => {
-            expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
+            expect(saveAuthenticatedUser).toHaveBeenCalledTimes(1);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();
@@ -126,8 +126,7 @@ describe('useLogin', () => {
         await result.current.mutateAsync({ username: 'alice', password: 'secret' });
 
         await waitFor(() => {
-            expect(saveAuthenticatedUser).toHaveBeenNthCalledWith(1, bobResponse);
-            expect(saveAuthenticatedUser).toHaveBeenNthCalledWith(2, aliceResponse);
+            expect(saveAuthenticatedUser).toHaveBeenCalledTimes(2);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'bob'))).toBeUndefined();

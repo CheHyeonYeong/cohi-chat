@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router';
 
-import { Button } from "~/components/button";
-import { useAuth } from "~/features/member";
-import { checkAvailableBookingDate, isTimeslotAvailableOnDate } from "../utils";
-import type { IBooking, ICalendarEvent, ITimeSlot } from "../types";
+import { Button } from '~/components/button';
+import { useAuth } from '~/features/member';
+
+import type { IBooking, ICalendarEvent, ITimeSlot } from '../types';
+import { checkAvailableBookingDate, isTimeslotAvailableOnDate } from '../utils';
 
 interface TimeslotsProps {
     baseDate: Date | null;
@@ -14,49 +14,74 @@ interface TimeslotsProps {
 }
 
 export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
 
     const now = baseDate ?? new Date();
-    const weekday = now.getDay(); // 0=일, 1=월, ..., 6=토
-    const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday);
+    const weekday = now.getDay();
+    const isAvailable = checkAvailableBookingDate(
+        now,
+        timeslots,
+        bookings,
+        now.getFullYear(),
+        now.getMonth() + 1,
+        now.getDate(),
+        weekday,
+    );
     const availableTimeslots = timeslots
-        .filter((ts) => isTimeslotAvailableOnDate(ts, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday))
+        .filter((timeslot) => (
+            isTimeslotAvailableOnDate(
+                timeslot,
+                now.getFullYear(),
+                now.getMonth() + 1,
+                now.getDate(),
+                weekday,
+            )
+        ))
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
-    return <Suspense fallback={<div>Loading timeslots...</div>}>
+    return (
         <div className="flex flex-col gap-4 items-center justify-start mx-auto">
-            <h3 className="text-2xl font-bold">{now.getFullYear()}년 {now.getMonth() + 1}월 {now.getDate()}일</h3>
-            {!isAuthenticated && (
-                <div
-                    role="status"
-                    role-label="no-date"
-                    className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
-                    <Link
-                        to="/login"
-                        className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
-                        로그인 후 커피챗 신청하기
-                    </Link>
-                </div>
-            )}
+                <h3 className="text-2xl font-bold">{`${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`}</h3>
 
-            {isAuthenticated && (timeslots.length === 0 || !isAvailable) && (<div role="status" role-label="no-timeslots">
-                <p>예약 가능한 시간대가 없는 날입니다.</p>
-            </div>
-            )}
+                {isLoading && (
+                    <div role="status" aria-label="auth-loading">
+                        <p>로그인 상태를 확인하는 중입니다.</p>
+                    </div>
+                )}
 
-            {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
-                <Button
-                    variant="primary"
-                    type="button"
-                    role="button"
-                    role-label={`timeslot-${timeslot.id}`}
-                    key={`${timeslot.startedAt}-${timeslot.endedAt}`}
-                    className="w-full h-fit"
-                    onClick={() => onSelectTimeslot(timeslot)}
-                >
-                    <span role="time">{timeslot.startedAt}</span>
-                </Button>
-            ))}
+                {!isLoading && !isAuthenticated && (
+                    <div
+                        role="status"
+                        aria-label="unauthenticated"
+                        className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left"
+                    >
+                        <Link
+                            to="/login"
+                            className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary"
+                        >
+                            로그인하고 커피챗 요청하기
+                        </Link>
+                    </div>
+                )}
+
+                {!isLoading && isAuthenticated && (timeslots.length === 0 || !isAvailable) && (
+                    <div role="status" aria-label="no-timeslots">
+                        <p>예약 가능한 시간대가 없습니다.</p>
+                    </div>
+                )}
+
+                {!isLoading && isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
+                    <Button
+                        key={timeslot.id}
+                        variant="primary"
+                        type="button"
+                        data-testid={`timeslot-${timeslot.id}`}
+                        className="w-full h-fit"
+                        onClick={() => onSelectTimeslot(timeslot)}
+                    >
+                        <span role="time">{timeslot.startedAt}</span>
+                    </Button>
+                ))}
         </div>
-    </Suspense>
+    );
 }

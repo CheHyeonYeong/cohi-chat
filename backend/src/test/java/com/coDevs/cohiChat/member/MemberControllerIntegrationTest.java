@@ -69,6 +69,18 @@ class MemberControllerIntegrationTest {
 	@Nested
 	@DisplayName("회원 조회 API 인가 테스트")
 	class GetMemberAuthorizationTest {
+		@Test
+		@WithMockUser(username = TEST_USERNAME)
+		@DisplayName("현재 로그인한 회원 조회 시 200 OK 반환")
+		void getCurrentMemberAccessAllowed() throws Exception {
+			Member mockMember = Member.create(TEST_USERNAME, "Display", "test@test.com", "hashed", Role.GUEST);
+			when(memberService.getMember(TEST_USERNAME)).thenReturn(mockMember);
+
+			mockMvc.perform(get("/members/v1/me"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.username").value(TEST_USERNAME));
+		}
 
 		@Test
 		@WithMockUser(username = TEST_USERNAME)
@@ -95,6 +107,12 @@ class MemberControllerIntegrationTest {
 		@DisplayName("인증 없이 조회 시 403 Forbidden 반환")
 		void getMemberWithoutAuthForbidden() throws Exception {
 			mockMvc.perform(get("/members/v1/{username}", TEST_USERNAME))
+				.andExpect(status().isForbidden());
+		}
+
+		@Test
+		void getCurrentMemberWithoutAuthForbidden() throws Exception {
+			mockMvc.perform(get("/members/v1/me"))
 				.andExpect(status().isForbidden());
 		}
 	}
