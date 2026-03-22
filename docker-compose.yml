@@ -37,6 +37,25 @@ services:
       retries: 5
     restart: unless-stopped
 
+  chat-server:
+    build:
+      context: ./chat
+      dockerfile: Dockerfile
+    container_name: cohi-chat-server
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/cohichat
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - cohi-chat-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   cohi-chat-network:
     driver: bridge
