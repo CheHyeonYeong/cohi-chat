@@ -14,6 +14,6 @@ async function bootstrap() {
   // Spring 서버와 동일한 prefix 구조 유지
   app.setGlobalPrefix('api');
 
-  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
+  await app.listen(Number(process.env.PORT) || 3001, '0.0.0.0');
 }
 bootstrap();

@@ -30,7 +30,7 @@ export class JwtGuard implements CanActivate {
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
       // request.user에 주입 — Spring의 SecurityContextHolder.getContext().getAuthentication() 역할
-      (request as any).user = payload;
+      request.user = payload;
       return true;
     } catch {
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
