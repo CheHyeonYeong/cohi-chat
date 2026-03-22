@@ -24,6 +24,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  chat-server:
+    build:
+      context: ./chat
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT:-5432}/${SUPABASE_DB_NAME:-postgres}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: unless-stopped
+
   redis:
     image: redis:8.6-alpine
     container_name: cohi-chat-redis

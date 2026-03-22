@@ -1,0 +1,46 @@
+name: Chat Server Deploy Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'chat/**'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/chat-deploy-prod.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: chat-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_CHAT_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+
+            if [ ! -d ~/cohi-chat ]; then
+              git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
+            fi
+
+            cd ~/cohi-chat
+            git fetch origin
+            git reset --hard origin/${{ github.ref_name }}
+
+            docker-compose -f docker-compose.prod.yml build chat-server
+            docker-compose -f docker-compose.prod.yml up -d chat-server
+
+            echo "Waiting for chat-server to start..."
+            sleep 15
+
+            docker-compose -f docker-compose.prod.yml ps
+            docker-compose -f docker-compose.prod.yml logs --tail=50 chat-server
