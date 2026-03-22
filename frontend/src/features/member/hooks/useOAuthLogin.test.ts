@@ -54,7 +54,7 @@ describe('useOAuthLogin', () => {
         await result.current.mutateAsync({ provider: 'google', code: 'code', state: 'state' });
 
         await waitFor(() => {
-            expect(saveAuthenticatedUser).toHaveBeenCalledWith(response);
+            expect(saveAuthenticatedUser).toHaveBeenCalledTimes(1);
         });
 
         expect(queryClient.getQueryData(bookingKeys.myBookings(1, 10, 'alice'))).toBeUndefined();

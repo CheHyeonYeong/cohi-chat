@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-
 import { bookingKeys } from '~/features/booking/hooks/queryKeys';
 import { oAuthCallbackApi } from '../api/oAuthApi';
 import { saveAuthenticatedUser } from '../utils/authStorage';
+import { authKeys } from './queryKeys';
 import type { LoginResponse } from '../types';
 
 interface OAuthLoginParams {
@@ -18,9 +19,9 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
             const response = await oAuthCallbackApi(provider, code, state);
             return response;
         },
-        onSuccess: (response) => {
-            saveAuthenticatedUser(response);
-            void queryClient.invalidateQueries({ queryKey: ['auth'] });
+        onSuccess: () => {
+            saveAuthenticatedUser();
+            void queryClient.invalidateQueries({ queryKey: authKeys.all() });
             queryClient.removeQueries({ queryKey: bookingKeys.myBookingsAll() });
             queryClient.removeQueries({ queryKey: bookingKeys.bookingAll() });
         },

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-
 import { bookingKeys } from '~/features/booking/hooks/queryKeys';
 import { loginApi } from '../api/memberApi';
 import { saveAuthenticatedUser } from '../utils/authStorage';
+import { authKeys } from './queryKeys';
 import type { LoginCredentials, LoginResponse } from '../types';
 
 export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredentials> {
@@ -12,9 +13,9 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             const response = await loginApi(credentials);
             return response;
         },
-        onSuccess: (response) => {
-            saveAuthenticatedUser(response);
-            void queryClient.invalidateQueries({ queryKey: ['auth'] });
+        onSuccess: () => {
+            saveAuthenticatedUser();
+            void queryClient.invalidateQueries({ queryKey: authKeys.all() });
             queryClient.removeQueries({ queryKey: bookingKeys.myBookingsAll() });
             queryClient.removeQueries({ queryKey: bookingKeys.bookingAll() });
         },

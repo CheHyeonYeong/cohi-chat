@@ -54,7 +54,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                 {!isLoading && !isAuthenticated && (
                     <div
                         role="status"
-                        role-label="no-date"
+                        aria-label="unauthenticated"
                         className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left"
                     >
                         <Link
@@ -67,7 +67,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                 )}
 
                 {!isLoading && isAuthenticated && (timeslots.length === 0 || !isAvailable) && (
-                    <div role="status" role-label="no-timeslots">
+                    <div role="status" aria-label="no-timeslots">
                         <p>예약 가능한 시간대가 없습니다.</p>
                     </div>
                 )}
@@ -77,8 +77,7 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                         key={`${timeslot.startedAt}-${timeslot.endedAt}`}
                         variant="primary"
                         type="button"
-                        role="button"
-                        role-label={`timeslot-${timeslot.id}`}
+                        data-testid={`timeslot-${timeslot.id}`}
                         className="w-full h-fit"
                         onClick={() => onSelectTimeslot(timeslot)}
                     >

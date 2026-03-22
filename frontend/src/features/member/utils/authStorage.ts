@@ -1,8 +1,6 @@
-import type { LoginResponse } from '../types';
 import { dispatchAuthChange } from './authEvent';
 
-export function saveAuthenticatedUser(response: Pick<LoginResponse, 'username'>): void {
-    void response;
+export function saveAuthenticatedUser(): void {
     dispatchAuthChange();
 }
 

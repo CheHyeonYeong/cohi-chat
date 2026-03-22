@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUserApi } from '../api/memberApi';
 import { subscribeAuthChange } from '../utils/authEvent';
+import { authKeys } from './queryKeys';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
 export function useAuth() {
     const queryClient = useQueryClient();
 
     const query = useQuery<AuthUser>({
-        queryKey: ['auth'],
+        queryKey: authKeys.current(),
         queryFn: async () => {
             const data: MemberResponseDTO = await getCurrentUserApi();
             return {
@@ -22,7 +23,7 @@ export function useAuth() {
 
     useEffect(() => {
         return subscribeAuthChange(() => {
-            void queryClient.invalidateQueries({ queryKey: ['auth'] });
+            void queryClient.invalidateQueries({ queryKey: authKeys.all() });
         });
     }, [queryClient]);
 
