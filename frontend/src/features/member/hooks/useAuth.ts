@@ -33,7 +33,16 @@ export function useAuth() {
                 isHost: data.role === 'HOST',
             };
         },
-        retry: false,
+        retry: (failureCount, error) => {
+            if (
+                error instanceof Error &&
+                typeof error.cause === 'number' &&
+                (error.cause === 401 || error.cause === 403)
+            ) {
+                return false;
+            }
+            return failureCount < 2;
+        },
         enabled: !!username,
         staleTime: 5 * 60 * 1000,
     });
