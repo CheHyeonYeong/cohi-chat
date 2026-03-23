@@ -28,6 +28,13 @@ vi.mock('~/features/member/utils/authEvent', () => ({
     dispatchAuthChange: vi.fn(),
 }));
 
+vi.mock('~/features/host/hooks/useServiceAccountEmail', () => ({
+    useServiceAccountEmail: () => ({
+        serviceAccountEmail: 'service-account@test.iam.gserviceaccount.com',
+        isError: false,
+    }),
+}));
+
 vi.mock('~/features/member', () => ({
     useAuth: () => ({ isAuthenticated: false, isLoading: false, data: null }),
     useLogout: () => ({ logout: vi.fn() }),

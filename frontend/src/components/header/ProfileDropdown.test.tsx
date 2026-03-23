@@ -4,10 +4,27 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
-}));
+vi.mock('@tanstack/react-router', () => {
+    type MockLinkProps = React.PropsWithChildren<
+        React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }
+    >;
+
+    const MockLink = React.forwardRef<
+        HTMLAnchorElement,
+        MockLinkProps
+    >(({ children, to, ...props }, ref) =>
+        React.createElement(
+            'a',
+            { ref, href: typeof to === 'string' ? to : undefined, ...props },
+            children,
+        ),
+    );
+    MockLink.displayName = 'MockLink';
+
+    return {
+        Link: MockLink,
+    };
+});
 
 const mockLogout = vi.fn();
 const mockUseAuth = vi.fn();

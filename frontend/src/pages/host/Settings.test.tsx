@@ -27,6 +27,13 @@ vi.mock('~/features/member', () => ({
     useLogout: () => ({ logout: vi.fn() }),
 }));
 
+vi.mock('~/features/host/hooks/useServiceAccountEmail', () => ({
+    useServiceAccountEmail: () => ({
+        serviceAccountEmail: 'service-account@test.iam.gserviceaccount.com',
+        isError: false,
+    }),
+}));
+
 const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: {

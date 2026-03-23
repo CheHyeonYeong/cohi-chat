@@ -83,12 +83,14 @@ describe('useLogout', () => {
 
     it('API 실패 시 토스트를 표시하고 로컬 상태와 네비게이션을 실행하지 않는다', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
         await result.current.logout();
+        expect(warnSpy).toHaveBeenCalledWith('Logout API error:', expect.any(Error));
         expect(mockShowToast).toHaveBeenCalledWith(
             '로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.',
             'logout-error',
