@@ -34,7 +34,6 @@ const TanStackRouterDevtools = import.meta.env.DEV
 
 /* eslint-enable react-refresh/only-export-components */
 
-/* eslint-disable-next-line react-refresh/only-export-components */
 const RootRoute = createRootRoute({
     component: () => {
         return (

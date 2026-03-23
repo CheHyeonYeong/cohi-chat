@@ -20,9 +20,12 @@ export function Settings() {
 
     useEffect(() => {
         if (calendar && !syncedRef.current) {
+            // 비동기 서버 데이터를 폼 상태에 1회 초기화 — syncedRef로 사용자 편집 후 재동기화 방지
+            /* eslint-disable react-hooks/set-state-in-effect */
             setTopics(calendar.topics);
             setDescription(calendar.description);
             setGoogleCalendarId(calendar.googleCalendarId);
+            /* eslint-enable react-hooks/set-state-in-effect */
             syncedRef.current = true;
         }
     }, [calendar]);

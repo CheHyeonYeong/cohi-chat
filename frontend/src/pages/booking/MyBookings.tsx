@@ -61,6 +61,8 @@ export function MyBookings() {
 
     useEffect(() => {
         if (bookings?.bookings) {
+            // 서버 데이터를 DnD 정렬용 로컬 상태로 동기화 — 드래그 순서 유지를 위해 필요
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSortedIds(bookings.bookings.map(b => b.id));
         }
     }, [bookings]);

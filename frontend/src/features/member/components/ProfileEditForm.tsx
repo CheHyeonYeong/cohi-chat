@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '~/components/button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
@@ -9,13 +9,9 @@ import { getErrorMessage } from '~/libs/errorUtils';
 export function ProfileEditForm() {
     const { data: user } = useAuth();
     const username = user?.username;
-    const [displayName, setDisplayName] = useState('');
+    const [displayName, setDisplayName] = useState(user?.displayName ?? '');
     const [successMessage, setSuccessMessage] = useState('');
     const mutation = useUpdateMember(username ?? '');
-
-    useEffect(() => {
-        setDisplayName(user?.displayName ?? '');
-    }, [user?.displayName]);
 
     const { fields, handleBlur, validateAll, getInputClassName } =
         useProfileValidation();
