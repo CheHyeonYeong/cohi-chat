@@ -7,6 +7,7 @@ import { render, cleanup } from '@testing-library/react';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import type { IBookingDetail } from '../../types';
 import type { IBookingFile } from '../../types';
+import { formatKoreanDate } from '~/libs/date';
 
 const mockBooking: IBookingDetail = {
     id: 1,
@@ -69,7 +70,7 @@ vi.mock('../BookingMetaSection', () => ({
     BookingMetaSection: ({ booking }: { booking: IBookingDetail }) => (
         <div data-testid="booking-meta-section">
             <span>{booking.topic}</span>
-            <span>{booking.startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>{formatKoreanDate(booking.startedAt)}</span>
             <span>{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</span>
             <span>{booking.description || '설명이 없습니다.'}</span>
         </div>

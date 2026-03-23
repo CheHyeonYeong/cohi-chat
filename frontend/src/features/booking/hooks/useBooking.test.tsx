@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { createElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -57,8 +56,9 @@ describe('booking hooks cache isolation', () => {
     const createBookingDetail = (overrides: Partial<IBookingDetail> = {}) =>
         ({ ...baseBooking, ...overrides }) as unknown as IBookingDetail;
 
-    const createWrapper = () => ({ children }: { children: ReactNode }) =>
-        createElement(QueryClientProvider, { client: queryClient }, children);
+    const createWrapper = () => ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 
     const createAuthResult = ({
         user,
