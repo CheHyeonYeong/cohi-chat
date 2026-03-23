@@ -66,23 +66,7 @@ cohiChat/
 
 ## 프론트엔드 라우트
 
-| 경로 | 페이지 | 인증 | 파일 |
-|------|--------|------|------|
-| `/` | 홈 | - | `pages/Home.tsx` |
-| `/login` | 로그인 | - | `pages/Login.tsx` |
-| `/signup` | 회원가입 | - | `pages/Signup.tsx` |
-| `/forgot-password` | 비밀번호 찾기 | - | `pages/ForgotPassword.tsx` |
-| `/reset-password` | 비밀번호 재설정 | - | `pages/ResetPassword.tsx` |
-| `/terms` | 이용약관 | - | `pages/Terms.tsx` |
-| `/privacy` | 개인정보처리방침 | - | `pages/Privacy.tsx` |
-| `/booking/my-bookings` | 내 예약 목록 | AuthGuard | `pages/booking/MyBookings.tsx` |
-| `/booking/$id` | 예약 상세/수정 | AuthGuard | `pages/booking/Detail.tsx` |
-| `/host/$hostId` | 호스트 프로필 | - | `pages/host/Profile.tsx` |
-| `/host/register` | 호스트 등록 | AuthGuard | `pages/host/Register.tsx` |
-| `/host/timeslots` | 시간대 설정 | HostGuard | `pages/host/TimeSlotSettings.tsx` |
-| `/host/settings` | 호스트 설정 | HostGuard | `pages/host/Settings.tsx` |
-| `/member/settings` | 회원정보 변경 | AuthGuard | `pages/member/Settings.tsx` |
-| `/oauth/callback/$provider` | OAuth 콜백 | - | `pages/oauth/CallbackPage.tsx` |
+@docs/frontend-routes.md
 
 ## 주의사항
 
