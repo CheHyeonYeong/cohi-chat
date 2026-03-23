@@ -64,10 +64,6 @@ cohiChat/
 └── docker-compose.yml
 ```
 
-## 프론트엔드 라우트
-
-@docs/frontend-routes.md
-
 ## 주의사항
 
 ### 환경 요구사항
