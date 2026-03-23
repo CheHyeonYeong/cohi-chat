@@ -13,7 +13,7 @@
 - Google Calendar API
 
 ### Frontend - `/frontend`
-- React 18, TypeScript
+- React 19, TypeScript
 - Vite, TanStack Router/Query
 - Tailwind CSS, PostCSS
 - pnpm 패키지 매니저
