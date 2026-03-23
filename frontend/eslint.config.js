@@ -24,7 +24,7 @@ export default tseslint.config(
       'react-compiler/react-compiler': 'error',
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        { allowConstantExport: true, extraHOCs: ['createLink'] },
       ],
       'indent': ['error', 4],
       'no-restricted-syntax': ['error', {
