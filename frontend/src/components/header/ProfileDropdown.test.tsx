@@ -71,7 +71,7 @@ describe('ProfileDropdown', () => {
         expect(screen.getByTestId('profile-dropdown-menu')).toBeInTheDocument();
     });
 
-    it('비호스트: "내 예약 목록", "회원정보 변경", "호스트 등록하기", "로그아웃" 메뉴가 표시된다', async () => {
+    it('비호스트: "내 예약 목록", "회원정보 변경", "로그아웃" 메뉴가 표시된다', async () => {
         mockUseAuth.mockReturnValue({ data: nonHostUser });
         const user = userEvent.setup();
 
@@ -80,9 +80,11 @@ describe('ProfileDropdown', () => {
 
         expect(screen.getByTestId('menu-item-my-bookings')).toHaveTextContent('내 예약 목록');
         expect(screen.getByTestId('menu-item-settings')).toHaveTextContent('회원정보 변경');
-        expect(screen.getByTestId('menu-item-host-register')).toHaveTextContent('호스트 등록하기');
+        // 호스트 등록 임시 비활성화 (#479)
+        // expect(screen.getByTestId('menu-item-host-register')).toHaveTextContent('호스트 등록하기');
         expect(screen.getByTestId('menu-item-logout')).toHaveTextContent('로그아웃');
 
+        expect(screen.queryByTestId('menu-item-host-register')).not.toBeInTheDocument();
         expect(screen.queryByTestId('menu-item-host-profile-preview')).not.toBeInTheDocument();
         expect(screen.queryByTestId('menu-item-host-timeslots')).not.toBeInTheDocument();
         expect(screen.queryByTestId('menu-item-host-calendar')).not.toBeInTheDocument();
