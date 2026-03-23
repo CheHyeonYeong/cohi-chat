@@ -27,6 +27,10 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       'indent': ['error', 4],
+      'no-restricted-syntax': ['error', {
+        selector: 'MemberExpression[object.name="React"]',
+        message: 'React. namespace 사용 금지. import { X } from "react" 사용',
+      }],
     },
   },
 )
