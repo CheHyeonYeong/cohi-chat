@@ -11,7 +11,7 @@ export function ProfileDropdown() {
     const { data: myCalendar } = useMyCalendar(isHost);
     const hasCalendar = isHost && !!myCalendar;
 
-    if (!user) return null;
+    if (!user) return <div className="w-8 h-8 rounded-full bg-cohi-bg-warm animate-pulse" />;
 
     return (
         <DropdownMenu.Root>

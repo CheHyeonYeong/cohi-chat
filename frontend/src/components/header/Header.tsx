@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 export function Header({ center, className }: HeaderProps) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isError } = useAuth();
 
     return (
         <header className={cn('w-full h-16 px-6 flex justify-between items-center bg-[var(--cohi-bg-warm)]/80 backdrop-blur-sm', className)}>
@@ -21,7 +21,7 @@ export function Header({ center, className }: HeaderProps) {
                 <span className="text-xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
             </Link>
             {center}
-            {isAuthenticated ? (
+            {isAuthenticated && !isError ? (
                 <ProfileDropdown />
             ) : (
                 <LinkButton variant="outline" to="/login">
