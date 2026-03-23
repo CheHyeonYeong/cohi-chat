@@ -5,7 +5,7 @@ import { Avatar } from '~/components/Avatar';
 import { useAuth, useLogout } from '~/features/member';
 import { useMyCalendar } from '~/features/host';
 
-export function ProfileDropdown() {
+export const ProfileDropdown = () => {
     const { data: user } = useAuth();
     const { logout } = useLogout();
     const isHost = user?.isHost ?? false;
@@ -98,19 +98,15 @@ export function ProfileDropdown() {
             </DropdownMenu.Portal>
         </DropdownMenu.Root>
     );
-}
+};
 
-function DropdownMenuItem({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: ReactNode; 'data-testid': string }) {
-    return (
-        <DropdownMenu.Item asChild className="outline-none">
-            <Link
-                to={to}
-                params={params}
-                className="block px-4 py-2 text-sm text-cohi-text-dark hover:bg-cohi-bg-warm cursor-pointer"
-                {...props}
-            >
-                {children}
-            </Link>
-        </DropdownMenu.Item>
-    );
-}
+const DropdownMenuItem = ({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: ReactNode; 'data-testid': string }) => <DropdownMenu.Item asChild className="outline-none">
+    <Link
+        to={to}
+        params={params}
+        className="block px-4 py-2 text-sm text-cohi-text-dark hover:bg-cohi-bg-warm cursor-pointer"
+        {...props}
+    >
+        {children}
+    </Link>
+</DropdownMenu.Item>;

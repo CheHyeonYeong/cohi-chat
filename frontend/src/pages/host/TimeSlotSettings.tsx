@@ -14,7 +14,7 @@ import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 import { formatKoreanDate, formatKoreanTime } from '~/libs/date';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
-function formatWeekdaySummary(weekdays: number[]): string {
+const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
     const names = sorted.map((d) => DAY_NAMES[d as Weekday]);
@@ -23,29 +23,23 @@ function formatWeekdaySummary(weekdays: number[]): string {
         return names[0] + '~' + names[names.length - 1];
     }
     return names.join(', ');
-}
+};
 
-function normalizeTime(time?: string | null): string {
-    return typeof time === 'string' ? time.slice(0, 5) : '';
-}
+const normalizeTime = (time?: string | null): string => typeof time === 'string' ? time.slice(0, 5) : '';
 
-function readTimeslotStart(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('startedAt' in ts ? ts.startedAt : undefined) ??
+const readTimeslotStart = (ts: TimeSlotResponse): string => normalizeTime(
+    ('startedAt' in ts ? ts.startedAt : undefined) ??
         ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
         null,
-    );
-}
+);
 
-function readTimeslotEnd(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('endedAt' in ts ? ts.endedAt : undefined) ??
+const readTimeslotEnd = (ts: TimeSlotResponse): string => normalizeTime(
+    ('endedAt' in ts ? ts.endedAt : undefined) ??
         ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
         null,
-    );
-}
+);
 
-function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
+const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] => {
     if (timeslots.length === 0) return [];
     return timeslots
         .map((ts) => ({
@@ -57,9 +51,9 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
             existingId: ts.id,
         }))
         .filter((entry) => entry.startTime && entry.endTime);
-}
+};
 
-export function TimeSlotSettings() {
+export const TimeSlotSettings = () => {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -75,10 +69,8 @@ export function TimeSlotSettings() {
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        return () => {
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-        };
+    useEffect(() => () => {
+        if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
     }, []);
 
     useEffect(() => {
@@ -328,4 +320,4 @@ export function TimeSlotSettings() {
             </footer>
         </PageLayout>
     );
-}
+};

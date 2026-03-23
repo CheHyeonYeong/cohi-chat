@@ -8,7 +8,7 @@ import { ResetPasswordVerificationError } from './ResetPasswordVerificationError
 import { ResetPasswordSuccess } from './ResetPasswordSuccess';
 import { ResetPasswordFields } from './ResetPasswordFields';
 
-export function ResetPasswordForm() {
+export const ResetPasswordForm = () => {
     const { token } = useSearch({ from: '/reset-password' });
     const [resetSuccess, setResetSuccess] = useState(false);
     const { isLoading, isTokenValid, isTokenInvalid, isVerificationError } = useVerifyResetToken(token);
@@ -24,4 +24,4 @@ export function ResetPasswordForm() {
             )}
         </AuthPageLayout>
     );
-}
+};

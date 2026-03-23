@@ -25,7 +25,7 @@ import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingWithRole } from '~/features/booking';
 
 // Sortable wrapper for BookingCard
-function SortableBookingCard({
+const SortableBookingCard = ({
     booking,
     isSelected,
     onSelect,
@@ -33,7 +33,7 @@ function SortableBookingCard({
     booking: IBookingWithRole;
     isSelected: boolean;
     onSelect: (id: number) => void;
-}) {
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: booking.id,
     });
@@ -49,9 +49,9 @@ function SortableBookingCard({
             <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} role={booking.role} counterpart={booking.counterpart} />
         </div>
     );
-}
+};
 
-export function MyBookings() {
+export const MyBookings = () => {
     const PAGE_SIZE = 5;
     const { page, selectedId } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
@@ -224,4 +224,4 @@ export function MyBookings() {
             )}
         </PageLayout>
     );
-}
+};

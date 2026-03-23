@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyObject = Record<string, any>;
 
-export function snakeToCamel(obj: AnyObject | AnyObject[]): AnyObject | AnyObject[] {
+export const snakeToCamel = (obj: AnyObject | AnyObject[]): AnyObject | AnyObject[] => {
     if (Array.isArray(obj)) {
         return obj.map(v => snakeToCamel(v));
     } else if (obj != null && obj.constructor === Object) {
@@ -12,9 +12,9 @@ export function snakeToCamel(obj: AnyObject | AnyObject[]): AnyObject | AnyObjec
         }, {} as AnyObject);
     }
     return obj;
-}
+};
 
-export function camelToSnake(obj: AnyObject | AnyObject[]): AnyObject | AnyObject[] {
+export const camelToSnake = (obj: AnyObject | AnyObject[]): AnyObject | AnyObject[] => {
     if (Array.isArray(obj)) {
         return obj.map(v => camelToSnake(v));
     } else if (obj != null && obj.constructor === Object) {
@@ -25,4 +25,4 @@ export function camelToSnake(obj: AnyObject | AnyObject[]): AnyObject | AnyObjec
         }, {} as AnyObject);
     }
     return obj;
-}
+};

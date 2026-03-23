@@ -6,7 +6,7 @@ import { useUpdateMember } from '../hooks/useUpdateMember';
 import { usePasswordValidation, type PasswordFormValues } from '../hooks/usePasswordValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-export function PasswordChangeForm() {
+export const PasswordChangeForm = () => {
     const { data: user } = useAuth();
     const username = user?.username;
     const [newPassword, setNewPassword] = useState('');
@@ -110,4 +110,4 @@ export function PasswordChangeForm() {
             </Button>
         </form>
     );
-}
+};

@@ -18,7 +18,7 @@ interface BookingDetailPanelProps {
     counterpart?: Pick<IUserSimple, 'username' | 'displayName'>;
 }
 
-export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, isUploading, isDeleting, uploadError, role, counterpart }: BookingDetailPanelProps) {
+export const BookingDetailPanel = ({ booking, onUpload, onDownload, onDelete, isUploading, isDeleting, uploadError, role, counterpart }: BookingDetailPanelProps) => {
     if (!booking) {
         return (
             <Card size="lg" className="h-full flex flex-col items-center justify-center text-center">
@@ -66,4 +66,4 @@ export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, is
             />
         </Card>
     );
-}
+};

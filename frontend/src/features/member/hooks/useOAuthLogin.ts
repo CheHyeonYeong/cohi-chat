@@ -10,7 +10,7 @@ interface OAuthLoginParams {
     state: string;
 }
 
-export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLoginParams> {
+export const useOAuthLogin = (): UseMutationResult<LoginResponse, Error, OAuthLoginParams> => {
     const queryClient = useQueryClient();
 
     return useMutation<LoginResponse, Error, OAuthLoginParams>({
@@ -24,4 +24,4 @@ export function useOAuthLogin(): UseMutationResult<LoginResponse, Error, OAuthLo
             queryClient.removeQueries({ queryKey: bookingKeys.bookingAll() });
         },
     });
-}
+};

@@ -33,7 +33,7 @@ const createValidationRules = (
     passwordAgain: validatePasswordConfirm(getPassword),
 });
 
-export function SignupForm() {
+export const SignupForm = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState(() => newRandomNick());
@@ -248,4 +248,4 @@ export function SignupForm() {
             </div>
         </AuthPageLayout>
     );
-}
+};

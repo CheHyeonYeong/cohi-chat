@@ -7,7 +7,7 @@ interface HostGuardProps {
     children: ReactNode;
 }
 
-export function HostGuard({ children }: HostGuardProps) {
+export const HostGuard = ({ children }: HostGuardProps) => {
     const { data: user, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 
@@ -35,4 +35,4 @@ export function HostGuard({ children }: HostGuardProps) {
     }
 
     return <>{children}</>;
-}
+};

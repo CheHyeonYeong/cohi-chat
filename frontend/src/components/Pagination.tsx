@@ -7,7 +7,7 @@ interface PaginationProps {
     onPageChange: (newPage: number) => void;
 }
 
-export function Pagination({ page, pageSize, totalCount, onPageChange }: PaginationProps) {
+export const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProps) => {
     const totalPages = Math.ceil(totalCount / pageSize);
 
     const handlePrevious = () => {
@@ -35,4 +35,4 @@ export function Pagination({ page, pageSize, totalCount, onPageChange }: Paginat
             </Button>
         </div>
     );
-}
+};

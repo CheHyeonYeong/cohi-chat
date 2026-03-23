@@ -24,7 +24,7 @@ const initialData: WizardData = {
     step2: { googleCalendarId: '' },
 };
 
-export function Register() {
+export const Register = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [data, setData] = useState<WizardData>(initialData);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -209,4 +209,4 @@ export function Register() {
             </footer>
         </PageLayout>
     );
-}
+};

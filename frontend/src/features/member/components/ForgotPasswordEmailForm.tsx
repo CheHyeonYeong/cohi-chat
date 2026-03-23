@@ -19,7 +19,7 @@ interface ForgotPasswordEmailFormProps {
     onSuccess: () => void;
 }
 
-export function ForgotPasswordEmailForm({ onSuccess }: ForgotPasswordEmailFormProps) {
+export const ForgotPasswordEmailForm = ({ onSuccess }: ForgotPasswordEmailFormProps) => {
     const [email, setEmail] = useState('');
     const requestMutation = useRequestPasswordReset();
     const { fields, handleBlur, validateAll, getInputClassName } =
@@ -96,4 +96,4 @@ export function ForgotPasswordEmailForm({ onSuccess }: ForgotPasswordEmailFormPr
             </div>
         </form>
     );
-}
+};

@@ -12,7 +12,7 @@ import { useAuth } from '~/features/member';
 
 const DEFAULT_TOPICS = ['개발 커리어', '이직 준비', '기술 면접', '스타트업 경험', '코드 리뷰'];
 
-export function Profile() {
+export const Profile = () => {
     const { hostId } = useParams({ from: '/host/$hostId' });
     useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
 
@@ -175,4 +175,4 @@ export function Profile() {
             )}
         </PageLayout>
     );
-}
+};

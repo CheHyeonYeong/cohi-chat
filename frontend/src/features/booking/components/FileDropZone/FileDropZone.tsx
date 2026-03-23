@@ -9,7 +9,7 @@ interface FileDropZoneProps {
     className?: string;
 }
 
-export function FileDropZone({ onFilesDropped, disabled = false, accept, className }: FileDropZoneProps) {
+export const FileDropZone = ({ onFilesDropped, disabled = false, accept, className }: FileDropZoneProps) => {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,4 +72,4 @@ export function FileDropZone({ onFilesDropped, disabled = false, accept, classNa
             />
         </div>
     );
-}
+};

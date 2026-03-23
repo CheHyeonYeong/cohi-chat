@@ -22,7 +22,7 @@ interface BookingFileSectionProps {
     uploadError?: Error | null;
 }
 
-export function BookingFileSection({
+export const BookingFileSection = ({
     files,
     onUpload,
     onDownload,
@@ -30,7 +30,7 @@ export function BookingFileSection({
     isUploading,
     isDeleting,
     uploadError,
-}: BookingFileSectionProps) {
+}: BookingFileSectionProps) => {
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,4 +153,4 @@ export function BookingFileSection({
             )}
         </section>
     );
-}
+};

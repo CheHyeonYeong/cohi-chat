@@ -1,13 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { requestPasswordResetApi, verifyResetTokenApi, confirmPasswordResetApi } from '../api/passwordResetApi';
 
-export function useRequestPasswordReset() {
-    return useMutation({
-        mutationFn: (email: string) => requestPasswordResetApi(email),
-    });
-}
+export const useRequestPasswordReset = () => useMutation({
+    mutationFn: (email: string) => requestPasswordResetApi(email),
+});
 
-export function useVerifyResetToken(token: string | undefined) {
+export const useVerifyResetToken = (token: string | undefined) => {
     const { data, isLoading, isFetching, isError } = useQuery({
         queryKey: ['verify-reset-token', token],
         queryFn: () => verifyResetTokenApi(token!),
@@ -22,11 +20,9 @@ export function useVerifyResetToken(token: string | undefined) {
         isTokenInvalid: !token || (data !== undefined && !data.valid),
         isVerificationError: isError,
     };
-}
+};
 
-export function useConfirmPasswordReset() {
-    return useMutation({
-        mutationFn: ({ token, password }: { token: string; password: string }) =>
-            confirmPasswordResetApi(token, password),
-    });
-}
+export const useConfirmPasswordReset = () => useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+        confirmPasswordResetApi(token, password),
+});

@@ -23,14 +23,14 @@ const fieldContainerStyles = cn(
     'flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200'
 );
 
-export function MeetingTypeSelector({
+export const MeetingTypeSelector = ({
     value,
     onChange,
     location = '',
     onLocationChange,
     meetingLink = '',
     onMeetingLinkChange,
-}: MeetingTypeSelectorProps) {
+}: MeetingTypeSelectorProps) => {
     const isOnline = value === 'ONLINE';
     const isOffline = value === 'OFFLINE';
 
@@ -112,4 +112,4 @@ export function MeetingTypeSelector({
             )}
         </fieldset>
     );
-}
+};

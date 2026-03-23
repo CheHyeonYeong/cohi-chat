@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 
-export function ResetPasswordVerifying() {
+export const ResetPasswordVerifying = () => {
     const [isTimeout, setIsTimeout] = useState(false);
 
     useEffect(() => {
@@ -29,4 +29,4 @@ export function ResetPasswordVerifying() {
             )}
         </div>
     );
-}
+};

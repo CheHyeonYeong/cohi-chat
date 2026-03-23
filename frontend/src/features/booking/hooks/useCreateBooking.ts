@@ -4,7 +4,7 @@ import { createBooking } from '../api';
 import type { IBookingDetail, IBookingPayload } from '../types';
 import { bookingKeys, calendarKeys } from './queryKeys';
 
-export function useCreateBooking(slug: string, year: number, month: number): UseMutationResult<IBookingDetail, Error, IBookingPayload> {
+export const useCreateBooking = (slug: string, year: number, month: number): UseMutationResult<IBookingDetail, Error, IBookingPayload> => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -19,4 +19,4 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
             });
         },
     });
-}
+};

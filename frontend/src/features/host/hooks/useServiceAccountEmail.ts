@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getServiceAccountEmail } from '../api/hostCalendarApi';
 import { hostKeys } from './queryKeys';
 
-export function useServiceAccountEmail() {
+export const useServiceAccountEmail = () => {
     const { data, isError } = useQuery({
         queryKey: hostKeys.serviceAccountEmail(),
         queryFn: getServiceAccountEmail,
@@ -14,4 +14,4 @@ export function useServiceAccountEmail() {
         serviceAccountEmail: data?.serviceAccountEmail ?? '',
         isError,
     };
-}
+};

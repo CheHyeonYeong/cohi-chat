@@ -24,7 +24,7 @@ const variantStyles = {
     outline: "cohi-btn-outline",
 };
 
-export function Button({ variant, size = "md", loading = false, asChild = false, disabled, className, children, ref, ...props }: ButtonProps) {
+export const Button = ({ variant, size = "md", loading = false, asChild = false, disabled, className, children, ref, ...props }: ButtonProps) => {
     const Comp = asChild ? Slot : "button";
     return (
         <Comp
@@ -42,4 +42,4 @@ export function Button({ variant, size = "md", loading = false, asChild = false,
             {children}
         </Comp>
     );
-}
+};

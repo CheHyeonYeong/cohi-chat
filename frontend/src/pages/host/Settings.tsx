@@ -7,7 +7,7 @@ import { MeetingInfoForm, GoogleCalendarSetup, useMyCalendar, useUpdateCalendar 
 import { validateCalendarData } from '~/features/host/utils/validation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-export function Settings() {
+export const Settings = () => {
     const { data: calendar, isLoading, error: loadError } = useMyCalendar();
     const updateCalendarMutation = useUpdateCalendar();
 
@@ -140,4 +140,4 @@ export function Settings() {
             </div>
         </PageLayout>
     );
-}
+};

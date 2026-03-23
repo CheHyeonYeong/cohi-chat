@@ -13,7 +13,7 @@ interface TimeslotsProps {
     onSelectTimeslot: (timeslot: ITimeSlot) => void;
 }
 
-export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) {
+export const Timeslots = ({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) => {
     const { isAuthenticated } = useAuth();
 
     const now = baseDate ?? new Date();
@@ -59,4 +59,4 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
             ))}
         </div>
     </Suspense>
-}
+};

@@ -6,7 +6,7 @@ import { useUpdateMember } from '../hooks/useUpdateMember';
 import { useProfileValidation, type ProfileFormValues } from '../hooks/useProfileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-export function ProfileEditForm() {
+export const ProfileEditForm = () => {
     const { data: user } = useAuth();
     const username = user?.username;
     const [displayName, setDisplayName] = useState(user?.displayName ?? '');
@@ -84,4 +84,4 @@ export function ProfileEditForm() {
             </Button>
         </form>
     );
-}
+};

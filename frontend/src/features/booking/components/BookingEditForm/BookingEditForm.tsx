@@ -22,7 +22,7 @@ interface EditFormState {
     meetingLink: string;
 }
 
-export function BookingEditForm({ booking, topics, onCancel, onSuccess }: BookingEditFormProps) {
+export const BookingEditForm = ({ booking, topics, onCancel, onSuccess }: BookingEditFormProps) => {
     const updateMutation = useUpdateBooking(booking.id);
 
     const [formState, setFormState] = useState<EditFormState>(() => ({
@@ -125,4 +125,4 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
             </div>
         </form>
     );
-}
+};

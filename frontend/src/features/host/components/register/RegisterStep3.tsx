@@ -13,16 +13,12 @@ interface RegisterStep3Props {
     onSubmit: () => void;
 }
 
-function CheckCircleIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="3" />
-            <path d="M14 24L21 31L34 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
+const CheckCircleIcon = ({ className = '' }: { className?: string }) => <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="3" />
+    <path d="M14 24L21 31L34 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+</svg>;
 
-export function RegisterStep3({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) {
+export const RegisterStep3 = ({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) => {
     if (isSuccess) {
         return (
             <div className="w-full max-w-lg mx-auto text-center">
@@ -111,4 +107,4 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
             </Button>
         </div>
     );
-}
+};

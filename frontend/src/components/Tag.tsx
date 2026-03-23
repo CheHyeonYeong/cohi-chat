@@ -41,25 +41,21 @@ const sizeStyles: Record<string, string> = {
     md: 'px-2 py-0.5 text-xs',
 };
 
-export function Tag({
+export const Tag = ({
     children,
     variant = 'filled',
     color = 'primary',
     size = 'md',
     title,
     className,
-}: TagProps) {
-    return (
-        <span
-            title={title}
-            className={cn(
-                'inline-flex items-center rounded-md font-medium',
-                variantColorStyles[`${variant}-${color}`],
-                sizeStyles[size],
-                className,
-            )}
-        >
-            {children}
-        </span>
-    );
-}
+}: TagProps) => <span
+    title={title}
+    className={cn(
+        'inline-flex items-center rounded-md font-medium',
+        variantColorStyles[`${variant}-${color}`],
+        sizeStyles[size],
+        className,
+    )}
+>
+    {children}
+</span>;

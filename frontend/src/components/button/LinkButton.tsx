@@ -10,12 +10,8 @@ interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
     ref?: Ref<HTMLAnchorElement>;
 }
 
-function LinkButtonInner({ variant, size, className, children, ref, ...anchorProps }: LinkButtonProps) {
-    return (
-        <Button variant={variant} size={size} className={className} asChild>
-            <a ref={ref} {...anchorProps}>{children}</a>
-        </Button>
-    );
-}
+const LinkButtonInner = ({ variant, size, className, children, ref, ...anchorProps }: LinkButtonProps) => <Button variant={variant} size={size} className={className} asChild>
+    <a ref={ref} {...anchorProps}>{children}</a>
+</Button>;
 
 export const LinkButton = createLink(LinkButtonInner);

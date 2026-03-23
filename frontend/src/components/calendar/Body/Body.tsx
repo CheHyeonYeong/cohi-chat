@@ -13,7 +13,7 @@ interface BodyProps {
     onSelectDay: (date: Date) => void;
 }
 
-export function Body({ year, month, days, baseDate, selectedDate, timeslots, bookings, onSelectDay }: BodyProps) {
+export const Body = ({ year, month, days, baseDate, selectedDate, timeslots, bookings, onSelectDay }: BodyProps) => {
     const weeks = days.reduce<number[][]>((acc, day, i) => {
         const weekIndex = Math.floor(i / 7);
 
@@ -77,4 +77,4 @@ export function Body({ year, month, days, baseDate, selectedDate, timeslots, boo
             </div>
         </div>
     );
-}
+};

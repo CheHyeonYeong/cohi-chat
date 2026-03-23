@@ -7,7 +7,7 @@ import { useBooking, useUploadBookingFile, useDeleteBookingFile, useDownloadBook
 import { useAuth } from '~/features/member';
 import { useHostCalendar } from '~/features/host';
 
-export function Detail() {
+export const Detail = () => {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
@@ -207,4 +207,4 @@ export function Detail() {
             </div>
         </PageLayout>
     );
-}
+};

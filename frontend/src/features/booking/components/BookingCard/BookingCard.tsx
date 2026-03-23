@@ -14,7 +14,7 @@ interface BookingCardProps {
     counterpart?: Pick<IUserSimple, 'username' | 'displayName'>;
 }
 
-export function BookingCard({ booking, onSelect, isSelected = false, className, role, counterpart }: BookingCardProps) {
+export const BookingCard = ({ booking, onSelect, isSelected = false, className, role, counterpart }: BookingCardProps) => {
     const { startedAt } = booking;
     const fallback = role === 'host' ? booking.guest : booking.host;
     const displayName = (counterpart?.displayName || counterpart?.username) || (fallback.displayName || fallback.username) || '상대방';
@@ -112,4 +112,4 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
             </button>
         </Card>
     );
-}
+};

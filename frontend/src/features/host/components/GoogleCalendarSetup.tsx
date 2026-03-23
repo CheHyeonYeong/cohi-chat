@@ -18,7 +18,7 @@ interface GoogleCalendarSetupProps {
     noShadow?: boolean;
 }
 
-export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) {
+export const GoogleCalendarSetup = ({ data, onChange, errors, noShadow }: GoogleCalendarSetupProps) => {
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [emailCopied, setEmailCopied] = useState(false);
@@ -223,4 +223,4 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
             </div>
         </div>
     );
-}
+};

@@ -39,18 +39,14 @@ const itemStyles = cn(
     'data-[disabled]:opacity-50 data-[disabled]:pointer-events-none'
 );
 
-function SelectItem({ value, label }: SelectOption) {
-    return (
-        <SelectPrimitive.Item value={value} className={itemStyles}>
-            <SelectPrimitive.ItemText>{label}</SelectPrimitive.ItemText>
-            <SelectPrimitive.ItemIndicator className="absolute right-2">
-                <CheckIcon className="w-4 h-4 text-cohi-primary" />
-            </SelectPrimitive.ItemIndicator>
-        </SelectPrimitive.Item>
-    );
-}
+const SelectItem = ({ value, label }: SelectOption) => <SelectPrimitive.Item value={value} className={itemStyles}>
+    <SelectPrimitive.ItemText>{label}</SelectPrimitive.ItemText>
+    <SelectPrimitive.ItemIndicator className="absolute right-2">
+        <CheckIcon className="w-4 h-4 text-cohi-primary" />
+    </SelectPrimitive.ItemIndicator>
+</SelectPrimitive.Item>;
 
-export function Select({
+export const Select = ({
     value,
     defaultValue,
     onValueChange,
@@ -60,7 +56,7 @@ export function Select({
     disabled = false,
     'data-testid': testId,
     ref,
-}: SelectProps) {
+}: SelectProps) => {
     const renderedOptions = useMemo(
         () => options.map((option) => <SelectItem key={option.value} {...option} />),
         [options]
@@ -97,4 +93,4 @@ export function Select({
             </SelectPrimitive.Portal>
         </SelectPrimitive.Root>
     );
-}
+};

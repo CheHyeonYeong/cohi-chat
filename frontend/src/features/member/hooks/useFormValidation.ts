@@ -23,9 +23,7 @@ const defaultFieldState: FieldState = {
     isValid: false,
 };
 
-export function useFormValidation<T extends object>(
-    rules: Partial<Record<keyof T, ValidationRule<T[keyof T]>>>
-): UseFormValidationReturn<T> {
+export const useFormValidation = <T extends object>(rules: Partial<Record<keyof T, ValidationRule<T[keyof T]>>>): UseFormValidationReturn<T> => {
     const [fields, setFields] = useState<Record<keyof T, FieldState>>(() => {
         const initial = {} as Record<keyof T, FieldState>;
         for (const key of Object.keys(rules) as (keyof T)[]) {
@@ -113,4 +111,4 @@ export function useFormValidation<T extends object>(
         resetValidation,
         getInputClassName,
     };
-}
+};

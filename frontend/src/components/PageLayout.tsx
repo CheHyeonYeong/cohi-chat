@@ -23,7 +23,7 @@ interface PageLayoutProps {
     className?: string;
 }
 
-export function PageLayout({ title, headerCenter, maxWidth = '6xl', children, className }: PageLayoutProps) {
+export const PageLayout = ({ title, headerCenter, maxWidth = '6xl', children, className }: PageLayoutProps) => {
     useDocumentTitle(title);
 
     return (
@@ -44,4 +44,4 @@ export function PageLayout({ title, headerCenter, maxWidth = '6xl', children, cl
             </main>
         </div>
     );
-}
+};

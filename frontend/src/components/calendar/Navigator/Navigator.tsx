@@ -10,7 +10,7 @@ interface NavigatorProps {
     onNext: (slug: string, date: { year: number; month: number }) => void;
 }
 
-export function Navigator({ slug, year, month, baseDate, onPrevious, onNext }: NavigatorProps) {
+export const Navigator = ({ slug, year, month, baseDate, onPrevious, onNext }: NavigatorProps) => {
     const now = baseDate ?? new Date();
     const isPast = year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth() + 1);
 
@@ -54,9 +54,9 @@ export function Navigator({ slug, year, month, baseDate, onPrevious, onNext }: N
             </NavigatorButton>
         </div>
     );
-}
+};
 
-function NavigatorButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
+const NavigatorButton = (props: ButtonHTMLAttributes<HTMLButtonElement>) => {
     const { className, disabled, ...rest } = props;
     return (
         <button
@@ -69,4 +69,4 @@ function NavigatorButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
             {...rest}
         />
     );
-}
+};

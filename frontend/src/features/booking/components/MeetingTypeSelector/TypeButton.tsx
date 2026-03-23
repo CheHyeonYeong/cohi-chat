@@ -21,16 +21,12 @@ interface TypeButtonProps {
     testId: string;
 }
 
-export function TypeButton({ selected, onClick, icon, label, testId }: TypeButtonProps) {
-    return (
-        <button
-            type="button"
-            data-testid={testId}
-            onClick={onClick}
-            className={cn(buttonBaseStyles, selected ? activeButtonStyles : inactiveButtonStyles)}
-        >
-            {icon}
-            <span className="font-medium">{label}</span>
-        </button>
-    );
-}
+export const TypeButton = ({ selected, onClick, icon, label, testId }: TypeButtonProps) => <button
+    type="button"
+    data-testid={testId}
+    onClick={onClick}
+    className={cn(buttonBaseStyles, selected ? activeButtonStyles : inactiveButtonStyles)}
+>
+    {icon}
+    <span className="font-medium">{label}</span>
+</button>;

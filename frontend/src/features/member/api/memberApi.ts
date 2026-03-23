@@ -14,7 +14,7 @@ import type {
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const MEMBER_API = `${API_BASE}/members/v1`;
 
-export async function loginApi(credentials: LoginCredentials): Promise<LoginResponse> {
+export const loginApi = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const request: LoginRequest = {
         ...credentials,
         provider: 'LOCAL',
@@ -34,9 +34,9 @@ export async function loginApi(credentials: LoginCredentials): Promise<LoginResp
     }
 
     return response;
-}
+};
 
-export async function signupApi(payload: SignupPayload): Promise<SignupResponse> {
+export const signupApi = async (payload: SignupPayload): Promise<SignupResponse> => {
     const response = await httpClient<SignupResponse>(`${MEMBER_API}/signup`, {
         method: 'POST',
         body: payload,
@@ -47,27 +47,25 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
     }
 
     return response;
-}
+};
 
-export async function logoutApi(): Promise<void> {
+export const logoutApi = async (): Promise<void> => {
     await httpClient<void>(`${MEMBER_API}/logout`, {
         method: 'DELETE',
     });
-}
+};
 
-export async function refreshTokenApi(): Promise<void> {
+export const refreshTokenApi = async (): Promise<void> => {
     await httpClient<void>(`${MEMBER_API}/refresh`, {
         method: 'POST',
     });
-}
+};
 
-export async function getUserApi(username: string): Promise<MemberResponseDTO> {
-    return httpClient<MemberResponseDTO>(
-        `${MEMBER_API}/${encodeURIComponent(username)}`
-    );
-}
+export const getUserApi = async (username: string): Promise<MemberResponseDTO> => httpClient<MemberResponseDTO>(
+    `${MEMBER_API}/${encodeURIComponent(username)}`
+);
 
-export async function updateProfileApi(payload: UpdateProfilePayload): Promise<HostResponseDTO> {
+export const updateProfileApi = async (payload: UpdateProfilePayload): Promise<HostResponseDTO> => {
     const response = await httpClient<HostResponseDTO>(`${MEMBER_API}/me/profile`, {
         method: 'PATCH',
         body: payload,
@@ -76,9 +74,9 @@ export async function updateProfileApi(payload: UpdateProfilePayload): Promise<H
         throw new Error('프로필 업데이트에 실패했습니다.');
     }
     return response;
-}
+};
 
-export async function updateMemberApi(username: string, payload: UpdateMemberPayload): Promise<MemberResponseDTO> {
+export const updateMemberApi = async (username: string, payload: UpdateMemberPayload): Promise<MemberResponseDTO> => {
     const response = await httpClient<MemberResponseDTO>(`${MEMBER_API}/${encodeURIComponent(username)}`, {
         method: 'PATCH',
         body: payload,
@@ -87,4 +85,4 @@ export async function updateMemberApi(username: string, payload: UpdateMemberPay
         throw new Error('회원 정보 수정에 실패했습니다.');
     }
     return response;
-}
+};

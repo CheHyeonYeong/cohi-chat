@@ -17,9 +17,7 @@ export interface TimeSlotEntry {
     existingId?: number;
 }
 
-function isInvalidTimeRange(startTime: string, endTime: string): boolean {
-    return startTime >= endTime;
-}
+const isInvalidTimeRange = (startTime: string, endTime: string): boolean => startTime >= endTime;
 
 interface TimeSlotFormProps {
     entries: TimeSlotEntry[];
@@ -40,7 +38,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
     return `${String(h).padStart(2, '0')}:${m}`;
 });
 
-function formatWeekdaySummary(weekdays: number[]): string {
+const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '요일 미선택';
 
@@ -52,13 +50,11 @@ function formatWeekdaySummary(weekdays: number[]): string {
     }
 
     return names.join(', ');
-}
+};
 
-function formatEntrySummary(entry: TimeSlotEntry): string {
-    return `${formatWeekdaySummary(entry.weekdays)} ${entry.startTime} - ${entry.endTime}`;
-}
+const formatEntrySummary = (entry: TimeSlotEntry): string => `${formatWeekdaySummary(entry.weekdays)} ${entry.startTime} - ${entry.endTime}`;
 
-export function TimeSlotForm({
+export const TimeSlotForm = ({
     entries,
     onChange,
     onSave,
@@ -67,27 +63,23 @@ export function TimeSlotForm({
     isPending,
     deletingId,
     errors,
-}: TimeSlotFormProps) {
+}: TimeSlotFormProps) => {
     const [expandedIndex, setExpandedIndex] = useState(0);
     const savedDatesRef = useRef<Record<number, { startDate: string; endDate: string }>>({});
 
-    const timeValidationErrors = useMemo(() => {
-        return entries.map((entry) => {
-            if (entry.existingId != null) return null;
-            if (isInvalidTimeRange(entry.startTime, entry.endTime)) {
-                return '시작 시간은 종료 시간보다 이전이어야 합니다';
-            }
-            return null;
-        });
-    }, [entries]);
+    const timeValidationErrors = useMemo(() => entries.map((entry) => {
+        if (entry.existingId != null) return null;
+        if (isInvalidTimeRange(entry.startTime, entry.endTime)) {
+            return '시작 시간은 종료 시간보다 이전이어야 합니다';
+        }
+        return null;
+    }), [entries]);
 
-    const overlapErrors = useMemo(() => {
-        return entries.map((entry, index) => {
-            if (entry.existingId != null) return null;
-            const others = entries.filter((_, i) => i !== index);
-            return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
-        });
-    }, [entries]);
+    const overlapErrors = useMemo(() => entries.map((entry, index) => {
+        if (entry.existingId != null) return null;
+        const others = entries.filter((_, i) => i !== index);
+        return isDuplicateEntry(others, entry) ? '다른 시간대와 겹칩니다' : null;
+    }), [entries]);
 
     const hasOverlapError = overlapErrors.some(Boolean);
     const prevHasOverlapRef = useRef(hasOverlapError);
@@ -364,4 +356,4 @@ export function TimeSlotForm({
             </Button>
         </Card>
     );
-}
+};

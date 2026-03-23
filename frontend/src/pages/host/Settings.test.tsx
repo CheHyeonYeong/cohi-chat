@@ -10,13 +10,10 @@ import * as hostHooks from '~/features/host/hooks';
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createLink: (component: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (props: any) => {
-            const { to, ...rest } = props;
-            const Component = component;
-            return <Component href={to} {...rest} />;
-        };
+    createLink: (component: any) => (props: any) => {
+        const { to, ...rest } = props;
+        const Component = component;
+        return <Component href={to} {...rest} />;
     },
     Link: ({ children, to }: { children: ReactNode; to: string }) =>
         <a href={to}>{children}</a>,

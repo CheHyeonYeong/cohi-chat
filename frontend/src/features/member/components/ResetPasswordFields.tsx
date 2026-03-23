@@ -17,7 +17,7 @@ interface ResetPasswordFieldsProps {
     onSuccess: () => void;
 }
 
-export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsProps) {
+export const ResetPasswordFields = ({ token, onSuccess }: ResetPasswordFieldsProps) => {
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
     const confirmMutation = useConfirmPasswordReset();
@@ -125,4 +125,4 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
             </Button>
         </form>
     );
-}
+};

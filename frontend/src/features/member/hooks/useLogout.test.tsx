@@ -27,11 +27,9 @@ vi.mock('~/components/toast', () => ({
 describe('useLogout', () => {
     let queryClient: QueryClient;
 
-    const createWrapper = () => {
-        return ({ children }: { children: ReactNode }) => (
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        );
-    };
+    const createWrapper = () => ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 
     beforeEach(() => {
         queryClient = new QueryClient({

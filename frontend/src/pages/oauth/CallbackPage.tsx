@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useOAuthLogin } from '~/features/member';
 
-export function CallbackPage() {
+export const CallbackPage = () => {
     const navigate = useNavigate();
     const { provider } = useParams({ strict: false });
     const { code, error, state } = useSearch({ strict: false }) as { code?: string; error?: string; state?: string };
@@ -32,4 +32,4 @@ export function CallbackPage() {
             )}
         </div>
     );
-}
+};

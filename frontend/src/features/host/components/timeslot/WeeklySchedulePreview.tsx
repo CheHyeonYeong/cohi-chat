@@ -28,11 +28,9 @@ interface WeeklySchedulePreviewProps {
 const DEFAULT_START_HOUR = 8;
 const DEFAULT_END_HOUR = 22;
 
-function parseHour(time: string): number {
-    return parseInt(time.split(':')[0], 10);
-}
+const parseHour = (time: string): number => parseInt(time.split(':')[0], 10);
 
-function computeHoursRange(entries: TimeSlotEntry[]): number[] {
+const computeHoursRange = (entries: TimeSlotEntry[]): number[] => {
     let minHour = DEFAULT_START_HOUR;
     let maxHour = DEFAULT_END_HOUR;
 
@@ -50,25 +48,21 @@ function computeHoursRange(entries: TimeSlotEntry[]): number[] {
 
     const length = maxHour - minHour + 1;
     return Array.from({ length }, (_, i) => minHour + i);
-}
+};
 
-function timeToRow(time: string, startHour: number): number {
+const timeToRow = (time: string, startHour: number): number => {
     const [h, m] = time.split(':').map(Number);
     return Math.max(0, (h - startHour) * 2 + Math.round(m / 30));
-}
+};
 
 /** read-only 모드 반시간 셀 — dnd 훅 없음 */
-function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
-    return (
-        <div
-            data-highlighted={isHighlighted || undefined}
-            className={isHighlighted ? 'h-6 bg-cohi-timeslot-existing' : 'h-6'}
-        />
-    );
-}
+const ReadOnlyHalfCell = ({ isHighlighted }: { isHighlighted: boolean }) => <div
+    data-highlighted={isHighlighted || undefined}
+    className={isHighlighted ? 'h-6 bg-cohi-timeslot-existing' : 'h-6'}
+/>;
 
 /** interactive 모드 반시간 셀 — DndContext 내부에서만 사용 */
-function DraggableCell({
+const DraggableCell = ({
     col,
     halfRow,
     isHighlighted,
@@ -80,7 +74,7 @@ function DraggableCell({
     isHighlighted: boolean;
     isInDragRange: boolean;
     onContextDelete?: (cellId: string) => void;
-}) {
+}) => {
     const id = `cell-${col}-${halfRow}`;
     const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({ id });
     const { setNodeRef: setDropRef } = useDroppable({ id });
@@ -115,9 +109,9 @@ function DraggableCell({
             style={{ touchAction: 'none' }}
         />
     );
-}
+};
 
-function WeeklyGrid({
+const WeeklyGrid = ({
     hours,
     highlights,
     dragHighlights,
@@ -129,7 +123,7 @@ function WeeklyGrid({
     dragHighlights: Set<string>;
     isInteractive: boolean;
     onContextDelete?: (cellId: string) => void;
-}) {
+}) => {
     const startHour = hours[0] ?? DEFAULT_START_HOUR;
 
     return (
@@ -193,15 +187,15 @@ function WeeklyGrid({
             })}
         </div>
     );
-}
+};
 
 
-export function WeeklySchedulePreview({
+export const WeeklySchedulePreview = ({
     entries,
     onChange,
     onDuplicateBlocked,
     onDeleteEntry,
-}: WeeklySchedulePreviewProps) {
+}: WeeklySchedulePreviewProps) => {
     const [dragStartId, setDragStartId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -348,4 +342,4 @@ export function WeeklySchedulePreview({
             </p>
         </Card>
     );
-}
+};

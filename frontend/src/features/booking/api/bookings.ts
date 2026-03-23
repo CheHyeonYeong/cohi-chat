@@ -24,43 +24,41 @@ interface BookingFlatResponse {
 }
 
 
-function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail {
-    return {
-        id: b.id,
-        startedAt: parseDateTime(b.startedAt),
-        endedAt: parseDateTime(b.endedAt),
-        topic: b.topic,
-        description: b.description,
-        timeSlot: {
-            id: b.timeSlotId,
-            userId: '',
-            startedAt: extractTime(b.startedAt),
-            endedAt: extractTime(b.endedAt),
-            weekdays: [],
-            startDate: null,
-            endDate: null,
-            createdAt: b.createdAt,
-            updatedAt: b.createdAt,
-        },
-        host: {
-            username: b.hostUsername ?? '',
-            displayName: b.hostDisplayName ?? '',
-        },
-        guest: {
-            username: b.guestUsername ?? '',
-            displayName: b.guestDisplayName ?? '',
-        },
-        files,
+const toBookingDetail = (b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail => ({
+    id: b.id,
+    startedAt: parseDateTime(b.startedAt),
+    endedAt: parseDateTime(b.endedAt),
+    topic: b.topic,
+    description: b.description,
+    timeSlot: {
+        id: b.timeSlotId,
+        userId: '',
+        startedAt: extractTime(b.startedAt),
+        endedAt: extractTime(b.endedAt),
+        weekdays: [],
+        startDate: null,
+        endDate: null,
         createdAt: b.createdAt,
         updatedAt: b.createdAt,
-        attendanceStatus: b.attendanceStatus as AttendanceStatus,
-        hostId: b.hostId,
-        guestId: b.guestId,
-        meetingType: b.meetingType,
-        location: b.location,
-        meetingLink: b.meetingLink,
-    };
-}
+    },
+    host: {
+        username: b.hostUsername ?? '',
+        displayName: b.hostDisplayName ?? '',
+    },
+    guest: {
+        username: b.guestUsername ?? '',
+        displayName: b.guestDisplayName ?? '',
+    },
+    files,
+    createdAt: b.createdAt,
+    updatedAt: b.createdAt,
+    attendanceStatus: b.attendanceStatus as AttendanceStatus,
+    hostId: b.hostId,
+    guestId: b.guestId,
+    meetingType: b.meetingType,
+    location: b.location,
+    meetingLink: b.meetingLink,
+});
 
 interface PaginatedBookingResponse {
     bookings: BookingFlatResponse[];
@@ -69,7 +67,7 @@ interface PaginatedBookingResponse {
     size: number;
 }
 
-export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+export const getMyBookings = async ({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> => {
     const response = await httpClient<PaginatedBookingResponse>(
         `${API_URL}/bookings/guest/me?page=${page}&size=${pageSize}`
     );
@@ -77,9 +75,9 @@ export async function getMyBookings({ page = 1, pageSize = 10 }: { page?: number
         bookings: response.bookings.map(b => toBookingDetail(b)),
         totalCount: response.totalCount,
     };
-}
+};
 
-export async function getMyHostBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> {
+export const getMyHostBookings = async ({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingDetail> => {
     const response = await httpClient<PaginatedBookingResponse>(
         `${API_URL}/bookings/host/me?page=${page}&size=${pageSize}`
     );
@@ -87,9 +85,9 @@ export async function getMyHostBookings({ page = 1, pageSize = 10 }: { page?: nu
         bookings: response.bookings.map(b => toBookingDetail(b)),
         totalCount: response.totalCount,
     };
-}
+};
 
-export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingWithRole> {
+export const getAllMyBookings = async ({ page = 1, pageSize = 10 }: { page?: number; pageSize?: number }): Promise<IPaginatedBookingWithRole> => {
     const fetchSize = page * pageSize;
     const [guestResult, hostResult] = await Promise.all([
         getMyBookings({ page: 1, pageSize: fetchSize }),
@@ -131,26 +129,26 @@ export async function getAllMyBookings({ page = 1, pageSize = 10 }: { page?: num
         bookings: merged.slice(start, start + pageSize),
         totalCount: merged.length,
     };
-}
+};
 
-export async function getBooking(id: number): Promise<IBookingDetail> {
+export const getBooking = async (id: number): Promise<IBookingDetail> => {
     const [b, files] = await Promise.all([
         httpClient<BookingFlatResponse>(`${API_URL}/bookings/${id}`),
         httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`)
     ]);
     return toBookingDetail(b, files);
-}
+};
 
-export async function uploadBookingFile(id: number, files: FormData): Promise<IBookingFile> {
+export const uploadBookingFile = async (id: number, files: FormData): Promise<IBookingFile> => {
     const url = `${API_URL}/bookings/${id}/files`;
     const data: IBookingFile = await httpClient<IBookingFile>(url, {
         method: 'POST',
         body: files,
     });
     return data;
-}
+};
 
-export async function reportHostNoShow(bookingId: number, reason?: string): Promise<IBookingDetail> {
+export const reportHostNoShow = async (bookingId: number, reason?: string): Promise<IBookingDetail> => {
     const [b, files] = await Promise.all([
         httpClient<BookingFlatResponse>(`${API_URL}/bookings/${bookingId}/report-noshow`, {
             method: 'POST',
@@ -159,21 +157,17 @@ export async function reportHostNoShow(bookingId: number, reason?: string): Prom
         httpClient<IBookingFile[]>(`${API_URL}/bookings/${bookingId}/files`)
     ]);
     return toBookingDetail(b, files);
-}
+};
 
-export async function getNoShowHistory(hostId: string): Promise<INoShowHistoryItem[]> {
-    return await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
-}
+export const getNoShowHistory = async (hostId: string): Promise<INoShowHistoryItem[]> => await httpClient<INoShowHistoryItem[]>(`${API_URL}/bookings/host/${hostId}/noshow-history`);
 
-export async function getBookingFiles(id: number): Promise<IBookingFile[]> {
-    return await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
-}
+export const getBookingFiles = async (id: number): Promise<IBookingFile[]> => await httpClient<IBookingFile[]>(`${API_URL}/bookings/${id}/files`);
 
-export async function deleteBookingFile(bookingId: number, fileId: number): Promise<void> {
+export const deleteBookingFile = async (bookingId: number, fileId: number): Promise<void> => {
     await httpClient<void>(`${API_URL}/bookings/${bookingId}/files/${fileId}`, {
         method: 'DELETE',
     });
-}
+};
 
 // Pre-signed URL 관련 타입
 export interface PresignedUploadUrlResponse {
@@ -198,53 +192,34 @@ export interface ConfirmUploadRequest {
  * Pre-signed 업로드 URL 생성
  * 클라이언트가 S3에 직접 파일을 업로드할 수 있는 URL을 생성
  */
-export async function getPresignedUploadUrl(
-    bookingId: number,
-    fileName: string,
-    contentType: string
-): Promise<PresignedUploadUrlResponse> {
-    return await httpClient<PresignedUploadUrlResponse>(
-        `${API_URL}/bookings/${bookingId}/files/presigned-upload-url`,
-        {
-            method: 'POST',
-            body: { fileName, contentType },
-        }
-    );
-}
+export const getPresignedUploadUrl = async (bookingId: number, fileName: string, contentType: string): Promise<PresignedUploadUrlResponse> => await httpClient<PresignedUploadUrlResponse>(
+    `${API_URL}/bookings/${bookingId}/files/presigned-upload-url`,
+    {
+        method: 'POST',
+        body: { fileName, contentType },
+    }
+);
 
-export async function confirmUpload(
-    bookingId: number,
-    request: ConfirmUploadRequest
-): Promise<IBookingFile> {
-    return await httpClient<IBookingFile>(
-        `${API_URL}/bookings/${bookingId}/files/confirm-upload`,
-        {
-            method: 'POST',
-            body: request,
-        }
-    );
-}
+export const confirmUpload = async (bookingId: number, request: ConfirmUploadRequest): Promise<IBookingFile> => await httpClient<IBookingFile>(
+    `${API_URL}/bookings/${bookingId}/files/confirm-upload`,
+    {
+        method: 'POST',
+        body: request,
+    }
+);
 
 /**
  * Pre-signed 다운로드 URL 생성
  * 클라이언트가 S3에서 직접 파일을 다운로드할 수 있는 URL을 생성
  */
-export async function getPresignedDownloadUrl(
-    bookingId: number,
-    fileId: number
-): Promise<PresignedDownloadUrlResponse> {
-    return await httpClient<PresignedDownloadUrlResponse>(
-        `${API_URL}/bookings/${bookingId}/files/${fileId}/presigned-download-url`
-    );
-}
+export const getPresignedDownloadUrl = async (bookingId: number, fileId: number): Promise<PresignedDownloadUrlResponse> => await httpClient<PresignedDownloadUrlResponse>(
+    `${API_URL}/bookings/${bookingId}/files/${fileId}/presigned-download-url`
+);
 
 /**
  * Pre-signed URL을 사용하여 S3에 직접 파일 업로드
  */
-export async function uploadFileToS3(
-    presignedUrl: string,
-    file: File
-): Promise<void> {
+export const uploadFileToS3 = async (presignedUrl: string, file: File): Promise<void> => {
     const contentType = file.type || 'application/octet-stream';
     const response = await fetch(presignedUrl, {
         method: 'PUT',
@@ -257,17 +232,14 @@ export async function uploadFileToS3(
     if (!response.ok) {
         throw new Error('S3 업로드 실패');
     }
-}
+};
 
 /**
  * Pre-signed URL 방식으로 파일 업로드 (전체 플로우)
  * 1. Pre-signed URL 생성 요청
  * 2. S3에 직접 업로드
  */
-export async function uploadBookingFileWithPresignedUrl(
-    bookingId: number,
-    file: File
-): Promise<IBookingFile> {
+export const uploadBookingFileWithPresignedUrl = async (bookingId: number, file: File): Promise<IBookingFile> => {
     // 1. Pre-signed URL 생성
     const { url, objectKey } = await getPresignedUploadUrl(
         bookingId,
@@ -285,16 +257,12 @@ export async function uploadBookingFileWithPresignedUrl(
         contentType: file.type || 'application/octet-stream',
         fileSize: file.size,
     });
-}
+};
 
 /**
  * Pre-signed URL 방식으로 파일 다운로드
  */
-export async function downloadFileWithPresignedUrl(
-    bookingId: number,
-    fileId: number,
-    fileName: string
-): Promise<void> {
+export const downloadFileWithPresignedUrl = async (bookingId: number, fileId: number, fileName: string): Promise<void> => {
     // 1. Pre-signed URL 생성
     const { url } = await getPresignedDownloadUrl(bookingId, fileId);
 
@@ -305,4 +273,4 @@ export async function downloadFileWithPresignedUrl(
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
+};

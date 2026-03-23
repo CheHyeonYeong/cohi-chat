@@ -3,7 +3,7 @@ import { createTimeslot } from '../api';
 import type { TimeSlotCreatePayload, TimeSlotResponse } from '../types';
 import { hostKeys } from './queryKeys';
 
-export function useCreateTimeslot() {
+export const useCreateTimeslot = () => {
     const queryClient = useQueryClient();
 
     return useMutation<TimeSlotResponse, Error, TimeSlotCreatePayload>({
@@ -12,4 +12,4 @@ export function useCreateTimeslot() {
             queryClient.invalidateQueries({ queryKey: hostKeys.myTimeslots() });
         },
     });
-}
+};

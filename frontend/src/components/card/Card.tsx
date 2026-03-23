@@ -24,7 +24,7 @@ const sizeStyles = {
     lg: "p-8",
 };
 
-export function Card({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ref, ...props }: CardProps) {
+export const Card = ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ref, ...props }: CardProps) => {
     const cardClassName = cn(
         "rounded-2xl",
         !noBackground && "bg-white",
@@ -49,4 +49,4 @@ export function Card({ variant = "default", size = "md", asChild = false, noBack
             {children}
         </div>
     );
-}
+};

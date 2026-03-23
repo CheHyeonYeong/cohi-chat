@@ -11,7 +11,7 @@ interface AuthPageLayoutProps {
     children: ReactNode;
 }
 
-export function AuthPageLayout({ title, className, children }: AuthPageLayoutProps) {
+export const AuthPageLayout = ({ title, className, children }: AuthPageLayoutProps) => {
     useDocumentTitle(title);
 
     return (
@@ -26,4 +26,4 @@ export function AuthPageLayout({ title, className, children }: AuthPageLayoutPro
             </Card>
         </div>
     );
-}
+};

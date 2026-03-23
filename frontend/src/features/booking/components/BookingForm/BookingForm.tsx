@@ -32,7 +32,7 @@ const createInitialState = (defaultTopic: string): BookingFormState => ({
     meetingLink: '',
 });
 
-export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) {
+export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) => {
     const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
 
     const [formState, setFormState] = useState<BookingFormState>(() =>
@@ -133,4 +133,4 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
             )}
         </form>
     );
-}
+};

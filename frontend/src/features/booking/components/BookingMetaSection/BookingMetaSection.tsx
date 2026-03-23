@@ -7,7 +7,7 @@ interface BookingMetaSectionProps {
     booking: IBookingDetail;
 }
 
-export function BookingMetaSection({ booking }: BookingMetaSectionProps) {
+export const BookingMetaSection = ({ booking }: BookingMetaSectionProps) => {
     const { startedAt } = booking;
 
     const dateText = formatKoreanDate(startedAt);
@@ -71,4 +71,4 @@ export function BookingMetaSection({ booking }: BookingMetaSectionProps) {
             </section>
         </>
     );
-}
+};

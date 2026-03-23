@@ -14,7 +14,7 @@ interface MeetingInfoFormProps {
     errors: Record<string, string>;
 }
 
-export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps) {
+export const MeetingInfoForm = ({ data, onChange, errors }: MeetingInfoFormProps) => {
     const [topicInput, setTopicInput] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -115,4 +115,4 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
             </div>
         </>
     );
-}
+};

@@ -11,7 +11,7 @@ interface HeaderProps {
     className?: string;
 }
 
-export function Header({ center, className }: HeaderProps) {
+export const Header = ({ center, className }: HeaderProps) => {
     const { isAuthenticated, isSuccess } = useAuth();
 
     return (
@@ -30,4 +30,4 @@ export function Header({ center, className }: HeaderProps) {
             )}
         </header>
     );
-}
+};

@@ -6,7 +6,7 @@ import { useHosts } from '~/hooks/useHost';
 import { useAuth } from '~/features/member';
 import { HostCard } from '~/features/host';
 
-export function Home() {
+export const Home = () => {
     const hosts = useHosts();
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
@@ -126,4 +126,4 @@ export function Home() {
             </section>
         </div>
     );
-}
+};
