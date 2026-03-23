@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { newRandomNick } from 'random-korean-nickname';
@@ -57,7 +58,7 @@ export function SignupForm() {
         setDisplayName(randomName);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
         const values: SignupFormValues = {
@@ -95,7 +96,7 @@ export function SignupForm() {
         <AuthPageLayout title="회원가입" className="py-8">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">
+                    <label htmlFor="username" className="text-sm text-cohi-text-dark">
                             아이디 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -117,7 +118,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
+                    <label htmlFor="email" className="text-sm text-cohi-text-dark">
                             이메일 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -146,7 +147,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
+                    <label htmlFor="displayName" className="text-sm text-cohi-text-dark">
                             표시 이름 <span className="text-red-500">*</span>
                     </label>
                     <div className="flex gap-2">
@@ -179,7 +180,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
+                    <label htmlFor="password" className="text-sm text-cohi-text-dark">
                             비밀번호 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -201,7 +202,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
+                    <label htmlFor="passwordAgain" className="text-sm text-cohi-text-dark">
                             비밀번호 확인 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -239,9 +240,9 @@ export function SignupForm() {
                 </Button>
             </form>
 
-            <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
+            <div className="text-center text-sm mt-6 text-cohi-text-dark">
                     이미 계정이 있으신가요?{' '}
-                <Link to="/login" className="text-[var(--cohi-primary)] font-semibold hover:underline">
+                <Link to="/login" className="text-cohi-primary font-semibold hover:underline">
                         로그인
                 </Link>
             </div>

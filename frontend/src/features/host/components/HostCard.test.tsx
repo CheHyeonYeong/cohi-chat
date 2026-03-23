@@ -1,3 +1,4 @@
+import type { ReactElement, ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,7 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
         params,
         ...props
     }: {
-        children: React.ReactNode;
+        children: ReactNode;
         to: string;
         params?: Record<string, string>;
         [key: string]: unknown;
@@ -24,7 +25,7 @@ vi.mock('@tanstack/react-router', () => ({
     },
 }));
 
-const renderWithProviders = (ui: React.ReactElement) => {
+const renderWithProviders = (ui: ReactElement) => {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });

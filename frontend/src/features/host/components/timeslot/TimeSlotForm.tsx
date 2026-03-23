@@ -3,6 +3,7 @@ import { Button } from '~/components/button';
 import { Card } from '~/components/card';
 import { isDuplicateEntry } from './dragUtils';
 import { DAY_NAMES, WEEKDAYS, type Weekday } from '~/libs/constants/days';
+import { formatDateToISO } from '~/libs/date';
 
 export const DEFAULT_DATE_RANGE_DAYS = 30;
 
@@ -30,13 +31,6 @@ interface TimeSlotFormProps {
     deletingId?: number | null;
     errors: Record<string, string>;
 }
-
-const toLocalDateString = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-};
 
 
 // 00:00 ~ 23:30, 30분 단위
@@ -145,7 +139,7 @@ export function TimeSlotForm({
                     <div
                         key={index}
                         className={`rounded-xl border transition-colors ${
-                            expandedIndex === index ? 'border-[var(--cohi-primary)]/30 bg-[var(--cohi-bg-light)]/50' : 'border-gray-200'
+                            expandedIndex === index ? 'border-cohi-primary/30 bg-cohi-bg-light/50' : 'border-gray-200'
                         } p-4`}
                     >
                         <div
@@ -155,7 +149,7 @@ export function TimeSlotForm({
                         >
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
+                                    <span className="text-sm font-medium text-cohi-text-dark">
                                     시간대 {index + 1}
                                     </span>
                                     {entry.existingId != null && (
@@ -211,7 +205,7 @@ export function TimeSlotForm({
                                                     disabled={entry.existingId != null}
                                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
                                                         selected
-                                                            ? 'bg-[var(--cohi-primary)] text-white'
+                                                            ? 'bg-cohi-primary text-white'
                                                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                                     } ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 >
@@ -230,7 +224,7 @@ export function TimeSlotForm({
                                             value={entry.startTime}
                                             onChange={(e) => updateEntry(index, { startTime: e.target.value })}
                                             disabled={entry.existingId != null}
-                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-cohi-text-dark focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             {TIME_OPTIONS.map((t) => (
                                                 <option key={t} value={t}>{t}</option>
@@ -243,7 +237,7 @@ export function TimeSlotForm({
                                             value={entry.endTime}
                                             onChange={(e) => updateEntry(index, { endTime: e.target.value })}
                                             disabled={entry.existingId != null}
-                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-cohi-text-dark focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             {TIME_OPTIONS.map((t) => (
                                                 <option key={t} value={t}>{t}</option>
@@ -265,10 +259,10 @@ export function TimeSlotForm({
                                                         updateEntry(index, { startDate: saved.startDate, endDate: saved.endDate });
                                                     } else {
                                                         const now = new Date();
-                                                        const today = toLocalDateString(now);
+                                                        const today = formatDateToISO(now);
                                                         const later = new Date(now);
                                                         later.setDate(later.getDate() + DEFAULT_DATE_RANGE_DAYS);
-                                                        updateEntry(index, { startDate: today, endDate: toLocalDateString(later) });
+                                                        updateEntry(index, { startDate: today, endDate: formatDateToISO(later) });
                                                     }
                                                 } else {
                                                     if (entry.startDate) {
@@ -294,8 +288,8 @@ export function TimeSlotForm({
                                                     value={entry.startDate ?? ''}
                                                     onChange={(e) => updateEntry(index, { startDate: e.target.value })}
                                                     disabled={entry.existingId != null}
-                                                    min={toLocalDateString(new Date())}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    min={formatDateToISO(new Date())}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-cohi-text-dark focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                             <div>
@@ -306,7 +300,7 @@ export function TimeSlotForm({
                                                     onChange={(e) => updateEntry(index, { endDate: e.target.value })}
                                                     disabled={entry.existingId != null}
                                                     min={entry.startDate}
-                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-cohi-text-dark focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary ${entry.existingId != null ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                         </div>
@@ -340,7 +334,7 @@ export function TimeSlotForm({
             <button
                 type="button"
                 onClick={addEntry}
-                className="mt-4 text-sm font-medium text-[var(--cohi-primary)] hover:text-[var(--cohi-primary-dark)] transition-colors"
+                className="mt-4 text-sm font-medium text-cohi-primary hover:text-cohi-primary-dark transition-colors"
             >
                 + 시간대 추가
             </button>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
@@ -37,7 +38,7 @@ function SortableBookingCard({
         id: booking.id,
     });
 
-    const style: React.CSSProperties = {
+    const style: CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,

@@ -80,7 +80,7 @@ function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, 
         ArrayBuffer.isView(body) ||
         typeof body === 'string'
     ) {
-        return body;
+        return body as BodyInit;
     }
 
     if (typeof body === 'object') {

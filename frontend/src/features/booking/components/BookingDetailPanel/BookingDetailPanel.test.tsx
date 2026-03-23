@@ -1,12 +1,12 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import type { IBookingDetail } from '../../types';
 import type { IBookingFile } from '../../types';
-import React from 'react';
 
 const mockBooking: IBookingDetail = {
     id: 1,
@@ -40,11 +40,11 @@ const mockBooking: IBookingDetail = {
 
 // Mock components
 vi.mock('~/components', () => ({
-    Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Tag: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock('./BookingHeader', () => ({
-    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: React.ReactNode }) => (
+    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: ReactNode }) => (
         <div data-testid="booking-header">
             <span>{displayName}</span>
             <span>{roleLabel}</span>
@@ -78,7 +78,7 @@ vi.mock('../BookingMetaSection', () => ({
 
 // Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
+    Link: ({ children, to, params }: { children: ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
         let href = to;
         if (params) {
             Object.entries(params).forEach(([key, value]) => {

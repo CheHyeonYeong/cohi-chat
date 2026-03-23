@@ -53,9 +53,9 @@ export function HostTimeSlotPreview({
                 return (
                     <div
                         key={slot.id}
-                        className="flex items-center gap-3 bg-[var(--cohi-bg-warm)]/50 rounded-lg px-4 py-3"
+                        className="flex items-center gap-3 bg-cohi-bg-warm/50 rounded-lg px-4 py-3"
                     >
-                        <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
+                        <span className="text-sm font-medium text-cohi-text-dark">
                             {weekdayLabels}
                         </span>
                         <span className="text-sm text-gray-600">

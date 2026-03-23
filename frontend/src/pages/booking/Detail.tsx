@@ -72,7 +72,7 @@ export function Detail() {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
             </div>
         );
@@ -80,7 +80,7 @@ export function Detail() {
 
     if (error) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
             </div>
         );
@@ -88,7 +88,7 @@ export function Detail() {
 
     if (!booking) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 찾을 수 없습니다.</p>
             </div>
         );
@@ -108,7 +108,7 @@ export function Detail() {
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="text-xs font-medium text-[var(--cohi-primary)] hover:underline cursor-pointer"
+                                    className="text-xs font-medium text-cohi-primary hover:underline cursor-pointer"
                                     data-testid="booking-edit-button"
                                 >
                                     수정

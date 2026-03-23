@@ -152,7 +152,7 @@ export function Register() {
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
                                         key={i}
-                                        className="w-2.5 h-2.5 rounded-full bg-[var(--cohi-primary)]"
+                                        className="w-2.5 h-2.5 rounded-full bg-cohi-primary"
                                     ></div>
                                 ))}
                             </div>
@@ -184,8 +184,8 @@ export function Register() {
                                         className={
                                             'w-2.5 h-2.5 rounded-full transition-colors ' +
                                             (i + 1 === currentStep
-                                                ? 'bg-[var(--cohi-primary)]'
-                                                : 'bg-[var(--cohi-bg-warm)]')
+                                                ? 'bg-cohi-primary'
+                                                : 'bg-cohi-bg-warm')
                                         }
                                     ></div>
                                 ))}

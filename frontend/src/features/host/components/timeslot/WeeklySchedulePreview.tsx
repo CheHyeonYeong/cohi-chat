@@ -62,7 +62,7 @@ function ReadOnlyHalfCell({ isHighlighted }: { isHighlighted: boolean }) {
     return (
         <div
             data-highlighted={isHighlighted || undefined}
-            className={isHighlighted ? 'h-6 bg-[var(--cohi-timeslot-existing)]' : 'h-6'}
+            className={isHighlighted ? 'h-6 bg-cohi-timeslot-existing' : 'h-6'}
         />
     );
 }
@@ -110,7 +110,7 @@ function DraggableCell({
             data-highlighted={isHighlighted || undefined}
             className={[
                 'h-6 transition-colors duration-100 cursor-crosshair',
-                isInDragRange ? 'bg-[var(--cohi-timeslot-drag)]' : isHighlighted ? 'bg-[var(--cohi-timeslot-existing)]' : '',
+                isInDragRange ? 'bg-cohi-timeslot-drag' : isHighlighted ? 'bg-cohi-timeslot-existing' : '',
             ].join(' ')}
             style={{ touchAction: 'none' }}
         />
@@ -319,7 +319,7 @@ export function WeeklySchedulePreview({
                     <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-1">
                         <div />
                         {WEEKDAY_LABELS.map((label) => (
-                            <div key={label} className="text-center text-sm font-semibold text-[var(--cohi-text-dark)] py-1">
+                            <div key={label} className="text-center text-sm font-semibold text-cohi-text-dark py-1">
                                 {label}
                             </div>
                         ))}

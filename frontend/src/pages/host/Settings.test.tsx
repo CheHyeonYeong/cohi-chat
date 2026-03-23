@@ -1,7 +1,7 @@
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { Settings } from './Settings';
 import * as hostHooks from '~/features/host/hooks';
@@ -14,11 +14,12 @@ vi.mock('@tanstack/react-router', () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (props: any) => {
             const { to, ...rest } = props;
-            return React.createElement(component, { href: to, ...rest });
+            const Component = component;
+            return <Component href={to} {...rest} />;
         };
     },
-    Link: ({ children, to }: { children: React.ReactNode; to: string }) =>
-        React.createElement('a', { href: to }, children),
+    Link: ({ children, to }: { children: ReactNode; to: string }) =>
+        <a href={to}>{children}</a>,
     useRouterState: () => ({ location: { pathname: '/host/settings' } }),
 }));
 
@@ -35,8 +36,8 @@ const createWrapper = () => {
         },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 const mockCalendarData = {

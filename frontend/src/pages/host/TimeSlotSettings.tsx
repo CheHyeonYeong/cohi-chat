@@ -11,6 +11,7 @@ import { Button } from '~/components/button';
 import { LinkButton } from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
+import { formatKoreanDate, formatKoreanTime } from '~/libs/date';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
 function formatWeekdaySummary(weekdays: number[]): string {
@@ -232,7 +233,7 @@ export function TimeSlotSettings() {
                 <div className="flex items-center justify-center py-12">
                     <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">⏰</div>
-                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-cohi-text-dark">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             시간대를 설정하려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>
@@ -258,7 +259,7 @@ export function TimeSlotSettings() {
                                 onChange={(e) => setJob(e.target.value)}
                                 placeholder="예: 백엔드 개발자 @ 스타트업"
                                 maxLength={100}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
                             />
                         </div>
                         <div className="flex-1">
@@ -269,7 +270,7 @@ export function TimeSlotSettings() {
                                 onChange={(e) => setProfileImageUrl(e.target.value)}
                                 placeholder="https://..."
                                 maxLength={500}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
                             />
                         </div>
                         <div className="flex items-end gap-2">
@@ -319,8 +320,8 @@ export function TimeSlotSettings() {
                     <span>현재 설정: {summaryText}</span>
                     {lastSaved && (
                         <span>
-                            마지막 저장: {lastSaved.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}{' '}
-                            {lastSaved.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            마지막 저장: {formatKoreanDate(lastSaved)}{' '}
+                            {formatKoreanTime(lastSaved)}
                         </span>
                     )}
                 </div>

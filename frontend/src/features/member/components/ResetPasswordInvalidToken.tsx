@@ -9,7 +9,7 @@ export function ResetPasswordInvalidToken() {
             </p>
             <Link
                 to="/forgot-password"
-                className="block text-center text-[var(--cohi-primary)] font-semibold hover:underline"
+                className="block text-center text-cohi-primary font-semibold hover:underline"
             >
                 비밀번호 찾기로 이동
             </Link>

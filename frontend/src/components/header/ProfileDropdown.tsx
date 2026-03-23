@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Link } from '@tanstack/react-router';
 import { Avatar } from '~/components/Avatar';
@@ -19,7 +20,7 @@ export function ProfileDropdown() {
                 <button
                     type="button"
                     data-testid="profile-avatar"
-                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/50"
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-cohi-primary/50"
                 >
                     <Avatar
                         displayName={user.displayName}
@@ -99,13 +100,13 @@ export function ProfileDropdown() {
     );
 }
 
-function DropdownMenuItem({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: React.ReactNode; 'data-testid': string }) {
+function DropdownMenuItem({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: ReactNode; 'data-testid': string }) {
     return (
         <DropdownMenu.Item asChild className="outline-none">
             <Link
                 to={to}
                 params={params}
-                className="block px-4 py-2 text-sm text-[var(--cohi-text-dark)] hover:bg-[var(--cohi-bg-warm)] cursor-pointer"
+                className="block px-4 py-2 text-sm text-cohi-text-dark hover:bg-cohi-bg-warm cursor-pointer"
                 {...props}
             >
                 {children}

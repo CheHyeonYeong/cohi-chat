@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '~/components/button';
@@ -74,7 +75,7 @@ export function LoginForm() {
         [handleBlur]
     );
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const values: LoginFormValues = { username: username.trim(), password };
         if (!validateAll(values)) {
@@ -101,7 +102,7 @@ export function LoginForm() {
         <AuthPageLayout title="로그인">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="username" className="text-sm text-[var(--cohi-text-dark)]">아이디</label>
+                    <label htmlFor="username" className="text-sm text-cohi-text-dark">아이디</label>
                     <input
                         type="text"
                         id="username"
@@ -118,7 +119,7 @@ export function LoginForm() {
                     )}
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">비밀번호</label>
+                    <label htmlFor="password" className="text-sm text-cohi-text-dark">비밀번호</label>
                     <input
                         type="password"
                         id="password"
@@ -134,7 +135,7 @@ export function LoginForm() {
                         <span className="text-xs text-red-500 mt-1">{fields.password.error}</span>
                     )}
                     <div className="text-right">
-                        <Link to="/forgot-password" className="text-xs text-[var(--cohi-secondary)] hover:underline">
+                        <Link to="/forgot-password" className="text-xs text-cohi-secondary hover:underline">
                                 비밀번호를 잊으셨나요?
                         </Link>
                     </div>
@@ -191,9 +192,9 @@ export function LoginForm() {
                 )}
             </div>
 
-            <div className="text-center text-sm mt-6 text-[var(--cohi-text-dark)]">
+            <div className="text-center text-sm mt-6 text-cohi-text-dark">
                     계정이 없으신가요?{' '}
-                <Link to="/signup" className="text-[var(--cohi-primary)] font-semibold hover:underline">
+                <Link to="/signup" className="text-cohi-primary font-semibold hover:underline">
                         회원가입
                 </Link>
             </div>

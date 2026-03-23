@@ -20,23 +20,23 @@ export function Home() {
     };
 
     return (
-        <div className='w-full min-h-screen bg-[var(--cohi-bg-light)]'>
+        <div className='w-full min-h-screen bg-cohi-bg-light'>
             <Header />
 
             {/* Hero Section */}
             <section className='w-full cohi-bg-gradient relative overflow-hidden'>
                 <div className='w-full px-6 py-16 md:py-24'>
                     <div className='text-center space-y-6'>
-                        <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--cohi-text-dark)] leading-tight'>
+                        <h1 className='text-3xl md:text-4xl lg:text-5xl font-bold text-cohi-text-dark leading-tight'>
                             부담 없는 대화로 진짜 정보를
                         </h1>
-                        <p className='text-lg md:text-xl text-[var(--cohi-text-dark)]/80'>
+                        <p className='text-lg md:text-xl text-cohi-text-dark/80'>
                             현직자·채용담당자와 1:1 커피챗
                         </p>
 
                         {/* Tags */}
                         <div className='flex justify-center gap-2 flex-wrap'>
-                            <span className='px-4 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium'>
+                            <span className='px-4 py-1.5 bg-cohi-primary/10 text-cohi-primary rounded-full text-sm font-medium'>
                                 이직 · 커리어 · 네트워킹
                             </span>
                         </div>
@@ -59,20 +59,20 @@ export function Home() {
                         <div className='relative w-full max-w-2xl h-48 md:h-64'>
                             {/* Left Person */}
                             <div className='absolute left-1/4 bottom-0 w-20 h-32 md:w-24 md:h-40'>
-                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohi-secondary)] mx-auto' />
-                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohi-secondary)]/70 rounded-t-3xl mt-2 mx-auto' />
+                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-cohi-secondary mx-auto' />
+                                <div className='w-16 h-20 md:w-20 md:h-24 bg-cohi-secondary/70 rounded-t-3xl mt-2 mx-auto' />
                             </div>
 
                             {/* Coffee Table */}
                             <div className='absolute left-1/2 bottom-8 transform -translate-x-1/2'>
-                                <div className='w-24 h-2 md:w-32 md:h-3 bg-[var(--cohi-primary)] rounded-full' />
-                                <div className='w-16 h-8 md:w-20 md:h-10 bg-[var(--cohi-primary)]/80 mx-auto rounded-b-lg' />
+                                <div className='w-24 h-2 md:w-32 md:h-3 bg-cohi-primary rounded-full' />
+                                <div className='w-16 h-8 md:w-20 md:h-10 bg-cohi-primary/80 mx-auto rounded-b-lg' />
                             </div>
 
                             {/* Right Person */}
                             <div className='absolute right-1/4 bottom-0 w-20 h-32 md:w-24 md:h-40'>
-                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-[var(--cohi-primary)]/60 mx-auto' />
-                                <div className='w-16 h-20 md:w-20 md:h-24 bg-[var(--cohi-primary)]/40 rounded-t-3xl mt-2 mx-auto' />
+                                <div className='w-12 h-12 md:w-14 md:h-14 rounded-full bg-cohi-primary/60 mx-auto' />
+                                <div className='w-16 h-20 md:w-20 md:h-24 bg-cohi-primary/40 rounded-t-3xl mt-2 mx-auto' />
                             </div>
 
                             {/* Decorative Plants */}
@@ -86,7 +86,7 @@ export function Home() {
             {/* Host List Section */}
             <section id='host-list' className='w-full py-12 md:py-16 px-6'>
                 <div className='w-full max-w-7xl mx-auto'>
-                    <h2 className='text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-8'>
+                    <h2 className='text-2xl md:text-3xl font-bold text-cohi-text-dark mb-8'>
                         호스트 목록
                     </h2>
 

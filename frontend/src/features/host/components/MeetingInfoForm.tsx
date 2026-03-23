@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import { useState, useRef } from 'react';
 import { Button } from '~/components/button';
 import { Tag } from '~/components/Tag';
@@ -33,7 +34,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
         onChange({ ...data, topics: data.topics.filter((_, i) => i !== index) });
     };
 
-    const handleTopicKeyDown = (e: React.KeyboardEvent) => {
+    const handleTopicKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             addTopic();
@@ -44,7 +45,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
         <>
             {/* Topics */}
             <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     미팅 주제
                 </label>
                 <div className="flex gap-2">
@@ -55,7 +56,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
                         onChange={(e) => setTopicInput(e.target.value)}
                         onKeyDown={handleTopicKeyDown}
                         placeholder="주제를 입력하고 Enter"
-                        className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] placeholder-gray-400 focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
+                        className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-cohi-text-dark placeholder-gray-400 focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary"
                     />
                     <Button
                         variant="outline"
@@ -79,7 +80,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
                                 <button
                                     type="button"
                                     onClick={() => removeTopic(index)}
-                                    className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-[var(--cohi-primary)]/20 text-xs leading-none"
+                                    className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-cohi-primary/20 text-xs leading-none"
                                 >
                                     ×
                                 </button>
@@ -91,7 +92,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
 
             {/* Description */}
             <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     소개
                 </label>
                 <textarea
@@ -99,7 +100,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
                     onChange={(e) => onChange({ ...data, description: e.target.value })}
                     placeholder="미팅에 대한 소개를 작성해주세요 (최소 10자)"
                     rows={5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] placeholder-gray-400 focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)] resize-none"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-cohi-text-dark placeholder-gray-400 focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary resize-none"
                 />
                 <div className="flex justify-between mt-1.5">
                     {errors.description ? (
@@ -107,7 +108,7 @@ export function MeetingInfoForm({ data, onChange, errors }: MeetingInfoFormProps
                     ) : (
                         <span />
                     )}
-                    <span className={`text-sm ${data.description.length < 10 ? 'text-gray-400' : 'text-[var(--cohi-primary)]'}`}>
+                    <span className={`text-sm ${data.description.length < 10 ? 'text-gray-400' : 'text-cohi-primary'}`}>
                         {data.description.length}자
                     </span>
                 </div>

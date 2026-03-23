@@ -15,10 +15,10 @@ export function Header({ center, className }: HeaderProps) {
     const { isAuthenticated, isSuccess } = useAuth();
 
     return (
-        <header className={cn('w-full h-16 px-6 flex justify-between items-center bg-[var(--cohi-bg-warm)]/80 backdrop-blur-sm', className)}>
+        <header className={cn('w-full h-16 px-6 flex justify-between items-center bg-cohi-bg-light backdrop-blur-xs', className)}>
             <Link to='/' className="flex items-center gap-2">
-                <CoffeeCupIcon className="w-8 h-8 text-[var(--cohi-primary)]" />
-                <span className="text-xl font-bold text-[var(--cohi-text-dark)]">cohiChat</span>
+                <CoffeeCupIcon className="w-8 h-8 text-cohi-primary" />
+                <span className="text-xl font-bold text-cohi-text-dark">cohiChat</span>
             </Link>
             {center}
             {isAuthenticated && isSuccess ? (

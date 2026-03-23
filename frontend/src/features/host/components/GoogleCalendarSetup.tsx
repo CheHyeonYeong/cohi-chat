@@ -56,20 +56,20 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                 <Card size="sm" noShadow={noShadow}>
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
-                            <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
+                            <span className="w-7 h-7 rounded-full bg-cohi-primary text-white text-sm font-bold flex items-center justify-center">
                                 1
                             </span>
                         </div>
                         <div className="flex-1">
                             <p className="text-xs text-gray-500 mb-1">1단계</p>
-                            <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
+                            <h3 className="font-bold text-cohi-text-dark mb-3">
                                 Google Calendar 접속
                             </h3>
                             <a
                                 href="https://calendar.google.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)] text-sm font-medium hover:bg-[var(--cohi-bg-warm)] transition-colors"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-cohi-bg-light text-cohi-primary text-sm font-medium hover:bg-cohi-bg-warm transition-colors"
                             >
                                 calendar.google.com 열기
                                 <ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -86,20 +86,20 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                 <Card size="sm" noShadow={noShadow}>
                     <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
-                            <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
+                            <span className="w-7 h-7 rounded-full bg-cohi-primary text-white text-sm font-bold flex items-center justify-center">
                                 2
                             </span>
                         </div>
                         <div className="flex-1">
                             <p className="text-xs text-gray-500 mb-1">2단계</p>
-                            <h3 className="font-bold text-[var(--cohi-text-dark)] mb-3">
+                            <h3 className="font-bold text-cohi-text-dark mb-3">
                                 서비스 어카운트를 캘린더 편집자로 공유
                             </h3>
                             <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                                 cohiChat이 캘린더에 예약을 등록하려면, 아래 이메일을 캘린더 편집자로 추가해야 합니다.
                             </p>
-                            <div className="flex items-center gap-2 bg-[var(--cohi-bg-light)] rounded-lg px-3 py-2 mb-3">
-                                <span className="flex-1 text-sm font-mono text-[var(--cohi-text-dark)] break-all select-all">
+                            <div className="flex items-center gap-2 bg-cohi-bg-light rounded-lg px-3 py-2 mb-3">
+                                <span className="flex-1 text-sm font-mono text-cohi-text-dark break-all select-all">
                                     {emailError ? '이메일을 불러올 수 없습니다' : serviceAccountEmail || '불러오는 중...'}
                                 </span>
                                 <button
@@ -107,7 +107,7 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                                     onClick={handleCopyEmail}
                                     disabled={!serviceAccountEmail}
                                     aria-label="서비스 계정 이메일 복사"
-                                    className="flex-shrink-0 text-gray-400 hover:text-[var(--cohi-primary)] transition-colors disabled:opacity-40"
+                                    className="flex-shrink-0 text-gray-400 hover:text-cohi-primary transition-colors disabled:opacity-40"
                                     title="이메일 복사"
                                 >
                                     {emailCopied ? (
@@ -124,7 +124,7 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                             </ol>
                             {/* 이미지 가이드 */}
                             <div className="space-y-4">
-                                <div className="bg-[var(--cohi-bg-warm)]/50 rounded-xl overflow-hidden">
+                                <div className="bg-cohi-bg-warm/50 rounded-xl overflow-hidden">
                                     <img
                                         src={calendarSettingsGuide}
                                         alt="캘린더 설정 열기"
@@ -132,7 +132,7 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                                     />
                                     <p className="text-sm text-gray-600 text-center py-2">설정 및 공유 열기</p>
                                 </div>
-                                <div className="bg-[var(--cohi-bg-warm)]/50 rounded-xl overflow-hidden">
+                                <div className="bg-cohi-bg-warm/50 rounded-xl overflow-hidden">
                                     <img
                                         src={calendarShareGuide}
                                         alt="사용자 추가"
@@ -150,12 +150,12 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
             <div className="w-full lg:w-80 flex-shrink-0">
                 <Card noShadow={noShadow}>
                     <div className="flex items-center gap-2 mb-4">
-                        <span className="w-7 h-7 rounded-full bg-[var(--cohi-primary)] text-white text-sm font-bold flex items-center justify-center">
+                        <span className="w-7 h-7 rounded-full bg-cohi-primary text-white text-sm font-bold flex items-center justify-center">
                             3
                         </span>
                         <div>
                             <p className="text-xs text-gray-500">3단계</p>
-                            <h3 className="font-bold text-[var(--cohi-text-dark)]">Calendar ID 입력</h3>
+                            <h3 className="font-bold text-cohi-text-dark">Calendar ID 입력</h3>
                         </div>
                     </div>
 
@@ -165,12 +165,12 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                             value={data.googleCalendarId}
                             onChange={(e) => { setConfirmed(false); onChange({ googleCalendarId: e.target.value.trim() }); }}
                             placeholder="your-email@gmail.com"
-                            className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-[var(--cohi-text-dark)] placeholder-gray-400 focus:outline-none focus:ring-1 ${
+                            className={`w-full px-4 py-3 pr-16 rounded-lg border bg-white text-cohi-text-dark placeholder-gray-400 focus:outline-none focus:ring-1 ${
                                 hasInput && isValid
                                     ? 'border-green-400 focus:border-green-400 focus:ring-green-400'
                                     : hasInput && !isValid
                                         ? 'border-red-300 focus:border-red-300 focus:ring-red-300'
-                                        : 'border-gray-300 focus:border-[var(--cohi-primary)] focus:ring-[var(--cohi-primary)]'
+                                        : 'border-gray-300 focus:border-cohi-primary focus:ring-cohi-primary'
                             }`}
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -178,7 +178,7 @@ export function GoogleCalendarSetup({ data, onChange, errors, noShadow }: Google
                                 type="button"
                                 onClick={handlePaste}
                                 aria-label="캘린더 ID 붙여넣기"
-                                className="text-gray-400 hover:text-[var(--cohi-primary)] transition-colors"
+                                className="text-gray-400 hover:text-cohi-primary transition-colors"
                                 title="붙여넣기"
                             >
                                 {copied ? (

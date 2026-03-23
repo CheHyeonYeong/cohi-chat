@@ -62,8 +62,8 @@ export function Body({ year, month, days, baseDate, selectedDate, timeslots, boo
                                             "booking-cell flex justify-center items-center rounded-full aspect-square w-10 sm:w-12 select-none text-sm sm:text-base",
                                             day === 0 && 'invisible',
                                             day !== 0 && !isAvailable && 'text-[#AAAAAA] bg-inherit cursor-default',
-                                            day !== 0 && isAvailable && !isSelected && 'font-bold text-[var(--cohi-primary)] bg-[var(--cohi-bg-light)] cursor-pointer hover:bg-[var(--cohi-primary)] hover:text-[var(--cohi-text-light)]',
-                                            day !== 0 && isAvailable && isSelected && 'font-bold bg-[var(--cohi-primary)] text-[var(--cohi-text-light)] cursor-pointer',
+                                            day !== 0 && isAvailable && !isSelected && 'font-bold text-cohi-primary bg-cohi-bg-light cursor-pointer hover:bg-cohi-primary hover:text-cohi-text-light',
+                                            day !== 0 && isAvailable && isSelected && 'font-bold bg-cohi-primary text-cohi-text-light cursor-pointer',
                                         )}
                                         onClick={() => isAvailable ? onSelectDay(new Date(year, month - 1, day)) : undefined}
                                     >

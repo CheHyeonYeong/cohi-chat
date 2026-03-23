@@ -3,6 +3,7 @@ import { Card } from '~/components/card';
 import { Tag } from '~/components/Tag';
 import type { IBookingDetail, BookingRole } from '../../types';
 import type { IUserSimple } from '~/types/user';
+import { formatKoreanDate } from '~/libs/date';
 
 interface BookingCardProps {
     booking: IBookingDetail;
@@ -26,7 +27,7 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
             className={cn(
                 'border transition-all cursor-pointer hover:shadow-md',
                 isSelected
-                    ? 'border-[var(--cohi-primary)] shadow-md'
+                    ? 'border-cohi-primary shadow-md'
                     : 'border-gray-100',
                 className,
             )}
@@ -38,12 +39,12 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
             >
                 {/* Role tag + Host/Counterpart info */}
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-[var(--cohi-bg-warm)] flex items-center justify-center flex-shrink-0">
-                        <span data-testid="booking-avatar-initial" className="text-sm font-semibold text-[var(--cohi-primary)]">
+                    <div className="w-10 h-10 rounded-full bg-cohi-bg-warm flex items-center justify-center flex-shrink-0">
+                        <span data-testid="booking-avatar-initial" className="text-sm font-semibold text-cohi-primary">
                             {avatarInitial}
                         </span>
                     </div>
-                    <p className="font-semibold text-[var(--cohi-text-dark)] flex-1 text-left truncate">{displayName}님과의 커피챗</p>
+                    <p className="font-semibold text-cohi-text-dark flex-1 text-left truncate">{displayName}님과의 커피챗</p>
                     {role && (
                         <span data-testid="booking-role-tag">
                             <Tag
@@ -74,11 +75,7 @@ export function BookingCard({ booking, onSelect, isSelected = false, className, 
                 {/* Date / Time */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
                     <span>
-                        {startedAt.toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                        })}
+                        {formatKoreanDate(startedAt)}
                     </span>
                     <span aria-hidden="true">·</span>
                     <span>

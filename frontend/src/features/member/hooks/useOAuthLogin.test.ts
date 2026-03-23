@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
+import { createElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { useOAuthLogin } from './useOAuthLogin';
 import { oAuthCallbackApi } from '../api/oAuthApi';
@@ -19,8 +20,8 @@ vi.mock('../utils/authStorage', () => ({
 describe('useOAuthLogin', () => {
     let queryClient: QueryClient;
 
-    const createWrapper = () => ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    const createWrapper = () => ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
 
     beforeEach(() => {
         queryClient = new QueryClient({

@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes } from "react";
 import { cn } from "~/libs/cn";
 
 interface NavigatorProps {
@@ -55,7 +56,7 @@ export function Navigator({ slug, year, month, baseDate, onPrevious, onNext }: N
     );
 }
 
-function NavigatorButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function NavigatorButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
     const { className, disabled, ...rest } = props;
     return (
         <button

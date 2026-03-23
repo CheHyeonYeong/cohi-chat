@@ -1,0 +1,11 @@
+### 날짜 유틸리티 규칙
+- 날짜 포맷팅/파싱은 반드시 `~/libs/date` 공통 유틸 사용
+  - `parseDateTime(str)` — ISO 문자열 → Date 객체
+  - `extractTime(str)` — ISO 문자열 → "H:mm" 시간 문자열
+  - `formatDateToISO(date)` — Date → "YYYY-MM-DD"
+  - `formatKoreanDate(date)` — Date → "YYYY년 M월 D일"
+  - `formatKoreanTime(date)` — Date → "HH:mm"
+- `new Date(str)` 직접 파싱 금지 → `parseDateTime()` 또는 `dayjs()` 사용
+- `date.toLocaleDateString()` / `date.toLocaleTimeString()` 금지 → `formatKoreanDate()` / `formatKoreanTime()` 사용
+- `date.getFullYear()-${date.getMonth()+1}-${date.getDate()}` 패턴 금지 → `formatDateToISO()` 사용
+- 새로운 날짜 포맷이 필요하면 `~/libs/date.ts`에 함수 추가

@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '~/features/member';
 
 interface AuthGuardProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
@@ -19,7 +20,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">확인 중...</p>
             </div>
         );

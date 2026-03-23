@@ -42,7 +42,7 @@ export function BookingDetailPanel({ booking, onUpload, onDownload, onDelete, is
                     <Link
                         to="/booking/$id"
                         params={{ id: booking.id }}
-                        className="text-xs font-medium text-[var(--cohi-primary)] hover:underline"
+                        className="text-xs font-medium text-cohi-primary hover:underline"
                     >
                         상세보기
                     </Link>

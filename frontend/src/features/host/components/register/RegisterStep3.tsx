@@ -27,10 +27,10 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
         return (
             <div className="w-full max-w-lg mx-auto text-center">
                 <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-6" />
-                <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-3">
+                <h2 className="text-2xl md:text-3xl font-bold text-cohi-text-dark mb-3">
                     호스트 등록 완료!
                 </h2>
-                <p className="text-[var(--cohi-text-dark)]/70 mb-8">
+                <p className="text-cohi-text-dark/70 mb-8">
                     캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.
                 </p>
                 {tokenRefreshFailed && (
@@ -47,10 +47,10 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
 
     return (
         <div className="w-full mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-cohi-text-dark mb-2">
                 등록 정보 확인
             </h2>
-            <p className="text-[var(--cohi-text-dark)]/70 mb-8">
+            <p className="text-cohi-text-dark/70 mb-8">
                 입력한 내용을 확인하고 등록을 완료해주세요.
             </p>
 
@@ -62,7 +62,7 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
                         {step1.topics.map((topic) => (
                             <span
                                 key={topic}
-                                className="px-3 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
+                                className="px-3 py-1.5 bg-cohi-primary/10 text-cohi-primary rounded-full text-sm font-medium"
                             >
                                 {topic}
                             </span>
@@ -72,12 +72,12 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
 
                 {/* Description */}
                 <Card size="sm" title="소개">
-                    <p className="text-[var(--cohi-text-dark)] whitespace-pre-wrap">{step1.description}</p>
+                    <p className="text-cohi-text-dark whitespace-pre-wrap">{step1.description}</p>
                 </Card>
 
                 {/* Google Calendar */}
                 <Card size="sm" title="Google Calendar ID">
-                    <p className="text-[var(--cohi-text-dark)] break-all">
+                    <p className="text-cohi-text-dark break-all">
                         {step2.googleCalendarId}
                     </p>
                 </Card>

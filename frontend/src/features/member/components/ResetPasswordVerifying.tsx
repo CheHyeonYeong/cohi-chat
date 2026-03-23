@@ -21,7 +21,7 @@ export function ResetPasswordVerifying() {
                     </p>
                     <Link
                         to="/forgot-password"
-                        className="text-[var(--cohi-primary)] font-semibold hover:underline text-sm"
+                        className="text-cohi-primary font-semibold hover:underline text-sm"
                     >
                         비밀번호 찾기로 이동
                     </Link>

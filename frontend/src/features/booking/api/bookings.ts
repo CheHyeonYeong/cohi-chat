@@ -1,4 +1,5 @@
 import { httpClient } from '~/libs/httpClient';
+import { parseDateTime, extractTime } from '~/libs/date';
 import type { AttendanceStatus, IBookingDetail, IBookingFile, IBookingWithRole, INoShowHistoryItem, IPaginatedBookingDetail, IPaginatedBookingWithRole, MeetingType } from '../types';
 import { API_URL } from './constants';
 
@@ -22,18 +23,6 @@ interface BookingFlatResponse {
     meetingLink: string | null;
 }
 
-/** ISO 8601 datetime 문자열을 로컬 Date 객체로 파싱. */
-function parseDateTime(dateTimeStr: string): Date {
-    return new Date(dateTimeStr);
-}
-
-/** ISO 8601 datetime 문자열에서 "HH:mm" 형식의 시간 문자열 추출. */
-function extractTime(dateTimeStr: string): string {
-    const date = new Date(dateTimeStr);
-    const hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
 
 function toBookingDetail(b: BookingFlatResponse, files: IBookingFile[] = []): IBookingDetail {
     return {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { useLogout } from './useLogout';
 import { logoutApi } from '../api/memberApi';
 
@@ -28,7 +28,7 @@ describe('useLogout', () => {
     let queryClient: QueryClient;
 
     const createWrapper = () => {
-        return ({ children }: { children: React.ReactNode }) =>
+        return ({ children }: { children: ReactNode }) =>
             createElement(QueryClientProvider, { client: queryClient }, children);
     };
 

@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Toast } from './Toast';
 import { ToastContext } from './useToast';
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: ReactNode }) {
     const [open, setOpen] = useState(false);
     const [description, setDescription] = useState('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

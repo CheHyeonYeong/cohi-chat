@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { cn } from '~/libs/cn';
 
 interface TagProps {
-    children: React.ReactNode;
+    children: ReactNode;
     variant?: 'filled' | 'outlined' | 'borderless';
     color?: 'primary' | 'secondary' | 'default' | 'guest' | 'host';
     size?: 'sm' | 'md';
@@ -12,27 +13,27 @@ interface TagProps {
 const variantColorStyles: Record<string, string> = {
     // filled: Ant Design default 스타일 — 따뜻한 배경 + 1px 보더
     'filled-primary':
-        'bg-[var(--cohi-bg-warm)] border border-[var(--cohi-primary)]/20 text-[var(--cohi-primary-dark)]',
+        'bg-cohi-bg-warm border border-cohi-primary/20 text-cohi-primary-dark',
     'filled-secondary':
-        'bg-[var(--cohi-secondary)]/8 border border-[var(--cohi-secondary)]/20 text-[var(--cohi-secondary)]',
-    'filled-default': 'bg-gray-50 border border-gray-200 text-[var(--cohi-text-dark)]',
+        'bg-cohi-secondary/8 border border-cohi-secondary/20 text-cohi-secondary',
+    'filled-default': 'bg-gray-50 border border-gray-200 text-cohi-text-dark',
     // outlined: 보더만, 배경 없음
-    'outlined-primary': 'border border-[var(--cohi-primary)]/40 text-[var(--cohi-primary)]',
-    'outlined-secondary': 'border border-[var(--cohi-secondary)]/40 text-[var(--cohi-secondary)]',
-    'outlined-default': 'border border-gray-300 text-[var(--cohi-text-dark)]',
+    'outlined-primary': 'border border-cohi-primary/40 text-cohi-primary',
+    'outlined-secondary': 'border border-cohi-secondary/40 text-cohi-secondary',
+    'outlined-default': 'border border-gray-300 text-cohi-text-dark',
     // borderless: 텍스트만
-    'borderless-primary': 'text-[var(--cohi-primary)]',
-    'borderless-secondary': 'text-[var(--cohi-secondary)]',
-    'borderless-default': 'text-[var(--cohi-text-dark)]',
+    'borderless-primary': 'text-cohi-primary',
+    'borderless-secondary': 'text-cohi-secondary',
+    'borderless-default': 'text-cohi-text-dark',
     // guest/host 역할 전용 색상
     'filled-guest':
-        'bg-[var(--cohi-role-guest-bg)] border border-[var(--cohi-role-guest)]/20 text-[var(--cohi-role-guest)]',
+        'bg-cohi-role-guest-bg border border-cohi-role-guest/20 text-cohi-role-guest',
     'filled-host':
-        'bg-[var(--cohi-role-host-bg)] border border-[var(--cohi-role-host)]/20 text-[var(--cohi-role-host)]',
-    'outlined-guest': 'border border-[var(--cohi-role-guest)]/40 text-[var(--cohi-role-guest)]',
-    'outlined-host': 'border border-[var(--cohi-role-host)]/40 text-[var(--cohi-role-host)]',
-    'borderless-guest': 'text-[var(--cohi-role-guest)]',
-    'borderless-host': 'text-[var(--cohi-role-host)]',
+        'bg-cohi-role-host-bg border border-cohi-role-host/20 text-cohi-role-host',
+    'outlined-guest': 'border border-cohi-role-guest/40 text-cohi-role-guest',
+    'outlined-host': 'border border-cohi-role-host/40 text-cohi-role-host',
+    'borderless-guest': 'text-cohi-role-guest',
+    'borderless-host': 'text-cohi-role-host',
 };
 
 const sizeStyles: Record<string, string> = {

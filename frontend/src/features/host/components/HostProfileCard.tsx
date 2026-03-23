@@ -24,7 +24,7 @@ export function HostProfileCard({ host, className }: HostProfileCardProps) {
 
             <h1
                 data-testid="host-profile-name"
-                className="mt-4 text-2xl font-bold text-[var(--cohi-text-dark)]"
+                className="mt-4 text-2xl font-bold text-cohi-text-dark"
             >
                 {host.displayName}
             </h1>
@@ -32,7 +32,7 @@ export function HostProfileCard({ host, className }: HostProfileCardProps) {
             {host.job && (
                 <p
                     data-testid="host-profile-job"
-                    className="mt-1 text-[var(--cohi-secondary)]"
+                    className="mt-1 text-cohi-secondary"
                 >
                     {host.job}
                 </p>
@@ -41,7 +41,7 @@ export function HostProfileCard({ host, className }: HostProfileCardProps) {
             {host.chatCount > 0 && (
                 <span
                     data-testid="host-profile-chat-count"
-                    className="mt-3 inline-flex items-center px-3 py-1 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
+                    className="mt-3 inline-flex items-center px-3 py-1 bg-cohi-primary/10 text-cohi-primary rounded-full text-sm font-medium"
                 >
                     커피챗 {host.chatCount}회
                 </span>

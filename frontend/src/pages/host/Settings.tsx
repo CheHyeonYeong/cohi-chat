@@ -77,7 +77,7 @@ export function Settings() {
                 <div className="flex items-center justify-center py-12">
                     <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">📅</div>
-                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-cohi-text-dark">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             미팅 예약을 받으려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>

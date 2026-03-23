@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useState, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
@@ -31,7 +32,7 @@ export function ForgotPasswordEmailForm({ onSuccess }: ForgotPasswordEmailFormPr
         [handleBlur]
     );
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const values: ForgotPasswordEmailFormValues = { email: email.trim() };
         if (!validateAll(values)) return;
@@ -48,7 +49,7 @@ export function ForgotPasswordEmailForm({ onSuccess }: ForgotPasswordEmailFormPr
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-                <label htmlFor="email" className="text-sm text-[var(--cohi-text-dark)]">
+                <label htmlFor="email" className="text-sm text-cohi-text-dark">
                     이메일
                 </label>
                 <input
@@ -85,10 +86,10 @@ export function ForgotPasswordEmailForm({ onSuccess }: ForgotPasswordEmailFormPr
                 {isPending ? '전송 중...' : '재설정 링크 받기'}
             </Button>
 
-            <div className="text-center text-sm mt-2 text-[var(--cohi-text-dark)]">
+            <div className="text-center text-sm mt-2 text-cohi-text-dark">
                 <Link
                     to="/login"
-                    className="text-[var(--cohi-primary)] font-semibold hover:underline"
+                    className="text-cohi-primary font-semibold hover:underline"
                 >
                     로그인으로 돌아가기
                 </Link>

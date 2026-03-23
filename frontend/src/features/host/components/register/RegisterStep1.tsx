@@ -14,10 +14,10 @@ interface RegisterStep1Props {
 export function RegisterStep1({ data, onChange, errors }: RegisterStep1Props) {
     return (
         <div className="w-full mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-cohi-text-dark mb-2">
                 기본 정보 입력
             </h2>
-            <p className="text-[var(--cohi-text-dark)]/70 mb-8">
+            <p className="text-cohi-text-dark/70 mb-8">
                 게스트에게 보여질 미팅 주제와 소개를 작성해주세요.
             </p>
             <MeetingInfoForm data={data} onChange={onChange} errors={errors} />

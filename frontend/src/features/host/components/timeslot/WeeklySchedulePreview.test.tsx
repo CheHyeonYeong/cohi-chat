@@ -143,7 +143,8 @@ describe('WeeklySchedulePreview', () => {
                 { weekdays: [1], startTime: '09:00', endTime: '10:00' },
             ];
             const onChange = vi.fn();
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+            window.confirm = vi.fn(() => true);
+            const confirmSpy = vi.mocked(window.confirm);
 
             const { getByTestId } = render(
                 <WeeklySchedulePreview entries={entries} onChange={onChange} />,
@@ -162,7 +163,8 @@ describe('WeeklySchedulePreview', () => {
             ];
             const onChange = vi.fn();
             const onDeleteEntry = vi.fn();
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+            window.confirm = vi.fn(() => true);
+            const confirmSpy = vi.mocked(window.confirm);
 
             const { getByTestId } = render(
                 <WeeklySchedulePreview
