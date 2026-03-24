@@ -44,6 +44,33 @@ describe('getErrorMessage', () => {
         expect(getErrorMessage(error)).toBe('이미 존재하는 아이디입니다.');
     });
 
+    describe('5xx 에러 방어', () => {
+        it('500 에러일 때 서버의 raw 메시지를 무시하고 generic 메시지를 반환한다', () => {
+            const error = new Error('데이터베이스 오류: ERROR: column m1_0.is_banned does not exist', { cause: 500 });
+            expect(getErrorMessage(error)).toBe('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        });
+
+        it('503 에러일 때 서버의 raw 메시지를 무시하고 generic 메시지를 반환한다', () => {
+            const error = new Error('Connection pool exhausted', { cause: 503 });
+            expect(getErrorMessage(error)).toBe('서버 점검 중입니다. 잠시 후 다시 시도해주세요.');
+        });
+
+        it('매핑되지 않은 5xx 상태코드면 fallback을 반환한다', () => {
+            const error = new Error('내부 에러 상세 메시지', { cause: 502 });
+            expect(getErrorMessage(error)).toBe('알 수 없는 오류가 발생했습니다.');
+        });
+
+        it('매핑되지 않은 5xx 상태코드에 커스텀 fallback 사용', () => {
+            const error = new Error('내부 에러 상세 메시지', { cause: 502 });
+            expect(getErrorMessage(error, '커스텀 폴백')).toBe('커스텀 폴백');
+        });
+
+        it('4xx 에러는 서버 메시지를 그대로 반환한다', () => {
+            const error = new Error('중복된 계정 ID입니다.', { cause: 409 });
+            expect(getErrorMessage(error)).toBe('중복된 계정 ID입니다.');
+        });
+    });
+
     describe('HTTP 상태별 기본 메시지', () => {
         const cases: [number, string][] = [
             [400, '잘못된 요청입니다.'],

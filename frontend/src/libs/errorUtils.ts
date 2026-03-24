@@ -12,19 +12,25 @@ const HTTP_STATUS_MESSAGES: Record<number, string> = {
 
 /**
  * unknown 타입에서 안전하게 에러 메시지를 추출한다.
- * httpClient가 서버의 error.message를 Error.message로 넣어주므로, 서버 메시지가 우선 사용된다.
+ * 5xx 에러는 서버의 raw 메시지에 내부 정보가 포함될 수 있으므로 generic fallback을 사용한다.
+ * 4xx 에러는 httpClient가 서버의 error.message를 Error.message로 넣어주므로, 서버 메시지가 우선 사용된다.
  * 서버 메시지가 없으면 HTTP 상태 코드별 기본 메시지, 그것도 없으면 fallback을 반환한다.
  */
 export const getErrorMessage = (error: unknown, fallback = '알 수 없는 오류가 발생했습니다.'): string => {
     if (error instanceof Error) {
+        const status = error.cause;
+
+        // 5xx 에러는 서버 메시지에 내부 정보가 포함될 수 있으므로 generic fallback 사용
+        if (typeof status === 'number' && status >= 500) {
+            return HTTP_STATUS_MESSAGES[status] ?? fallback;
+        }
+
         // httpClient가 설정한 메시지가 "HTTP error! status: NNN" 패턴이면 서버 메시지가 없는 것
         const httpFallbackPattern = /^HTTP error! status: \d+$/;
         if (error.message && !httpFallbackPattern.test(error.message)) {
             return error.message;
         }
         // 상태 코드별 기본 메시지 시도
-        // httpClient는 항상 { cause: response.status }로 숫자를 설정하므로 숫자 체크만으로 충분합니다.
-        const status = error.cause;
         if (typeof status === 'number' && HTTP_STATUS_MESSAGES[status]) {
             return HTTP_STATUS_MESSAGES[status];
         }
