@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
@@ -24,7 +25,7 @@ import { getErrorMessage } from '~/libs/errorUtils';
 import type { IBookingWithRole } from '~/features/booking';
 
 // Sortable wrapper for BookingCard
-function SortableBookingCard({
+const SortableBookingCard = ({
     booking,
     isSelected,
     onSelect,
@@ -32,12 +33,12 @@ function SortableBookingCard({
     booking: IBookingWithRole;
     isSelected: boolean;
     onSelect: (id: number) => void;
-}) {
+}) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: booking.id,
     });
 
-    const style: React.CSSProperties = {
+    const style: CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
@@ -48,9 +49,9 @@ function SortableBookingCard({
             <BookingCard booking={booking} isSelected={isSelected} onSelect={onSelect} role={booking.role} counterpart={booking.counterpart} />
         </div>
     );
-}
+};
 
-export function MyBookings() {
+export const MyBookings = () => {
     const PAGE_SIZE = 5;
     const { page, selectedId } = useSearch({ from: '/booking/my-bookings' });
     const navigate = useNavigate();
@@ -60,6 +61,8 @@ export function MyBookings() {
 
     useEffect(() => {
         if (bookings?.bookings) {
+            // 서버 데이터를 DnD 정렬용 로컬 상태로 동기화 — 드래그 순서 유지를 위해 필요
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSortedIds(bookings.bookings.map(b => b.id));
         }
     }, [bookings]);
@@ -221,4 +224,4 @@ export function MyBookings() {
             )}
         </PageLayout>
     );
-}
+};

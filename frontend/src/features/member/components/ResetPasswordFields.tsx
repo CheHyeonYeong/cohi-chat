@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { useState, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '~/components/button';
@@ -16,7 +17,7 @@ interface ResetPasswordFieldsProps {
     onSuccess: () => void;
 }
 
-export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsProps) {
+export const ResetPasswordFields = ({ token, onSuccess }: ResetPasswordFieldsProps) => {
     const [password, setPassword] = useState('');
     const [passwordAgain, setPasswordAgain] = useState('');
     const confirmMutation = useConfirmPasswordReset();
@@ -35,7 +36,7 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
         [handleBlur]
     );
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const values: ResetPasswordFieldsValues = { password, passwordAgain };
         if (!validateAll(values)) return;
@@ -53,7 +54,7 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" data-testid="reset-password-form">
             <div className="flex flex-col gap-1">
-                <label htmlFor="password" className="text-sm text-[var(--cohi-text-dark)]">
+                <label htmlFor="password" className="text-sm text-cohi-text-dark">
                     새 비밀번호
                 </label>
                 <input
@@ -76,7 +77,7 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
             </div>
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="passwordAgain" className="text-sm text-[var(--cohi-text-dark)]">
+                <label htmlFor="passwordAgain" className="text-sm text-cohi-text-dark">
                     새 비밀번호 확인
                 </label>
                 <input
@@ -104,7 +105,7 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
                     {isHttpError(confirmMutation.error, 401) && (
                         <Link
                             to="/forgot-password"
-                            className="block mt-2 text-[var(--cohi-primary)] font-semibold hover:underline"
+                            className="block mt-2 text-cohi-primary font-semibold hover:underline"
                         >
                             비밀번호 찾기로 이동
                         </Link>
@@ -124,4 +125,4 @@ export function ResetPasswordFields({ token, onSuccess }: ResetPasswordFieldsPro
             </Button>
         </form>
     );
-}
+};

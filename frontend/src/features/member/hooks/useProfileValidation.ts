@@ -9,6 +9,4 @@ const validationRules: Record<keyof ProfileFormValues, ValidationRule<string>> =
     displayName: validateDisplayName,
 };
 
-export function useProfileValidation() {
-    return useFormValidation<ProfileFormValues>(validationRules);
-}
+export const useProfileValidation = () => useFormValidation<ProfileFormValues>(validationRules);

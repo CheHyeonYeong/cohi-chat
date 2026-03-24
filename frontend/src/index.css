@@ -1,6 +1,91 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+@plugin "tailwind-children";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Hack Nerd', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: 'Hack Nerd Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    --color-border: hsl(var(--border));
+    --color-input: hsl(var(--input));
+    --color-ring: hsl(var(--ring));
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-error: var(--error);
+    --color-error-foreground: var(--error-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-destructive: hsl(var(--destructive));
+    --color-destructive-foreground: hsl(var(--destructive-foreground));
+    --color-muted: hsl(var(--muted));
+    --color-muted-foreground: hsl(var(--muted-foreground));
+    --color-accent: hsl(var(--accent));
+    --color-accent-foreground: hsl(var(--accent-foreground));
+    --color-popover: hsl(var(--popover));
+    --color-popover-foreground: hsl(var(--popover-foreground));
+    --color-card: hsl(var(--card));
+    --color-card-foreground: hsl(var(--card-foreground));
+
+    /* cohiChat Design System */
+    --color-cohi-primary: #8B6914;
+    --color-cohi-primary-dark: #6B5010;
+    --color-cohi-secondary: #A67C52;
+    --color-cohi-bg-light: #F5F0E8;
+    --color-cohi-bg-warm: #E8DFD0;
+    --color-cohi-bg-hero: #D4C4A8;
+    --color-cohi-text-dark: #3D3D3D;
+    --color-cohi-text-light: #FFFFFF;
+    --color-cohi-card-bg: #FFFFFF;
+    --color-cohi-card-shadow: rgba(139, 105, 20, 0.1);
+    --color-cohi-timeslot-existing: rgba(139, 105, 20, 0.2);
+    --color-cohi-timeslot-drag: rgba(139, 105, 20, 0.4);
+    --color-cohi-role-guest: #0E7C6B;
+    --color-cohi-role-guest-bg: #E6F5F2;
+    --color-cohi-role-host: #C05621;
+    --color-cohi-role-host-bg: #FDF0E6;
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
+    --animate-fade-in: fade-in 0.5s ease-out;
+    --animate-fade-out: fade-out 0.5s ease-in;
+
+    @keyframes accordion-down {
+        from { height: 0; }
+        to { height: var(--radix-accordion-content-height); }
+    }
+
+    @keyframes accordion-up {
+        from { height: var(--radix-accordion-content-height); }
+        to { height: 0; }
+    }
+
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes fade-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+}
 
 @layer base {
   :root {
@@ -53,25 +138,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* cohiChat Theme Colors - Coffee Shop Warm Tones */
-  --cohi-primary: #8B6914;
-  --cohi-primary-dark: #6B5010;
-  --cohi-secondary: #A67C52;
-  --cohi-bg-light: #F5F0E8;
-  --cohi-bg-warm: #E8DFD0;
-  --cohi-bg-hero: #D4C4A8;
-  --cohi-text-dark: #3D3D3D;
-  --cohi-text-light: #FFFFFF;
-  --cohi-card-bg: #FFFFFF;
-  --cohi-card-shadow: rgba(139, 105, 20, 0.1);
-  --cohi-timeslot-existing: rgba(139, 105, 20, 0.2);
-  --cohi-timeslot-drag: rgba(139, 105, 20, 0.4);
-
-  /* Role Tag Colors */
-  --cohi-role-guest: #0E7C6B;       /* Rich Teal — 게스트 */
-  --cohi-role-guest-bg: #E6F5F2;    /* Teal 10% */
-  --cohi-role-host: #C05621;        /* Warm Amber — 호스트 */
-  --cohi-role-host-bg: #FDF0E6;     /* Amber 10% */
 }
 
 ::selection {
@@ -90,24 +156,26 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+@layer base {
+  h1 {
+    font-size: 3.2em;
+    line-height: 1.1;
+  }
 }
 
 /* cohiChat Global Styles */
 .cohi-bg-gradient {
-  background: linear-gradient(135deg, var(--cohi-bg-warm) 0%, var(--cohi-bg-hero) 100%);
+  background: linear-gradient(135deg, var(--color-cohi-bg-warm) 0%, var(--color-cohi-bg-hero) 100%);
 }
 
 .cohi-btn-primary {
-  background-color: var(--cohi-primary);
-  color: var(--cohi-text-light);
+  background-color: var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
   transition: background-color 0.2s ease;
 }
 
 .cohi-btn-primary:hover {
-  background-color: var(--cohi-primary-dark);
+  background-color: var(--color-cohi-primary-dark);
 }
 
 .cohi-btn-secondary {
@@ -124,12 +192,12 @@ h1 {
 
 .cohi-btn-outline {
   background-color: white;
-  border: 1px solid var(--cohi-primary);
-  color: var(--cohi-primary);
+  border: 1px solid var(--color-cohi-primary);
+  color: var(--color-cohi-primary);
   transition: all 0.2s ease;
 }
 
 .cohi-btn-outline:hover {
-  background-color: var(--cohi-primary);
-  color: var(--cohi-text-light);
+  background-color: var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
 }

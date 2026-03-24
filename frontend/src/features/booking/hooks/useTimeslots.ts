@@ -4,7 +4,7 @@ import { getTimeslotsByHostId } from '../api/calendar';
 import type { ITimeSlot } from '~/components/calendar';
 import { calendarKeys } from './queryKeys';
 
-export function useTimeslots(hostname: string) {
+export const useTimeslots = (hostname: string) => {
     const { data: host } = useHost(hostname);
 
     return useQuery<ITimeSlot[]>({
@@ -12,4 +12,4 @@ export function useTimeslots(hostname: string) {
         queryFn: () => getTimeslotsByHostId(host!.id),
         enabled: !!host?.id,
     });
-}
+};

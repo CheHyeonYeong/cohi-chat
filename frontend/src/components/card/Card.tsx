@@ -1,14 +1,15 @@
-import { forwardRef } from "react";
+import type { HTMLAttributes, Ref } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "~/libs/cn";
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
     variant?: "default" | "elevated" | "prominent";
     size?: "sm" | "md" | "lg";
     asChild?: boolean;
     noBackground?: boolean;
     noShadow?: boolean;
     title?: string;
+    ref?: Ref<HTMLDivElement>;
 }
 
 const variantStyles = {
@@ -23,32 +24,29 @@ const sizeStyles = {
     lg: "p-8",
 };
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-    ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ...props }, ref) => {
-        const cardClassName = cn(
-            "rounded-2xl",
-            !noBackground && "bg-white",
-            !noShadow && variantStyles[variant],
-            sizeStyles[size],
-            className,
-        );
+export const Card = ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ref, ...props }: CardProps) => {
+    const cardClassName = cn(
+        "rounded-2xl",
+        !noBackground && "bg-white",
+        !noShadow && variantStyles[variant],
+        sizeStyles[size],
+        className,
+    );
 
-        if (asChild) {
-            return (
-                <Slot ref={ref} className={cardClassName} {...props}>
-                    {children}
-                </Slot>
-            );
-        }
-
+    if (asChild) {
         return (
-            <div ref={ref} className={cardClassName} {...props}>
-                {title && (
-                    <h3 className="font-semibold text-lg text-[var(--cohi-text-dark)] mb-4">{title}</h3>
-                )}
+            <Slot ref={ref} className={cardClassName} {...props}>
                 {children}
-            </div>
+            </Slot>
         );
     }
-);
 
+    return (
+        <div ref={ref} className={cardClassName} {...props}>
+            {title && (
+                <h3 className="font-semibold text-lg text-cohi-text-dark mb-4">{title}</h3>
+            )}
+            {children}
+        </div>
+    );
+};

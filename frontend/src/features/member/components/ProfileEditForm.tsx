@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
 import { Button } from '~/components/button';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateMember } from '../hooks/useUpdateMember';
 import { useProfileValidation, type ProfileFormValues } from '../hooks/useProfileValidation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-export function ProfileEditForm() {
+export const ProfileEditForm = () => {
     const { data: user } = useAuth();
     const username = user?.username;
-    const [displayName, setDisplayName] = useState('');
+    const [displayName, setDisplayName] = useState(user?.displayName ?? '');
     const [successMessage, setSuccessMessage] = useState('');
     const mutation = useUpdateMember(username ?? '');
-
-    useEffect(() => {
-        setDisplayName(user?.displayName ?? '');
-    }, [user?.displayName]);
 
     const { fields, handleBlur, validateAll, getInputClassName } =
         useProfileValidation();
@@ -22,7 +19,7 @@ export function ProfileEditForm() {
     const baseInputClass =
         'w-full px-4 py-3 border rounded-lg focus:outline-none transition-colors';
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         setSuccessMessage('');
         if (!username) return;
@@ -42,10 +39,10 @@ export function ProfileEditForm() {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" data-testid="profile-edit-form">
-            <h3 className="text-lg font-semibold text-[var(--cohi-text-dark)]">표시 이름 변경</h3>
+            <h3 className="text-lg font-semibold text-cohi-text-dark">표시 이름 변경</h3>
 
             <div className="flex flex-col gap-1">
-                <label htmlFor="displayName" className="text-sm text-[var(--cohi-text-dark)]">
+                <label htmlFor="displayName" className="text-sm text-cohi-text-dark">
                     표시 이름
                 </label>
                 <input
@@ -87,4 +84,4 @@ export function ProfileEditForm() {
             </Button>
         </form>
     );
-}
+};

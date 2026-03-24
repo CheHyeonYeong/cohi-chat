@@ -5,7 +5,7 @@ export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     skipAuthRefresh?: boolean; // true이면 401 자동 refresh 건너뜀 (로그인 등 인증 전 요청)
 }
 
-function toHeadersRecord(init: HeadersInit | undefined): Record<string, string> {
+const toHeadersRecord = (init: HeadersInit | undefined): Record<string, string> => {
     if (!init) return {};
     if (init instanceof Headers) {
         const record: Record<string, string> = {};
@@ -16,7 +16,7 @@ function toHeadersRecord(init: HeadersInit | undefined): Record<string, string> 
         return Object.fromEntries(init);
     }
     return { ...(init as Record<string, string>) };
-}
+};
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const REFRESH_URL = `${API_BASE}/members/v1/refresh`;
@@ -25,7 +25,7 @@ const GRACE_WINDOW_HIT = 'GRACE_WINDOW_HIT';
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function performRefresh(): Promise<boolean> {
+const performRefresh = async (): Promise<boolean> => {
     try {
         const response = await fetch(REFRESH_URL, {
             method: 'POST',
@@ -56,18 +56,18 @@ async function performRefresh(): Promise<boolean> {
         }
         return false;
     }
-}
+};
 
-function tryRefreshToken(): Promise<boolean> {
+const tryRefreshToken = (): Promise<boolean> => {
     if (!refreshPromise) {
         refreshPromise = performRefresh().finally(() => {
             refreshPromise = null;
         });
     }
     return refreshPromise;
-}
+};
 
-function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, string>): BodyInit | undefined {
+const normalizeBody = (body: HttpClientOptions['body'], headers: Record<string, string>): BodyInit | undefined => {
     if (!body) {
         return undefined;
     }
@@ -80,7 +80,7 @@ function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, 
         ArrayBuffer.isView(body) ||
         typeof body === 'string'
     ) {
-        return body;
+        return body as BodyInit;
     }
 
     if (typeof body === 'object') {
@@ -89,13 +89,11 @@ function normalizeBody(body: HttpClientOptions['body'], headers: Record<string, 
     }
 
     return undefined;
-}
+};
 
-function shouldRetryWithRefresh(url: string, isRetry: boolean, skipAuthRefresh: boolean): boolean {
-    return !isRetry && !skipAuthRefresh && url !== REFRESH_URL;
-}
+const shouldRetryWithRefresh = (url: string, isRetry: boolean, skipAuthRefresh: boolean): boolean => !isRetry && !skipAuthRefresh && url !== REFRESH_URL;
 
-async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> {
+const doRequest = async <T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> => {
     const { skipAuthRefresh = false, ...fetchOptions } = options;
     const headers = toHeadersRecord(fetchOptions.headers);
     const body = normalizeBody(fetchOptions.body, headers);
@@ -155,8 +153,6 @@ async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = f
         return (data as { success: boolean; data: T }).data;
     }
     return data as T;
-}
+};
 
-export async function httpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
-    return doRequest<T>(url, options);
-}
+export const httpClient = async <T>(url: string, options: HttpClientOptions = {}): Promise<T> => doRequest<T>(url, options);

@@ -6,15 +6,11 @@ import { clearAuthenticatedUser, getStoredUsername } from '../utils/authStorage'
 import { subscribeAuthChange } from '../utils/authEvent';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
-function getUsernameSnapshot() {
-    return getStoredUsername();
-}
+const getUsernameSnapshot = () => getStoredUsername();
 
-function getServerUsernameSnapshot() {
-    return null;
-}
+const getServerUsernameSnapshot = () => null;
 
-export function useAuth() {
+export const useAuth = () => {
     const username = useSyncExternalStore(
         subscribeAuthChange,
         getUsernameSnapshot,
@@ -64,4 +60,4 @@ export function useAuth() {
         username,
         isAuthenticated: !!username,
     };
-}
+};

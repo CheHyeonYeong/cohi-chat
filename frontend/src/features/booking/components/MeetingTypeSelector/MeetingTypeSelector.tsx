@@ -14,23 +14,23 @@ interface MeetingTypeSelectorProps {
 }
 
 const inputStyles = cn(
-    'w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)]',
+    'w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-cohi-text-dark',
     'placeholder:text-gray-400',
-    'focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]'
+    'focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary'
 );
 
 const fieldContainerStyles = cn(
     'flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-200'
 );
 
-export function MeetingTypeSelector({
+export const MeetingTypeSelector = ({
     value,
     onChange,
     location = '',
     onLocationChange,
     meetingLink = '',
     onMeetingLinkChange,
-}: MeetingTypeSelectorProps) {
+}: MeetingTypeSelectorProps) => {
     const isOnline = value === 'ONLINE';
     const isOffline = value === 'OFFLINE';
 
@@ -54,7 +54,7 @@ export function MeetingTypeSelector({
 
     return (
         <fieldset className="flex flex-col gap-3">
-            <legend className="text-sm font-semibold text-[var(--cohi-text-dark)]">
+            <legend className="text-sm font-semibold text-cohi-text-dark">
                 미팅 방식
             </legend>
 
@@ -112,4 +112,4 @@ export function MeetingTypeSelector({
             )}
         </fieldset>
     );
-}
+};

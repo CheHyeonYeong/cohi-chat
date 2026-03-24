@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { useRef, useState } from 'react';
 import { Button } from '~/components/button';
 import {
@@ -21,7 +22,7 @@ interface BookingFileSectionProps {
     uploadError?: Error | null;
 }
 
-export function BookingFileSection({
+export const BookingFileSection = ({
     files,
     onUpload,
     onDownload,
@@ -29,7 +30,7 @@ export function BookingFileSection({
     isUploading,
     isDeleting,
     uploadError,
-}: BookingFileSectionProps) {
+}: BookingFileSectionProps) => {
     const [validationErrors, setValidationErrors] = useState<FileValidationError[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +48,7 @@ export function BookingFileSection({
         }
     };
 
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         handleFilesSelected(e.target.files);
         e.target.value = '';
@@ -130,7 +131,7 @@ export function BookingFileSection({
                                     <button
                                         type="button"
                                         onClick={() => onDownload(file.id, file.originalFileName ?? '이름 없는 파일')}
-                                        className="text-[10px] font-bold text-[var(--cohi-primary)] uppercase tracking-tighter"
+                                        className="text-[10px] font-bold text-cohi-primary uppercase tracking-tighter"
                                     >
                                         Download
                                     </button>
@@ -152,4 +153,4 @@ export function BookingFileSection({
             )}
         </section>
     );
-}
+};

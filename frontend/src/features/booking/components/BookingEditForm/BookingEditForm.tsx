@@ -1,9 +1,11 @@
+import type { FormEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button } from '~/components/button';
 import { Select } from '~/components/select';
 import type { IBookingDetail, MeetingType } from '../../types';
 import { MeetingTypeSelector } from '../MeetingTypeSelector';
 import { useUpdateBooking } from '../../hooks/useUpdateBooking';
+import { formatDateToISO } from '~/libs/date';
 
 interface BookingEditFormProps {
     booking: IBookingDetail;
@@ -20,10 +22,7 @@ interface EditFormState {
     meetingLink: string;
 }
 
-const formatDateToISO = (date: Date): string =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-export function BookingEditForm({ booking, topics, onCancel, onSuccess }: BookingEditFormProps) {
+export const BookingEditForm = ({ booking, topics, onCancel, onSuccess }: BookingEditFormProps) => {
     const updateMutation = useUpdateBooking(booking.id);
 
     const [formState, setFormState] = useState<EditFormState>(() => ({
@@ -47,7 +46,7 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
     );
 
     const handleSubmit = useCallback(
-        (event: React.FormEvent) => {
+        (event: FormEvent) => {
             event.preventDefault();
             const { topic, description, meetingType, location, meetingLink } = formState;
 
@@ -75,7 +74,7 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
     return (
         <form onSubmit={handleSubmit} data-testid="booking-edit-form" className="flex flex-col gap-4">
             <fieldset className="flex flex-col gap-1">
-                <label className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     주제
                 </label>
                 <Select
@@ -96,7 +95,7 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
             />
 
             <fieldset className="flex flex-col gap-1">
-                <label htmlFor="edit-description" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label htmlFor="edit-description" className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     설명
                 </label>
                 <textarea
@@ -106,7 +105,7 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
                     data-testid="booking-edit-description-textarea"
                     placeholder="이야기하고 싶은 내용을 자유롭게 적어주세요"
                     rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] resize-none focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-cohi-text-dark resize-none focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary"
                 />
             </fieldset>
 
@@ -126,4 +125,4 @@ export function BookingEditForm({ booking, topics, onCancel, onSuccess }: Bookin
             </div>
         </form>
     );
-}
+};

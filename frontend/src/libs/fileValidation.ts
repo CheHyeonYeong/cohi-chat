@@ -28,29 +28,29 @@ export interface FileValidationResult {
 /**
  * 파일 확장자 추출
  */
-function getExtension(filename: string): string {
+const getExtension = (filename: string): string => {
     const lastDot = filename.lastIndexOf('.');
     if (lastDot === -1 || lastDot === filename.length - 1) {
         return '';
     }
     return filename.substring(lastDot + 1).toLowerCase();
-}
+};
 
 /**
  * 파일 크기를 읽기 쉬운 형식으로 변환
  */
-export function formatFileSize(bytes: number): string {
+export const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+};
 
 /**
  * 단일 파일 검증
  */
-export function validateFile(file: File): FileValidationResult {
+export const validateFile = (file: File): FileValidationResult => {
     const errors: FileValidationError[] = [];
 
     // 빈 파일 체크
@@ -92,16 +92,12 @@ export function validateFile(file: File): FileValidationResult {
     }
 
     return { valid: errors.length === 0, errors };
-}
+};
 
 /**
  * 여러 파일 검증 (기존 파일 고려)
  */
-export function validateFiles(
-    newFiles: FileList | File[],
-    existingFilesCount: number,
-    existingTotalSize: number
-): FileValidationResult {
+export const validateFiles = (newFiles: FileList | File[], existingFilesCount: number, existingTotalSize: number): FileValidationResult => {
     const errors: FileValidationError[] = [];
     const files = Array.from(newFiles);
 
@@ -131,18 +127,14 @@ export function validateFiles(
     }
 
     return { valid: errors.length === 0, errors };
-}
+};
 
 /**
  * 허용된 파일 형식을 accept 속성 문자열로 반환
  */
-export function getAcceptedFileTypes(): string {
-    return FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',');
-}
+export const getAcceptedFileTypes = (): string => FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',');
 
 /**
  * 추가 파일 업로드 가능 여부 확인
  */
-export function canUploadMoreFiles(currentFileCount: number): boolean {
-    return currentFileCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;
-}
+export const canUploadMoreFiles = (currentFileCount: number): boolean => currentFileCount < FILE_UPLOAD_LIMITS.MAX_FILES_PER_BOOKING;

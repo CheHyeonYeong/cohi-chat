@@ -13,7 +13,7 @@
 - Google Calendar API
 
 ### Frontend - `/frontend`
-- React 18, TypeScript
+- React 19, TypeScript
 - Vite, TanStack Router/Query
 - Tailwind CSS, PostCSS
 - pnpm 패키지 매니저
@@ -68,7 +68,7 @@ cohiChat/
 
 ### 환경 요구사항
 - Java: 21
-- Node.js: 18 이상
+- Node.js: 22 이상
 
 ### 주요 API 엔드포인트
 - API 문서: http://localhost:8080/swagger-ui.html

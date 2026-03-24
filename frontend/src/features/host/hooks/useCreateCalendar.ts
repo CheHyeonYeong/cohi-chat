@@ -3,7 +3,7 @@ import { createCalendar } from '../api';
 import type { CalendarCreatePayload, CalendarResponse } from '../types';
 import { hostKeys } from './queryKeys';
 
-export function useCreateCalendar() {
+export const useCreateCalendar = () => {
     const queryClient = useQueryClient();
 
     return useMutation<CalendarResponse, Error, CalendarCreatePayload>({
@@ -12,4 +12,4 @@ export function useCreateCalendar() {
             queryClient.invalidateQueries({ queryKey: hostKeys.myCalendar() });
         },
     });
-}
+};

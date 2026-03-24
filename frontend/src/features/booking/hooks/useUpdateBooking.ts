@@ -3,7 +3,7 @@ import { updateBooking } from '../api/updateBooking';
 import { bookingKeys } from './queryKeys';
 import type { IBookingDetail, IBookingUpdatePayload } from '../types';
 
-export function useUpdateBooking(bookingId: number) {
+export const useUpdateBooking = (bookingId: number) => {
     const queryClient = useQueryClient();
     return useMutation<IBookingDetail, Error, IBookingUpdatePayload>({
         mutationFn: (data) => updateBooking(bookingId, data),
@@ -15,4 +15,4 @@ export function useUpdateBooking(bookingId: number) {
             ]);
         },
     });
-}
+};

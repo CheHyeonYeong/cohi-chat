@@ -34,24 +34,19 @@ const TanStackRouterDevtools = import.meta.env.DEV
 
 /* eslint-enable react-refresh/only-export-components */
 
-/* eslint-disable-next-line react-refresh/only-export-components */
 const RootRoute = createRootRoute({
-    component: () => {
-        return (
-            <>
-                <div className="w-full min-h-screen flex flex-col">
-                    <div className="flex-1">
-                        <Outlet />
-                    </div>
-                    <Footer />
-                </div>
-                {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
-                <Suspense fallback={null}>
-                    <TanStackRouterDevtools />
-                </Suspense>
-            </>
-        )
-    },
+    component: () => <>
+        <div className="w-full min-h-screen flex flex-col">
+            <div className="flex-1">
+                <Outlet />
+            </div>
+            <Footer />
+        </div>
+        {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
+        <Suspense fallback={null}>
+            <TanStackRouterDevtools />
+        </Suspense>
+    </>,
 })
 
 const homeRoute = createRoute({

@@ -3,12 +3,10 @@ import { httpClient } from '../httpClient';
 
 const API_BASE = 'http://localhost:8080/api';
 
-function makeResponse(body: unknown, status: number): Response {
-    return new Response(JSON.stringify(body), {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-    });
-}
+const makeResponse = (body: unknown, status: number): Response => new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+});
 
 describe('httpClient - skipAuthRefresh 옵션', () => {
     afterEach(() => {
