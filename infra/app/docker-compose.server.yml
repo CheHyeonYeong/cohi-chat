@@ -1,19 +1,18 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ../../backend
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - ../../.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-      # Supabase PostgreSQL
       - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
       - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
       - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}

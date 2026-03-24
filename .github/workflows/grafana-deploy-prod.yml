@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/observability/**'
+      - 'infra/observability/docker-compose.grafana.yml'
+      - 'infra/observability/.env.grafana.example'
+      - 'infra/observability/grafana/**'
       - '.github/workflows/grafana-deploy-prod.yml'
   workflow_dispatch:
 
@@ -72,13 +74,13 @@ jobs:
             docker image prune -af --filter "until=24h" || true
 
             # Grafana 배포
-            docker-compose -f docker-compose.grafana-only.yml pull
-            docker-compose -f docker-compose.grafana-only.yml up -d
+            docker-compose -f docker-compose.grafana.yml pull
+            docker-compose -f docker-compose.grafana.yml up -d
 
             echo "Waiting for Grafana to start..."
             sleep 10
 
-            docker-compose -f docker-compose.grafana-only.yml ps
-            docker-compose -f docker-compose.grafana-only.yml logs --tail=20 grafana
+            docker-compose -f docker-compose.grafana.yml ps
+            docker-compose -f docker-compose.grafana.yml logs --tail=20 grafana
 
             echo "Deploy success: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
