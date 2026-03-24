@@ -15,14 +15,15 @@ getErrorMessage(error: unknown, fallback?: string): string
 
 우선순위에 따라 적절한 에러 메시지를 반환한다:
 
-1. **5xx 에러** (error.cause >= 500): 서버 메시지를 무시하고 상태 코드별 generic 메시지 반환
+1. **네트워크 에러** (Failed to fetch, NetworkError, Load failed): "네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요."
+2. **5xx 에러** (error.cause >= 500): 서버 메시지를 무시하고 상태 코드별 generic 메시지 반환
    - 500 → "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
    - 503 → "서버 점검 중입니다. 잠시 후 다시 시도해주세요."
    - 매핑 없는 5xx → fallback (기본: "알 수 없는 오류가 발생했습니다.")
-2. **4xx 에러**: 서버가 보낸 메시지를 그대로 반환 (ErrorCode에 정의된 사용자 친화적 메시지)
+3. **4xx 에러**: 서버가 보낸 메시지를 그대로 반환 (ErrorCode에 정의된 사용자 친화적 메시지)
    - 예: 409 → "중복된 계정 ID입니다."
-3. **서버 메시지 없음** ("HTTP error! status: NNN" 패턴): 상태 코드별 기본 메시지 반환
-4. **그 외**: fallback 반환
+4. **서버 메시지 없음** ("HTTP error! status: NNN" 패턴): 상태 코드별 기본 메시지 반환
+5. **그 외**: fallback 반환
 
 ### `isHttpError(error, status)` 동작 규칙
 
