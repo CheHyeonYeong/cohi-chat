@@ -76,6 +76,8 @@ export const ProfileDropdown = () => {
                                 호스트 설정
                             </DropdownMenuItem>
                         </>
+                    ) : null}
+                    {/* 호스트 등록 임시 비활성화 (#479)
                     ) : (
                         <DropdownMenuItem
                             data-testid="menu-item-host-register"
@@ -84,6 +86,7 @@ export const ProfileDropdown = () => {
                             호스트 등록하기
                         </DropdownMenuItem>
                     )}
+                    */}
 
                     <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
 
