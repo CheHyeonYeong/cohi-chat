@@ -169,7 +169,7 @@ describe('Home - 호스트 목록 상태', () => {
         mockUseHosts.mockReturnValue({
             data: undefined,
             isLoading: false,
-            error: { message: '네트워크 오류' },
+            error: new Error('네트워크 오류'),
         });
 
         render(<Home />, { wrapper: createWrapper() });

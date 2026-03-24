@@ -42,16 +42,17 @@ describe('LoginForm', () => {
         expect(screen.queryByText('사용자가 없습니다.')).not.toBeInTheDocument();
     });
 
-    it('shows the detailed message for non-authentication errors', () => {
+    it('shows generic message for 5xx server errors', () => {
         mockUseLogin.mockReturnValue({
             isPending: false,
             isError: true,
-            error: new Error('서버 오류', { cause: 500 }),
+            error: new Error('데이터베이스 오류: column not found', { cause: 500 }),
             mutate: vi.fn(),
         });
 
         render(<LoginForm />);
 
-        expect(screen.getByText('서버 오류')).toBeInTheDocument();
+        expect(screen.getByText('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+        expect(screen.queryByText('데이터베이스 오류: column not found')).not.toBeInTheDocument();
     });
 });
