@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.timeslot;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +67,12 @@ public class TimeSlotService {
             throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
         }
 
-        timeSlotRepository.delete(timeSlot);
+        try {
+            timeSlotRepository.delete(timeSlot);
+            timeSlotRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
@@ -223,6 +225,7 @@ class TimeSlotServiceTest {
 
         // then
         then(timeSlotRepository).should().delete(timeSlot);
+        then(timeSlotRepository).should().flush();
     }
 
     @Test
@@ -240,6 +243,25 @@ class TimeSlotServiceTest {
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TIMESLOT_HAS_BOOKINGS);
         then(timeSlotRepository).should(never()).delete(any(TimeSlot.class));
+    }
+
+    @Test
+    @DisplayName("failure: delete maps flush integrity violation to TIMESLOT_HAS_BOOKINGS")
+    void deleteTimeSlotFailWhenIntegrityViolationOccursOnFlush() {
+        // given
+        givenHostMember();
+        TimeSlot timeSlot = mock(TimeSlot.class);
+        given(timeSlot.getUserId()).willReturn(TEST_USER_ID);
+        given(timeSlotRepository.findById(TEST_TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsByTimeSlot_Id(TEST_TIME_SLOT_ID)).willReturn(false);
+        doThrow(new DataIntegrityViolationException("fk violation"))
+            .when(timeSlotRepository)
+            .flush();
+
+        // when & then
+        assertThatThrownBy(() -> timeSlotService.deleteTimeSlot(hostMember, TEST_TIME_SLOT_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TIMESLOT_HAS_BOOKINGS);
     }
 
     // ===== 날짜 범위 지정 테스트 =====
