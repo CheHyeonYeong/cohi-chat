@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { Link, useParams } from '@tanstack/react-router';
 import { PageLayout } from '~/components';
 import { Card } from '~/components/card';
@@ -86,7 +87,7 @@ export const Profile = () => {
 
             {hostError && (
                 <div data-testid="host-profile-error" className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 gap-4">
-                    <p>{(hostError as Error).message}</p>
+                    <p>{getErrorMessage(hostError)}</p>
                     <Link to="/" className="text-cohi-primary hover:underline">홈으로 돌아가기</Link>
                 </div>
             )}
