@@ -81,7 +81,7 @@ docker compose --env-file .env -f infra\app\docker-compose.server.yml -f infra\o
 이 모드는 백엔드 로그가 이미 PostHog에 적재되고 있고, 별도의 Grafana 조회용 호스트만 필요할 때 사용합니다.
 
 1. 작은 EC2 인스턴스를 하나 띄우고 Docker 및 Compose plugin을 설치합니다.
-2. 가능하면 SSM Session Manager로 접속합니다. SSM 포트 포워딩을 사용하면 Grafana 포트를 외부에 직접 열 필요가 없습니다.
+2. Grafana를 공인 IP에서 직접 접속하려면 보안그룹에서 TCP `3000` 인바운드를 허용합니다. 가능하면 허용 대역을 팀의 고정 IP로 제한합니다.
 3. `infra/observability/.env.grafana.example`을 복사해 `infra/observability/.env.grafana`를 만듭니다.
 4. 전용 호스트에서 Grafana만 실행합니다.
 
@@ -91,13 +91,15 @@ cp infra/observability/.env.grafana.example infra/observability/.env.grafana
 docker compose -f infra/observability/docker-compose.grafana.yml --env-file infra/observability/.env.grafana up -d
 ```
 
-이 compose는 Grafana를 `127.0.0.1:3000`에 바인딩하므로, 기본 상태에서는 인스턴스 내부에서만 접근할 수 있고 공인 인터페이스로는 노출되지 않습니다.
+이 compose는 Grafana를 `0.0.0.0:3000`으로 노출하므로, 보안그룹이 허용되어 있으면 `http://<grafana-ec2-public-ip>:3000`으로 접근할 수 있습니다.
 
 ## Grafana 호스트 점검
 
 - `docker compose -f infra/observability/docker-compose.grafana.yml ps`
 - `docker compose -f infra/observability/docker-compose.grafana.yml logs grafana`
 - Infinity plugin 설치가 끝난 뒤 `CohiChat Backend Observability` 대시보드가 정상 표시되는지 확인합니다.
+
+공인 포트를 열고 싶지 않다면 SSM 포트 포워딩으로도 접근할 수 있습니다.
 
 예시 SSM 포트 포워딩:
 

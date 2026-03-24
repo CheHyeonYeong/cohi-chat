@@ -15,7 +15,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     restart: unless-stopped
 
 volumes:

@@ -93,14 +93,14 @@ jobs:
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
             docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml up -d
-            docker-compose --env-file .env -f infra/app/docker-compose.server.yml build backend
-            docker-compose --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml up -d redis backend
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml build backend
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml up -d redis backend
 
             echo "Waiting for backend to start..."
             sleep 30
 
             docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml ps
-            docker-compose --env-file .env -f infra/app/docker-compose.server.yml ps
-            docker-compose --env-file .env -f infra/app/docker-compose.server.yml logs --tail=20 redis
-            docker-compose --env-file .env -f infra/app/docker-compose.server.yml logs --tail=50 backend
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml ps
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml logs --tail=20 redis
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml logs --tail=50 backend
             log_deploy_success
