@@ -9,7 +9,7 @@
 
 ### `getErrorMessage(error, fallback?)` 동작 규칙
 
-```
+```ts
 getErrorMessage(error: unknown, fallback?: string): string
 ```
 
@@ -27,7 +27,7 @@ getErrorMessage(error: unknown, fallback?: string): string
 
 ### `isHttpError(error, status)` 동작 규칙
 
-```
+```ts
 isHttpError(error: unknown, status: number): boolean
 ```
 
