@@ -29,6 +29,10 @@ pnpm test
 pnpm lint
 ```
 
+## Google AdSense
+
+Google AdSense Auto ads is loaded globally from `index.html` with the publisher client script.
+
 ## 프로젝트 구조
 
 ```
