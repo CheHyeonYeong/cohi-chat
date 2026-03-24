@@ -71,6 +71,23 @@ describe('getErrorMessage', () => {
         });
     });
 
+    describe('네트워크 에러 방어', () => {
+        it('Failed to fetch는 사용자 친화적 메시지로 대체한다', () => {
+            const error = new Error('Failed to fetch');
+            expect(getErrorMessage(error)).toBe('네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.');
+        });
+
+        it('NetworkError는 사용자 친화적 메시지로 대체한다', () => {
+            const error = new Error('NetworkError when attempting to fetch resource.');
+            expect(getErrorMessage(error)).toBe('네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.');
+        });
+
+        it('Load failed는 사용자 친화적 메시지로 대체한다', () => {
+            const error = new Error('Load failed');
+            expect(getErrorMessage(error)).toBe('네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.');
+        });
+    });
+
     describe('HTTP 상태별 기본 메시지', () => {
         const cases: [number, string][] = [
             [400, '잘못된 요청입니다.'],
