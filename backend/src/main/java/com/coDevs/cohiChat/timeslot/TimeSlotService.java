@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class TimeSlotService {
 
     private final TimeSlotRepository timeSlotRepository;
+    private final BookingRepository bookingRepository;
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
 
@@ -58,6 +60,10 @@ public class TimeSlotService {
 
         if (!timeSlot.getUserId().equals(member.getId())) {
             throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);
+        }
+
+        if (bookingRepository.existsByTimeSlot_Id(timeSlotId)) {
+            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
         }
 
         timeSlotRepository.delete(timeSlot);
