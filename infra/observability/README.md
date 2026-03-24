@@ -1,35 +1,35 @@
-# Observability Stack
+# 관측 스택
 
-This setup follows the production topology:
+이 구성은 현재 운영 토폴로지를 기준으로 작성되어 있습니다.
 
-- Ingest host (EC2 A): backend, fluent-bit, vector
-- Grafana host (EC2 B): grafana only, reading from the PostHog Query API
+- Ingest 호스트(EC2 A): `backend`, `fluent-bit`, `vector`
+- Grafana 호스트(EC2 B): `grafana`만 실행, PostHog Query API로 로그 조회
 
-Backend stdout is forwarded through Docker's fluentd logging driver to Fluent Bit, then Vector ships `backend_log` events to PostHog. Grafana reads those events back from PostHog on a separate host.
+백엔드 `stdout`은 Docker `fluentd` logging driver를 통해 Fluent Bit으로 전달되고, Vector가 이를 `backend_log` 이벤트로 가공해 PostHog로 보냅니다. Grafana는 별도 호스트에서 PostHog에 저장된 데이터를 조회합니다.
 
-## Files
+## 파일 구성
 
-- `fluent-bit.conf`: listens for backend stdout forwarded by Docker's fluentd logging driver
-- `vector.toml`: parses backend text logs and emits `backend_log` events to PostHog
-- `docker-compose.yml`: ingest-only compose for Fluent Bit and Vector
-- `docker-compose.backend-logging.yml`: backend logging override that forwards container stdout to Fluent Bit
-- `docker-compose.grafana-only.yml`: Grafana-only compose for the dedicated Grafana host
-- `grafana/provisioning`: datasource and dashboard provisioning
+- `fluent-bit.conf`: Docker `fluentd` logging driver로 전달된 백엔드 로그를 수신합니다.
+- `vector.toml`: 백엔드 텍스트 로그를 파싱해 PostHog `backend_log` 이벤트로 전송합니다.
+- `docker-compose.yml`: Ingest 전용 compose입니다. Fluent Bit과 Vector만 실행합니다.
+- `docker-compose.backend-logging.yml`: 백엔드 컨테이너 `stdout`을 Fluent Bit으로 전달하는 logging override compose입니다.
+- `docker-compose.grafana-only.yml`: Grafana 전용 호스트에서 사용하는 compose입니다.
+- `grafana/provisioning`: Grafana datasource 및 dashboard provisioning 설정입니다.
 
-## Required env files
+## 필요한 env 파일
 
-### Ingest host: `infra/observability/.env`
+### Ingest 호스트: `infra/observability/.env`
 
-Create `infra/observability/.env` from `.env.example` and fill in:
+`infra/observability/.env.example`을 복사해 `infra/observability/.env`를 만들고 아래 값을 채웁니다.
 
 - `POSTHOG_CAPTURE_HOST`
 - `POSTHOG_API_KEY`
 
-Populate the PostHog values from your PostHog project settings or deployment environment.
+PostHog 값은 실제 운영 환경이나 PostHog 프로젝트 설정값을 사용하면 됩니다.
 
-### Grafana host: `infra/observability/.env.grafana`
+### Grafana 호스트: `infra/observability/.env.grafana`
 
-Create `infra/observability/.env.grafana` from `.env.grafana.example` and fill in:
+`infra/observability/.env.grafana.example`을 복사해 `infra/observability/.env.grafana`를 만들고 아래 값을 채웁니다.
 
 - `POSTHOG_APP_HOST`
 - `POSTHOG_PROJECT_ID`
@@ -37,13 +37,13 @@ Create `infra/observability/.env.grafana` from `.env.grafana.example` and fill i
 - `GRAFANA_ADMIN_USER`
 - `GRAFANA_ADMIN_PASSWORD`
 
-The root `.env` used by `docker-compose.prod.yml` still needs the backend runtime secrets.
+별도로 루트 `.env`에는 `docker-compose.prod.yml`에서 사용하는 백엔드 런타임 시크릿이 필요합니다.
 
-## Deploy Ingest Host
+## Ingest 호스트 배포
 
-1. Build the backend JAR for the runtime Docker image.
-2. Start Fluent Bit and Vector on the ingest host.
-3. Start Redis and the backend with the observability logging override on the same host.
+1. 런타임 Docker 이미지에서 사용할 백엔드 JAR을 빌드합니다.
+2. Ingest 호스트에서 Fluent Bit과 Vector를 실행합니다.
+3. 같은 호스트에서 observability logging override를 포함해 Redis와 backend를 실행합니다.
 
 ```powershell
 cd C:\Users\hyeonyeong\Desktop\prj\cohichat\backend
@@ -59,30 +59,30 @@ docker compose -f infra\observability\docker-compose.yml --env-file infra\observ
 docker compose -f docker-compose.prod.yml -f infra\observability\docker-compose.backend-logging.yml up -d redis backend
 ```
 
-`docker-compose.backend-logging.yml` uses `fluentd-address=172.29.0.10:24224`, so the backend container and Fluent Bit must run on the same Docker host. `.\gradlew.bat bootRun` still prints to stdout for local debugging, but this observability setup only collects logs from the backend container started with the override compose file.
+`docker-compose.backend-logging.yml`은 `fluentd-address=172.29.0.10:24224`를 사용하므로, backend 컨테이너와 Fluent Bit은 반드시 같은 Docker 호스트에서 실행되어야 합니다. `.\gradlew.bat bootRun`으로도 로컬 로그 확인은 가능하지만, 이 관측 구성은 override compose로 띄운 backend 컨테이너 로그만 수집합니다.
 
-## Verify Ingest Host
+## Ingest 호스트 점검
 
 - `docker compose -f infra/observability/docker-compose.yml ps`
 - `docker compose -f infra/observability/docker-compose.yml logs fluent-bit`
 - `docker compose -f infra/observability/docker-compose.yml logs vector`
-- Confirm PostHog `backend_log` events are arriving
+- PostHog에 `backend_log` 이벤트가 실제로 적재되는지 확인합니다.
 
-If backend logs are not reaching PostHog:
+백엔드 로그가 PostHog까지 도달하지 않는다면 아래를 순서대로 확인합니다.
 
-1. Check `docker compose -f infra/observability/docker-compose.yml logs fluent-bit`
-2. Check `docker compose -f infra/observability/docker-compose.yml logs vector`
-3. Confirm the backend was started with `docker-compose.backend-logging.yml`
-4. Confirm PostHog `backend_log` events exist
+1. `docker compose -f infra/observability/docker-compose.yml logs fluent-bit`
+2. `docker compose -f infra/observability/docker-compose.yml logs vector`
+3. backend가 `docker-compose.backend-logging.yml`을 포함해 실행되었는지 확인합니다.
+4. PostHog에 `backend_log` 이벤트가 실제로 존재하는지 확인합니다.
 
-## Deploy Grafana Host
+## Grafana 호스트 배포
 
-Use this mode when PostHog already stores your backend logs and you only need a Grafana host.
+이 모드는 백엔드 로그가 이미 PostHog에 적재되고 있고, 별도의 Grafana 조회용 호스트만 필요할 때 사용합니다.
 
-1. Launch a small EC2 instance and install Docker with the Compose plugin.
-2. Prefer SSM Session Manager access. If you use SSM port forwarding, you do not need to expose Grafana publicly.
-3. Create `infra/observability/.env.grafana` from `infra/observability/.env.grafana.example`.
-4. Start Grafana only on the dedicated host:
+1. 작은 EC2 인스턴스를 하나 띄우고 Docker 및 Compose plugin을 설치합니다.
+2. 가능하면 SSM Session Manager로 접속합니다. SSM 포트 포워딩을 사용하면 Grafana 포트를 외부에 직접 열 필요가 없습니다.
+3. `infra/observability/.env.grafana.example`을 복사해 `infra/observability/.env.grafana`를 만듭니다.
+4. 전용 호스트에서 Grafana만 실행합니다.
 
 ```bash
 cd ~/cohi-chat
@@ -90,15 +90,15 @@ cp infra/observability/.env.grafana.example infra/observability/.env.grafana
 docker compose -f infra/observability/docker-compose.grafana-only.yml --env-file infra/observability/.env.grafana up -d
 ```
 
-The EC2 compose file binds Grafana to `127.0.0.1:3000`, so the instance itself can reach Grafana but the port is not exposed on the public interface by default.
+이 compose는 Grafana를 `127.0.0.1:3000`에 바인딩하므로, 기본 상태에서는 인스턴스 내부에서만 접근할 수 있고 공인 인터페이스로는 노출되지 않습니다.
 
-## Verify Grafana Host
+## Grafana 호스트 점검
 
 - `docker compose -f infra/observability/docker-compose.grafana-only.yml ps`
 - `docker compose -f infra/observability/docker-compose.grafana-only.yml logs grafana`
-- Open the `CohiChat Backend Observability` dashboard after the Infinity plugin finishes installing
+- Infinity plugin 설치가 끝난 뒤 `CohiChat Backend Observability` 대시보드가 정상 표시되는지 확인합니다.
 
-Example SSM port forwarding:
+예시 SSM 포트 포워딩:
 
 ```bash
 aws ssm start-session \
@@ -107,4 +107,4 @@ aws ssm start-session \
   --parameters '{"portNumber":["3000"],"localPortNumber":["3000"]}'
 ```
 
-Then open `http://localhost:3000` on your local machine.
+이후 로컬 브라우저에서 `http://localhost:3000`을 열면 됩니다.
