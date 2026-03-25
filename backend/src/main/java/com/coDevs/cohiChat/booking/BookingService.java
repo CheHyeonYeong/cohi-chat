@@ -113,11 +113,7 @@ public class BookingService {
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
-        try {
-            chatService.createRoomForBooking(savedBooking);
-        } catch (Exception e) {
-            log.error("채팅방 생성 실패 (bookingId={}): {}", savedBooking.getId(), e.getMessage(), e);
-        }
+        chatService.createRoomForBooking(savedBooking);
 
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());

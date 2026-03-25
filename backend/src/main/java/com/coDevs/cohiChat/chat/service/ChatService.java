@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -37,7 +36,7 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final ObjectMapper objectMapper;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void createRoomForBooking(Booking booking) {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
