@@ -2,6 +2,5 @@ package com.coDevs.cohiChat.chat.entity;
 
 public enum ChatRoomStatus {
     ACTIVE,
-    ARCHIVED,
-    DELETED
+    ARCHIVED
 }
