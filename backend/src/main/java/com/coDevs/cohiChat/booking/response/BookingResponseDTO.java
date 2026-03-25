@@ -46,10 +46,6 @@ public class BookingResponseDTO {
         return from(booking, hostUsername, hostDisplayName, null, null);
     }
 
-    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName, UUID chatRoomId) {
-        return from(booking, hostUsername, hostDisplayName, null, null, chatRoomId);
-    }
-
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
                                           String guestUsername, String guestDisplayName) {
         return from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, null);
