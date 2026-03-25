@@ -12,7 +12,6 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.Message;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
-import com.coDevs.cohiChat.chat.entity.RoomRole;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
 import com.coDevs.cohiChat.chat.repository.MessageRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
@@ -42,7 +41,7 @@ public class ChatService {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
 
-        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuestForUpdate(hostId, guestId)
+        ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
             .orElseGet(() -> createNewRoom(hostId, guestId, booking.getId()));
 
         insertReservationCard(room, booking);
@@ -60,7 +59,7 @@ public class ChatService {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
+        ChatRoom room = chatRoomRepository.findActiveRoomByMembers(hostId, guestId)
             .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         return new ChatRoomResponseDTO(room.getId());
@@ -70,7 +69,7 @@ public class ChatService {
     public Optional<UUID> getChatRoomIdByBooking(Booking booking) {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
-        return chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
+        return chatRoomRepository.findActiveRoomByMembers(hostId, guestId)
             .map(ChatRoom::getId);
     }
 
@@ -78,8 +77,8 @@ public class ChatService {
         ChatRoom room = chatRoomRepository.save(
             ChatRoom.create(EXTERNAL_REF_RESERVATION, uuidFromLong(bookingId))
         );
-        roomMemberRepository.save(RoomMember.create(room, hostId, RoomRole.HOST));
-        roomMemberRepository.save(RoomMember.create(room, guestId, RoomRole.GUEST));
+        roomMemberRepository.save(RoomMember.create(room, hostId));
+        roomMemberRepository.save(RoomMember.create(room, guestId));
         return room;
     }
 

@@ -54,7 +54,7 @@ class ChatServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(java.time.LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(java.time.LocalTime.of(11, 0));
-        given(chatRoomRepository.findActiveRoomByHostAndGuestForUpdate(HOST_ID, GUEST_ID))
+        given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.empty());
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
@@ -68,7 +68,7 @@ class ChatServiceTest {
 
         // then
         verify(chatRoomRepository).save(any(ChatRoom.class));
-        verify(roomMemberRepository, times(2)).save(any(RoomMember.class)); // HOST + GUEST
+        verify(roomMemberRepository, times(2)).save(any(RoomMember.class)); // member1 + member2
         verify(messageRepository).save(any(Message.class));                 // RESERVATION_CARD
     }
 
@@ -83,7 +83,7 @@ class ChatServiceTest {
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         ChatRoom existingRoom = ChatRoom.create("RESERVATION", UUID.randomUUID());
-        given(chatRoomRepository.findActiveRoomByHostAndGuestForUpdate(HOST_ID, GUEST_ID))
+        given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.of(existingRoom));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
 
