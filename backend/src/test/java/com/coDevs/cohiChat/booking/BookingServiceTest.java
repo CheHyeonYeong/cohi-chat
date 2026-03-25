@@ -49,6 +49,7 @@ import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
@@ -101,7 +102,7 @@ class BookingServiceTest {
     private TimeSlot timeSlot;
 
     @Mock
-    private com.coDevs.cohiChat.chat.service.ChatService chatService;
+    private ChatService chatService;
 
     @InjectMocks
     private BookingService bookingService;

@@ -17,25 +17,17 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT r FROM ChatRoom r
-        WHERE r.id IN (
-            SELECT m1.room.id FROM RoomMember m1 WHERE m1.memberId = :hostId AND m1.role = com.coDevs.cohiChat.chat.entity.RoomRole.HOST
-        )
-        AND r.id IN (
-            SELECT m2.room.id FROM RoomMember m2 WHERE m2.memberId = :guestId AND m2.role = com.coDevs.cohiChat.chat.entity.RoomRole.GUEST
-        )
-        AND r.deletedAt IS NULL
+        JOIN RoomMember m1 ON m1.room = r AND m1.memberId = :hostId AND m1.role = com.coDevs.cohiChat.chat.entity.RoomRole.HOST AND m1.deletedAt IS NULL
+        JOIN RoomMember m2 ON m2.room = r AND m2.memberId = :guestId AND m2.role = com.coDevs.cohiChat.chat.entity.RoomRole.GUEST AND m2.deletedAt IS NULL
+        WHERE r.deletedAt IS NULL
         """)
     Optional<ChatRoom> findActiveRoomByHostAndGuestForUpdate(@Param("hostId") UUID hostId, @Param("guestId") UUID guestId);
 
     @Query("""
         SELECT r FROM ChatRoom r
-        WHERE r.id IN (
-            SELECT m1.room.id FROM RoomMember m1 WHERE m1.memberId = :hostId AND m1.role = com.coDevs.cohiChat.chat.entity.RoomRole.HOST
-        )
-        AND r.id IN (
-            SELECT m2.room.id FROM RoomMember m2 WHERE m2.memberId = :guestId AND m2.role = com.coDevs.cohiChat.chat.entity.RoomRole.GUEST
-        )
-        AND r.deletedAt IS NULL
+        JOIN RoomMember m1 ON m1.room = r AND m1.memberId = :hostId AND m1.role = com.coDevs.cohiChat.chat.entity.RoomRole.HOST AND m1.deletedAt IS NULL
+        JOIN RoomMember m2 ON m2.room = r AND m2.memberId = :guestId AND m2.role = com.coDevs.cohiChat.chat.entity.RoomRole.GUEST AND m2.deletedAt IS NULL
+        WHERE r.deletedAt IS NULL
         """)
     Optional<ChatRoom> findActiveRoomByHostAndGuest(@Param("hostId") UUID hostId, @Param("guestId") UUID guestId);
 

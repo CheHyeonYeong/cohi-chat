@@ -214,10 +214,15 @@ public class BookingService {
 
     private BookingResponseDTO toBookingResponseDTOWithChatRoom(Booking booking) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String username = host != null ? host.getUsername() : null;
-        String displayName = host != null ? host.getDisplayName() : null;
+        String hostUsername = host != null ? host.getUsername() : null;
+        String hostDisplayName = host != null ? host.getDisplayName() : null;
+
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        String guestUsername = guest != null ? guest.getUsername() : null;
+        String guestDisplayName = guest != null ? guest.getDisplayName() : null;
+
         UUID chatRoomId = chatService.getChatRoomIdByBookingId(booking.getId()).orElse(null);
-        return BookingResponseDTO.from(booking, username, displayName, chatRoomId);
+        return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, chatRoomId);
     }
 
     private void validateBookingAccess(Booking booking, UUID requesterId) {
