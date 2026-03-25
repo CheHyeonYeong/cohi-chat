@@ -118,7 +118,7 @@ public class BookingService {
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());
 
-        return toBookingResponseDTO(savedBooking);
+        return toBookingResponseDTOWithChatRoom(savedBooking);
     }
 
     private String buildEventSummary(Member guest) {
