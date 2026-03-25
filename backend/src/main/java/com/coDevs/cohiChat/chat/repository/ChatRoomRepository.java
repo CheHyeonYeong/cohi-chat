@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
-import com.coDevs.cohiChat.chat.entity.RoomRole;
 
 import jakarta.persistence.LockModeType;
 
