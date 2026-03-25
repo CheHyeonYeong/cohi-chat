@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
@@ -35,6 +36,7 @@ class ChatServiceTest {
     @Mock private ChatRoomRepository chatRoomRepository;
     @Mock private RoomMemberRepository roomMemberRepository;
     @Mock private MessageRepository messageRepository;
+    @Mock private BookingRepository bookingRepository;
     @Mock private ObjectMapper objectMapper;
     @Mock private TimeSlot timeSlot;
 

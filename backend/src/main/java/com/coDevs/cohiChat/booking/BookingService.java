@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
-import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
@@ -37,6 +36,7 @@ import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
@@ -221,7 +221,7 @@ public class BookingService {
         String guestUsername = guest != null ? guest.getUsername() : null;
         String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-        UUID chatRoomId = chatService.getChatRoomIdByBookingId(booking.getId()).orElse(null);
+        UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
         return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, chatRoomId);
     }
 

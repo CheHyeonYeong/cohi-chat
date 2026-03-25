@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.chat.service;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -48,14 +49,6 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public ChatRoomResponseDTO getChatRoom(UUID hostId, UUID guestId) {
-        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
-            .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
-
-        return new ChatRoomResponseDTO(room.getId());
-    }
-
-    @Transactional(readOnly = true)
     public ChatRoomResponseDTO getChatRoomByBookingId(Long bookingId, UUID requesterId) {
         Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
             .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
@@ -74,8 +67,10 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.Optional<UUID> getChatRoomIdByBookingId(Long bookingId) {
-        return chatRoomRepository.findByBookingExternalRef(uuidFromLong(bookingId))
+    public Optional<UUID> getChatRoomIdByBooking(Booking booking) {
+        UUID hostId = booking.getTimeSlot().getUserId();
+        UUID guestId = booking.getGuestId();
+        return chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
             .map(ChatRoom::getId);
     }
 
