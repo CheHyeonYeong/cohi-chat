@@ -47,9 +47,9 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
-import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 

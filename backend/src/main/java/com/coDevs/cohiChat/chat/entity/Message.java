@@ -58,9 +58,7 @@ public class Message {
     public static Message createReservationCard(ChatRoom room, String payload) {
         Message message = new Message();
         message.room = room;
-        message.senderId = null;
         message.messageType = MessageType.RESERVATION_CARD;
-        message.content = null;
         message.payload = payload;
         return message;
     }

@@ -38,7 +38,7 @@ public class ChatRoom {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private ChatRoomStatus status = ChatRoomStatus.ACTIVE;
+    private ChatRoomStatus status;
 
     @Column(name = "external_ref_type", length = 50)
     private String externalRefType;
