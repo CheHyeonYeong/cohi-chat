@@ -1,4 +1,4 @@
-package com.coDevs.cohiChat.chat.controller;
+package com.coDevs.cohiChat.booking.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
