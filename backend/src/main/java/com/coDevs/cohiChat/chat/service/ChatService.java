@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.Message;
@@ -22,9 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatService {
@@ -34,6 +33,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final MessageRepository messageRepository;
+    private final BookingRepository bookingRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -41,7 +41,7 @@ public class ChatService {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
 
-        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
+        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuestForUpdate(hostId, guestId)
             .orElseGet(() -> createNewRoom(hostId, guestId, booking.getId()));
 
         insertReservationCard(room, booking);
@@ -49,6 +49,24 @@ public class ChatService {
 
     @Transactional(readOnly = true)
     public ChatRoomResponseDTO getChatRoom(UUID hostId, UUID guestId) {
+        ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
+            .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        return new ChatRoomResponseDTO(room.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRoomResponseDTO getChatRoomByBookingId(Long bookingId, UUID requesterId) {
+        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+
+        UUID hostId = booking.getTimeSlot().getUserId();
+        UUID guestId = booking.getGuestId();
+
+        if (!requesterId.equals(hostId) && !requesterId.equals(guestId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
         ChatRoom room = chatRoomRepository.findActiveRoomByHostAndGuest(hostId, guestId)
             .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
@@ -85,8 +103,7 @@ public class ChatService {
             );
             return objectMapper.writeValueAsString(data);
         } catch (JsonProcessingException e) {
-            log.error("RESERVATION_CARD payload 직렬화 실패 (bookingId={})", booking.getId(), e);
-            return "{}";
+            throw new RuntimeException("RESERVATION_CARD payload 직렬화 실패 (bookingId=" + booking.getId() + ")", e);
         }
     }
 

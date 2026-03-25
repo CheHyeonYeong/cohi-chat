@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.coDevs.cohiChat.booking.BookingService;
-import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
@@ -26,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 public class ChatController {
 
     private final ChatService chatService;
-    private final BookingService bookingService;
     private final MemberService memberService;
 
     @Operation(summary = "채팅방 조회", description = "예약에 연결된 채팅방 roomId를 반환합니다.")
@@ -36,8 +33,7 @@ public class ChatController {
         @AuthenticationPrincipal UserDetails userDetails
     ) {
         var requester = memberService.getMember(userDetails.getUsername());
-        BookingResponseDTO booking = bookingService.getBookingById(bookingId, requester.getId());
-        ChatRoomResponseDTO response = chatService.getChatRoom(booking.getHostId(), booking.getGuestId());
+        ChatRoomResponseDTO response = chatService.getChatRoomByBookingId(bookingId, requester.getId());
         return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 }

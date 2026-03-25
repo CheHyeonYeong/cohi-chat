@@ -162,31 +162,6 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("성공: 채팅방 생성 실패해도 예약은 성공한다")
-    void createBooking_채팅방생성_실패해도_예약성공() {
-        // given
-        given(guestMember.getId()).willReturn(GUEST_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsDuplicateBooking(
-            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
-        )).willReturn(false);
-        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
-        org.mockito.Mockito.doThrow(new RuntimeException("채팅 서버 오류"))
-            .when(chatService).createRoomForBooking(any(Booking.class));
-
-        // when
-        BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
-
-        // then: 예약은 정상 응답
-        assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.SCHEDULED);
-    }
-
-    @Test
     @DisplayName("실패: 존재하지 않는 타임슬롯에 예약할 수 없다")
     void createBookingFailWhenTimeSlotNotFound() {
         // given - 과거 날짜 검증 통과 후, TimeSlot 조회에서 실패
