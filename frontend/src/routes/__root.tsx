@@ -115,6 +115,9 @@ const hostProfileRoute = createRoute({
     params: z.object({
         hostId: z.string(),
     }),
+    validateSearch: z.object({
+        selectedBookingId: z.number().optional(),
+    }),
 })
 
 

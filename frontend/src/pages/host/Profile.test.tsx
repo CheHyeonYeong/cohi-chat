@@ -6,6 +6,7 @@ import { Profile } from './Profile';
 
 vi.mock('@tanstack/react-router', () => ({
     useParams: () => ({ hostId: 'testhost' }),
+    useSearch: () => ({ selectedBookingId: undefined }),
     useNavigate: () => vi.fn(),
     Link: ({ children, to, ...props }: PropsWithChildren<Record<string, unknown>>) =>
         <a href={to as string} {...props}>{children}</a>,
@@ -25,7 +26,17 @@ vi.mock('~/components/calendar', () => ({
         <div data-testid="calendar-body" onClick={() => onSelectDay(new Date(2024, 2, 15))}>calendar-body</div>,
     Timeslots: ({ onSelectTimeslot, baseDate }: { onSelectTimeslot: (ts: Record<string, unknown>) => void; baseDate: Date | null }) =>
         <div data-testid="calendar-timeslots" onClick={() => onSelectTimeslot({ id: 1, startedAt: '10:00', endedAt: '11:00' })}>{baseDate ? `timeslots-${baseDate.getDate()}` : 'timeslots'}</div>,
+    BookedTimeslots: ({ onSelectBooking }: { onSelectBooking: (id: number) => void }) =>
+        <div data-testid="booked-timeslots" onClick={() => onSelectBooking(1)}>booked-timeslots</div>,
     getCalendarDays: () => [],
+}));
+
+vi.mock('~/components/toast/useToast', () => ({
+    useToast: () => ({ showToast: vi.fn() }),
+}));
+
+vi.mock('~/libs/errorUtils', () => ({
+    getErrorMessage: (_err: unknown, fallback: string) => fallback,
 }));
 
 const mockUseAuth = vi.fn();
@@ -36,7 +47,12 @@ vi.mock('~/features/member', () => ({
 
 vi.mock('~/features/booking', () => ({
     useBookings: () => ({ data: [], refetch: vi.fn() }),
+    useBooking: () => ({ data: null, refetch: vi.fn() }),
+    useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+    useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useDownloadBookingFile: () => ({ mutate: vi.fn() }),
     BookingForm: () => <div data-testid="booking-form">BookingForm</div>,
+    BookingDetailPanel: () => <div data-testid="booking-detail-panel">BookingDetailPanel</div>,
 }));
 
 const mockUseHostProfile = vi.fn();
@@ -189,7 +205,7 @@ describe('Profile 페이지', () => {
         expect(screen.getByTestId('booking-form')).toBeInTheDocument();
     });
 
-    it('자기 프로필일 때 Timeslots/BookingForm이 숨겨진다', () => {
+    it('자기 프로필일 때 Timeslots/BookingForm 대신 BookedTimeslots가 표시된다', () => {
         mockUseAuth.mockReturnValue({ data: { username: 'testhost', displayName: 'Test Host' }, isAuthenticated: true });
 
         render(<Profile />, { wrapper: createWrapper() });
@@ -198,6 +214,7 @@ describe('Profile 페이지', () => {
 
         expect(screen.queryByTestId('calendar-timeslots')).not.toBeInTheDocument();
         expect(screen.queryByTestId('host-profile-booking-form')).not.toBeInTheDocument();
+        expect(screen.getByTestId('booked-timeslots')).toBeInTheDocument();
     });
 
     it('자기 프로필일 때 제목이 "내 프로필 미리보기"로 표시된다', () => {

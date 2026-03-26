@@ -1,5 +1,6 @@
 // Components
 export { Body } from './Body';
+export { BookedTimeslots } from './BookedTimeslots';
 export { Navigator } from './Navigator';
 export { Timeslots } from './Timeslots';
 
