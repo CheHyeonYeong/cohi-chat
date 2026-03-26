@@ -190,6 +190,28 @@ body {
   border-color: #d1d5db;
 }
 
+.cohi-btn-secondary-selected {
+  background-color: #d1d5db;
+  border: 1px solid #9ca3af;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.cohi-btn-secondary-selected:hover {
+  background-color: #c5c9d0;
+}
+
+.cohi-btn-primary-selected {
+  background-color: var(--color-cohi-bg-warm);
+  border: 1px solid var(--color-cohi-primary);
+  color: var(--color-cohi-primary);
+  transition: all 0.2s ease;
+}
+
+.cohi-btn-primary-selected:hover {
+  background-color: var(--color-cohi-bg-hero);
+}
+
 .cohi-btn-outline {
   background-color: white;
   border: 1px solid var(--color-cohi-primary);
@@ -200,4 +222,16 @@ body {
 .cohi-btn-outline:hover {
   background-color: var(--color-cohi-primary);
   color: var(--color-cohi-text-light);
+}
+
+.cohi-btn-outline-selected {
+  background-color: var(--color-cohi-primary);
+  border: 1px solid var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
+  transition: all 0.2s ease;
+}
+
+.cohi-btn-outline-selected:hover {
+  background-color: var(--color-cohi-primary-dark);
+  border-color: var(--color-cohi-primary-dark);
 }

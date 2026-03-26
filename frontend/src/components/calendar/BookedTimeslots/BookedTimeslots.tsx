@@ -31,7 +31,8 @@ export const BookedTimeslots = ({ bookings, baseDate, selectedBookingId, onSelec
 
             {dailyBookings.map((booking) => (
                 <Button
-                    variant={selectedBookingId === booking.id ? 'outline' : 'primary'}
+                    variant="primary"
+                    selected={selectedBookingId === booking.id}
                     type="button"
                     key={booking.id}
                     className="w-full h-fit"
