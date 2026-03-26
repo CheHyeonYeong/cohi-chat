@@ -10,10 +10,11 @@ interface TimeslotsProps {
     baseDate: Date | null;
     timeslots: ITimeSlot[];
     bookings: Array<IBooking | ICalendarEvent>;
+    selectedTimeslotId?: number;
     onSelectTimeslot: (timeslot: ITimeSlot) => void;
 }
 
-export const Timeslots = ({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) => {
+export const Timeslots = ({ baseDate, timeslots, bookings, selectedTimeslotId, onSelectTimeslot }: TimeslotsProps) => {
     const { isAuthenticated } = useAuth();
 
     const now = baseDate ?? new Date();
@@ -47,6 +48,7 @@ export const Timeslots = ({ baseDate, timeslots, bookings, onSelectTimeslot }: T
             {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
                 <Button
                     variant="selectable"
+                    selected={selectedTimeslotId === timeslot.id}
                     type="button"
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}

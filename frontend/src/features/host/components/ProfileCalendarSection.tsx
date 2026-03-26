@@ -62,6 +62,7 @@ export const ProfileCalendarSection = ({
                                 timeslots={timeslots}
                                 bookings={bookings}
                                 baseDate={calendar.selectedDate}
+                                selectedTimeslotId={calendar.selectedTimeslot?.id}
                                 onSelectTimeslot={calendar.handleSelectTimeslot}
                             />
                         ) : (
