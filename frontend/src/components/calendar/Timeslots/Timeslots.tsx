@@ -46,7 +46,7 @@ export const Timeslots = ({ baseDate, timeslots, bookings, onSelectTimeslot }: T
 
             {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
                 <Button
-                    variant="primary"
+                    variant="selectable"
                     type="button"
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}

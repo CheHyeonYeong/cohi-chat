@@ -61,9 +61,9 @@ export const Body = ({ year, month, days, baseDate, selectedDate, timeslots, boo
                                         className={cn(
                                             "booking-cell flex justify-center items-center rounded-full aspect-square w-10 sm:w-12 select-none text-sm sm:text-base",
                                             day === 0 && 'invisible',
-                                            day !== 0 && !isAvailable && 'text-[#AAAAAA] bg-inherit cursor-default',
-                                            day !== 0 && isAvailable && !isSelected && 'font-bold text-cohi-primary bg-cohi-bg-light cursor-pointer hover:bg-cohi-primary hover:text-cohi-text-light',
-                                            day !== 0 && isAvailable && isSelected && 'font-bold bg-cohi-primary text-cohi-text-light cursor-pointer',
+                                            day !== 0 && !isAvailable && 'cohi-selectable-disabled',
+                                            day !== 0 && isAvailable && !isSelected && 'cohi-selectable',
+                                            day !== 0 && isAvailable && isSelected && 'cohi-selectable-active',
                                         )}
                                         onClick={() => isAvailable ? onSelectDay(new Date(year, month - 1, day)) : undefined}
                                     >

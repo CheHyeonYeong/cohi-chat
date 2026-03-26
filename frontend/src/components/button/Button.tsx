@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "~/libs/cn";
 
-type ButtonVariant = "primary" | "secondary" | "outline";
+type ButtonVariant = "primary" | "secondary" | "outline" | "selectable";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant: ButtonVariant;
@@ -25,12 +25,11 @@ const variantStyles: Record<ButtonVariant, string> = {
     primary: "cohi-btn-primary",
     secondary: "cohi-btn-secondary",
     outline: "cohi-btn-outline",
+    selectable: "cohi-selectable",
 };
 
-const selectedStyles: Record<ButtonVariant, string> = {
-    primary: "cohi-btn-primary-selected",
-    secondary: "cohi-btn-secondary-selected",
-    outline: "cohi-btn-outline-selected",
+const selectedStyles: Partial<Record<ButtonVariant, string>> = {
+    selectable: "cohi-selectable-active",
 };
 
 export const Button = ({ variant, size = "md", selected = false, loading = false, asChild = false, disabled, className, children, ref, ...props }: ButtonProps) => {
@@ -43,7 +42,7 @@ export const Button = ({ variant, size = "md", selected = false, loading = false
             aria-pressed={selected || undefined}
             className={cn(
                 "rounded-md disabled:opacity-50 disabled:cursor-not-allowed",
-                selected ? selectedStyles[variant] : variantStyles[variant],
+                selected && selectedStyles[variant] ? selectedStyles[variant] : variantStyles[variant],
                 sizeStyles[size],
                 className,
             )}

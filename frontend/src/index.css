@@ -163,6 +163,35 @@ body {
   }
 }
 
+/* cohiChat Selectable Styles — 캘린더 날짜, 타임슬롯 버튼 등 선택 가능한 요소 */
+.cohi-selectable {
+  color: var(--color-cohi-primary);
+  background-color: var(--color-cohi-bg-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable:hover {
+  background-color: var(--color-cohi-bg-warm);
+}
+
+.cohi-selectable-active {
+  background-color: var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable-active:hover {
+  background-color: var(--color-cohi-primary-dark);
+}
+
+.cohi-selectable-disabled {
+  color: #AAAAAA;
+  background: inherit;
+  cursor: default;
+}
+
 /* cohiChat Global Styles */
 .cohi-bg-gradient {
   background: linear-gradient(135deg, var(--color-cohi-bg-warm) 0%, var(--color-cohi-bg-hero) 100%);
@@ -190,28 +219,6 @@ body {
   border-color: #d1d5db;
 }
 
-.cohi-btn-secondary-selected {
-  background-color: #d1d5db;
-  border: 1px solid #9ca3af;
-  color: #1f2937;
-  transition: all 0.2s ease;
-}
-
-.cohi-btn-secondary-selected:hover {
-  background-color: #c5c9d0;
-}
-
-.cohi-btn-primary-selected {
-  background-color: var(--color-cohi-bg-warm);
-  border: 1px solid var(--color-cohi-primary);
-  color: var(--color-cohi-primary);
-  transition: all 0.2s ease;
-}
-
-.cohi-btn-primary-selected:hover {
-  background-color: var(--color-cohi-bg-hero);
-}
-
 .cohi-btn-outline {
   background-color: white;
   border: 1px solid var(--color-cohi-primary);
@@ -224,14 +231,3 @@ body {
   color: var(--color-cohi-text-light);
 }
 
-.cohi-btn-outline-selected {
-  background-color: var(--color-cohi-primary);
-  border: 1px solid var(--color-cohi-primary);
-  color: var(--color-cohi-text-light);
-  transition: all 0.2s ease;
-}
-
-.cohi-btn-outline-selected:hover {
-  background-color: var(--color-cohi-primary-dark);
-  border-color: var(--color-cohi-primary-dark);
-}
