@@ -36,7 +36,7 @@ vi.mock('~/components/toast/useToast', () => ({
 }));
 
 vi.mock('~/libs/errorUtils', () => ({
-    getErrorMessage: (_err: unknown, fallback: string) => fallback,
+    getErrorMessage: (err: unknown) => err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
 }));
 
 const mockUseAuth = vi.fn();
