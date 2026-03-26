@@ -30,7 +30,7 @@ export const Timeslots = ({ baseDate, timeslots, bookings, onSelectTimeslot }: T
                 <div
                     role="status"
                     role-label="no-date"
-                    className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
+                    className="space-y-3 md:space-y-4 w-full text-center md:text-left">
                     <Link
                         to="/login"
                         className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
