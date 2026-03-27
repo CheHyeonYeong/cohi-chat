@@ -35,6 +35,18 @@ export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCale
     };
 
     const handleSelectDay = (date: Date) => {
+        const isSameDate = selectedDate
+            && selectedDate.getFullYear() === date.getFullYear()
+            && selectedDate.getMonth() === date.getMonth()
+            && selectedDate.getDate() === date.getDate();
+
+        if (isSameDate) {
+            setSelectedDate(null);
+            setSelectedTimeslot(null);
+            onDateChange?.(null);
+            return;
+        }
+
         setSelectedDate(date);
         setSelectedTimeslot(null);
         onDateChange?.(date);
@@ -44,6 +56,10 @@ export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCale
     };
 
     const handleSelectTimeslot = (timeslot: ITimeSlot) => {
+        if (selectedTimeslot?.id === timeslot.id) {
+            setSelectedTimeslot(null);
+            return;
+        }
         setSelectedTimeslot(timeslot);
         if (isMobile()) {
             setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
