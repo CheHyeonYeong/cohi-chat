@@ -7,9 +7,7 @@ services:
     volumes:
       - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf
-    depends_on:
-      backend-blue:
-        condition: service_healthy
+      - ./nginx/chat-upstream.conf:/etc/nginx/conf.d/chat-upstream.conf
     networks:
       - cohi-chat-network
     restart: unless-stopped
@@ -23,6 +21,7 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -54,6 +53,7 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
