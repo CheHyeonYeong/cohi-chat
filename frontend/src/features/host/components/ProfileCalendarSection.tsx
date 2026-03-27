@@ -31,7 +31,7 @@ export const ProfileCalendarSection = ({
                 variant="elevated"
                 title={calendarTitle}
                 action={isSelf ? (
-                    <Link to="/host/settings" className="text-xs font-medium text-cohi-primary hover:underline">
+                    <Link to="/host/timeslots" className="text-xs font-medium text-cohi-primary hover:underline">
                         시간대 설정
                     </Link>
                 ) : undefined}
