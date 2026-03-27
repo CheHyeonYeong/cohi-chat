@@ -1,10 +1,11 @@
+import { useEffect } from 'react';
 import { useSearch, useNavigate } from '@tanstack/react-router';
 import { PageLayout } from '~/components';
 import { useAuth } from '~/features/member';
 import { useChatRooms, useChatMessages, ChatRoomList, MessageList } from '~/features/chat';
 
 export function Rooms() {
-  const { roomId } = useSearch({ from: '/chat/rooms' });
+  const { roomId, counterpartId } = useSearch({ from: '/chat/rooms' });
   const navigate = useNavigate();
   const { data: authUser } = useAuth();
 
@@ -12,6 +13,15 @@ export function Rooms() {
   const { data: messagePage, isLoading: messagesLoading } = useChatMessages(roomId);
 
   const selectedRoom = rooms.find((r) => r.id === roomId);
+
+  // counterpartId로 진입 시 해당 채팅방 자동 선택
+  useEffect(() => {
+    if (!counterpartId || roomId || roomsLoading) return;
+    const matched = rooms.find((r) => r.counterpartId === counterpartId);
+    if (matched) {
+      navigate({ to: '/chat/rooms', search: { roomId: matched.id }, replace: true });
+    }
+  }, [counterpartId, roomId, rooms, roomsLoading, navigate]);
 
   const handleSelectRoom = (id: string) => {
     navigate({ to: '/chat/rooms', search: { roomId: id }, replace: true });
