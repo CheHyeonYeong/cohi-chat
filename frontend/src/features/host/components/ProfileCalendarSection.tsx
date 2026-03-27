@@ -24,6 +24,17 @@ export const ProfileCalendarSection = ({
     onSelectBooking,
 }: ProfileCalendarSectionProps) => {
     const calendarTitle = isSelf ? '나에게 예약된 시간' : '예약 가능한 시간';
+    const {
+        year,
+        month,
+        selectedDate,
+        selectedTimeslot,
+        timeslotsRef,
+        handlePrevMonth,
+        handleNextMonth,
+        handleSelectDay,
+        handleSelectTimeslot,
+    } = calendar;
 
     return (
         <section data-testid="host-profile-calendar">
@@ -40,39 +51,39 @@ export const ProfileCalendarSection = ({
                     <div className="flex-1 min-w-0">
                         <Navigator
                             slug={username}
-                            year={calendar.year}
-                            month={calendar.month}
-                            onPrevious={calendar.handlePrevMonth}
-                            onNext={calendar.handleNextMonth}
+                            year={year}
+                            month={month}
+                            onPrevious={handlePrevMonth}
+                            onNext={handleNextMonth}
                         />
                         <div className="mt-4">
                             <Body
-                                year={calendar.year}
-                                month={calendar.month}
-                                days={getCalendarDays(new Date(calendar.year, calendar.month - 1))}
+                                year={year}
+                                month={month}
+                                days={getCalendarDays(new Date(year, month - 1))}
                                 timeslots={timeslots}
                                 bookings={bookings}
-                                selectedDate={calendar.selectedDate}
-                                onSelectDay={calendar.handleSelectDay}
+                                selectedDate={selectedDate}
+                                onSelectDay={handleSelectDay}
                             />
                         </div>
                     </div>
 
-                    <div ref={calendar.timeslotsRef} className="md:w-[200px] md:min-w-[200px]" data-testid="host-profile-timeslots">
-                        {isSelf && calendar.selectedDate ? (
+                    <div ref={timeslotsRef} className="md:w-[200px] md:min-w-[200px]" data-testid="host-profile-timeslots">
+                        {isSelf && selectedDate ? (
                             <BookedTimeslots
                                 bookings={bookings}
-                                baseDate={calendar.selectedDate}
+                                baseDate={selectedDate}
                                 selectedBookingId={selectedBookingId}
                                 onSelectBooking={onSelectBooking}
                             />
-                        ) : !isSelf && calendar.selectedDate ? (
+                        ) : !isSelf && selectedDate ? (
                             <Timeslots
                                 timeslots={timeslots}
                                 bookings={bookings}
-                                baseDate={calendar.selectedDate}
-                                selectedTimeslotId={calendar.selectedTimeslot?.id}
-                                onSelectTimeslot={calendar.handleSelectTimeslot}
+                                baseDate={selectedDate}
+                                selectedTimeslotId={selectedTimeslot?.id}
+                                onSelectTimeslot={handleSelectTimeslot}
                             />
                         ) : (
                             <div className="hidden md:flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-3 py-8">

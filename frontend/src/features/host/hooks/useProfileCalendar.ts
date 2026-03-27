@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import dayjs from 'dayjs';
 import type { ITimeSlot } from '~/components/calendar';
 import { parseDateTime } from '~/libs/date';
 

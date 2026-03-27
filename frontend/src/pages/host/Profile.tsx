@@ -44,6 +44,7 @@ export const Profile = () => {
             });
         },
     });
+    const { selectedDate: calSelectedDate, selectedTimeslot, formRef } = calendarState;
 
     const { data: bookings = [], refetch: refetchBookings } = useBookings(
         host?.username ?? '', calendarState.selectedDate
@@ -108,7 +109,7 @@ export const Profile = () => {
                         />
 
                         {isSelf && selectedBookingId && bookingDetail.selectedBooking && bookingDetail.selectedBooking.id === selectedBookingId && (
-                            <div ref={calendarState.formRef} data-testid="host-profile-booking-detail">
+                            <div ref={formRef} data-testid="host-profile-booking-detail">
                                 <BookingDetailPanel
                                     booking={bookingDetail.selectedBooking}
                                     onUpload={bookingDetail.handleUpload}
@@ -123,14 +124,14 @@ export const Profile = () => {
                             </div>
                         )}
 
-                        {!isSelf && calendarState.selectedDate && calendarState.selectedTimeslot && calendar && (
-                            <div ref={calendarState.formRef} data-testid="host-profile-booking-form">
+                        {!isSelf && calSelectedDate && selectedTimeslot && calendar && (
+                            <div ref={formRef} data-testid="host-profile-booking-form">
                                 <Card title="예약 정보">
                                     <BookingForm
                                         slug={host.username}
                                         calendar={calendar}
-                                        timeSlotId={calendarState.selectedTimeslot.id}
-                                        when={calendarState.selectedDate}
+                                        timeSlotId={selectedTimeslot.id}
+                                        when={calSelectedDate}
                                         onCreated={handleBookingCreated}
                                     />
                                 </Card>
