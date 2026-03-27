@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { LinkButton } from '~/components/button/LinkButton';
 import { PageLayout } from '~/components';
 import { Pagination } from '~/components/Pagination';
+import { Avatar } from '~/components/Avatar';
 import { useAllMyBookings, BookingCard } from '~/features/booking';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { useChatRooms, useChatMessages, MessageList } from '~/features/chat';
@@ -174,17 +175,11 @@ export const MyBookings = () => {
                             <>
                                 {/* 헤더 */}
                                 <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
-                                    {activeRoom.counterpartProfileImageUrl ? (
-                                        <img
-                                            src={activeRoom.counterpartProfileImageUrl}
-                                            alt={activeRoom.counterpartName}
-                                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full bg-[var(--cohi-bg-warm,#fdf6ee)] flex items-center justify-center flex-shrink-0 text-sm font-medium text-[var(--cohi-primary,#b07d50)]">
-                                            {activeRoom.counterpartName.charAt(0)}
-                                        </div>
-                                    )}
+                                    <Avatar
+                                        displayName={activeRoom.counterpartName}
+                                        profileImageUrl={activeRoom.counterpartProfileImageUrl ?? undefined}
+                                        size="sm"
+                                    />
                                     <div className="flex items-baseline gap-1">
                                         <span className="font-semibold text-gray-900">{activeRoom.counterpartName}</span>
                                         <span className="text-xs text-gray-400">님과의 대화</span>

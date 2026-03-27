@@ -7,7 +7,7 @@ import { DataSource, LessThan, Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { RoomMember } from './entities/room-member.entity';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
-import { RoomResponseDto } from './dto/room-response.dto';
+import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
 // Spring의 @Service에 대응 — 비즈니스 로직 담당
 @Injectable()
@@ -38,7 +38,7 @@ export class ChatService {
     const userId = await this.getMemberIdByUsername(username);
     // NestJS와 Spring이 같은 PostgreSQL DB를 공유하므로 member 테이블 JOIN 가능
     // LATERAL JOIN: room별로 마지막 메시지 1건 + 안읽은 메시지 수를 효율적으로 계산
-    const rows: Array<Record<string, unknown>> = await this.dataSource.query(
+    const rows: RoomQueryRow[] = await this.dataSource.query(
       `
       SELECT
         cr.id,
@@ -82,23 +82,7 @@ export class ChatService {
       [userId],
     );
 
-    return rows.map((row) => {
-      const dto = new RoomResponseDto();
-      dto.id = row.id as string;
-      dto.counterpartId = row.counterpart_id as string;
-      dto.counterpartName = row.counterpart_name as string;
-      dto.counterpartProfileImageUrl = (row.counterpart_profile_image_url as string) ?? null;
-      dto.unreadCount = row.unread_count as number;
-      dto.lastMessage = row.last_message_id
-        ? {
-            id: row.last_message_id as string,
-            content: (row.last_message_content as string) ?? null,
-            messageType: row.last_message_type as string,
-            createdAt: (row.last_message_created_at as Date).toISOString(),
-          }
-        : null;
-      return dto;
-    });
+    return rows.map(RoomResponseDto.from);
   }
 
   async getMessages(
