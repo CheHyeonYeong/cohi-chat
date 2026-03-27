@@ -8,6 +8,7 @@ on:
       - 'docker-compose.prod.yml'
       - 'nginx/**'
       - 'scripts/blue-green-deploy.sh'
+      - 'scripts/rollback.sh'
       - 'scripts/ec2-deploy-common.sh'
       - '.github/workflows/server-deploy-prod.yml'
   workflow_dispatch:
@@ -90,8 +91,8 @@ jobs:
             # 새 JAR 다운로드
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
-            # Redis + Nginx 초기 기동 (이미 떠있으면 no-op)
-            docker-compose -f docker-compose.prod.yml up -d redis nginx
+            # Redis only. The deploy script starts nginx after the target backend is healthy.
+            docker-compose -f docker-compose.prod.yml up -d redis
 
             # Blue-Green 무중단 배포
             bash scripts/blue-green-deploy.sh

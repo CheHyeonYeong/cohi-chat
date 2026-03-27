@@ -1,49 +1,56 @@
 #!/bin/bash
-# Blue-Green 무중단 배포 스크립트
-# 사용: bash scripts/blue-green-deploy.sh
+# Blue-Green zero-downtime deploy script
+# Usage: bash scripts/blue-green-deploy.sh
 #
-# 전제 조건:
-#   - ~/cohi-chat 에 최신 코드 + .env 준비 완료
-#   - docker-compose.prod.yml 이 Blue-Green 구성 포함
-#   - nginx/upstream.conf 가 volume mount 됨
+# Preconditions:
+#   - latest code and .env are present on the EC2 host
+#   - docker-compose.prod.yml defines nginx + backend-blue/green + redis
+#   - nginx/upstream.conf is mounted into the nginx container
 
 set -euo pipefail
 
 COMPOSE="docker-compose -f docker-compose.prod.yml"
 NGINX_UPSTREAM_FILE="./nginx/upstream.conf"
-HEALTH_TIMEOUT=120  # 헬스체크 최대 대기 시간(초)
-HEALTH_INTERVAL=5   # 헬스체크 재시도 간격(초)
+HEALTH_TIMEOUT=120
+HEALTH_INTERVAL=5
 
-# ── 현재 활성 컨테이너 감지 ──────────────────────────────────────────────────
+container_status() {
+    local name=$1
+    docker inspect --format='{{.State.Status}}' "$name" 2>/dev/null || echo "missing"
+}
+
+container_health() {
+    local name=$1
+    docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$name" 2>/dev/null || echo "missing"
+}
+
 detect_active() {
-    # Docker 실행 상태 기반 감지 — upstream.conf는 배포마다 git reset으로 초기화되므로 신뢰 불가
     local blue_status green_status
-    blue_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-blue" 2>/dev/null || echo "missing")
-    green_status=$(docker inspect --format='{{.State.Status}}' "cohi-chat-backend-green" 2>/dev/null || echo "missing")
+    blue_status=$(container_status "cohi-chat-backend-blue")
+    green_status=$(container_status "cohi-chat-backend-green")
 
     if [ "$blue_status" = "running" ] && [ "$green_status" != "running" ]; then
         echo "blue"
     elif [ "$green_status" = "running" ] && [ "$blue_status" != "running" ]; then
         echo "green"
     else
-        # 둘 다 running이거나 둘 다 중지 시 upstream.conf fallback
         grep -q "backend-blue" "$NGINX_UPSTREAM_FILE" && echo "blue" || echo "green"
     fi
 }
 
-# ── 컨테이너 내부 헬스체크 ────────────────────────────────────────────────────
 wait_healthy() {
-    local container=$1
+    local container_name=$1
+    local label=$2
     local elapsed=0
 
-    echo "[health] Waiting for ${container} to be healthy (max ${HEALTH_TIMEOUT}s)..."
+    echo "[health] Waiting for ${label} to be healthy (max ${HEALTH_TIMEOUT}s)..."
 
     while [ $elapsed -lt $HEALTH_TIMEOUT ]; do
         local status
-        status=$(docker inspect --format='{{.State.Health.Status}}' "cohi-chat-backend-${container}" 2>/dev/null || echo "missing")
+        status=$(container_health "$container_name")
 
         if [ "$status" = "healthy" ]; then
-            echo "[health] ${container} is healthy."
+            echo "[health] ${label} is healthy."
             return 0
         fi
 
@@ -52,11 +59,24 @@ wait_healthy() {
         elapsed=$((elapsed + HEALTH_INTERVAL))
     done
 
-    echo "[error] ${container} did not become healthy within ${HEALTH_TIMEOUT}s."
+    echo "[error] ${label} did not become healthy within ${HEALTH_TIMEOUT}s."
     return 1
 }
 
-# ── Nginx upstream 전환 ───────────────────────────────────────────────────────
+wait_redis_ready() {
+    wait_healthy "cohi-chat-redis" "redis"
+}
+
+ensure_nginx_running() {
+    local nginx_status
+    nginx_status=$(container_status "cohi-chat-nginx")
+
+    if [ "$nginx_status" != "running" ]; then
+        echo "[nginx] Starting nginx..."
+        $COMPOSE up -d nginx
+    fi
+}
+
 switch_upstream() {
     local target=$1
     local backup="${NGINX_UPSTREAM_FILE}.bak"
@@ -64,7 +84,7 @@ switch_upstream() {
     echo "[nginx] Switching upstream to backend-${target}"
     cp "$NGINX_UPSTREAM_FILE" "$backup"
     cat > "$NGINX_UPSTREAM_FILE" <<EOF
-# Blue-Green 배포에서 동적으로 교체되는 upstream 설정
+# Blue-Green deployment upstream target
 upstream backend {
     server backend-${target}:8080;
 }
@@ -90,31 +110,30 @@ EOF
     echo "[nginx] Reloaded. Traffic now routed to backend-${target}."
 }
 
-# ── 메인 배포 로직 ────────────────────────────────────────────────────────────
 main() {
     echo "=============================="
     echo " Blue-Green Deploy Start"
     echo " $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "=============================="
 
+    echo "[infra] Ensuring redis is running..."
+    $COMPOSE up -d redis
+    wait_redis_ready
+
     local active
     active=$(detect_active)
     local inactive
     inactive=$([ "$active" = "blue" ] && echo "green" || echo "blue")
 
-    echo "[info] Active: ${active} → Deploying to: ${inactive}"
+    echo "[info] Active: ${active} -> Deploying to: ${inactive}"
 
-    # Redis와 inactive backend 기동 (이미 떠있으면 업데이트)
     echo "[deploy] Starting backend-${inactive} with new image..."
     $COMPOSE up -d --no-deps --build "backend-${inactive}"
 
-    # 헬스체크 통과 대기
-    wait_healthy "$inactive"
-
-    # 트래픽 전환
+    wait_healthy "cohi-chat-backend-${inactive}" "backend-${inactive}"
+    ensure_nginx_running
     switch_upstream "$inactive"
 
-    # 구버전 컨테이너 중지 (삭제 X - 롤백용으로 유지)
     echo "[cleanup] Stopping old backend-${active}..."
     $COMPOSE stop "backend-${active}" || echo "[warn] backend-${active} was not running, skipping stop."
 
