@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-HEALTH_TIMEOUT=60
+HEALTH_TIMEOUT=120
 
 source "$(dirname "$0")/blue-green-common.sh"
 
