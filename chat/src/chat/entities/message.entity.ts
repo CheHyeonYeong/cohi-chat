@@ -5,6 +5,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import type { MessageType } from '../enums/chat.enum';
 
 // message는 불변 데이터 — updated_at, deleted_at 없음
 @Entity('message')
@@ -21,7 +22,7 @@ export class Message {
   senderId: string | null;
 
   @Column({ name: 'message_type', length: 30 })
-  messageType: string; // TEXT | RESERVATION_CARD | SYSTEM
+  messageType: MessageType;
 
   // 정책상 최대 1000자, DB 컬럼은 이모지 여유분 포함 2000자
   @Column({ length: 2000, nullable: true })

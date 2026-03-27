@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SendMessageDto } from './dto/send-message.dto';
+import type { MessageType } from './enums/chat.enum';
 import { Message } from './entities/message.entity';
 import { RoomMember } from './entities/room-member.entity';
 
@@ -41,7 +42,7 @@ export class ChatService {
     const message = this.messageRepository.create({
       roomId,
       senderId: userId,
-      messageType: 'TEXT',
+      messageType: 'TEXT' satisfies MessageType,
       content: dto.content,
     });
     const savedMessage = await this.messageRepository.save(message);
