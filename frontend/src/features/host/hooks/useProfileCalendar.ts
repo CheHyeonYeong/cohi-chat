@@ -13,11 +13,12 @@ export type ProfileCalendarState = ReturnType<typeof useProfileCalendar>;
 
 export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCalendarOptions = {}) => {
     const parsedInitial = initialDate ? parseDateTime(initialDate) : null;
-    const now = parsedInitial ?? new Date();
+    const isValidInitial = parsedInitial !== null && !Number.isNaN(parsedInitial.getTime());
+    const now = isValidInitial ? parsedInitial : new Date();
 
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(parsedInitial);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(isValidInitial ? parsedInitial : null);
     const [selectedTimeslot, setSelectedTimeslot] = useState<ITimeSlot | null>(null);
 
     const timeslotsRef = useRef<HTMLDivElement>(null);
