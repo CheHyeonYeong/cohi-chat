@@ -86,7 +86,9 @@ public class ChatService {
     private String buildReservationCardPayload(Booking booking) {
         try {
             Map<String, String> data = Map.of(
+                "bookingId", String.valueOf(booking.getId()),
                 "topic", booking.getTopic(),
+                "status", booking.getAttendanceStatus().name(),
                 "bookingDate", booking.getBookingDate().toString(),
                 "startTime", booking.getTimeSlot().getStartTime().toString(),
                 "endTime", booking.getTimeSlot().getEndTime().toString()
