@@ -2,15 +2,12 @@
  * @vitest-environment happy-dom
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { IBookingWithRole } from '~/features/booking';
 import { MyBookings } from './MyBookings';
 
 const refetchMyBookings = vi.fn().mockResolvedValue(undefined);
-const refetchSelectedBooking = vi.fn().mockResolvedValue(undefined);
-const uploadFileAsync = vi.fn().mockResolvedValue({});
-const deleteFileAsync = vi.fn().mockResolvedValue({});
 const showToast = vi.fn();
 
 const guestBooking: IBookingWithRole = {
@@ -148,83 +145,31 @@ vi.mock('~/features/booking', () => ({
         error: null,
         refetch: refetchMyBookings,
     }),
-    useBooking: (id: number | null) => ({
-        data: id ? allMyBookingsResponse.bookings.find(b => b.id === id) ?? null : null,
-        refetch: refetchSelectedBooking,
-    }),
-    useUploadBookingFile: () => ({
-        mutateAsync: uploadFileAsync,
-        isPending: false,
-        error: null,
-        reset: vi.fn(),
-    }),
-    useDeleteBookingFile: () => ({
-        mutateAsync: deleteFileAsync,
-        isPending: false,
-    }),
-    useDownloadBookingFile: () => ({
-        mutate: vi.fn(),
-    }),
     BookingCard: ({ booking: b, onSelect, role }: { booking: IBookingWithRole; onSelect?: (id: number) => void; role?: string }) => (
         <button type="button" data-testid={`booking-card-${b.id}`} onClick={() => onSelect?.(b.id)}>
             {role && <span data-testid="booking-role-tag">{role === 'guest' ? '게스트' : '호스트'}</span>}
             select-booking-{b.id}
         </button>
     ),
-    BookingDetailPanel: ({ onUpload }: { onUpload: (files: FileList) => void }) => (
-        <div data-testid="booking-detail-panel">
-            <button
-                type="button"
-                onClick={() => {
-                    const files = [new File(['x'], 'resume.pdf', { type: 'application/pdf' })];
-                    onUpload(files as unknown as FileList);
-                }}
-            >
-                trigger-upload
-            </button>
-        </div>
-    ),
+}));
+
+vi.mock('~/features/chat', () => ({
+    useChatRooms: () => ({ data: [] }),
+    useChatMessages: () => ({ data: null }),
+    MessageList: () => <div data-testid="message-list" />,
+}));
+
+vi.mock('~/features/member', () => ({
+    useAuth: () => ({ data: { id: 'my-uuid', username: 'me', displayName: '나' } }),
 }));
 
 describe('MyBookings', () => {
     beforeEach(() => {
         refetchMyBookings.mockClear();
-        refetchSelectedBooking.mockClear();
-        uploadFileAsync.mockClear();
         showToast.mockClear();
         mockNavigate.mockClear();
         mockSearchState.page = 1;
         mockSearchState.selectedId = undefined;
-    });
-
-    it('does not refetch after upload fails', async () => {
-        uploadFileAsync.mockRejectedValueOnce(new Error('업로드 실패'));
-        mockSearchState.selectedId = 2;
-
-        render(<MyBookings />);
-
-        fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
-
-        await waitFor(() => {
-            expect(uploadFileAsync).toHaveBeenCalledTimes(1);
-        });
-        expect(showToast).not.toHaveBeenCalled();
-        expect(refetchSelectedBooking).not.toHaveBeenCalled();
-        expect(refetchMyBookings).not.toHaveBeenCalled();
-    });
-
-    it('refetches both selected booking and booking list after upload', async () => {
-        mockSearchState.selectedId = 2;
-        render(<MyBookings />);
-
-        fireEvent.click(screen.getByRole('button', { name: 'trigger-upload' }));
-
-        await waitFor(() => {
-            expect(uploadFileAsync).toHaveBeenCalledTimes(1);
-            expect(uploadFileAsync.mock.calls[0][0]).toBeInstanceOf(File);
-            expect(refetchSelectedBooking).toHaveBeenCalledTimes(1);
-            expect(refetchMyBookings).toHaveBeenCalledTimes(1);
-        });
     });
 
     it('게스트와 호스트 예약 카드를 모두 렌더링해야 한다', () => {
