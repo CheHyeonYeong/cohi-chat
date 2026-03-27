@@ -26,10 +26,43 @@ function MessageBubble({ message, isMine }: MessageBubbleProps) {
   }
 
   if (message.messageType === 'RESERVATION_CARD') {
+    const payload = message.payload ?? {};
+    const topic = payload.topic as string | undefined;
+    const status = payload.status as string | undefined;
+    const bookingDate = payload.bookingDate as string | undefined;
+    const startTime = payload.startTime as string | undefined;
+    const endTime = payload.endTime as string | undefined;
+
+    const statusLabel: Record<string, string> = {
+      SCHEDULED: '예약 확정',
+      PENDING_REVIEW: '검토 중',
+      CANCELLED: '취소됨',
+      ATTENDED: '완료',
+    };
+
     return (
-      <div className="flex justify-center my-2">
-        <div className="bg-[var(--cohi-bg-warm)] border border-[var(--cohi-primary-light,#e8d5c0)] rounded-xl px-4 py-3 text-sm text-gray-700 max-w-xs">
-          📅 예약 카드
+      <div className="flex justify-center my-3">
+        <div className="bg-[var(--cohi-bg-warm,#fdf6ee)] border border-[#e8d5c0] rounded-2xl px-5 py-4 text-sm text-gray-700 w-72 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-gray-900">{topic ?? '커피챗'} 신청</span>
+            {status && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--cohi-primary,#b07d50)] text-white font-medium">
+                {statusLabel[status] ?? status}
+              </span>
+            )}
+          </div>
+          {bookingDate && (
+            <div className="flex items-center gap-2 text-gray-600 text-xs mt-1">
+              <span className="text-gray-400">날짜</span>
+              <span>{bookingDate}</span>
+            </div>
+          )}
+          {startTime && endTime && (
+            <div className="flex items-center gap-2 text-gray-600 text-xs mt-1">
+              <span className="text-gray-400">시간</span>
+              <span>{startTime} - {endTime}</span>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -25,7 +25,17 @@ export class ChatService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async getRooms(userId: string): Promise<RoomResponseDto[]> {
+  private async getMemberIdByUsername(username: string): Promise<string> {
+    const rows: Array<{ id: string }> = await this.dataSource.query(
+      `SELECT id FROM member WHERE username = $1`,
+      [username],
+    );
+    if (!rows.length) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    return rows[0].id;
+  }
+
+  async getRooms(username: string): Promise<RoomResponseDto[]> {
+    const userId = await this.getMemberIdByUsername(username);
     // NestJS와 Spring이 같은 PostgreSQL DB를 공유하므로 member 테이블 JOIN 가능
     // LATERAL JOIN: room별로 마지막 메시지 1건 + 안읽은 메시지 수를 효율적으로 계산
     const rows: Array<Record<string, unknown>> = await this.dataSource.query(
@@ -93,10 +103,12 @@ export class ChatService {
 
   async getMessages(
     roomId: string,
-    userId: string,
+    username: string,
     cursor: string | undefined,
     size: number,
   ): Promise<MessagePageResponse> {
+    const userId = await this.getMemberIdByUsername(username);
+
     // cursor 유효성 검사 — 클라이언트 입력 오류는 400으로 처리
     if (cursor !== undefined && isNaN(new Date(cursor).getTime())) {
       throw new BadRequestException('cursor 형식이 올바르지 않습니다. ISO 8601 타임스탬프를 사용하세요.');
