@@ -11,7 +11,6 @@ export interface LastMessage {
 
 export interface ChatRoom {
   id: string;
-  status: string;
   counterpartId: string;
   counterpartName: string;
   counterpartProfileImageUrl: string | null;

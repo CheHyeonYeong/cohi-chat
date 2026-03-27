@@ -17,15 +17,20 @@
 
 ```
 Client (React)
-  ↓ Long Polling (GET /chat/poll)
+  ↓ REST API (메시지 조회/전송/읽음)
 NestJS 채팅 서버 (이 모듈)
-  ↓ SQL 직접 조회
+  ↓ SQL 직접 조회/쓰기
 PostgreSQL (Spring과 공유 RDS)
-
+  ↑ 채팅방 생성 / RESERVATION_CARD 삽입
 Spring 서버
-  → POST /internal/rooms/upsert  (예약 확정 시 채팅방 생성 요청)
-  → RabbitMQ produce             (채팅 메시지 알림 이벤트)
+  → 예약 확정 시 chat_room + room_member + RESERVATION_CARD를 DB에 직접 생성
+  → RabbitMQ produce (채팅 메시지 알림 이벤트, 향후)
 ```
+
+**채팅방 생성 흐름**
+- Spring이 예약 확정(`createBooking`) 시점에 DB에 직접 생성
+- NestJS는 채팅방 생성에 관여하지 않음 — 이미 DB에 있는 데이터를 읽어서 서빙
+- Spring → NestJS HTTP 콜(`/internal/rooms/upsert`) 방식은 사용하지 않음
 
 ---
 
@@ -34,16 +39,14 @@ Spring 서버
 ### chat_room
 ```sql
 CREATE TABLE chat_room (
-    id                UUID          NOT NULL DEFAULT gen_random_uuid(),
-    type              VARCHAR(20)   NOT NULL,   -- ONE_TO_ONE | GROUP (멤버 수로도 판단 가능, 타입 컬럼 제거 논의 중)
-    status            VARCHAR(20)   NOT NULL,   -- ACTIVE | INACTIVE
-    external_ref_type VARCHAR(50)   NOT NULL,   -- RESERVATION 등
-    external_ref_id   UUID          NOT NULL,   -- 예약 ID 등
-    created_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    deleted_at        TIMESTAMPTZ   NULL,        -- soft delete. 1달 메시지 없으면 배치가 설정
+    id          UUID        NOT NULL DEFAULT gen_random_uuid(),
+    is_disabled BOOLEAN     NOT NULL DEFAULT false,  -- soft delete flag. 30일 메시지 없으면 배치가 true로 설정
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_chat_room PRIMARY KEY (id)
 );
+-- 제거된 컬럼: type (room_member 수로 1:1 판단), status (is_disabled로 대체),
+--              external_ref_type / external_ref_id (Spring 측 booking 응답에 chatRoomId 포함으로 대체)
 -- FK 없음. 애플리케이션 레벨에서 관리
 ```
 
@@ -88,14 +91,15 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 
 | 항목 | 정책 |
 |------|------|
-| 채팅방 생성 | Spring이 POST /internal/rooms/upsert 호출 → NestJS가 생성 |
-| 채팅방 재사용 | external_ref_id 기준 조회 → soft delete 상태면 deleted_at = null 복구 |
-| 예약 카드 | 채팅방 생성 시 RESERVATION_CARD 메시지 자동 저장 |
+| 채팅방 생성 | Spring이 예약 확정 시 DB에 직접 생성 (NestJS 무관) |
+| 채팅방 재사용 | 동일 host-guest 재예약 시 Spring이 기존 채팅방에 RESERVATION_CARD만 추가 |
+| 예약 카드 | Spring이 채팅방 생성/재사용 시 RESERVATION_CARD 메시지 DB에 직접 삽입 |
 | 시스템 메시지 | 미팅 하루 전 / 1시간 전 SYSTEM 메시지 (Spring 스케줄러 트리거) |
 | Long Polling | timeout 25초. 메시지 있으면 즉시 응답, 없으면 25초 후 빈 배열 |
 | 읽음 처리 | 브라우저 포커스 이벤트 기반. FE가 트리거 → PATCH /rooms/:id/read |
 | unread 계산 | `SELECT COUNT(*) WHERE id > last_read_message_id` |
-| soft delete | 1달 메시지 없으면 배치가 chat_room.deleted_at 설정. room_member/message는 건드리지 않음 |
+| soft delete | 30일 메시지 없으면 배치가 chat_room.is_disabled = true 설정. room_member/message는 건드리지 않음 |
+| 방 입장/퇴장 이벤트 | 별도 테이블 없음. message 테이블 SYSTEM 타입으로 기록 |
 | 메시지 제한 | text only / 최대 1000자 / 공백-only 차단 |
 | FK 관리 | DB FK 없음. 애플리케이션 레벨에서 직접 검증 |
 
@@ -110,7 +114,6 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 | POST | /chat/rooms/:roomId/messages | 메시지 전송 |
 | PATCH | /chat/rooms/:roomId/read | 읽음 처리 |
 | GET | /chat/poll | Long Polling 엔드포인트 |
-| POST | /internal/rooms/upsert | Spring 전용. 채팅방 생성/복구 |
 
 ---
 
@@ -118,18 +121,17 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 
 ```
 1단계 (MVP)
-  - POST /internal/rooms/upsert (채팅방 생성/복구/RESERVATION_CARD)
-  - GET  /chat/poll             (Long Polling 핵심)
+  - GET  /chat/rooms              (목록 + unread) ✅ 완료
+  - GET  /chat/rooms/:id/messages (커서 페이징)   ✅ 완료
   - POST /chat/rooms/:id/messages (메시지 전송)
   - PATCH /chat/rooms/:id/read    (읽음 처리)
+  - GET  /chat/poll               (Long Polling 핵심)
 
 2단계
-  - GET /chat/rooms              (목록 + unread)
-  - GET /chat/rooms/:id/messages (커서 페이징)
   - soft delete 배치 연동
+  - SYSTEM 메시지 (Spring 스케줄러 트리거)
 
 3단계
-  - SYSTEM 메시지 스케줄러
   - RabbitMQ produce (채팅 → 알림 이벤트)
 ```
 

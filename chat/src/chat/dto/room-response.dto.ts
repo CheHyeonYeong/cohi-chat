@@ -7,7 +7,6 @@ export interface LastMessageDto {
 
 export class RoomResponseDto {
   id: string;
-  status: string;
   counterpartId: string;
   counterpartName: string;
   counterpartProfileImageUrl: string | null;

@@ -32,7 +32,6 @@ export class ChatService {
       `
       SELECT
         cr.id,
-        cr.status,
         other_rm.member_id                          AS counterpart_id,
         COALESCE(m.display_name, '')                AS counterpart_name,
         m.profile_image_url                         AS counterpart_profile_image_url,
@@ -67,7 +66,7 @@ export class ChatService {
           AND (my_rm.last_read_message_id IS NULL
                OR msg.id > my_rm.last_read_message_id)
       ) unread ON true
-      WHERE cr.deleted_at IS NULL
+      WHERE cr.is_disabled = false
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC
       `,
       [userId],
@@ -76,7 +75,6 @@ export class ChatService {
     return rows.map((row) => {
       const dto = new RoomResponseDto();
       dto.id = row.id as string;
-      dto.status = row.status as string;
       dto.counterpartId = row.counterpart_id as string;
       dto.counterpartName = row.counterpart_name as string;
       dto.counterpartProfileImageUrl = (row.counterpart_profile_image_url as string) ?? null;

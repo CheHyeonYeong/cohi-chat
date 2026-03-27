@@ -1,37 +1,27 @@
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 // Spring의 @Entity + @Table(name = "chat_room")에 대응
+// 제거된 컬럼: type (멤버 수로 1:1 판단), status (is_disabled로 대체),
+//              external_ref_type / external_ref_id (booking_id 직접 참조로 대체 예정)
 @Entity('chat_room')
 export class ChatRoom {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 20 })
-  type: string; // ONE_TO_ONE | GROUP
-
-  @Column({ length: 20 })
-  status: string; // ACTIVE | INACTIVE
-
-  @Column({ name: 'external_ref_type', length: 50 })
-  externalRefType: string; // RESERVATION 등
-
-  @Column({ name: 'external_ref_id', type: 'uuid' })
-  externalRefId: string;
+  // soft delete flag — 30일 메시지 없으면 배치가 true로 설정
+  // @DeleteDateColumn 대신 boolean flag 사용: 날짜보다 단순한 ON/OFF 의미가 명확함
+  @Column({ name: 'is_disabled', type: 'boolean', default: false })
+  isDisabled: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
-
-  // TypeORM @DeleteDateColumn = soft delete 전용 (findOne 등에서 자동 WHERE deleted_at IS NULL)
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
-  deletedAt: Date | null;
 }
