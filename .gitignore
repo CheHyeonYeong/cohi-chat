@@ -12,6 +12,7 @@
 # Claude Code
 .claude/settings.local.json
 .claude/issue/
+.claude/worktrees/
 
 # 이슈 관련
 ./issues
