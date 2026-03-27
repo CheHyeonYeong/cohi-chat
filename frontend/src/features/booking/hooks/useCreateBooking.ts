@@ -4,7 +4,7 @@ import { createBooking } from '../api';
 import type { IBookingDetail, IBookingPayload } from '../types';
 import { bookingKeys, calendarKeys } from './queryKeys';
 
-export function useCreateBooking(slug: string, year: number, month: number): UseMutationResult<IBookingDetail, Error, IBookingPayload> {
+export const useCreateBooking = (slug: string, year: number, month: number): UseMutationResult<IBookingDetail, Error, IBookingPayload> => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -12,11 +12,11 @@ export function useCreateBooking(slug: string, year: number, month: number): Use
         mutationFn: (bookingData: IBookingPayload) => createBooking(slug, bookingData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: calendarKeys.bookings(year, month) });
-            queryClient.invalidateQueries({ queryKey: bookingKeys.myBookings() });
+            queryClient.invalidateQueries({ queryKey: bookingKeys.myBookingsAll() });
             navigate({
                 to: '/host/$hostId',
                 params: { hostId: slug },
             });
         },
     });
-}
+};

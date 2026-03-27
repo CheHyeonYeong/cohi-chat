@@ -1,12 +1,15 @@
-﻿name: Server Deploy Production
+name: Server Deploy Production
 
 on:
   push:
     branches: [main]
     paths:
       - 'backend/**'
-      - 'docker-compose.prod.yml'
-      - 'nginx/**'
+      - 'infra/app/**'
+      - 'infra/observability/docker-compose.ingest.yml'
+      - 'infra/observability/docker-compose.backend-observability.yml'
+      - 'infra/observability/fluent-bit.conf'
+      - 'infra/observability/vector.toml'
       - 'scripts/blue-green-deploy.sh'
       - 'scripts/rollback.sh'
       - 'scripts/ec2-deploy-common.sh'
@@ -73,9 +76,7 @@ jobs:
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
 
-            # 공통 설정 스크립트 로드 및 실행
             source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
-              # 스크립트가 없으면 먼저 저장소 동기화
               set -euo pipefail
               if [ ! -d ~/cohi-chat ]; then
                 git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
@@ -88,14 +89,15 @@ jobs:
 
             run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
-            # 새 JAR 다운로드
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
-            # Redis only. The deploy script starts nginx after the target backend is healthy.
-            docker-compose -f docker-compose.prod.yml up -d redis
-
-            # Blue-Green 무중단 배포
+            docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml up -d
             bash scripts/blue-green-deploy.sh
 
-            docker-compose -f docker-compose.prod.yml ps
+            docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml ps
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml ps
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml logs --tail=20 redis
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml logs --tail=50 backend-blue
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml logs --tail=50 backend-green
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml logs --tail=50 nginx
             log_deploy_success

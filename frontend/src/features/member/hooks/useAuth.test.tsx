@@ -1,19 +1,13 @@
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { httpClient } from '~/libs/httpClient';
-import { getCurrentUsername, getValidToken } from '~/libs/jwt';
 import { useAuth } from './useAuth';
 
 vi.mock('~/libs/httpClient', () => ({
     httpClient: vi.fn(),
-}));
-
-vi.mock('~/libs/jwt', () => ({
-    getValidToken: vi.fn(),
-    getCurrentUsername: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -23,8 +17,9 @@ const createWrapper = () => {
         },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 };
 
 describe('useAuth', () => {
@@ -34,9 +29,8 @@ describe('useAuth', () => {
     });
 
     describe('endpoint', () => {
-        it('calls /members/v1/{username} using username from JWT', async () => {
-            vi.mocked(getValidToken).mockReturnValue('valid-token');
-            vi.mocked(getCurrentUsername).mockReturnValue('testuser');
+        it('calls /members/v1/{username} using stored username', async () => {
+            localStorage.setItem('username', 'testuser');
 
             const mockMemberResponse = {
                 id: '550e8400-e29b-41d4-a716-446655440000',
@@ -61,12 +55,10 @@ describe('useAuth', () => {
             expect(httpClient).toHaveBeenCalledWith(
                 expect.stringContaining('/members/v1/testuser')
             );
+            expect(result.current.isAuthenticated).toBe(true);
         });
 
-        it('does not run query when token is missing', () => {
-            vi.mocked(getValidToken).mockReturnValue(null);
-            vi.mocked(getCurrentUsername).mockReturnValue(null);
-
+        it('does not run query when username is missing', () => {
             const { result } = renderHook(() => useAuth(), {
                 wrapper: createWrapper(),
             });
@@ -78,8 +70,7 @@ describe('useAuth', () => {
 
     describe('role mapping', () => {
         it('sets isHost to true when role is HOST', async () => {
-            vi.mocked(getValidToken).mockReturnValue('valid-token');
-            vi.mocked(getCurrentUsername).mockReturnValue('testuser');
+            localStorage.setItem('username', 'testuser');
 
             const mockMemberResponse = {
                 id: '550e8400-e29b-41d4-a716-446655440000',

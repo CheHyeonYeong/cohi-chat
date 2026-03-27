@@ -12,6 +12,7 @@ export {
     useMyTimeslots,
     useCreateTimeslot,
     useDeleteTimeslot,
+    useHostCalendar,
 } from './hooks';
 
 // Types

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement } from 'react';
+import type { ReactNode } from 'react';
 import { useLogout } from './useLogout';
 import { logoutApi } from '../api/memberApi';
 
@@ -10,6 +10,7 @@ vi.mock('../api/memberApi', () => ({
 }));
 
 const mockNavigate = vi.fn();
+const mockShowToast = vi.fn();
 
 vi.mock('@tanstack/react-router', async () => {
     const actual = await vi.importActual('@tanstack/react-router');
@@ -19,13 +20,16 @@ vi.mock('@tanstack/react-router', async () => {
     };
 });
 
+vi.mock('~/components/toast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}));
+
 describe('useLogout', () => {
     let queryClient: QueryClient;
 
-    const createWrapper = () => {
-        return ({ children }: { children: React.ReactNode }) =>
-            createElement(QueryClientProvider, { client: queryClient }, children);
-    };
+    const createWrapper = () => ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -35,8 +39,6 @@ describe('useLogout', () => {
             },
         });
 
-        localStorage.setItem('auth_token', 'test-token');
-        localStorage.setItem('refresh_token', 'test-refresh-token');
         localStorage.setItem('username', 'testuser');
 
         vi.clearAllMocks();
@@ -48,7 +50,7 @@ describe('useLogout', () => {
         vi.restoreAllMocks();
     });
 
-    it('should call logout API when auth token exists', async () => {
+    it('calls logout API', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
@@ -58,19 +60,17 @@ describe('useLogout', () => {
         expect(logoutApi).toHaveBeenCalledTimes(1);
     });
 
-    it('should clear localStorage on logout', async () => {
+    it('clears stored username on logout', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
 
         await result.current.logout();
 
-        expect(localStorage.getItem('auth_token')).toBeNull();
-        expect(localStorage.getItem('refresh_token')).toBeNull();
         expect(localStorage.getItem('username')).toBeNull();
     });
 
-    it('should navigate to login page after logout', async () => {
+    it('navigates to login page after logout', async () => {
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
         });
@@ -80,7 +80,7 @@ describe('useLogout', () => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/login', replace: true });
     });
 
-    it('should clear localStorage even if API call fails', async () => {
+    it('API 실패 시 토스트를 표시하고 로컬 상태와 네비게이션을 실행하지 않는다', async () => {
         vi.mocked(logoutApi).mockRejectedValue(new Error('Network error'));
 
         const { result } = renderHook(() => useLogout(), {
@@ -88,14 +88,16 @@ describe('useLogout', () => {
         });
 
         await result.current.logout();
-
-        expect(localStorage.getItem('auth_token')).toBeNull();
-        expect(localStorage.getItem('refresh_token')).toBeNull();
-        expect(localStorage.getItem('username')).toBeNull();
+        expect(mockShowToast).toHaveBeenCalledWith(
+            '로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+            'logout-error',
+        );
+        expect(localStorage.getItem('username')).toBe('testuser'); // 로컬 상태 유지 (서버 세션과 일치)
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('should not call API if no auth token exists', async () => {
-        localStorage.removeItem('auth_token');
+    it('still calls API when username is missing', async () => {
+        localStorage.removeItem('username');
 
         const { result } = renderHook(() => useLogout(), {
             wrapper: createWrapper(),
@@ -103,6 +105,6 @@ describe('useLogout', () => {
 
         await result.current.logout();
 
-        expect(logoutApi).not.toHaveBeenCalled();
+        expect(logoutApi).toHaveBeenCalledTimes(1);
     });
 });

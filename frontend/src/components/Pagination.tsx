@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '~/components/button';
 
 interface PaginationProps {
@@ -8,7 +7,7 @@ interface PaginationProps {
     onPageChange: (newPage: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({ page, pageSize, totalCount, onPageChange }) => {
+export const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProps) => {
     const totalPages = Math.ceil(totalCount / pageSize);
 
     const handlePrevious = () => {
@@ -25,17 +24,15 @@ const Pagination: React.FC<PaginationProps> = ({ page, pageSize, totalCount, onP
 
     return (
         <div className="flex justify-between items-center mt-4">
-            <Button variant="secondary" size="md" onClick={handlePrevious} disabled={page === 1}>
-                Previous
+            <Button variant="outline" size="md" onClick={handlePrevious} disabled={page === 1}>
+                이전
             </Button>
             <span>
-                Page {page} of {totalPages}
+                {page} / {totalPages} 페이지
             </span>
-            <Button variant="secondary" size="md" onClick={handleNext} disabled={page === totalPages}>
-                Next
+            <Button variant="outline" size="md" onClick={handleNext} disabled={page === totalPages}>
+                다음
             </Button>
         </div>
     );
 };
-
-export { Pagination };

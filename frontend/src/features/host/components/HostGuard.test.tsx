@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ const createQueryClient = () =>
         defaultOptions: { queries: { retry: false } },
     });
 
-const renderWithProviders = (ui: React.ReactElement) => {
+const renderWithProviders = (ui: ReactElement) => {
     const queryClient = createQueryClient();
     return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
@@ -36,7 +37,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: true,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -56,7 +56,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -75,7 +74,6 @@ describe('HostGuard', () => {
                 isAuthenticated: false,
                 data: undefined,
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -94,7 +92,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: false },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -115,7 +112,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: true },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(
@@ -132,7 +128,6 @@ describe('HostGuard', () => {
                 isAuthenticated: true,
                 data: { id: 1, username: 'test', displayName: 'Test', isHost: true },
                 isLoading: false,
-                invalidateAuth: vi.fn(),
             } as unknown as ReturnType<typeof useAuth>);
 
             renderWithProviders(

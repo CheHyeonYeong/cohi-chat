@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteTimeslot } from '../api';
 import { hostKeys } from './queryKeys';
 
-export function useDeleteTimeslot() {
+export const useDeleteTimeslot = () => {
     const queryClient = useQueryClient();
 
     return useMutation<void, Error, number>({
@@ -11,4 +11,4 @@ export function useDeleteTimeslot() {
             queryClient.invalidateQueries({ queryKey: hostKeys.myTimeslots() });
         },
     });
-}
+};

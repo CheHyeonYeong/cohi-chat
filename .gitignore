@@ -6,6 +6,8 @@
 .env
 .env.*
 !.env.example
+!infra/observability/.env.ingest.example
+!infra/observability/.env.grafana.example
 
 # Claude Code
 .claude/settings.local.json
@@ -117,3 +119,9 @@ backend/src/main/resources/data.sql
 
 # Supabase local workspace
 supabase/
+
+# 임시 파일
+.tmp/
+
+# 빌드된 JAR (배포용)
+backend/app.jar

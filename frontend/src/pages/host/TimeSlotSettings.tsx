@@ -11,9 +11,10 @@ import { Button } from '~/components/button';
 import { LinkButton } from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
+import { formatKoreanDate, formatKoreanTime } from '~/libs/date';
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
-function formatWeekdaySummary(weekdays: number[]): string {
+const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
     const names = sorted.map((d) => DAY_NAMES[d as Weekday]);
@@ -22,29 +23,23 @@ function formatWeekdaySummary(weekdays: number[]): string {
         return names[0] + '~' + names[names.length - 1];
     }
     return names.join(', ');
-}
+};
 
-function normalizeTime(time?: string | null): string {
-    return typeof time === 'string' ? time.slice(0, 5) : '';
-}
+const normalizeTime = (time?: string | null): string => typeof time === 'string' ? time.slice(0, 5) : '';
 
-function readTimeslotStart(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('startedAt' in ts ? ts.startedAt : undefined) ??
+const readTimeslotStart = (ts: TimeSlotResponse): string => normalizeTime(
+    ('startedAt' in ts ? ts.startedAt : undefined) ??
         ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
         null,
-    );
-}
+);
 
-function readTimeslotEnd(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('endedAt' in ts ? ts.endedAt : undefined) ??
+const readTimeslotEnd = (ts: TimeSlotResponse): string => normalizeTime(
+    ('endedAt' in ts ? ts.endedAt : undefined) ??
         ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
         null,
-    );
-}
+);
 
-function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
+const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] => {
     if (timeslots.length === 0) return [];
     return timeslots
         .map((ts) => ({
@@ -56,9 +51,9 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
             existingId: ts.id,
         }))
         .filter((entry) => entry.startTime && entry.endTime);
-}
+};
 
-export function TimeSlotSettings() {
+export const TimeSlotSettings = () => {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -74,10 +69,8 @@ export function TimeSlotSettings() {
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        return () => {
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-        };
+    useEffect(() => () => {
+        if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
     }, []);
 
     useEffect(() => {
@@ -232,7 +225,7 @@ export function TimeSlotSettings() {
                 <div className="flex items-center justify-center py-12">
                     <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">⏰</div>
-                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-cohi-text-dark">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             시간대를 설정하려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>
@@ -258,7 +251,7 @@ export function TimeSlotSettings() {
                                 onChange={(e) => setJob(e.target.value)}
                                 placeholder="예: 백엔드 개발자 @ 스타트업"
                                 maxLength={100}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
                             />
                         </div>
                         <div className="flex-1">
@@ -269,7 +262,7 @@ export function TimeSlotSettings() {
                                 onChange={(e) => setProfileImageUrl(e.target.value)}
                                 placeholder="https://..."
                                 maxLength={500}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
                             />
                         </div>
                         <div className="flex items-end gap-2">
@@ -319,12 +312,12 @@ export function TimeSlotSettings() {
                     <span>현재 설정: {summaryText}</span>
                     {lastSaved && (
                         <span>
-                            마지막 저장: {lastSaved.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}{' '}
-                            {lastSaved.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            마지막 저장: {formatKoreanDate(lastSaved)}{' '}
+                            {formatKoreanTime(lastSaved)}
                         </span>
                     )}
                 </div>
             </footer>
         </PageLayout>
     );
-}
+};

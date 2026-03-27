@@ -19,21 +19,21 @@ interface PageLayoutProps {
     title?: string;
     headerCenter?: ReactNode;
     maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl';
-    children: React.ReactNode;
+    children: ReactNode;
     className?: string;
 }
 
-export function PageLayout({ title, headerCenter, maxWidth = '6xl', children, className }: PageLayoutProps) {
+export const PageLayout = ({ title, headerCenter, maxWidth = '6xl', children, className }: PageLayoutProps) => {
     useDocumentTitle(title);
 
     return (
-        <div className="w-full min-h-screen bg-[var(--cohi-bg-light)]">
+        <div className="w-full min-h-screen bg-cohi-bg-light">
             <Header center={headerCenter} />
             <main className={cn('w-full px-6 py-8', className)}>
                 <div className={cn('mx-auto', MAX_WIDTH_CLASSES[maxWidth])}>
                     {title && (
                         <h1
-                            className="text-2xl font-bold text-[var(--cohi-text-dark)] mb-6"
+                            className="text-2xl font-bold text-cohi-text-dark mb-6"
                             data-testid="page-title"
                         >
                             {title}
@@ -44,4 +44,4 @@ export function PageLayout({ title, headerCenter, maxWidth = '6xl', children, cl
             </main>
         </div>
     );
-}
+};

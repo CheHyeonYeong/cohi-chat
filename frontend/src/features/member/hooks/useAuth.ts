@@ -1,26 +1,21 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useSyncExternalStore } from 'react';
-import { getCurrentUsername, getValidToken } from '~/libs/jwt';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSyncExternalStore } from 'react';
 import { getUserApi } from '../api/memberApi';
+import { clearAuthenticatedUser, getStoredUsername } from '../utils/authStorage';
 import { subscribeAuthChange } from '../utils/authEvent';
 import type { AuthUser, MemberResponseDTO } from '../types';
 
-function getTokenSnapshot() {
-    return getValidToken();
-}
+const getUsernameSnapshot = () => getStoredUsername();
 
-function getServerTokenSnapshot() {
-    return null;
-}
+const getServerUsernameSnapshot = () => null;
 
-export function useAuth() {
-    const queryClient = useQueryClient();
-    const token = useSyncExternalStore(subscribeAuthChange, getTokenSnapshot, getServerTokenSnapshot);
-    const username = token ? getCurrentUsername() : null;
-
-    const invalidateAuth = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ['auth'] });
-    }, [queryClient]);
+export const useAuth = () => {
+    const username = useSyncExternalStore(
+        subscribeAuthChange,
+        getUsernameSnapshot,
+        getServerUsernameSnapshot,
+    );
 
     const query = useQuery<AuthUser>({
         queryKey: ['auth', username],
@@ -34,14 +29,35 @@ export function useAuth() {
                 isHost: data.role === 'HOST',
             };
         },
-        retry: false,
+        retry: (failureCount, error) => {
+            if (
+                error instanceof Error &&
+                typeof error.cause === 'number' &&
+                (error.cause === 401 || error.cause === 403)
+            ) {
+                return false;
+            }
+            return failureCount < 2;
+        },
         enabled: !!username,
         staleTime: 5 * 60 * 1000,
     });
 
+    // queryFn 안에서 부수효과를 일으키면 리패치 시마다 호출될 수 있으므로 useEffect로 분리
+    useEffect(() => {
+        if (
+            query.error instanceof Error &&
+            typeof query.error.cause === 'number' &&
+            (query.error.cause === 401 || query.error.cause === 403) &&
+            username !== null
+        ) {
+            clearAuthenticatedUser();
+        }
+    }, [query.error, username]);
+
     return {
         ...query,
-        isAuthenticated: !!token && !!username,
-        invalidateAuth,
+        username,
+        isAuthenticated: !!username,
     };
-}
+};

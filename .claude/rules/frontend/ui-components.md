@@ -8,11 +8,25 @@ paths: frontend/**/*.{ts,tsx}
 - raw `<span>` + Tailwind 클래스로 태그 스타일 직접 구현 금지
 - Props:
   - `variant`: `'filled'`(기본) | `'outlined'` | `'borderless'`
-  - `color`: `'primary'`(기본) | `'secondary'` | `'default'`
+  - `color`: `'primary'`(기본) | `'secondary'` | `'default'` | `'guest'` | `'host'`
   - `size`: `'sm'` | `'md'`(기본)
 - 삭제 가능한 태그: `<Tag>` 내부에 `<button>` 배치하여 구현
   - 예: `<Tag className="gap-1">{text}<button onClick={onRemove}>✕</button></Tag>`
 - 태그 목록은 `flex flex-wrap gap-2` 컨테이너로 감싼다
+- 토픽(topic) 표시 시 반드시 `<Tag>` 컴포넌트로 감싸야 한다
+  - 예: BookingCard, HostCard, HostProfileCard 등 모든 곳에서 동일하게 적용
+  - raw `<p>` 또는 `<span>`으로 토픽을 직접 표시 금지
+
+### 예약 역할(role) 용어 규칙
+- `role`은 **현재 로그인한 사용자의 역할**을 의미한다
+- `counterpart` / `displayName`은 **상대방**의 정보이다
+- 역할별 의미:
+  - `role === 'guest'` → **내가 게스트** → 내가 상대방(호스트)에게 커피챗을 **신청한** 것
+  - `role === 'host'` → **내가 호스트** → 상대방(게스트)이 나에게 커피챗을 **신청한** 것
+- 역할 태그 색상: `color="guest"` / `color="host"` (Tag 컴포넌트)
+- 역할 태그에는 반드시 `title` prop으로 방향을 명시한다
+  - 게스트: `title="내가 {상대방}님에게 커피챗을 신청했습니다"`
+  - 호스트: `title="{상대방}님이 나에게 커피챗을 신청했습니다"`
 
 ### Card 사용 규칙
 - 콘텐츠 영역을 카드 형태로 감쌀 때 반드시 `<Card>` 컴포넌트 사용 (`~/components/card`)
@@ -27,6 +41,12 @@ paths: frontend/**/*.{ts,tsx}
   - `noShadow`: shadow 제거 (Card 안에 Card가 중첩될 때 사용)
 - 클릭 가능한 카드: `<Card asChild>` + `<button>` 조합 사용
   - 예: `<Card asChild size="sm"><button type="button">{content}</button></Card>`
+
+### Pagination 사용 규칙
+- 페이지네이션은 반드시 `<Pagination>` 컴포넌트 사용 (`~/components/Pagination`)
+- 버튼은 `variant="outline"` 사용 (디자인 시스템 `--cohi-primary` 톤 통일)
+- 문구는 한글: "이전" / "다음" / "{page} / {totalPages} 페이지"
+- 목록-상세 레이아웃에서 Pagination은 목록 하단에 고정 배치 (목록 크기에 따라 y 위치가 변하지 않도록)
 
 ### PageLayout 사용 규칙
 - 일반 페이지(Header + 제목 + 콘텐츠)는 반드시 `<PageLayout>` 컴포넌트 사용 (`~/components`)

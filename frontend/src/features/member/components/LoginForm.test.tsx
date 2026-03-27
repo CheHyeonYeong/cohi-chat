@@ -1,14 +1,14 @@
+import type { PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 const navigateMock = vi.fn();
 const mockUseLogin = vi.fn();
 
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => navigateMock,
-    Link: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', props, children),
+    Link: ({ children, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a {...props}>{children}</a>,
 }));
 
 vi.mock('../hooks/useLogin', () => ({

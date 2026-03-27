@@ -1,7 +1,7 @@
+import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { Register } from './Register';
 import * as hostHooks from '~/features/host/hooks';
@@ -9,22 +9,20 @@ import * as hostHooks from '~/features/host/hooks';
 // Mock dependencies
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
-    Link: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', props, children),
+    Link: ({ children, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a {...props}>{children}</a>,
     createLink:
-        (component: React.ComponentType<Record<string, unknown>>) =>
+        (component: ComponentType<Record<string, unknown>>) =>
             (props: Record<string, unknown>) => {
                 const { to, ...rest } = props;
-                return React.createElement(component, { href: to, ...rest });
+                const Component = component;
+                return <Component href={to} {...rest} />;
             },
     useRouterState: () => ({ location: { pathname: '/host/register' } }),
 }));
 
 vi.mock('~/features/member/api/memberApi', () => ({
-    refreshTokenApi: vi.fn().mockResolvedValue({
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-    }),
+    refreshTokenApi: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('~/features/member/utils/authEvent', () => ({
@@ -37,8 +35,8 @@ vi.mock('~/features/member', () => ({
 }));
 
 vi.mock('~/components/header', () => ({
-    Header: ({ center }: { center?: React.ReactNode }) =>
-        React.createElement('header', { 'data-testid': 'mock-header' }, center),
+    Header: ({ center }: { center?: ReactNode }) =>
+        <header data-testid="mock-header">{center}</header>,
 }));
 
 const createWrapper = () => {
@@ -49,8 +47,8 @@ const createWrapper = () => {
         },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe('Register', () => {

@@ -1,163 +1,158 @@
+import { clearAuthenticatedUser } from '~/features/member/utils/authStorage';
+
 export interface HttpClientOptions extends Omit<RequestInit, 'body'> {
     body?: BodyInit | object;
+    skipAuthRefresh?: boolean; // true이면 401 자동 refresh 건너뜀 (로그인 등 인증 전 요청)
 }
+
+const toHeadersRecord = (init: HeadersInit | undefined): Record<string, string> => {
+    if (!init) return {};
+    if (init instanceof Headers) {
+        const record: Record<string, string> = {};
+        init.forEach((value, key) => { record[key] = value; });
+        return record;
+    }
+    if (Array.isArray(init)) {
+        return Object.fromEntries(init);
+    }
+    return { ...(init as Record<string, string>) };
+};
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const REFRESH_URL = `${API_BASE}/members/v1/refresh`;
 
-// 동시 401 요청이 여러 개일 때 refresh를 한 번만 시도하기 위한 Promise 공유
-let refreshPromise: Promise<string | null> | null = null;
+const GRACE_WINDOW_HIT = 'GRACE_WINDOW_HIT';
 
-function safeJsonParse(text: string): unknown {
-    try { return text ? JSON.parse(text) : null; } catch { return null; }
-}
+let refreshPromise: Promise<boolean> | null = null;
 
-function buildHeaders(base: HeadersInit | undefined, authToken?: string | null): Headers {
-    const headers = new Headers(base);
-    if (authToken) {
-        headers.set('Authorization', `Bearer ${authToken}`);
-    }
-    return headers;
-}
-
-function buildBody(options: HttpClientOptions, headers: Headers): BodyInit | undefined {
-    if (!options.body) return undefined;
-    if (
-        options.body instanceof FormData ||
-        options.body instanceof URLSearchParams ||
-        options.body instanceof Blob ||
-        options.body instanceof ArrayBuffer ||
-        ArrayBuffer.isView(options.body) ||
-        typeof options.body === 'string'
-    ) {
-        return options.body;
-    }
-    if (typeof options.body === 'object') {
-        headers.set('Content-Type', 'application/json');
-        return JSON.stringify(options.body);
-    }
-    return undefined;
-}
-
-async function performRefresh(): Promise<string | null> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return null;
-
+const performRefresh = async (): Promise<boolean> => {
     try {
-        const res = await fetch(`${API_BASE}/members/v1/refresh`, {
+        const response = await fetch(REFRESH_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
+            credentials: 'include',
         });
 
-        const body = safeJsonParse(await res.text()) as Record<string, unknown> | null;
+        let payload: unknown = null;
+        try {
+            payload = await response.json();
+        } catch {
+            payload = null;
+        }
 
-        if (!res.ok) {
-            // Grace Window 히트: 백엔드가 세션 삭제 → 여기서 한 번만 정리 후 throw
-            if ((body as { error?: { code?: string } } | null)?.error?.code === 'GRACE_WINDOW_HIT') {
-                clearAuthTokens();
-                throw new Error('GRACE_WINDOW_HIT');
+        if (!response.ok) {
+            const errorCode = typeof payload === 'object' && payload !== null
+                ? (payload as { error?: { code?: string } }).error?.code
+                : undefined;
+            if (errorCode === GRACE_WINDOW_HIT) {
+                throw new Error(GRACE_WINDOW_HIT);
             }
-            return null;
+            return false;
         }
 
-        const data = (body as { data?: { accessToken?: string; refreshToken?: string } } | null)?.data ?? body;
-        if (!(data as { accessToken?: string } | null)?.accessToken) return null;
-
-        const d = data as { accessToken: string; refreshToken?: string };
-        localStorage.setItem('auth_token', d.accessToken);
-        if (d.refreshToken) {
-            localStorage.setItem('refresh_token', d.refreshToken);
+        return true;
+    } catch (error) {
+        if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {
+            throw error;
         }
-        window.dispatchEvent(new Event('auth-change'));
-        return d.accessToken;
-    } catch (err) {
-        if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-            throw err;
-        }
-        return null;
+        return false;
     }
-}
+};
 
-function tryRefreshToken(): Promise<string | null> {
+const tryRefreshToken = (): Promise<boolean> => {
     if (!refreshPromise) {
         refreshPromise = performRefresh().finally(() => {
             refreshPromise = null;
         });
     }
     return refreshPromise;
-}
+};
 
-function clearAuthTokens(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('username');
-    window.dispatchEvent(new Event('auth-change'));
-}
+const normalizeBody = (body: HttpClientOptions['body'], headers: Record<string, string>): BodyInit | undefined => {
+    if (!body) {
+        return undefined;
+    }
 
-async function doRequest<T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> {
-    const headers = buildHeaders(options.headers, localStorage.getItem('auth_token'));
-    const body = buildBody(options, headers);
+    if (
+        body instanceof FormData ||
+        body instanceof URLSearchParams ||
+        body instanceof Blob ||
+        body instanceof ArrayBuffer ||
+        ArrayBuffer.isView(body) ||
+        typeof body === 'string'
+    ) {
+        return body as BodyInit;
+    }
 
-    const response = await fetch(url, { ...options, headers, body });
+    if (typeof body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        return JSON.stringify(body);
+    }
 
-    // 401 → refresh 시도 후 원래 요청 1회 재시도
-    if (response.status === 401 && !isRetry) {
+    return undefined;
+};
+
+const shouldRetryWithRefresh = (url: string, isRetry: boolean, skipAuthRefresh: boolean): boolean => !isRetry && !skipAuthRefresh && url !== REFRESH_URL;
+
+const doRequest = async <T>(url: string, options: HttpClientOptions, isRetry = false): Promise<T> => {
+    const { skipAuthRefresh = false, ...fetchOptions } = options;
+    const headers = toHeadersRecord(fetchOptions.headers);
+    const body = normalizeBody(fetchOptions.body, headers);
+
+    const response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+        body,
+        credentials: fetchOptions.credentials ?? 'include',
+    });
+
+    if (response.status === 401 && shouldRetryWithRefresh(url, isRetry, skipAuthRefresh)) {
         try {
-            const newToken = await tryRefreshToken();
-            if (newToken) {
+            const refreshed = await tryRefreshToken();
+            if (refreshed) {
                 return doRequest<T>(url, options, true);
             }
-            // Refresh 실패 (진짜 만료 등)
-            clearAuthTokens();
-            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
-        } catch (err) {
-            if (err instanceof Error && err.message === 'GRACE_WINDOW_HIT') {
-                // clearAuthTokens는 performRefresh에서 이미 호출됨 (중복 방지)
-                throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.', { cause: 401 });
+            throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.', { cause: 401 });
+        } catch (error) {
+            if (error instanceof Error && error.message === GRACE_WINDOW_HIT) {
+                // GRACE_WINDOW_HIT는 유예 기간 중 경쟁 상태로, 재시도가 가능한 임시 상태
+                // 인증 상태를 유지해야 사용자가 재시도할 수 있음
+                throw new Error('토큰 재발급 대기 중입니다. 다시 시도해 주세요.', { cause: 401 });
             }
-            clearAuthTokens();
-            throw err;
+            clearAuthenticatedUser();
+            throw error;
         }
     }
 
     if (!response.ok) {
-        const errData = safeJsonParse(await response.text()) as { error?: { message?: string } } | null;
-        const message = errData?.error?.message ?? `HTTP error! status: ${response.status}`;
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
+        }
+        const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
         throw new Error(message, { cause: response.status });
     }
 
     const text = await response.text();
-    if (!text) return undefined as T;
-    const data = JSON.parse(text);
+    if (!text) {
+        return undefined as T;
+    }
 
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error(`Invalid JSON response`, { cause: response.status });
+    }
     if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        if ((data as { success: boolean }).success === false) {
+            const msg = (data as { error?: { message?: string } }).error?.message ?? `API error`;
+            throw new Error(msg, { cause: response.status });
+        }
         return (data as { success: boolean; data: T }).data;
     }
     return data as T;
-}
+};
 
-export async function httpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
-    return doRequest<T>(url, options);
-}
-
-// 인증 불필요 공개 API 전용 — 401 자동 refresh 없음
-export async function publicHttpClient<T>(url: string, options: HttpClientOptions = {}): Promise<T> {
-    const headers = buildHeaders(options.headers);
-    const body = buildBody(options, headers);
-
-    const response = await fetch(url, { ...options, headers, body });
-
-    if (!response.ok) {
-        const errData = safeJsonParse(await response.text()) as { error?: { message?: string } } | null;
-        const message = errData?.error?.message ?? `HTTP error! status: ${response.status}`;
-        throw new Error(message, { cause: response.status });
-    }
-
-    const text = await response.text();
-    if (!text) return undefined as T;
-    const data = JSON.parse(text);
-    if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
-        return (data as { success: boolean; data: T }).data;
-    }
-    return data as T;
-}
+export const httpClient = async <T>(url: string, options: HttpClientOptions = {}): Promise<T> => doRequest<T>(url, options);

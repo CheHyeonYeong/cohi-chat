@@ -4,13 +4,13 @@
 #
 # Preconditions:
 #   - latest code and .env are present on the EC2 host
-#   - docker-compose.prod.yml defines nginx + backend-blue/green + redis
-#   - nginx/upstream.conf is mounted into the nginx container
+#   - infra/app/docker-compose.server.yml defines nginx + backend-blue/green + redis
+#   - infra/app/nginx/upstream.conf is mounted into the nginx container
 
 set -euo pipefail
 
-COMPOSE="docker-compose -f docker-compose.prod.yml"
-NGINX_UPSTREAM_FILE="./nginx/upstream.conf"
+COMPOSE="docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml"
+NGINX_UPSTREAM_FILE="./infra/app/nginx/upstream.conf"
 HEALTH_TIMEOUT=120
 HEALTH_INTERVAL=5
 

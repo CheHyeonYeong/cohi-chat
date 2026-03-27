@@ -24,7 +24,7 @@ const initialData: WizardData = {
     step2: { googleCalendarId: '' },
 };
 
-export function Register() {
+export const Register = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [data, setData] = useState<WizardData>(initialData);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -85,9 +85,7 @@ export function Register() {
                 onSuccess: async () => {
                     setIsCompleted(true);
                     try {
-                        const response = await refreshTokenApi();
-                        localStorage.setItem('auth_token', response.accessToken);
-                        localStorage.setItem('refresh_token', response.refreshToken);
+                        await refreshTokenApi();
                     } catch {
                         setTokenRefreshFailed(true);
                     }
@@ -154,7 +152,7 @@ export function Register() {
                                 {Array.from({ length: TOTAL_STEPS }, (_, i) => (
                                     <div
                                         key={i}
-                                        className="w-2.5 h-2.5 rounded-full bg-[var(--cohi-primary)]"
+                                        className="w-2.5 h-2.5 rounded-full bg-cohi-primary"
                                     ></div>
                                 ))}
                             </div>
@@ -186,8 +184,8 @@ export function Register() {
                                         className={
                                             'w-2.5 h-2.5 rounded-full transition-colors ' +
                                             (i + 1 === currentStep
-                                                ? 'bg-[var(--cohi-primary)]'
-                                                : 'bg-[var(--cohi-bg-warm)]')
+                                                ? 'bg-cohi-primary'
+                                                : 'bg-cohi-bg-warm')
                                         }
                                     ></div>
                                 ))}
@@ -211,4 +209,4 @@ export function Register() {
             </footer>
         </PageLayout>
     );
-}
+};

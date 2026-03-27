@@ -1,9 +1,16 @@
 import type { LoginResponse } from '../types';
 import { dispatchAuthChange } from './authEvent';
 
-export function saveAuthTokens(response: LoginResponse): void {
-    localStorage.setItem('auth_token', response.accessToken);
-    localStorage.setItem('refresh_token', response.refreshToken);
-    localStorage.setItem('username', response.username);
+const USERNAME_KEY = 'username';
+
+export const saveAuthenticatedUser = (response: Pick<LoginResponse, 'username'>): void => {
+    localStorage.setItem(USERNAME_KEY, response.username);
     dispatchAuthChange();
-}
+};
+
+export const getStoredUsername = (): string | null => localStorage.getItem(USERNAME_KEY);
+
+export const clearAuthenticatedUser = (): void => {
+    localStorage.removeItem(USERNAME_KEY);
+    dispatchAuthChange();
+};

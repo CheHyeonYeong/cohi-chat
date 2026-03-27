@@ -43,7 +43,7 @@ The first cutover is a topology change, not a fully zero-downtime deployment.
 2. Build and start the inactive backend.
 3. Wait for the inactive backend health check to become `healthy`.
 4. Start `nginx` if it is not already running.
-5. Rewrite `nginx/upstream.conf` to point to the inactive backend.
+5. Rewrite `infra/app/nginx/upstream.conf` to point to the inactive backend.
 6. Run `nginx -t` and `nginx -s reload`.
 7. Stop the old backend.
 
@@ -60,36 +60,37 @@ bash scripts/rollback.sh
 1. Detect the current active color.
 2. Start the previous backend if it is stopped.
 3. Wait for the previous backend health check.
-4. Switch `nginx/upstream.conf` back to the previous backend.
+4. Switch `infra/app/nginx/upstream.conf` back to the previous backend.
 5. Reload `nginx`.
 6. Stop the problematic backend.
 
 ## Operational Notes
 
-- `docker-compose.prod.yml` exposes only `80:80` on `nginx`.
+- `infra/app/docker-compose.server.yml` exposes only `80:80` on `nginx`.
 - `backend-blue` and `backend-green` do not expose host ports.
 - `redis` remains internal-only.
-- `nginx/chat-upstream.conf` ships with `127.0.0.1:3001` as a safe placeholder.
+- `infra/app/nginx/chat-upstream.conf` ships with `127.0.0.1:3001` as a safe placeholder.
   Replace it with the real chat server address before routing `/chat/` traffic.
 - Database changes must remain backward compatible while both app versions may exist during deployment.
 
 ## Verification Commands
 
 ```bash
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml ps
 docker inspect --format='{{.State.Health.Status}}' cohi-chat-backend-blue
 docker inspect --format='{{.State.Health.Status}}' cohi-chat-backend-green
 docker exec cohi-chat-nginx nginx -t
-cat nginx/upstream.conf
+cat infra/app/nginx/upstream.conf
 curl -I http://127.0.0.1/actuator/health
 ```
 
 ## Related Files
 
-- `docker-compose.prod.yml`
-- `nginx/nginx.prod.conf`
-- `nginx/upstream.conf`
-- `nginx/chat-upstream.conf`
+- `infra/app/docker-compose.server.yml`
+- `infra/app/nginx/nginx.conf`
+- `infra/app/nginx/upstream.conf`
+- `infra/app/nginx/chat-upstream.conf`
+- `infra/observability/docker-compose.backend-observability.yml`
 - `scripts/blue-green-deploy.sh`
 - `scripts/rollback.sh`
 - `.github/workflows/server-deploy-prod.yml`

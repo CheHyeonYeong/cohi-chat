@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateProfileApi } from '../api/memberApi';
 import type { UpdateProfilePayload, HostResponseDTO } from '../types';
 
-export function useUpdateProfile() {
+export const useUpdateProfile = () => {
     const queryClient = useQueryClient();
 
     return useMutation<HostResponseDTO, Error, UpdateProfilePayload>({
@@ -11,4 +11,4 @@ export function useUpdateProfile() {
             queryClient.invalidateQueries({ queryKey: ['hosts'] });
         },
     });
-}
+};

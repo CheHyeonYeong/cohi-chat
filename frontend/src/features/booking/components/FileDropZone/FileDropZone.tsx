@@ -1,17 +1,19 @@
+import type { ChangeEvent, DragEvent } from 'react';
 import { useRef, useState } from 'react';
 import { cn } from '~/libs/cn';
 
 interface FileDropZoneProps {
     onFilesDropped: (files: FileList) => void;
     disabled?: boolean;
+    accept?: string;
     className?: string;
 }
 
-export function FileDropZone({ onFilesDropped, disabled = false, className }: FileDropZoneProps) {
+export const FileDropZone = ({ onFilesDropped, disabled = false, accept, className }: FileDropZoneProps) => {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleDragOver = (e: React.DragEvent) => {
+    const handleDragOver = (e: DragEvent) => {
         e.preventDefault();
         if (!disabled) setIsDragging(true);
     };
@@ -20,7 +22,7 @@ export function FileDropZone({ onFilesDropped, disabled = false, className }: Fi
         setIsDragging(false);
     };
 
-    const handleDrop = (e: React.DragEvent) => {
+    const handleDrop = (e: DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
         if (disabled) return;
@@ -32,7 +34,7 @@ export function FileDropZone({ onFilesDropped, disabled = false, className }: Fi
         if (!disabled) fileInputRef.current?.click();
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             onFilesDropped(e.target.files);
             e.target.value = '';
@@ -52,7 +54,7 @@ export function FileDropZone({ onFilesDropped, disabled = false, className }: Fi
             className={cn(
                 'flex items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors text-sm',
                 isDragging
-                    ? 'border-[var(--cohi-primary)] bg-[var(--cohi-bg-light)] text-[var(--cohi-primary)]'
+                    ? 'border-cohi-primary bg-cohi-bg-light text-cohi-primary'
                     : 'border-gray-200 text-gray-400',
                 disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                 className,
@@ -63,10 +65,11 @@ export function FileDropZone({ onFilesDropped, disabled = false, className }: Fi
                 ref={fileInputRef}
                 type="file"
                 multiple
+                accept={accept}
                 className="hidden"
                 onChange={handleFileChange}
                 aria-hidden
             />
         </div>
     );
-}
+};

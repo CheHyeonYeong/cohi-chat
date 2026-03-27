@@ -1,4 +1,4 @@
-import { httpClient, publicHttpClient } from '~/libs/httpClient';
+import { httpClient } from '~/libs/httpClient';
 import type {
     LoginRequest,
     LoginResponse,
@@ -14,26 +14,29 @@ import type {
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const MEMBER_API = `${API_BASE}/members/v1`;
 
-export async function loginApi(credentials: LoginCredentials): Promise<LoginResponse> {
+export const loginApi = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const request: LoginRequest = {
         ...credentials,
         provider: 'LOCAL',
     };
 
-    // 401 자동 refresh 인터셉터를 타면 안 되므로 publicHttpClient 사용
-    const response = await publicHttpClient<LoginResponse>(`${MEMBER_API}/login`, {
+    const response = await httpClient<LoginResponse>(`${MEMBER_API}/login`, {
         method: 'POST',
         body: request,
+        skipAuthRefresh: true, // 로그인 요청은 401 시 refresh 재시도 불필요
     });
 
-    if (!response?.accessToken) {
+    if (!response) {
+        throw new Error('로그인 응답을 받지 못했습니다.');
+    }
+    if (!response.username || !response.displayName) {
         throw new Error('로그인 응답이 올바르지 않습니다.');
     }
 
     return response;
-}
+};
 
-export async function signupApi(payload: SignupPayload): Promise<SignupResponse> {
+export const signupApi = async (payload: SignupPayload): Promise<SignupResponse> => {
     const response = await httpClient<SignupResponse>(`${MEMBER_API}/signup`, {
         method: 'POST',
         body: payload,
@@ -44,36 +47,25 @@ export async function signupApi(payload: SignupPayload): Promise<SignupResponse>
     }
 
     return response;
-}
+};
 
-export async function logoutApi(): Promise<void> {
+export const logoutApi = async (): Promise<void> => {
     await httpClient<void>(`${MEMBER_API}/logout`, {
         method: 'DELETE',
     });
-}
+};
 
-export async function refreshTokenApi(): Promise<LoginResponse> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-        throw new Error('Refresh token이 없습니다.');
-    }
-    const response = await httpClient<LoginResponse>(`${MEMBER_API}/refresh`, {
+export const refreshTokenApi = async (): Promise<void> => {
+    await httpClient<void>(`${MEMBER_API}/refresh`, {
         method: 'POST',
-        body: { refreshToken },
     });
-    if (!response || !response.accessToken) {
-        throw new Error('토큰 갱신에 실패했습니다.');
-    }
-    return response;
-}
+};
 
-export async function getUserApi(username: string): Promise<MemberResponseDTO> {
-    return httpClient<MemberResponseDTO>(
-        `${MEMBER_API}/${encodeURIComponent(username)}`
-    );
-}
+export const getUserApi = async (username: string): Promise<MemberResponseDTO> => httpClient<MemberResponseDTO>(
+    `${MEMBER_API}/${encodeURIComponent(username)}`
+);
 
-export async function updateProfileApi(payload: UpdateProfilePayload): Promise<HostResponseDTO> {
+export const updateProfileApi = async (payload: UpdateProfilePayload): Promise<HostResponseDTO> => {
     const response = await httpClient<HostResponseDTO>(`${MEMBER_API}/me/profile`, {
         method: 'PATCH',
         body: payload,
@@ -82,9 +74,9 @@ export async function updateProfileApi(payload: UpdateProfilePayload): Promise<H
         throw new Error('프로필 업데이트에 실패했습니다.');
     }
     return response;
-}
+};
 
-export async function updateMemberApi(username: string, payload: UpdateMemberPayload): Promise<MemberResponseDTO> {
+export const updateMemberApi = async (username: string, payload: UpdateMemberPayload): Promise<MemberResponseDTO> => {
     const response = await httpClient<MemberResponseDTO>(`${MEMBER_API}/${encodeURIComponent(username)}`, {
         method: 'PATCH',
         body: payload,
@@ -93,4 +85,4 @@ export async function updateMemberApi(username: string, payload: UpdateMemberPay
         throw new Error('회원 정보 수정에 실패했습니다.');
     }
     return response;
-}
+};

@@ -4,21 +4,22 @@ import type { LoginResponse } from '../types';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const OAUTH_API = `${API_BASE}/oauth/v1`;
 
-export async function getOAuthAuthorizationUrlApi(provider: string): Promise<string> {
+export const getOAuthAuthorizationUrlApi = async (provider: string): Promise<string> => {
     const response = await httpClient<{ url: string }>(`${OAUTH_API}/${provider}/authorize`);
     if (!response?.url) {
         throw new Error('OAuth 인증 URL을 가져오지 못했습니다.');
     }
     return response.url;
-}
+};
 
-export async function oAuthCallbackApi(provider: string, code: string, state: string): Promise<LoginResponse> {
+export const oAuthCallbackApi = async (provider: string, code: string, state: string): Promise<LoginResponse> => {
     const response = await httpClient<LoginResponse>(`${OAUTH_API}/${provider}/callback`, {
         method: 'POST',
         body: { code, state },
+        skipAuthRefresh: true,
     });
-    if (!response?.accessToken) {
+    if (!response?.username) {
         throw new Error('소셜 로그인 응답이 올바르지 않습니다.');
     }
     return response;
-}
+};

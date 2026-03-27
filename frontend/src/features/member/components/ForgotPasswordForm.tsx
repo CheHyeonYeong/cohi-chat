@@ -3,7 +3,7 @@ import { AuthPageLayout } from './AuthPageLayout';
 import { ForgotPasswordEmailForm } from './ForgotPasswordEmailForm';
 import { ForgotPasswordSuccess } from './ForgotPasswordSuccess';
 
-export function ForgotPasswordForm() {
+export const ForgotPasswordForm = () => {
     const [submitted, setSubmitted] = useState(false);
 
     return (
@@ -13,4 +13,4 @@ export function ForgotPasswordForm() {
                 : <ForgotPasswordEmailForm onSuccess={() => setSubmitted(true)} />}
         </AuthPageLayout>
     );
-}
+};

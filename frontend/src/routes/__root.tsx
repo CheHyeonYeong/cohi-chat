@@ -31,26 +31,22 @@ const TanStackRouterDevtools = import.meta.env.DEV
         }))
     )
     : () => null
+
 /* eslint-enable react-refresh/only-export-components */
 
-/* eslint-disable-next-line react-refresh/only-export-components */
 const RootRoute = createRootRoute({
-    component: () => {
-        return (
-            <>
-                <div className="w-full min-h-screen flex flex-col">
-                    <div className="flex-1">
-                        <Outlet />
-                    </div>
-                    <Footer />
-                </div>
-                {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
-                <Suspense fallback={null}>
-                    <TanStackRouterDevtools />
-                </Suspense>
-            </>
-        )
-    },
+    component: () => <>
+        <div className="w-full min-h-screen flex flex-col">
+            <div className="flex-1">
+                <Outlet />
+            </div>
+            <Footer />
+        </div>
+        {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
+        <Suspense fallback={null}>
+            <TanStackRouterDevtools />
+        </Suspense>
+    </>,
 })
 
 const homeRoute = createRoute({
@@ -66,7 +62,7 @@ const myBookingsRoute = createRoute({
     component: () => <AuthGuard><MyBookings /></AuthGuard>,
     validateSearch: z.object({
         page: z.number().min(1).optional().default(() => 1),
-        pageSize: z.number().min(1).optional().default(() => 10),
+        selectedId: z.number().optional(),
     }),
 })
 
@@ -74,7 +70,7 @@ const myBookingsRoute = createRoute({
 const bookingRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/booking/$id',
-    component: BookingDetail,
+    component: () => <AuthGuard><BookingDetail /></AuthGuard>,
     params: z.object({
         id: z.string().transform<number>((val) => parseInt(val, 10)).pipe(z.number().min(1)),
     }),

@@ -10,6 +10,16 @@ export type AttendanceStatus =
     | 'SAME_DAY_CANCEL'
     | 'LATE';
 
+export const STATUS_LABELS: Record<AttendanceStatus, string> = {
+    SCHEDULED: '예약됨',
+    ATTENDED: '참석',
+    NO_SHOW: '게스트 노쇼',
+    HOST_NO_SHOW: '호스트 노쇼 신고됨',
+    CANCELLED: '취소됨',
+    SAME_DAY_CANCEL: '당일 취소',
+    LATE: '지각',
+};
+
 export type MeetingType = 'ONLINE' | 'OFFLINE';
 
 export interface IBookingDetail {
@@ -20,6 +30,7 @@ export interface IBookingDetail {
     description: string;
     timeSlot: ITimeSlot;
     host: Pick<IUserSimple, 'username' | 'displayName'>;
+    guest: Pick<IUserSimple, 'username' | 'displayName'>;
     files: IBookingFile[];
     createdAt: string;
     updatedAt: string;
@@ -53,8 +64,30 @@ export interface IBookingPayload {
     meetingLink?: string;
 }
 
+export interface IBookingUpdatePayload {
+    timeSlotId: number;
+    when: string;
+    topic: string;
+    description: string;
+    meetingType: MeetingType;
+    location?: string;
+    meetingLink?: string;
+}
+
 export interface IPaginatedBookingDetail {
     bookings: IBookingDetail[];
+    totalCount: number;
+}
+
+export type BookingRole = 'guest' | 'host';
+
+export interface IBookingWithRole extends IBookingDetail {
+    role: BookingRole;
+    counterpart: Pick<IUserSimple, 'username' | 'displayName'>;
+}
+
+export interface IPaginatedBookingWithRole {
+    bookings: IBookingWithRole[];
     totalCount: number;
 }
 
