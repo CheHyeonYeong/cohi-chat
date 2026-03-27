@@ -38,8 +38,19 @@ export class JwtGuard implements CanActivate {
   }
 
   private extractToken(request: FastifyRequest): string | null {
+    // 1. Authorization Bearer 헤더 (API 클라이언트 / 테스트 도구)
     const authHeader = request.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return null;
-    return authHeader.slice(7);
+    if (authHeader?.startsWith('Bearer ')) {
+      return authHeader.slice(7);
+    }
+
+    // 2. 쿠키 (브라우저 — Spring이 설정한 cohi_access_token 공유)
+    const cookieHeader = request.headers.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)cohi_access_token=([^;]+)/);
+      if (match) return match[1];
+    }
+
+    return null;
   }
 }
