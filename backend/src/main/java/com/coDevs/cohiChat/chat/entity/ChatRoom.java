@@ -10,8 +10,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,19 +30,9 @@ public class ChatRoom {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 20)
-    private ChatRoomType type;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private ChatRoomStatus status;
-
-    @Column(name = "external_ref_type", length = 50)
-    private String externalRefType;
-
-    @Column(name = "external_ref_id", columnDefinition = "uuid")
-    private UUID externalRefId;
+    // soft delete flag — 30일 메시지 없으면 배치가 true로 설정
+    @Column(name = "is_disabled", nullable = false)
+    private boolean isDisabled = false;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -54,15 +42,7 @@ public class ChatRoom {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
-
-    public static ChatRoom create(String externalRefType, UUID externalRefId) {
-        ChatRoom room = new ChatRoom();
-        room.type = ChatRoomType.ONE_TO_ONE;
-        room.status = ChatRoomStatus.ACTIVE;
-        room.externalRefType = externalRefType;
-        room.externalRefId = externalRefId;
-        return room;
+    public static ChatRoom create() {
+        return new ChatRoom();
     }
 }

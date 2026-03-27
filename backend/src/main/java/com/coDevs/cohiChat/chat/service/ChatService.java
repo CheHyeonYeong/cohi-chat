@@ -28,8 +28,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private static final String EXTERNAL_REF_RESERVATION = "RESERVATION";
-
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final MessageRepository messageRepository;
@@ -42,7 +40,7 @@ public class ChatService {
         UUID guestId = booking.getGuestId();
 
         ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
-            .orElseGet(() -> createNewRoom(hostId, guestId, booking.getId()));
+            .orElseGet(() -> createNewRoom(hostId, guestId));
 
         insertReservationCard(room, booking);
     }
@@ -73,10 +71,8 @@ public class ChatService {
             .map(ChatRoom::getId);
     }
 
-    private ChatRoom createNewRoom(UUID hostId, UUID guestId, Long bookingId) {
-        ChatRoom room = chatRoomRepository.save(
-            ChatRoom.create(EXTERNAL_REF_RESERVATION, uuidFromLong(bookingId))
-        );
+    private ChatRoom createNewRoom(UUID hostId, UUID guestId) {
+        ChatRoom room = chatRoomRepository.save(ChatRoom.create());
         roomMemberRepository.save(RoomMember.create(room, hostId));
         roomMemberRepository.save(RoomMember.create(room, guestId));
         return room;
@@ -99,13 +95,5 @@ public class ChatService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("RESERVATION_CARD payload 직렬화 실패 (bookingId=" + booking.getId() + ")", e);
         }
-    }
-
-    /**
-     * Booking ID(Long)를 UUID로 변환. external_ref_id(UUID) 컬럼에 저장하기 위한 임시 변환.
-     * 추후 Booking ID를 UUID로 전환 시 제거 예정.
-     */
-    private UUID uuidFromLong(Long id) {
-        return id != null ? new UUID(0L, id) : null;
     }
 }

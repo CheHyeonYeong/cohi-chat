@@ -58,7 +58,7 @@ class ChatServiceTest {
             .willReturn(Optional.empty());
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom savedRoom = ChatRoom.create("RESERVATION", UUID.randomUUID());
+        ChatRoom savedRoom = ChatRoom.create();
         given(chatRoomRepository.save(any(ChatRoom.class))).willReturn(savedRoom);
         given(roomMemberRepository.save(any(RoomMember.class))).willAnswer(inv -> inv.getArgument(0));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
@@ -82,7 +82,7 @@ class ChatServiceTest {
         given(timeSlot.getEndTime()).willReturn(java.time.LocalTime.of(11, 0));
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom existingRoom = ChatRoom.create("RESERVATION", UUID.randomUUID());
+        ChatRoom existingRoom = ChatRoom.create();
         given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.of(existingRoom));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));

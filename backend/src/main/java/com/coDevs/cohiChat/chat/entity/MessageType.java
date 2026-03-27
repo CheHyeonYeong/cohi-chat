@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.chat.entity;
 
 public enum MessageType {
-    RESERVATION_CARD
+    TEXT,
+    RESERVATION_CARD,
+    SYSTEM
 }
