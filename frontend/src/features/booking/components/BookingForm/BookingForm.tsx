@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateBooking } from '../../hooks';
 import { Button } from '~/components/button';
@@ -122,7 +123,7 @@ export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: Boo
 
             {isError && (
                 <p data-testid="booking-error" className="text-sm text-red-500">
-                    {error.message}
+                    {getErrorMessage(error)}
                 </p>
             )}
 

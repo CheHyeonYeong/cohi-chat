@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { Button } from '~/components/button';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { Header } from '~/components/header';
 import { useHosts } from '~/hooks/useHost';
 import { useAuth } from '~/features/member';
@@ -98,7 +99,7 @@ export const Home = () => {
 
                     {hosts.error && (
                         <div className='text-center py-8'>
-                            <p className='text-red-500'>{hosts.error.message}</p>
+                            <p className='text-red-500'>{getErrorMessage(hosts.error)}</p>
                         </div>
                     )}
 

@@ -1,4 +1,5 @@
 import { useParams } from '@tanstack/react-router';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
@@ -176,7 +177,7 @@ export const Detail = () => {
                                     onChange={(e) => setReportReason(e.target.value)}
                                 />
                                 {reportError && (
-                                    <p className="text-red-600 text-sm">{reportError.message}</p>
+                                    <p className="text-red-600 text-sm">{getErrorMessage(reportError)}</p>
                                 )}
                                 <div className="flex flex-row space-x-2">
                                     <Button

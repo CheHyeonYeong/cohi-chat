@@ -1,4 +1,5 @@
 import type { ChangeEvent } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useRef, useState } from 'react';
 import { Button } from '~/components/button';
 import {
@@ -101,7 +102,7 @@ export const BookingFileSection = ({
 
             {uploadError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                    <p className="text-red-600 text-sm">{uploadError.message}</p>
+                    <p className="text-red-600 text-sm">{getErrorMessage(uploadError)}</p>
                 </div>
             )}
 

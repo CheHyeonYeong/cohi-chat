@@ -162,7 +162,7 @@ export const TimeSlotSettings = () => {
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
                 const label = f.entry.startTime + '~' + f.entry.endTime;
-                const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
+                const msg = getErrorMessage(f.result.reason);
                 return '[' + label + '] ' + msg;
             });
             setErrors({ save: reasons.join(', ') });
@@ -279,7 +279,7 @@ export const TimeSlotSettings = () => {
                         </div>
                     </div>
                     {updateProfileMutation.isError && (
-                        <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
+                        <p className="mt-2 text-sm text-red-500">{getErrorMessage(updateProfileMutation.error)}</p>
                     )}
                 </Card>
 

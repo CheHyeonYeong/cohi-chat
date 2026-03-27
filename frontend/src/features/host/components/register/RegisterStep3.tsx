@@ -1,4 +1,5 @@
 import { Button } from '~/components/button';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { Card } from '~/components/card';
 import type { Step1Data } from './RegisterStep1';
 import type { Step2Data } from './RegisterStep2';
@@ -91,7 +92,7 @@ export const RegisterStep3 = ({ step1, step2, isPending, error, isSuccess, token
             {/* Error */}
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error.message}</p>
+                    <p className="text-sm text-red-600">{getErrorMessage(error)}</p>
                 </div>
             )}
 
