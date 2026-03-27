@@ -11,7 +11,7 @@ import { ChatModule } from './chat/chat.module';
     // Spring의 application.properties 역할 — 환경변수 로딩
     ConfigModule.forRoot({
       isGlobal: true, // 모든 모듈에서 별도 import 없이 사용 가능 (Spring @Value처럼)
-      envFilePath: '.env',
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
     }),
 
     // Spring의 SecurityConfig + JwtTokenProvider 역할

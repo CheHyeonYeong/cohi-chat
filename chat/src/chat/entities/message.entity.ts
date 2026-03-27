@@ -23,7 +23,7 @@ export class Message {
   @Column({ name: 'message_type', length: 30 })
   messageType: string; // TEXT | RESERVATION_CARD | SYSTEM
 
-  @Column({ length: 2000, nullable: true })
+  @Column({ type: 'varchar', length: 2000, nullable: true })
   content: string | null;
 
   // JSONB — RESERVATION_CARD: 예약 snapshot / SYSTEM: 메타데이터
