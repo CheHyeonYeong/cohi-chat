@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { Card } from '~/components/card';
 import { Body, Navigator, Timeslots, BookedTimeslots, getCalendarDays } from '~/components/calendar';
 import type { ITimeSlot, IBooking } from '~/components/calendar';
@@ -26,7 +27,15 @@ export const ProfileCalendarSection = ({
 
     return (
         <section data-testid="host-profile-calendar">
-            <Card variant="elevated" title={calendarTitle}>
+            <Card
+                variant="elevated"
+                title={calendarTitle}
+                action={isSelf ? (
+                    <Link to="/host/settings" className="text-xs font-medium text-cohi-primary hover:underline">
+                        시간대 설정
+                    </Link>
+                ) : undefined}
+            >
                 <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex-1 min-w-0">
                         <Navigator
