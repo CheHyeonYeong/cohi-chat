@@ -30,7 +30,7 @@ export class ChatController {
     @Req() req: FastifyRequest, // Spring의 @AuthenticationPrincipal에 대응
   ): Promise<MessagePageResponse> {
     const size = Math.min(
-      Number(query.size) || DEFAULT_PAGE_SIZE,
+      Math.max(Number(query.size) || DEFAULT_PAGE_SIZE, 1),
       MAX_PAGE_SIZE,
     );
 

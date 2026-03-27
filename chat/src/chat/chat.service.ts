@@ -1,10 +1,10 @@
 import {
-  ForbiddenException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, LessThan, Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { RoomMember } from './entities/room-member.entity';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
@@ -27,14 +27,16 @@ export class ChatService {
     cursor: string | undefined,
     size: number,
   ): Promise<MessagePageResponse> {
+    // cursor 유효성 검사 — 클라이언트 입력 오류는 400으로 처리
+    if (cursor !== undefined && isNaN(new Date(cursor).getTime())) {
+      throw new BadRequestException('cursor 형식이 올바르지 않습니다. ISO 8601 타임스탬프를 사용하세요.');
+    }
+
     // 권한 체크: JWT userId가 해당 roomId의 RoomMember인지 확인
     // Spring의 @PreAuthorize 대신 서비스 레이어에서 직접 검증
+    // @DeleteDateColumn 선언으로 TypeORM이 자동으로 WHERE deleted_at IS NULL을 추가함
     const member = await this.roomMemberRepository.findOne({
-      where: {
-        roomId,
-        memberId: userId,
-        deletedAt: IsNull(), // soft delete된 멤버 제외
-      },
+      where: { roomId, memberId: userId },
     });
 
     if (!member) {
