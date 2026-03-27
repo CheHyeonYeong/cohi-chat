@@ -3,20 +3,18 @@ import { getMyCalendar } from '../api';
 import type { CalendarResponse } from '../types';
 import { hostKeys } from './queryKeys';
 
-export function useMyCalendar(enabled = true) {
-    return useQuery<CalendarResponse | null>({
-        queryKey: hostKeys.myCalendar(),
-        queryFn: async () => {
-            try {
-                return await getMyCalendar();
-            } catch (error) {
-                if (error instanceof Error && error.cause === 404) {
-                    return null;
-                }
-                throw error;
+export const useMyCalendar = (enabled = true) => useQuery<CalendarResponse | null>({
+    queryKey: hostKeys.myCalendar(),
+    queryFn: async () => {
+        try {
+            return await getMyCalendar();
+        } catch (error) {
+            if (error instanceof Error && error.cause === 404) {
+                return null;
             }
-        },
-        enabled,
-        retry: false,
-    });
-}
+            throw error;
+        }
+    },
+    enabled,
+    retry: false,
+});

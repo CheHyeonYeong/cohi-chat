@@ -47,6 +47,7 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
@@ -99,6 +100,9 @@ class BookingServiceTest {
 
     @Mock
     private TimeSlot timeSlot;
+
+    @Mock
+    private ChatService chatService;
 
     @InjectMocks
     private BookingService bookingService;
@@ -155,6 +159,7 @@ class BookingServiceTest {
         assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
         assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+        verify(chatService).createRoomForBooking(any(Booking.class));
     }
 
     @Test

@@ -12,7 +12,7 @@ import { useAuth } from '~/features/member';
 
 const DEFAULT_TOPICS = ['개발 커리어', '이직 준비', '기술 면접', '스타트업 경험', '코드 리뷰'];
 
-export function Profile() {
+export const Profile = () => {
     const { hostId } = useParams({ from: '/host/$hostId' });
     useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
 
@@ -87,7 +87,7 @@ export function Profile() {
             {hostError && (
                 <div data-testid="host-profile-error" className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500 gap-4">
                     <p>{(hostError as Error).message}</p>
-                    <Link to="/" className="text-[var(--cohi-primary)] hover:underline">홈으로 돌아가기</Link>
+                    <Link to="/" className="text-cohi-primary hover:underline">홈으로 돌아가기</Link>
                 </div>
             )}
 
@@ -98,13 +98,13 @@ export function Profile() {
 
                         {description && (
                             <section data-testid="host-profile-description">
-                                <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-3">소개</h2>
+                                <h2 className="text-lg font-semibold text-cohi-text-dark mb-3">소개</h2>
                                 <p className="text-gray-700 leading-relaxed">{description}</p>
                             </section>
                         )}
 
                         <section data-testid="host-profile-topics">
-                            <h2 className="text-lg font-semibold text-[var(--cohi-text-dark)] mb-3">토픽</h2>
+                            <h2 className="text-lg font-semibold text-cohi-text-dark mb-3">토픽</h2>
                             <HostTopicTags topics={topics} />
                         </section>
                     </div>
@@ -175,4 +175,4 @@ export function Profile() {
             )}
         </PageLayout>
     );
-}
+};

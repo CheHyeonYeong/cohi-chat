@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -6,13 +6,14 @@ import { Home } from './Home';
 
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
+    Link: ({ children, to, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a href={to as string} {...props}>{children}</a>,
     createLink:
-        (component: React.ComponentType<Record<string, unknown>>) =>
+        (component: ComponentType<Record<string, unknown>>) =>
             (props: Record<string, unknown>) => {
                 const { to, ...rest } = props;
-                return React.createElement(component, { href: to, ...rest });
+                const Component = component;
+                return <Component href={to} {...rest} />;
             },
     useRouterState: () => ({ location: { pathname: '/' } }),
 }));
@@ -43,8 +44,8 @@ const createWrapper = () => {
             mutations: { retry: false },
         },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 beforeEach(() => {

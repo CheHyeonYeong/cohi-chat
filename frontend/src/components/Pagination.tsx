@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '~/components/button';
 
 interface PaginationProps {
@@ -8,7 +7,7 @@ interface PaginationProps {
     onPageChange: (newPage: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({ page, pageSize, totalCount, onPageChange }) => {
+export const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProps) => {
     const totalPages = Math.ceil(totalCount / pageSize);
 
     const handlePrevious = () => {
@@ -37,5 +36,3 @@ const Pagination: React.FC<PaginationProps> = ({ page, pageSize, totalCount, onP
         </div>
     );
 };
-
-export { Pagination };

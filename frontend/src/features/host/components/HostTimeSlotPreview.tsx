@@ -11,9 +11,7 @@ const DAY_NAMES: Record<number, string> = {
     6: '토',
 };
 
-function normalizeTime(time: string): string {
-    return time.slice(0, 5);
-}
+const normalizeTime = (time: string): string => time.slice(0, 5);
 
 interface HostTimeSlotPreviewProps {
     timeslots: ITimeSlot[];
@@ -21,11 +19,11 @@ interface HostTimeSlotPreviewProps {
     className?: string;
 }
 
-export function HostTimeSlotPreview({
+export const HostTimeSlotPreview = ({
     timeslots,
     isLoading,
     className,
-}: HostTimeSlotPreviewProps) {
+}: HostTimeSlotPreviewProps) => {
     if (isLoading) {
         return (
             <div data-testid="host-timeslot-preview-loading" className="text-gray-500 text-sm">
@@ -53,9 +51,9 @@ export function HostTimeSlotPreview({
                 return (
                     <div
                         key={slot.id}
-                        className="flex items-center gap-3 bg-[var(--cohi-bg-warm)]/50 rounded-lg px-4 py-3"
+                        className="flex items-center gap-3 bg-cohi-bg-warm/50 rounded-lg px-4 py-3"
                     >
-                        <span className="text-sm font-medium text-[var(--cohi-text-dark)]">
+                        <span className="text-sm font-medium text-cohi-text-dark">
                             {weekdayLabels}
                         </span>
                         <span className="text-sm text-gray-600">
@@ -66,4 +64,4 @@ export function HostTimeSlotPreview({
             })}
         </div>
     );
-}
+};

@@ -42,18 +42,12 @@ export interface MessagePage {
   nextCursor: string | null;
 }
 
-export async function getChatRooms(): Promise<ChatRoom[]> {
-  return httpClient<ChatRoom[]>(`${CHAT_API_URL}/chat/rooms`);
-}
+export const getChatRooms = async (): Promise<ChatRoom[]> => httpClient<ChatRoom[]>(`${CHAT_API_URL}/chat/rooms`);
 
-export async function getChatMessages(
-  roomId: string,
-  cursor?: string,
-  size?: number,
-): Promise<MessagePage> {
-  const params = new URLSearchParams();
-  if (cursor) params.set('cursor', cursor);
-  if (size) params.set('size', String(size));
-  const query = params.toString() ? `?${params.toString()}` : '';
-  return httpClient<MessagePage>(`${CHAT_API_URL}/chat/rooms/${roomId}/messages${query}`);
-}
+export const getChatMessages = async (roomId: string, cursor?: string, size?: number): Promise<MessagePage> => {
+    const params = new URLSearchParams();
+    if (cursor) params.set('cursor', cursor);
+    if (size) params.set('size', String(size));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return httpClient<MessagePage>(`${CHAT_API_URL}/chat/rooms/${roomId}/messages${query}`);
+};

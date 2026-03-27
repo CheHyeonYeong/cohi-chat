@@ -1,12 +1,13 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BookingDetailPanel } from './BookingDetailPanel';
 import type { IBookingDetail } from '../../types';
 import type { IBookingFile } from '../../types';
-import React from 'react';
+import { formatKoreanDate } from '~/libs/date';
 
 const mockBooking: IBookingDetail = {
     id: 1,
@@ -40,11 +41,11 @@ const mockBooking: IBookingDetail = {
 
 // Mock components
 vi.mock('~/components', () => ({
-    Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Tag: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock('./BookingHeader', () => ({
-    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: React.ReactNode }) => (
+    BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: ReactNode }) => (
         <div data-testid="booking-header">
             <span>{displayName}</span>
             <span>{roleLabel}</span>
@@ -69,7 +70,7 @@ vi.mock('../BookingMetaSection', () => ({
     BookingMetaSection: ({ booking }: { booking: IBookingDetail }) => (
         <div data-testid="booking-meta-section">
             <span>{booking.topic}</span>
-            <span>{booking.startedAt.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>{formatKoreanDate(booking.startedAt)}</span>
             <span>{booking.timeSlot.startedAt} - {booking.timeSlot.endedAt}</span>
             <span>{booking.description || '설명이 없습니다.'}</span>
         </div>
@@ -78,7 +79,7 @@ vi.mock('../BookingMetaSection', () => ({
 
 // Mock @tanstack/react-router to resolve parameters in the Link component
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, params }: { children: React.ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
+    Link: ({ children, to, params }: { children: ReactNode; to: string; params?: Record<string, string | number | undefined> }) => {
         let href = to;
         if (params) {
             Object.entries(params).forEach(([key, value]) => {

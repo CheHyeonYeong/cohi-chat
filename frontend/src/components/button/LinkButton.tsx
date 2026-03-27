@@ -1,22 +1,17 @@
-import { forwardRef } from "react";
+import type { AnchorHTMLAttributes, ReactNode, Ref } from "react";
 import { createLink } from "@tanstack/react-router";
 import { Button } from "./Button";
 
-interface LinkButtonProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
     variant: "primary" | "secondary" | "outline";
     size?: "md" | "lg";
     className?: string;
-    children: React.ReactNode;
+    children: ReactNode;
+    ref?: Ref<HTMLAnchorElement>;
 }
 
-const LinkButtonInner = forwardRef<HTMLAnchorElement, LinkButtonProps>(
-    ({ variant, size, className, children, ...anchorProps }, ref) => {
-        return (
-            <Button variant={variant} size={size} className={className} asChild>
-                <a ref={ref} {...anchorProps}>{children}</a>
-            </Button>
-        );
-    }
-);
+const LinkButtonInner = ({ variant, size, className, children, ref, ...anchorProps }: LinkButtonProps) => <Button variant={variant} size={size} className={className} asChild>
+    <a ref={ref} {...anchorProps}>{children}</a>
+</Button>;
 
 export const LinkButton = createLink(LinkButtonInner);

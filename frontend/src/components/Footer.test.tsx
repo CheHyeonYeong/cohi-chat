@@ -1,12 +1,13 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 
 // Mock TanStack Router Link component
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, className }: { children: React.ReactNode; to: string; className?: string }) => (
+    Link: ({ children, to, className }: { children: ReactNode; to: string; className?: string }) => (
         <a href={to} className={className}>{children}</a>
     ),
 }));

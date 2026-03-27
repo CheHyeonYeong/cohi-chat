@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,29 +7,24 @@ import { Profile } from './Profile';
 vi.mock('@tanstack/react-router', () => ({
     useParams: () => ({ hostId: 'testhost' }),
     useNavigate: () => vi.fn(),
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
+    Link: ({ children, to, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a href={to as string} {...props}>{children}</a>,
     createLink:
-        (component: React.ComponentType<Record<string, unknown>>) =>
+        (component: ComponentType<Record<string, unknown>>) =>
             (props: Record<string, unknown>) => {
                 const { to, ...rest } = props;
-                return React.createElement(component, { href: to, ...rest });
+                const Component = component;
+                return <Component href={to} {...rest} />;
             },
 }));
 
 vi.mock('~/components/calendar', () => ({
     Navigator: ({ year, month }: { year: number; month: number }) =>
-        React.createElement('div', { 'data-testid': 'calendar-navigator' }, `${year}년 ${month}월`),
+        <div data-testid="calendar-navigator">{`${year}년 ${month}월`}</div>,
     Body: ({ onSelectDay }: { onSelectDay: (date: Date) => void }) =>
-        React.createElement('div', {
-            'data-testid': 'calendar-body',
-            onClick: () => onSelectDay(new Date(2024, 2, 15)),
-        }, 'calendar-body'),
+        <div data-testid="calendar-body" onClick={() => onSelectDay(new Date(2024, 2, 15))}>calendar-body</div>,
     Timeslots: ({ onSelectTimeslot, baseDate }: { onSelectTimeslot: (ts: Record<string, unknown>) => void; baseDate: Date | null }) =>
-        React.createElement('div', {
-            'data-testid': 'calendar-timeslots',
-            onClick: () => onSelectTimeslot({ id: 1, startedAt: '10:00', endedAt: '11:00' }),
-        }, baseDate ? `timeslots-${baseDate.getDate()}` : 'timeslots'),
+        <div data-testid="calendar-timeslots" onClick={() => onSelectTimeslot({ id: 1, startedAt: '10:00', endedAt: '11:00' })}>{baseDate ? `timeslots-${baseDate.getDate()}` : 'timeslots'}</div>,
     getCalendarDays: () => [],
 }));
 
@@ -41,7 +36,7 @@ vi.mock('~/features/member', () => ({
 
 vi.mock('~/features/booking', () => ({
     useBookings: () => ({ data: [], refetch: vi.fn() }),
-    BookingForm: () => React.createElement('div', { 'data-testid': 'booking-form' }, 'BookingForm'),
+    BookingForm: () => <div data-testid="booking-form">BookingForm</div>,
 }));
 
 const mockUseHostProfile = vi.fn();
@@ -58,8 +53,8 @@ const createWrapper = () => {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 const mockHost = {

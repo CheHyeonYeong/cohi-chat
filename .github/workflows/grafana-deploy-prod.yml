@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/observability/**'
+      - 'infra/observability/docker-compose.grafana.yml'
+      - 'infra/observability/.env.grafana.example'
+      - 'infra/observability/grafana/**'
       - '.github/workflows/grafana-deploy-prod.yml'
   workflow_dispatch:
 
@@ -38,8 +40,8 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
         with:
           host: ${{ secrets.GRAFANA_EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          username: ${{ secrets.GRAFANA_EC2_USER }}
+          key: ${{ secrets.GRAFANA_SSH_KEY }}
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           command_timeout: 10m
           debug: true
@@ -63,7 +65,7 @@ jobs:
 
             # Secrets Manager에서 Grafana 환경변수 로드
             aws secretsmanager get-secret-value \
-              --secret-id cohi-chat/grafana \
+              --secret-id cohi-chat/prod \
               --query SecretString \
               --output text | \
               python3 -c "import sys,json; data=json.load(sys.stdin); print('\n'.join(f'{k}={v}' for k,v in data.items()))" > .env
@@ -72,13 +74,13 @@ jobs:
             docker image prune -af --filter "until=24h" || true
 
             # Grafana 배포
-            docker-compose -f docker-compose.grafana-only.yml pull
-            docker-compose -f docker-compose.grafana-only.yml up -d
+            docker-compose -f docker-compose.grafana.yml pull
+            docker-compose -f docker-compose.grafana.yml up -d
 
             echo "Waiting for Grafana to start..."
             sleep 10
 
-            docker-compose -f docker-compose.grafana-only.yml ps
-            docker-compose -f docker-compose.grafana-only.yml logs --tail=20 grafana
+            docker-compose -f docker-compose.grafana.yml ps
+            docker-compose -f docker-compose.grafana.yml logs --tail=20 grafana
 
             echo "Deploy success: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"

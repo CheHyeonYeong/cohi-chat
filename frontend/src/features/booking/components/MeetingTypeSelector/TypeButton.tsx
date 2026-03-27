@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { cn } from '~/libs/cn';
 
 const buttonBaseStyles = cn(
@@ -5,7 +6,7 @@ const buttonBaseStyles = cn(
 );
 
 const activeButtonStyles = cn(
-    'border-[var(--cohi-primary)] bg-[var(--cohi-bg-warm)] text-[var(--cohi-primary)]'
+    'border-cohi-primary bg-cohi-bg-warm text-cohi-primary'
 );
 
 const inactiveButtonStyles = cn(
@@ -15,21 +16,17 @@ const inactiveButtonStyles = cn(
 interface TypeButtonProps {
     selected: boolean;
     onClick: () => void;
-    icon: React.ReactNode;
+    icon: ReactNode;
     label: string;
     testId: string;
 }
 
-export function TypeButton({ selected, onClick, icon, label, testId }: TypeButtonProps) {
-    return (
-        <button
-            type="button"
-            data-testid={testId}
-            onClick={onClick}
-            className={cn(buttonBaseStyles, selected ? activeButtonStyles : inactiveButtonStyles)}
-        >
-            {icon}
-            <span className="font-medium">{label}</span>
-        </button>
-    );
-}
+export const TypeButton = ({ selected, onClick, icon, label, testId }: TypeButtonProps) => <button
+    type="button"
+    data-testid={testId}
+    onClick={onClick}
+    className={cn(buttonBaseStyles, selected ? activeButtonStyles : inactiveButtonStyles)}
+>
+    {icon}
+    <span className="font-medium">{label}</span>
+</button>;

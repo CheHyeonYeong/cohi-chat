@@ -4,7 +4,7 @@ import { loginApi } from '../api/memberApi';
 import { saveAuthenticatedUser } from '../utils/authStorage';
 import type { LoginCredentials, LoginResponse } from '../types';
 
-export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredentials> {
+export const useLogin = (): UseMutationResult<LoginResponse, Error, LoginCredentials> => {
     const queryClient = useQueryClient();
 
     return useMutation<LoginResponse, Error, LoginCredentials>({
@@ -23,4 +23,4 @@ export function useLogin(): UseMutationResult<LoginResponse, Error, LoginCredent
             }
         },
     });
-}
+};

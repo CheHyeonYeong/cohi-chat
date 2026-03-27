@@ -2,7 +2,7 @@ import { httpClient } from '~/libs/httpClient';
 import type { IBookingDetail, IBookingUpdatePayload } from '../types';
 import { API_URL } from './constants';
 
-export async function updateBooking(bookingId: number, data: IBookingUpdatePayload): Promise<IBookingDetail> {
+export const updateBooking = async (bookingId: number, data: IBookingUpdatePayload): Promise<IBookingDetail> => {
     const response = await httpClient<IBookingDetail>(`${API_URL}/bookings/${bookingId}`, {
         method: 'PATCH',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,4 +14,4 @@ export async function updateBooking(bookingId: number, data: IBookingUpdatePaylo
     }
 
     return response;
-}
+};

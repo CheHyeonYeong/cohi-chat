@@ -36,6 +36,7 @@ import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
@@ -65,6 +66,7 @@ public class BookingService {
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
     private final EntityManager entityManager;
+    private final ChatService chatService;
 
     private volatile ZoneId calendarZoneId;
 
@@ -111,10 +113,12 @@ public class BookingService {
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
+        chatService.createRoomForBooking(savedBooking);
+
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());
 
-        return toBookingResponseDTO(savedBooking);
+        return toBookingResponseDTOWithChatRoom(savedBooking);
     }
 
     private String buildEventSummary(Member guest) {
@@ -205,7 +209,20 @@ public class BookingService {
 
         validateBookingAccess(booking, requesterId);
 
-        return toBookingResponseDTO(booking);
+        return toBookingResponseDTOWithChatRoom(booking);
+    }
+
+    private BookingResponseDTO toBookingResponseDTOWithChatRoom(Booking booking) {
+        Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
+        String hostUsername = host != null ? host.getUsername() : null;
+        String hostDisplayName = host != null ? host.getDisplayName() : null;
+
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        String guestUsername = guest != null ? guest.getUsername() : null;
+        String guestDisplayName = guest != null ? guest.getDisplayName() : null;
+
+        UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
+        return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, chatRoomId);
     }
 
     private void validateBookingAccess(Booking booking, UUID requesterId) {

@@ -6,6 +6,7 @@
 .env
 .env.*
 !.env.example
+!infra/observability/.env.ingest.example
 !infra/observability/.env.grafana.example
 
 # Claude Code

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,7 +33,7 @@ let mockHostCalendar = { data: { topics: ['커리어 상담', '기술 면접'], 
 
 vi.mock('@tanstack/react-router', () => ({
     useParams: () => ({ id: '1' }),
-    Link: ({ children, ...props }: { children: React.ReactNode; to: string }) => <a {...props}>{children}</a>,
+    Link: ({ children, ...props }: { children: ReactNode; to: string }) => <a {...props}>{children}</a>,
 }));
 
 vi.mock('~/features/booking', async () => {
@@ -59,7 +60,7 @@ vi.mock('~/features/booking', async () => {
                 {booking.meetingType === 'OFFLINE' && booking.location && <span>- {booking.location}</span>}
             </div>
         ),
-        BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: React.ReactNode }) => (
+        BookingHeader: ({ displayName, roleLabel, attendanceStatus, actions }: { displayName: string; roleLabel: string; attendanceStatus: string; actions?: ReactNode }) => (
             <div data-testid="booking-header">
                 <span>{displayName}</span>
                 <span>{roleLabel}</span>
@@ -82,17 +83,17 @@ vi.mock('~/features/host', () => ({
 }));
 
 vi.mock('~/components', () => ({
-    PageLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    PageLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('~/components/button', () => ({
-    Button: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+    Button: ({ children, ...props }: { children: ReactNode; [key: string]: unknown }) => (
         <button {...props}>{children}</button>
     ),
 }));
 
 vi.mock('~/components/card', () => ({
-    Card: ({ children, title }: { children: React.ReactNode; title?: string }) => (
+    Card: ({ children, title }: { children: ReactNode; title?: string }) => (
         <div>
             {title && <h3>{title}</h3>}
             {children}
@@ -102,7 +103,7 @@ vi.mock('~/components/card', () => ({
 
 const createWrapper = () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return ({ children }: { children: React.ReactNode }) => (
+    return ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
 };

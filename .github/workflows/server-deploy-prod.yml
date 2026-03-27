@@ -1,11 +1,16 @@
-﻿name: Server Deploy Production
+name: Server Deploy Production
 
 on:
   push:
     branches: [main]
     paths:
       - 'backend/**'
-      - 'docker-compose.prod.yml'
+      - 'infra/app/**'
+      - 'infra/observability/docker-compose.ingest.yml'
+      - 'infra/observability/docker-compose.backend-observability.yml'
+      - 'infra/observability/fluent-bit.conf'
+      - 'infra/observability/vector.toml'
+      - 'scripts/ec2-deploy-common.sh'
       - '.github/workflows/server-deploy-prod.yml'
   workflow_dispatch:
 
@@ -87,12 +92,15 @@ jobs:
             # Backend 배포
             aws s3 cp s3://cohi-chat-config/app.jar ./backend/app.jar
 
-            docker-compose -f docker-compose.prod.yml build backend
-            docker-compose -f docker-compose.prod.yml up -d redis backend
+            docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml up -d
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml build backend
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml up -d redis backend
 
             echo "Waiting for backend to start..."
             sleep 30
 
-            docker-compose -f docker-compose.prod.yml ps
-            docker-compose -f docker-compose.prod.yml logs --tail=50 backend
+            docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml ps
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml ps
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml logs --tail=20 redis
+            docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml logs --tail=50 backend
             log_deploy_success

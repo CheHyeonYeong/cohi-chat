@@ -36,6 +36,7 @@ public class BookingResponseDTO {
     private final MeetingType meetingType;
     private final String location;
     private final String meetingLink;
+    private final UUID chatRoomId;
 
     public static BookingResponseDTO from(Booking booking) {
         return from(booking, null, null, null, null);
@@ -47,6 +48,11 @@ public class BookingResponseDTO {
 
     public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
                                           String guestUsername, String guestDisplayName) {
+        return from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, null);
+    }
+
+    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
+                                          String guestUsername, String guestDisplayName, UUID chatRoomId) {
         var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
 
@@ -69,6 +75,7 @@ public class BookingResponseDTO {
             .meetingType(booking.getMeetingType())
             .location(booking.getLocation())
             .meetingLink(booking.getMeetingLink())
+            .chatRoomId(chatRoomId)
             .build();
     }
 }

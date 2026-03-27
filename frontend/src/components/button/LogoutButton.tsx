@@ -1,8 +1,7 @@
-import React from 'react';
 import { Button } from './Button';
 import { useLogout } from '~/features/member';
 
-export function LogoutButton() {
+export const LogoutButton = () => {
     const { logout } = useLogout();      // hook 호출
 
     return (
@@ -13,4 +12,4 @@ export function LogoutButton() {
         로그아웃
         </Button>
     );
-}
+};

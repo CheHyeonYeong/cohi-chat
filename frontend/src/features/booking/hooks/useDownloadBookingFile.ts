@@ -6,8 +6,6 @@ interface DownloadBookingFileParams {
     fileName: string;
 }
 
-export function useDownloadBookingFile(bookingId: number) {
-    return useMutation<void, Error, DownloadBookingFileParams>({
-        mutationFn: ({ fileId, fileName }) => downloadFileWithPresignedUrl(bookingId, fileId, fileName),
-    });
-}
+export const useDownloadBookingFile = (bookingId: number) => useMutation<void, Error, DownloadBookingFileParams>({
+    mutationFn: ({ fileId, fileName }) => downloadFileWithPresignedUrl(bookingId, fileId, fileName),
+});
