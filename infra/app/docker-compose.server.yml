@@ -1,3 +1,33 @@
+x-backend-common: &backend-common
+  build:
+    context: ../../backend
+    dockerfile: Dockerfile
+  env_file:
+    - ../../.env
+  environment:
+    - SPRING_PROFILES_ACTIVE=prod
+    - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - REDIS_PASSWORD=${REDIS_PASSWORD}
+    - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
+    - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
+    - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
+    - SUPABASE_DB_USER=${SUPABASE_DB_USER}
+    - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
+  depends_on:
+    redis:
+      condition: service_healthy
+  networks:
+    - cohi-chat-network
+  healthcheck:
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+    interval: 15s
+    timeout: 5s
+    start_period: 90s
+    retries: 5
+  restart: unless-stopped
+
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -13,66 +43,12 @@ services:
     restart: unless-stopped
 
   backend-blue:
-    build:
-      context: ../../backend
-      dockerfile: Dockerfile
+    <<: *backend-common
     container_name: cohi-chat-backend-blue
-    env_file:
-      - ../../.env
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
-      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
-      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
-      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
-      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - cohi-chat-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      start_period: 90s
-      retries: 5
-    restart: unless-stopped
 
   backend-green:
-    build:
-      context: ../../backend
-      dockerfile: Dockerfile
+    <<: *backend-common
     container_name: cohi-chat-backend-green
-    env_file:
-      - ../../.env
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
-      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
-      - SUPABASE_DB_NAME=${SUPABASE_DB_NAME:-postgres}
-      - SUPABASE_DB_USER=${SUPABASE_DB_USER}
-      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - cohi-chat-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      start_period: 90s
-      retries: 5
-    restart: unless-stopped
 
   redis:
     image: redis:8.6-alpine

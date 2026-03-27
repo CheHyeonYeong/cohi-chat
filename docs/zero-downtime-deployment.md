@@ -34,7 +34,7 @@ The first cutover is a topology change, not a fully zero-downtime deployment.
 1. Build the backend JAR in GitHub Actions.
 2. Upload the JAR to S3.
 3. SSH into EC2 and sync the repository.
-4. Start `redis` only.
+4. Start the observability ingest stack.
 5. Run `scripts/blue-green-deploy.sh`.
 
 `blue-green-deploy.sh` does this:
@@ -46,6 +46,7 @@ The first cutover is a topology change, not a fully zero-downtime deployment.
 5. Rewrite `infra/app/nginx/upstream.conf` to point to the inactive backend.
 6. Run `nginx -t` and `nginx -s reload`.
 7. Stop the old backend.
+8. Prune dangling Docker images and build cache on success.
 
 ## Rollback Flow
 
@@ -76,6 +77,7 @@ bash scripts/rollback.sh
 ## Verification Commands
 
 ```bash
+docker-compose --env-file .env -f infra/observability/docker-compose.ingest.yml ps
 docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml ps
 docker inspect --format='{{.State.Health.Status}}' cohi-chat-backend-blue
 docker inspect --format='{{.State.Health.Status}}' cohi-chat-backend-green
@@ -91,6 +93,7 @@ curl -I http://127.0.0.1/actuator/health
 - `infra/app/nginx/upstream.conf`
 - `infra/app/nginx/chat-upstream.conf`
 - `infra/observability/docker-compose.backend-observability.yml`
+- `scripts/blue-green-common.sh`
 - `scripts/blue-green-deploy.sh`
 - `scripts/rollback.sh`
 - `.github/workflows/server-deploy-prod.yml`

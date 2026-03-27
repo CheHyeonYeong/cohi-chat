@@ -11,6 +11,7 @@ on:
       - 'infra/observability/fluent-bit.conf'
       - 'infra/observability/vector.toml'
       - 'scripts/blue-green-deploy.sh'
+      - 'scripts/blue-green-common.sh'
       - 'scripts/rollback.sh'
       - 'scripts/ec2-deploy-common.sh'
       - '.github/workflows/server-deploy-prod.yml'
