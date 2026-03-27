@@ -18,6 +18,7 @@ import { Footer } from '~/components/Footer'
 import { Terms } from '~/pages/Terms'
 import { Privacy } from '~/pages/Privacy'
 import { ForgotPassword } from '~/pages/ForgotPassword'
+import { Rooms as ChatRooms } from '~/pages/chat/Rooms'
 import { ResetPassword } from '~/pages/ResetPassword'
 
 // DevTools는 개발 환경에서만 동적 로드 (프로덕션 빌드 시 tree-shaking으로 완전 제거됨)
@@ -152,6 +153,15 @@ const memberSettingsRoute = createRoute({
     component: () => <AuthGuard><MemberSettings /></AuthGuard>,
 })
 
+const chatRoomsRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/chat/rooms',
+    component: () => <AuthGuard><ChatRooms /></AuthGuard>,
+    validateSearch: z.object({
+        roomId: z.string().optional(),
+    }),
+})
+
 const forgotPasswordRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/forgot-password',
@@ -182,6 +192,7 @@ export const routeTree = RootRoute.addChildren([
     termsRoute,
     privacyRoute,
     memberSettingsRoute,
+    chatRoomsRoute,
     forgotPasswordRoute,
     resetPasswordRoute,
 ])

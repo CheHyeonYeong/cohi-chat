@@ -4,10 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { DataSource, LessThan, Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { RoomMember } from './entities/room-member.entity';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
+import { RoomResponseDto } from './dto/room-response.dto';
 
 // Spring의 @Service에 대응 — 비즈니스 로직 담당
 @Injectable()
@@ -19,7 +20,78 @@ export class ChatService {
 
     @InjectRepository(RoomMember)
     private readonly roomMemberRepository: Repository<RoomMember>,
+
+    // 복잡한 JOIN 쿼리를 위한 raw query 실행 — Spring의 EntityManager.createNativeQuery()에 대응
+    private readonly dataSource: DataSource,
   ) {}
+
+  async getRooms(userId: string): Promise<RoomResponseDto[]> {
+    // NestJS와 Spring이 같은 PostgreSQL DB를 공유하므로 member 테이블 JOIN 가능
+    // LATERAL JOIN: room별로 마지막 메시지 1건 + 안읽은 메시지 수를 효율적으로 계산
+    const rows: Array<Record<string, unknown>> = await this.dataSource.query(
+      `
+      SELECT
+        cr.id,
+        cr.status,
+        other_rm.member_id                          AS counterpart_id,
+        COALESCE(m.display_name, '')                AS counterpart_name,
+        m.profile_image_url                         AS counterpart_profile_image_url,
+        last_msg.id                                 AS last_message_id,
+        last_msg.content                            AS last_message_content,
+        last_msg.message_type                       AS last_message_type,
+        last_msg.created_at                         AS last_message_created_at,
+        COALESCE(unread.cnt, 0)::int                AS unread_count
+      FROM chat_room cr
+      JOIN room_member my_rm
+        ON my_rm.room_id = cr.id
+        AND my_rm.member_id = $1::uuid
+        AND my_rm.deleted_at IS NULL
+      LEFT JOIN room_member other_rm
+        ON other_rm.room_id = cr.id
+        AND other_rm.member_id != $1::uuid
+        AND other_rm.deleted_at IS NULL
+      LEFT JOIN member m ON m.id = other_rm.member_id
+      LEFT JOIN LATERAL (
+        SELECT id, content, message_type, created_at
+        FROM message
+        WHERE room_id = cr.id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) last_msg ON true
+      LEFT JOIN LATERAL (
+        -- UUID v7 시간 순서 정렬을 이용한 unread 계산
+        -- last_read_message_id IS NULL이면 전체가 unread
+        SELECT COUNT(*)::int AS cnt
+        FROM message msg
+        WHERE msg.room_id = cr.id
+          AND (my_rm.last_read_message_id IS NULL
+               OR msg.id > my_rm.last_read_message_id)
+      ) unread ON true
+      WHERE cr.deleted_at IS NULL
+      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC
+      `,
+      [userId],
+    );
+
+    return rows.map((row) => {
+      const dto = new RoomResponseDto();
+      dto.id = row.id as string;
+      dto.status = row.status as string;
+      dto.counterpartId = row.counterpart_id as string;
+      dto.counterpartName = row.counterpart_name as string;
+      dto.counterpartProfileImageUrl = (row.counterpart_profile_image_url as string) ?? null;
+      dto.unreadCount = row.unread_count as number;
+      dto.lastMessage = row.last_message_id
+        ? {
+            id: row.last_message_id as string,
+            content: (row.last_message_content as string) ?? null,
+            messageType: row.last_message_type as string,
+            createdAt: (row.last_message_created_at as Date).toISOString(),
+          }
+        : null;
+      return dto;
+    });
+  }
 
   async getMessages(
     roomId: string,
@@ -33,20 +105,15 @@ export class ChatService {
     }
 
     // 권한 체크: JWT userId가 해당 roomId의 RoomMember인지 확인
-    // Spring의 @PreAuthorize 대신 서비스 레이어에서 직접 검증
     // @DeleteDateColumn 선언으로 TypeORM이 자동으로 WHERE deleted_at IS NULL을 추가함
     const member = await this.roomMemberRepository.findOne({
       where: { roomId, memberId: userId },
     });
 
     if (!member) {
-      // 방 자체가 없을 수도 있고 멤버가 아닐 수도 있음
-      // 방 존재 여부를 노출하지 않기 위해 통일된 에러 사용
       throw new NotFoundException('채팅방을 찾을 수 없거나 접근 권한이 없습니다.');
     }
 
-    // 커서 기반 페이징: cursor(ISO timestamp) 이전의 메시지를 created_at DESC로 조회
-    // Spring Pageable과 달리 TypeORM은 where 조건 + take로 구현
     const messages = await this.messageRepository.find({
       where: {
         roomId,
@@ -56,7 +123,6 @@ export class ChatService {
       take: size,
     });
 
-    // size만큼 정확히 왔으면 다음 페이지가 있을 수 있음 — 마지막 항목의 createdAt을 커서로
     const nextCursor =
       messages.length === size
         ? messages[messages.length - 1].createdAt.toISOString()
