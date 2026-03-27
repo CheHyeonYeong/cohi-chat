@@ -10,12 +10,13 @@ import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
 import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
 import { useAuth } from '~/features/member';
+import { formatDateToISO } from '~/libs/date';
 
 const DEFAULT_TOPICS = ['개발 커리어', '이직 준비', '기술 면접', '스타트업 경험', '코드 리뷰'];
 
 export const Profile = () => {
     const { hostId } = useParams({ from: '/host/$hostId' });
-    const { selectedBookingId } = useSearch({ from: '/host/$hostId' });
+    const { date, selectedBookingId } = useSearch({ from: '/host/$hostId' });
     const navigate = useNavigate();
     useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
 
@@ -28,9 +29,20 @@ export const Profile = () => {
     const topics = calendar?.topics && calendar.topics.length > 0 ? calendar.topics : DEFAULT_TOPICS;
 
     const calendarState = useProfileCalendar({
-        onDateChange: isSelf
-            ? () => navigate({ to: '/host/$hostId', params: { hostId }, search: { selectedBookingId: undefined }, replace: true })
-            : undefined,
+        initialDate: date,
+        onDateChange: (selectedDate) => {
+            const dateStr = selectedDate ? formatDateToISO(selectedDate) : undefined;
+            navigate({
+                to: '/host/$hostId',
+                params: { hostId },
+                search: (prev) => ({
+                    ...prev,
+                    date: dateStr,
+                    selectedBookingId: isSelf ? undefined : prev.selectedBookingId,
+                }),
+                replace: true,
+            });
+        },
     });
 
     const { data: bookings = [], refetch: refetchBookings } = useBookings(
@@ -45,7 +57,12 @@ export const Profile = () => {
 
     const handleSelectBooking = (bookingId: number) => {
         const nextId = selectedBookingId === bookingId ? undefined : bookingId;
-        navigate({ to: '/host/$hostId', params: { hostId }, search: { selectedBookingId: nextId }, replace: true });
+        navigate({
+            to: '/host/$hostId',
+            params: { hostId },
+            search: (prev) => ({ ...prev, selectedBookingId: nextId }),
+            replace: true,
+        });
         if (nextId && window.innerWidth < 768) {
             setTimeout(() => calendarState.formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }

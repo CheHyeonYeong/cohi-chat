@@ -1,19 +1,24 @@
 import { useState, useRef } from 'react';
-import type { ITimeSlot, IBooking } from '~/components/calendar';
+import dayjs from 'dayjs';
+import type { ITimeSlot } from '~/components/calendar';
+import { parseDateTime } from '~/libs/date';
 
 const isMobile = () => window.innerWidth < 768;
 
 interface UseProfileCalendarOptions {
-    onDateChange?: () => void;
+    initialDate?: string;
+    onDateChange?: (date: Date | null) => void;
 }
 
 export type ProfileCalendarState = ReturnType<typeof useProfileCalendar>;
 
-export const useProfileCalendar = ({ onDateChange }: UseProfileCalendarOptions = {}) => {
-    const now = new Date();
+export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCalendarOptions = {}) => {
+    const parsedInitial = initialDate ? parseDateTime(initialDate) : null;
+    const now = parsedInitial ?? new Date();
+
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(parsedInitial);
     const [selectedTimeslot, setSelectedTimeslot] = useState<ITimeSlot | null>(null);
 
     const timeslotsRef = useRef<HTMLDivElement>(null);
@@ -32,7 +37,7 @@ export const useProfileCalendar = ({ onDateChange }: UseProfileCalendarOptions =
     const handleSelectDay = (date: Date) => {
         setSelectedDate(date);
         setSelectedTimeslot(null);
-        onDateChange?.();
+        onDateChange?.(date);
         if (isMobile()) {
             setTimeout(() => timeslotsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }
@@ -48,6 +53,7 @@ export const useProfileCalendar = ({ onDateChange }: UseProfileCalendarOptions =
     const resetSelection = () => {
         setSelectedTimeslot(null);
         setSelectedDate(null);
+        onDateChange?.(null);
     };
 
     return {
