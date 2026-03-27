@@ -25,7 +25,7 @@ export class Message {
   messageType: MessageType;
 
   // 정책상 최대 1000자, DB 컬럼은 이모지 여유분 포함 2000자
-  @Column({ length: 2000, nullable: true })
+  @Column({ type: 'varchar', length: 2000, nullable: true })
   content: string | null;
 
   // RESERVATION_CARD: 예약 snapshot / SYSTEM: 메타데이터

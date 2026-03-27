@@ -1,5 +1,6 @@
-// Spring의 @RequestBody DTO에 대응
-// class-validator 없이 서비스 레이어에서 직접 검증
+import { ApiProperty } from '@nestjs/swagger';
+
 export class SendMessageDto {
+  @ApiProperty({ example: '안녕하세요!', description: '메시지 내용 (최대 1000자)' })
   content: string;
 }
