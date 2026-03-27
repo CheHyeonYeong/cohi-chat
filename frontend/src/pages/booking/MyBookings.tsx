@@ -58,7 +58,7 @@ export function MyBookings() {
     const { data: bookings, isLoading, error } = useAllMyBookings({ page, pageSize: PAGE_SIZE });
     const [sortedIds, setSortedIds] = useState<number[]>([]);
     const { data: authUser } = useAuth();
-    const { data: rooms = [] } = useChatRooms();
+    const { data: rooms = [] } = useChatRooms({ enabled: !!bookings?.bookings.length });
 
     useEffect(() => {
         if (bookings?.bookings) {

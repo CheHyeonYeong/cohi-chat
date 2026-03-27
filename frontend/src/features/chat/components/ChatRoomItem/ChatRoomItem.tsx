@@ -14,7 +14,7 @@ function formatTime(isoString: string): string {
 
 function lastMessagePreview(room: ChatRoom): string {
   if (!room.lastMessage) return '대화를 시작해보세요';
-  if (room.lastMessage.messageType === 'RESERVATION_CARD') return '📅 예약 카드';
+  if (room.lastMessage.messageType === 'RESERVATION_CARD') return '예약 카드';
   if (room.lastMessage.messageType === 'SYSTEM') return '시스템 메시지';
   return room.lastMessage.content ?? '';
 }

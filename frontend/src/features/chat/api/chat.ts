@@ -18,13 +18,22 @@ export interface ChatRoom {
   unreadCount: number;
 }
 
+export interface ReservationCardPayload {
+  bookingId: number;
+  topic: string;
+  status: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface MessageItem {
   id: string;
   roomId: string;
   senderId: string | null;
-  messageType: string;
+  messageType: 'TEXT' | 'RESERVATION_CARD' | 'SYSTEM';
   content: string | null;
-  payload: Record<string, unknown> | null;
+  payload: ReservationCardPayload | null;
   createdAt: string;
 }
 

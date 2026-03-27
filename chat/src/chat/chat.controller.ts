@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
+  PipeTransform,
   Query,
   Req,
   UseGuards,
@@ -10,11 +12,23 @@ import { RoomResponseDto } from './dto/room-response.dto';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ChatService } from './chat.service';
-import { GetMessagesDto } from './dto/get-messages.dto';
 import { MessagePageResponse } from './dto/message-response.dto';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
+
+// Spring의 @InitBinder + Validator에 대응 — cursor 쿼리 파라미터 ISO 8601 검증 파이프
+class ParseCursorPipe implements PipeTransform {
+  transform(value: unknown): string | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value !== 'string' || isNaN(new Date(value).getTime())) {
+      throw new BadRequestException(
+        'cursor 형식이 올바르지 않습니다. ISO 8601 타임스탬프를 사용하세요.',
+      );
+    }
+    return value;
+  }
+}
 
 // Spring의 @RestController + @RequestMapping("/chat")에 대응
 // global prefix "api"와 합쳐져 → /api/chat/...
@@ -33,11 +47,12 @@ export class ChatController {
   @Get('rooms/:roomId/messages')
   async getMessages(
     @Param('roomId') roomId: string,
-    @Query() query: GetMessagesDto,
+    @Query('cursor', ParseCursorPipe) cursor: string | undefined,
+    @Query('size') size: string | undefined,
     @Req() req: FastifyRequest, // Spring의 @AuthenticationPrincipal에 대응
   ): Promise<MessagePageResponse> {
-    const size = Math.min(
-      Math.max(Number(query.size) || DEFAULT_PAGE_SIZE, 1),
+    const pageSize = Math.min(
+      Math.max(Number(size) || DEFAULT_PAGE_SIZE, 1),
       MAX_PAGE_SIZE,
     );
 
@@ -45,8 +60,8 @@ export class ChatController {
     return this.chatService.getMessages(
       roomId,
       req.user.sub,
-      query.cursor,
-      size,
+      cursor,
+      pageSize,
     );
   }
 }

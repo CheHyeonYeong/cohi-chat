@@ -26,12 +26,12 @@ function MessageBubble({ message, isMine }: MessageBubbleProps) {
   }
 
   if (message.messageType === 'RESERVATION_CARD') {
-    const payload = message.payload ?? {};
-    const topic = payload.topic as string | undefined;
-    const status = payload.status as string | undefined;
-    const bookingDate = payload.bookingDate as string | undefined;
-    const startTime = payload.startTime as string | undefined;
-    const endTime = payload.endTime as string | undefined;
+    const payload = message.payload;
+    const topic = payload?.topic;
+    const status = payload?.status;
+    const bookingDate = payload?.bookingDate;
+    const startTime = payload?.startTime;
+    const endTime = payload?.endTime;
 
     const statusLabel: Record<string, string> = {
       SCHEDULED: '예약 확정',

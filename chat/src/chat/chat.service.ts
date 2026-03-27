@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -25,6 +24,7 @@ export class ChatService {
     private readonly dataSource: DataSource,
   ) {}
 
+  // TODO: 요청마다 username → UUID 쿼리가 추가 발생 — 트래픽 증가 시 Redis 캐싱 고려
   private async getMemberIdByUsername(username: string): Promise<string> {
     const rows: Array<{ id: string }> = await this.dataSource.query(
       `SELECT id FROM member WHERE username = $1`,
@@ -108,11 +108,6 @@ export class ChatService {
     size: number,
   ): Promise<MessagePageResponse> {
     const userId = await this.getMemberIdByUsername(username);
-
-    // cursor 유효성 검사 — 클라이언트 입력 오류는 400으로 처리
-    if (cursor !== undefined && isNaN(new Date(cursor).getTime())) {
-      throw new BadRequestException('cursor 형식이 올바르지 않습니다. ISO 8601 타임스탬프를 사용하세요.');
-    }
 
     // 권한 체크: JWT userId가 해당 roomId의 RoomMember인지 확인
     // @DeleteDateColumn 선언으로 TypeORM이 자동으로 WHERE deleted_at IS NULL을 추가함
