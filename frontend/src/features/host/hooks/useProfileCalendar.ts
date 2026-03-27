@@ -6,12 +6,12 @@ const isMobile = () => window.innerWidth < 768;
 
 interface UseProfileCalendarOptions {
     initialDate?: string;
-    onDateChange?: (date: Date | null) => void;
+    onDateChange: (date: Date | null) => void;
 }
 
 export type ProfileCalendarState = ReturnType<typeof useProfileCalendar>;
 
-export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCalendarOptions = {}) => {
+export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCalendarOptions) => {
     const parsedInitial = initialDate ? parseDateTime(initialDate) : null;
     const isValidInitial = parsedInitial !== null && !Number.isNaN(parsedInitial.getTime());
     const now = isValidInitial ? parsedInitial : new Date();
@@ -43,13 +43,13 @@ export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCale
         if (isSameDate) {
             setSelectedDate(null);
             setSelectedTimeslot(null);
-            onDateChange?.(null);
+            onDateChange(null);
             return;
         }
 
         setSelectedDate(date);
         setSelectedTimeslot(null);
-        onDateChange?.(date);
+        onDateChange(date);
         if (isMobile()) {
             setTimeout(() => timeslotsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }
@@ -69,7 +69,7 @@ export const useProfileCalendar = ({ initialDate, onDateChange }: UseProfileCale
     const resetSelection = () => {
         setSelectedTimeslot(null);
         setSelectedDate(null);
-        onDateChange?.(null);
+        onDateChange(null);
     };
 
     return {

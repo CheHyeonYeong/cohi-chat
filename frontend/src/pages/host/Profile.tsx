@@ -38,7 +38,7 @@ export const Profile = () => {
                 search: (prev) => ({
                     ...prev,
                     date: dateStr,
-                    selectedBookingId: isSelf ? undefined : prev.selectedBookingId,
+                    selectedBookingId: undefined,
                 }),
                 replace: true,
             });
