@@ -9,31 +9,21 @@
 
 set -euo pipefail
 
-COMPOSE="docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml"
-NGINX_UPSTREAM_FILE="./infra/app/nginx/upstream.conf"
 HEALTH_TIMEOUT=120
-HEALTH_INTERVAL=5
 
 source "$(dirname "$0")/blue-green-common.sh"
 
-wait_redis_ready() {
-    wait_healthy "cohi-chat-redis" "redis"
-}
-
 main() {
-    echo "=============================="
-    echo " Blue-Green Deploy Start"
-    echo " $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-    echo "=============================="
+    print_banner "Blue-Green Deploy Start"
 
     echo "[infra] Ensuring redis is running..."
     $COMPOSE up -d redis
-    wait_redis_ready
+    wait_healthy "cohi-chat-redis" "redis"
 
     local active
     active=$(detect_active)
     local inactive
-    inactive=$([ "$active" = "blue" ] && echo "green" || echo "blue")
+    inactive=$(opposite_color "$active")
 
     echo "[info] Active: ${active} -> Deploying to: ${inactive}"
 
@@ -44,8 +34,7 @@ main() {
     ensure_nginx_running
     switch_upstream "$inactive"
 
-    echo "[cleanup] Stopping old backend-${active}..."
-    $COMPOSE stop "backend-${active}" || echo "[warn] backend-${active} was not running, skipping stop."
+    stop_backend_if_running "$active" "old"
 
     if [ "${ENABLE_DOCKER_PRUNE:-1}" = "1" ]; then
         echo "[cleanup] Pruning dangling Docker images/build cache..."
@@ -53,10 +42,7 @@ main() {
         docker builder prune -f >/dev/null 2>&1 || true
     fi
 
-    echo "=============================="
-    echo " Deploy Success: ${inactive} is now active"
-    echo " $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-    echo "=============================="
+    print_banner "Deploy Success: ${inactive} is now active"
 }
 
 main "$@"

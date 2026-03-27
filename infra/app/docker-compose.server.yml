@@ -21,11 +21,12 @@ x-backend-common: &backend-common
   networks:
     - cohi-chat-network
   healthcheck:
-    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/actuator/health"]
     interval: 15s
     timeout: 5s
     start_period: 90s
     retries: 5
+  stop_grace_period: 45s
   restart: unless-stopped
 
 services:
