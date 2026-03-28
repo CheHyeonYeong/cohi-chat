@@ -1,4 +1,4 @@
-import type { HTMLAttributes, Ref } from "react";
+import type { HTMLAttributes, ReactNode, Ref } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "~/libs/cn";
 
@@ -9,6 +9,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
     noBackground?: boolean;
     noShadow?: boolean;
     title?: string;
+    action?: ReactNode;
     ref?: Ref<HTMLDivElement>;
 }
 
@@ -24,7 +25,7 @@ const sizeStyles = {
     lg: "p-8",
 };
 
-export const Card = ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, className, children, ref, ...props }: CardProps) => {
+export const Card = ({ variant = "default", size = "md", asChild = false, noBackground = false, noShadow = false, title, action, className, children, ref, ...props }: CardProps) => {
     const cardClassName = cn(
         "rounded-2xl",
         !noBackground && "bg-white",
@@ -43,8 +44,11 @@ export const Card = ({ variant = "default", size = "md", asChild = false, noBack
 
     return (
         <div ref={ref} className={cardClassName} {...props}>
-            {title && (
-                <h3 className="font-semibold text-lg text-cohi-text-dark mb-4">{title}</h3>
+            {(title || action) && (
+                <div className="flex items-center justify-between mb-4">
+                    {title && <h3 className="font-semibold text-lg text-cohi-text-dark">{title}</h3>}
+                    {action}
+                </div>
             )}
             {children}
         </div>

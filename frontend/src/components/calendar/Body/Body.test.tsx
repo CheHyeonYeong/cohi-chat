@@ -105,7 +105,7 @@ describe('Body', () => {
 
             const dayButton = screen.getByRole('button', { name: 'day-15' });
             const span = dayButton.querySelector('span');
-            expect(span).toHaveClass('bg-cohi-primary');
+            expect(span).toHaveClass('cohi-selectable-active');
         });
     });
 

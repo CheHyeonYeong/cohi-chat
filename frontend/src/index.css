@@ -163,6 +163,35 @@ body {
   }
 }
 
+/* cohiChat Selectable Styles — 캘린더 날짜, 타임슬롯 버튼 등 선택 가능한 요소 */
+.cohi-selectable {
+  color: var(--color-cohi-primary);
+  background-color: var(--color-cohi-bg-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable:hover {
+  background-color: var(--color-cohi-bg-warm);
+}
+
+.cohi-selectable-active {
+  background-color: var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable-active:hover {
+  background-color: var(--color-cohi-primary-dark);
+}
+
+.cohi-selectable-disabled {
+  color: #AAAAAA;
+  background: inherit;
+  cursor: default;
+}
+
 /* cohiChat Global Styles */
 .cohi-bg-gradient {
   background: linear-gradient(135deg, var(--color-cohi-bg-warm) 0%, var(--color-cohi-bg-hero) 100%);
@@ -201,3 +230,4 @@ body {
   background-color: var(--color-cohi-primary);
   color: var(--color-cohi-text-light);
 }
+
