@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'chat/**'
-      - 'docker-compose.prod.yml'
+      - 'docker-compose.chat.prod.yml'
       - '.github/workflows/chat-deploy-prod.yml'
   workflow_dispatch:
 
@@ -20,27 +20,41 @@ jobs:
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-2
         with:
           host: ${{ secrets.EC2_CHAT_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           command_timeout: 20m
           script: |
-            set -euo pipefail
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            export AWS_DEFAULT_REGION=$AWS_REGION
 
-            if [ ! -d ~/cohi-chat ]; then
-              git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
-            fi
+            source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
+              set -euo pipefail
+              if [ ! -d ~/cohi-chat ]; then
+                git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
+              fi
+              cd ~/cohi-chat
+              git fetch origin
+              git reset --hard origin/${{ github.ref_name }}
+              source ~/cohi-chat/scripts/ec2-deploy-common.sh
+            }
 
-            cd ~/cohi-chat
-            git fetch origin
-            git reset --hard origin/${{ github.ref_name }}
+            run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
-            docker-compose -f docker-compose.prod.yml build chat-server
-            docker-compose -f docker-compose.prod.yml up -d chat-server
+            docker-compose -f docker-compose.chat.prod.yml build chat-server
+            docker-compose -f docker-compose.chat.prod.yml up -d
 
             echo "Waiting for chat-server to start..."
             sleep 15
 
-            docker-compose -f docker-compose.prod.yml ps
-            docker-compose -f docker-compose.prod.yml logs --tail=50 chat-server
+            docker-compose -f docker-compose.chat.prod.yml ps
+            docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server
+
+            log_deploy_success
