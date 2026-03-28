@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { Button } from "~/components/button";
 import { formatKoreanDate } from '~/libs/date';
 import { useAuth } from "~/features/member";
-import { checkAvailableBookingDate, isTimeslotAvailableOnDate } from "../utils";
+import { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBooked } from "../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../types";
 
 interface TimeslotsProps {
@@ -27,7 +27,7 @@ export const Timeslots = ({ baseDate, timeslots, bookings, selectedTimeslotId, o
 
     const isAvailable = checkAvailableBookingDate(date.toDate(), timeslots, bookings, year, month, day, weekday);
     const availableTimeslots = timeslots
-        .filter((ts) => isTimeslotAvailableOnDate(ts, year, month, day, weekday))
+        .filter((ts) => isTimeslotAvailableOnDate(ts, year, month, day, weekday) && !isTimeslotBooked(ts, bookings, year, month, day))
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
