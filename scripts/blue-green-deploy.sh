@@ -16,6 +16,9 @@ source "$(dirname "$0")/blue-green-common.sh"
 main() {
     print_banner "Blue-Green Deploy Start"
 
+    echo "[infra] Ensuring redis is running..."
+    $COMPOSE up -d redis
+
     local active
     active=$(detect_active)
     local inactive
