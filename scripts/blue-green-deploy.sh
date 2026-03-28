@@ -18,7 +18,6 @@ main() {
 
     echo "[infra] Ensuring redis is running..."
     $COMPOSE up -d redis
-    wait_healthy "cohi-chat-redis" "redis"
 
     local active
     active=$(detect_active)
