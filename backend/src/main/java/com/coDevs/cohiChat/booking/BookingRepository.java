@@ -23,6 +23,8 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
+    boolean existsByTimeSlot_Id(Long timeSlotId);
+
     /**
      * 게스트 ID로 예약 스트림 조회 (예약 날짜 내림차순)
      * FETCH JOIN으로 N+1 문제 방지, 100개 단위 배치 조회

@@ -8,6 +8,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErrorCode {
 
+	TIMESLOT_HAS_BOOKINGS(HttpStatus.CONFLICT, "예약이 있는 시간대는 삭제할 수 없습니다."),
+
 	/**
 	 * 계정, 인증 관련 예외들.
 	 * 400: 잘못된 요청 (입력값 검증 실패)

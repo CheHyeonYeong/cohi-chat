@@ -2,9 +2,12 @@ package com.coDevs.cohiChat.timeslot;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -387,5 +390,33 @@ class TimeSlotControllerTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.CALENDAR_NOT_FOUND.toString()));
+    }
+
+    @Test
+    @DisplayName("성공: 시간대 삭제 요청 시 200 OK 반환")
+    void deleteTimeSlotSuccess() throws Exception {
+        // when & then
+        mockMvc.perform(delete("/timeslot/v1/{timeSlotId}", 1L)
+                .with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").value(nullValue()))
+            .andExpect(jsonPath("$.error").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("실패: 예약이 있는 시간대 삭제 시 409 Conflict")
+    void deleteTimeSlotFailWhenBookingsExist() throws Exception {
+        // given
+        doThrow(new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS))
+            .when(timeSlotService)
+            .deleteTimeSlot(any(Member.class), eq(1L));
+
+        // when & then
+        mockMvc.perform(delete("/timeslot/v1/{timeSlotId}", 1L)
+                .with(csrf()))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.TIMESLOT_HAS_BOOKINGS.toString()));
     }
 }
