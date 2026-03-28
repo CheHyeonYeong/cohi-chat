@@ -10,7 +10,7 @@ import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
 import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
 import { useAuth } from '~/features/member';
-import { formatDateToISO, parseDateTime } from '~/libs/date';
+import { formatDateToISO } from '~/libs/date';
 
 const DEFAULT_TOPICS = ['개발 커리어', '이직 준비', '기술 면접', '스타트업 경험', '코드 리뷰'];
 
@@ -108,7 +108,7 @@ export const Profile = () => {
                             onSelectBooking={handleSelectBooking}
                         />
 
-                        {isSelf && selectedBookingId && bookingDetail.selectedBooking && bookingDetail.selectedBooking.id === selectedBookingId && calSelectedDate && parseDateTime(bookingDetail.selectedBooking.startedAt).toDateString() === calSelectedDate.toDateString() && (
+                        {isSelf && selectedBookingId && bookingDetail.selectedBooking && bookingDetail.selectedBooking.id === selectedBookingId && calSelectedDate && new Date(bookingDetail.selectedBooking.startedAt).toDateString() === calSelectedDate.toDateString() && (
                             <div ref={formRef} data-testid="host-profile-booking-detail">
                                 <BookingDetailPanel
                                     booking={bookingDetail.selectedBooking}
