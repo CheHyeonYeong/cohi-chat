@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { Link, useParams, useSearch, useNavigate } from '@tanstack/react-router';
 import { PageLayout } from '~/components';
@@ -9,6 +10,7 @@ import { ProfileCalendarSection } from '~/features/host/components/ProfileCalend
 import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
 import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
+import { calendarKeys } from '~/features/booking/hooks/queryKeys';
 import { useAuth } from '~/features/member';
 import { IsSelfProvider } from '~/contexts';
 import dayjs from 'dayjs';
@@ -20,6 +22,7 @@ export const Profile = () => {
     const { hostId } = useParams({ from: '/host/$hostId' });
     const { date, selectedBookingId } = useSearch({ from: '/host/$hostId' });
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
 
     const { data: host, isLoading: isHostLoading, error: hostError } = useHostProfile(hostId);
@@ -48,14 +51,22 @@ export const Profile = () => {
     });
     const { selectedDate: calSelectedDate, selectedTimeslot, formRef } = calendarState;
 
-    const { data: bookings = [], refetch: refetchBookings } = useBookings(
-        host?.username ?? '', calendarState.selectedDate
-    );
+    const { data: bookings = [] } = useBookings({
+        hostname: host?.username ?? '',
+        year: calendarState.year,
+        month: calendarState.month,
+    });
+
+    const invalidateBookings = () => {
+        queryClient.invalidateQueries({
+            queryKey: calendarKeys.bookings(host?.username ?? '', calendarState.year, calendarState.month),
+        });
+    };
 
     const bookingDetail = useProfileBookingDetail({
         selectedBookingId,
         enabled: isSelf,
-        onRefetchBookings: refetchBookings,
+        onRefetchBookings: invalidateBookings,
     });
 
     const handleSelectBooking = (bookingId: number) => {
@@ -73,7 +84,7 @@ export const Profile = () => {
 
     const handleBookingCreated = () => {
         calendarState.resetSelection();
-        refetchBookings();
+        invalidateBookings();
     };
 
     const title = isSelf
