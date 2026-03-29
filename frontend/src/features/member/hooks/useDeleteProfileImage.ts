@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteProfileImageApi } from '../api';
 
-export function useDeleteProfileImage() {
+export const useDeleteProfileImage = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -10,4 +10,4 @@ export function useDeleteProfileImage() {
             queryClient.invalidateQueries({ queryKey: ['auth'] });
         },
     });
-}
+};

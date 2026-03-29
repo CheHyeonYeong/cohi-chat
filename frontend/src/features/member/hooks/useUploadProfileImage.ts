@@ -4,7 +4,7 @@ import {
     confirmProfileImageUploadApi,
 } from '../api';
 
-async function uploadToS3(uploadUrl: string, file: File): Promise<void> {
+const uploadToS3 = async (uploadUrl: string, file: File): Promise<void> => {
     const response = await fetch(uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
@@ -14,9 +14,9 @@ async function uploadToS3(uploadUrl: string, file: File): Promise<void> {
     if (!response.ok) {
         throw new Error('S3 업로드에 실패했습니다.');
     }
-}
+};
 
-export function useUploadProfileImage() {
+export const useUploadProfileImage = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -35,4 +35,4 @@ export function useUploadProfileImage() {
             queryClient.invalidateQueries({ queryKey: ['auth'] });
         },
     });
-}
+};
