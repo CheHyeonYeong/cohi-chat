@@ -10,6 +10,7 @@ import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
 import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
 import { useAuth } from '~/features/member';
+import { IsSelfProvider } from '~/contexts/IsSelfContext';
 import dayjs from 'dayjs';
 import { formatDateToISO } from '~/libs/date';
 
@@ -95,10 +96,11 @@ export const Profile = () => {
             )}
 
             {host && (
-                <div className="flex flex-col md:flex-row gap-6">
-                    <ProfileSidebar host={host} description={calendar?.description} topics={topics} />
+                <IsSelfProvider value={isSelf}>
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <ProfileSidebar host={host} description={calendar?.description} topics={topics} />
 
-                    <div className="flex-1 min-w-0 space-y-6">
+                        <div className="flex-1 min-w-0 space-y-6">
                         <ProfileCalendarSection
                             isSelf={isSelf}
                             username={host.username}
@@ -139,7 +141,8 @@ export const Profile = () => {
                             </div>
                         )}
                     </div>
-                </div>
+                    </div>
+                </IsSelfProvider>
             )}
         </PageLayout>
     );
