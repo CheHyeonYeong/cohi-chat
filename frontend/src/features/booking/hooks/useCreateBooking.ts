@@ -11,7 +11,7 @@ export const useCreateBooking = (slug: string, year: number, month: number): Use
     return useMutation<IBookingDetail, Error, IBookingPayload>({
         mutationFn: (bookingData: IBookingPayload) => createBooking(slug, bookingData),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: calendarKeys.bookings(year, month) });
+            queryClient.invalidateQueries({ queryKey: calendarKeys.bookingsAll() });
             queryClient.invalidateQueries({ queryKey: bookingKeys.myBookingsAll() });
             navigate({
                 to: '/host/$hostId',

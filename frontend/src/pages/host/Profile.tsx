@@ -9,8 +9,7 @@ import { ProfileSidebar } from '~/features/host/components/ProfileSidebar';
 import { ProfileCalendarSection } from '~/features/host/components/ProfileCalendarSection';
 import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
-import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
-import { calendarKeys } from '~/features/booking/hooks/queryKeys';
+import { useBookings, BookingForm, BookingDetailPanel, calendarKeys } from '~/features/booking';
 import { useAuth } from '~/features/member';
 import { IsSelfProvider } from '~/contexts';
 import dayjs from 'dayjs';
@@ -58,9 +57,7 @@ export const Profile = () => {
     });
 
     const invalidateBookings = () => {
-        queryClient.invalidateQueries({
-            queryKey: calendarKeys.bookings(host?.username ?? '', calendarState.year, calendarState.month),
-        });
+        queryClient.invalidateQueries({ queryKey: calendarKeys.bookingsAll() });
     };
 
     const bookingDetail = useProfileBookingDetail({
