@@ -126,3 +126,4 @@ supabase/
 
 # 빌드된 JAR (배포용)
 backend/app.jar
+chat/dist/
