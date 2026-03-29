@@ -34,7 +34,7 @@ const createInitialState = (defaultTopic: string): BookingFormState => ({
 });
 
 export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) => {
-    const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
+    const createBookingMutation = useCreateBooking(slug);
 
     const [formState, setFormState] = useState<BookingFormState>(() =>
         createInitialState(calendar.topics[0] ?? '')
