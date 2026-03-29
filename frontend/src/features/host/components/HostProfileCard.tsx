@@ -3,7 +3,7 @@ import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
 import { Button } from '~/components/button';
 import { useIsSelf } from '~/contexts/IsSelfContext';
-import { useUpdateProfile } from '~/features/member/hooks/useUpdateProfile';
+import { useUpdateProfile } from '~/features/member';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { EditableAvatar } from './EditableAvatar';
 import { EditableJob } from './EditableJob';

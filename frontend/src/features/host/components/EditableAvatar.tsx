@@ -1,7 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { Avatar } from '~/components/Avatar';
-import { useUploadProfileImage } from '~/features/member/hooks/useUploadProfileImage';
-import { useDeleteProfileImage } from '~/features/member/hooks/useDeleteProfileImage';
+import { useUploadProfileImage, useDeleteProfileImage } from '~/features/member';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { cn } from '~/libs/cn';
 
@@ -39,7 +38,7 @@ export const EditableAvatar = ({ displayName, profileImageUrl, isEditing }: Edit
     const isLoading = uploadMutation.isPending || deleteMutation.isPending;
 
     const handleFileSelect = useCallback(
-        async (e: React.ChangeEvent<HTMLInputElement>) => {
+        (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
             if (!file) return;
 

@@ -43,6 +43,9 @@ const mockUseAuth = vi.fn();
 vi.mock('~/features/member', () => ({
     useAuth: (...args: unknown[]) => mockUseAuth(...args),
     useLogout: () => ({ logout: vi.fn() }),
+    useUpdateProfile: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
+    useUploadProfileImage: () => ({ mutate: vi.fn(), isPending: false }),
+    useDeleteProfileImage: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('~/features/booking', () => ({

@@ -8,6 +8,7 @@ export const useDeleteProfileImage = () => {
         mutationFn: deleteProfileImageApi,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['auth'] });
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
         },
     });
 };

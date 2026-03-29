@@ -6,6 +6,8 @@ export { useLogout } from './hooks/useLogout';
 export { useSignup } from './hooks/useSignup';
 export { useUpdateProfile } from './hooks/useUpdateProfile';
 export { useUpdateMember } from './hooks/useUpdateMember';
+export { useUploadProfileImage } from './hooks/useUploadProfileImage';
+export { useDeleteProfileImage } from './hooks/useDeleteProfileImage';
 export { useRequestPasswordReset, useVerifyResetToken, useConfirmPasswordReset } from './hooks/usePasswordReset';
 
 // components

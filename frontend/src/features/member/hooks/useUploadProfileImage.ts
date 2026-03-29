@@ -33,6 +33,7 @@ export const useUploadProfileImage = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['auth'] });
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
         },
     });
 };
