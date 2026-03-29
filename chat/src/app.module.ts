@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -15,6 +16,8 @@ import { AuthModule } from './auth/auth.module';
 
     // Spring의 SecurityConfig + JwtTokenProvider 역할
     AuthModule,
+
+    ChatModule,
 
     // Spring의 DataSource 설정 역할 — TypeORM은 JPA의 Node.js 대응
     TypeOrmModule.forRootAsync({
