@@ -26,7 +26,7 @@ jobs:
           AWS_REGION: ap-northeast-2
         with:
           host: ${{ secrets.EC2_CHAT_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ${{ secrets.EC2_CHAT_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           fingerprint: ${{ secrets.EC2_CHAT_HOST_FINGERPRINT }}
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
