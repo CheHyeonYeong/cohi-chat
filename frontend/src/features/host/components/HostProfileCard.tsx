@@ -3,9 +3,10 @@ import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
 import { Button } from '~/components/button';
 import { useIsSelf } from '~/contexts/IsSelfContext';
-import { useUpdateProfile } from '~/features/member';
+import { useUpdateProfile, useUpdateMember } from '~/features/member';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { EditableAvatar } from './EditableAvatar';
+import { EditableDisplayName } from './EditableDisplayName';
 import { EditableJob } from './EditableJob';
 import type { HostResponseDTO } from '../types';
 
@@ -17,27 +18,67 @@ interface HostProfileCardProps {
 export const HostProfileCard = ({ host, className }: HostProfileCardProps) => {
     const isSelf = useIsSelf();
     const [isEditing, setIsEditing] = useState(false);
+    const [editDisplayName, setEditDisplayName] = useState(host.displayName);
     const [editJob, setEditJob] = useState(host.job ?? '');
+    const [saveError, setSaveError] = useState<string | null>(null);
     const updateProfileMutation = useUpdateProfile();
+    const updateMemberMutation = useUpdateMember(host.username);
+
+    const isSaving = updateProfileMutation.isPending || updateMemberMutation.isPending;
 
     const handleEdit = useCallback(() => {
+        setEditDisplayName(host.displayName);
         setEditJob(host.job ?? '');
+        setSaveError(null);
         setIsEditing(true);
-    }, [host.job]);
+    }, [host.displayName, host.job]);
 
     const handleCancel = useCallback(() => {
         setIsEditing(false);
+        setEditDisplayName(host.displayName);
         setEditJob(host.job ?? '');
-    }, [host.job]);
+        setSaveError(null);
+    }, [host.displayName, host.job]);
 
     const handleSave = useCallback(() => {
-        updateProfileMutation.mutate(
-            { job: editJob || undefined },
-            {
-                onSuccess: () => setIsEditing(false),
-            },
-        );
-    }, [editJob, updateProfileMutation]);
+        setSaveError(null);
+
+        const displayNameChanged = editDisplayName.trim() !== host.displayName;
+        const jobChanged = (editJob || undefined) !== (host.job || undefined);
+
+        if (!displayNameChanged && !jobChanged) {
+            setIsEditing(false);
+            return;
+        }
+
+        const trimmedName = editDisplayName.trim();
+        if (trimmedName.length < 2 || trimmedName.length > 20) {
+            setSaveError('닉네임은 2자 이상 20자 이하로 입력해주세요.');
+            return;
+        }
+
+        const onAllDone = () => setIsEditing(false);
+        const onError = (err: Error) => setSaveError(getErrorMessage(err));
+
+        if (displayNameChanged && jobChanged) {
+            updateMemberMutation.mutate(
+                { displayName: trimmedName },
+                {
+                    onSuccess: () => {
+                        updateProfileMutation.mutate(
+                            { job: editJob || undefined },
+                            { onSuccess: onAllDone, onError },
+                        );
+                    },
+                    onError,
+                },
+            );
+        } else if (displayNameChanged) {
+            updateMemberMutation.mutate({ displayName: trimmedName }, { onSuccess: onAllDone, onError });
+        } else {
+            updateProfileMutation.mutate({ job: editJob || undefined }, { onSuccess: onAllDone, onError });
+        }
+    }, [editDisplayName, editJob, host.displayName, host.job, updateMemberMutation, updateProfileMutation]);
 
     return (
         <Card
@@ -66,12 +107,12 @@ export const HostProfileCard = ({ host, className }: HostProfileCardProps) => {
                 isEditing={isEditing}
             />
 
-            <h1
-                data-testid="host-profile-name"
-                className="mt-4 text-2xl font-bold text-cohi-text-dark"
-            >
-                {host.displayName}
-            </h1>
+            <EditableDisplayName
+                displayName={host.displayName}
+                isEditing={isEditing}
+                editValue={editDisplayName}
+                onEditValueChange={setEditDisplayName}
+            />
 
             <EditableJob
                 job={host.job}
@@ -90,20 +131,22 @@ export const HostProfileCard = ({ host, className }: HostProfileCardProps) => {
             )}
 
             {isEditing && (
-                <div className="mt-4 flex gap-2" data-testid="profile-edit-actions">
-                    <Button
-                        variant="primary"
-                        onClick={handleSave}
-                        loading={updateProfileMutation.isPending}
-                    >
-                        저장
-                    </Button>
-                    <Button variant="outline" onClick={handleCancel}>
-                        취소
-                    </Button>
-                    {updateProfileMutation.isError && (
+                <div className="mt-4 flex flex-col items-center gap-2" data-testid="profile-edit-actions">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="primary"
+                            onClick={handleSave}
+                            loading={isSaving}
+                        >
+                            저장
+                        </Button>
+                        <Button variant="outline" onClick={handleCancel}>
+                            취소
+                        </Button>
+                    </div>
+                    {saveError && (
                         <p className="text-red-600 text-xs" data-testid="profile-save-error">
-                            {getErrorMessage(updateProfileMutation.error)}
+                            {saveError}
                         </p>
                     )}
                 </div>

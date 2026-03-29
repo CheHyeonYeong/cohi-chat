@@ -44,6 +44,7 @@ vi.mock('~/features/member', () => ({
     useAuth: (...args: unknown[]) => mockUseAuth(...args),
     useLogout: () => ({ logout: vi.fn() }),
     useUpdateProfile: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
+    useUpdateMember: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
     useUploadProfileImage: () => ({ mutate: vi.fn(), isPending: false }),
     useDeleteProfileImage: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -220,13 +221,13 @@ describe('Profile 페이지', () => {
         expect(screen.getByTestId('booked-timeslots')).toBeInTheDocument();
     });
 
-    it('자기 프로필일 때 제목이 "내 프로필 미리보기"로 표시된다', () => {
+    it('자기 프로필일 때 제목이 "내 프로필"로 표시된다', () => {
         mockUseAuth.mockReturnValue({ data: { username: 'testhost', displayName: 'Test Host' }, isAuthenticated: true });
 
         render(<Profile />, { wrapper: createWrapper() });
 
         const headings = screen.getAllByRole('heading', { level: 1 });
-        expect(headings.some(h => h.textContent?.includes('내 프로필 미리보기'))).toBe(true);
+        expect(headings.some(h => h.textContent?.includes('내 프로필'))).toBe(true);
     });
 
     it('타인 프로필일 때 제목이 "OOO님과 약속잡기"로 표시된다', () => {

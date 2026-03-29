@@ -77,7 +77,7 @@ export const Profile = () => {
     };
 
     const title = isSelf
-        ? '내 프로필 미리보기'
+        ? '내 프로필'
         : host ? `${host.displayName}님과 약속잡기` : '호스트 프로필';
 
     return (

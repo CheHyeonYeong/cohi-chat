@@ -22,7 +22,7 @@ export const EditableJob = ({ job, isEditing, editValue, onEditValueChange }: Ed
             onChange={(e) => onEditValueChange(e.target.value)}
             placeholder="직업 / 소개 (예: 백엔드 개발자)"
             maxLength={100}
-            className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
+            className="mt-2 w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
             data-testid="host-profile-job-input"
         />
     );

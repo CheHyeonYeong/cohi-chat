@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HostProfileCard } from './HostProfileCard';
 import type { HostResponseDTO } from '../types';
 
-const mockMutate = vi.fn();
+const mockProfileMutate = vi.fn();
+const mockMemberMutate = vi.fn();
 const mockUploadMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
 
@@ -14,23 +15,23 @@ vi.mock('~/contexts/IsSelfContext', () => ({
     IsSelfProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock('~/features/member/hooks/useUpdateProfile', () => ({
+vi.mock('~/features/member', () => ({
     useUpdateProfile: () => ({
-        mutate: mockMutate,
+        mutate: mockProfileMutate,
         isPending: false,
         isError: false,
         error: null,
     }),
-}));
-
-vi.mock('~/features/member/hooks/useUploadProfileImage', () => ({
+    useUpdateMember: () => ({
+        mutate: mockMemberMutate,
+        isPending: false,
+        isError: false,
+        error: null,
+    }),
     useUploadProfileImage: () => ({
         mutate: mockUploadMutate,
         isPending: false,
     }),
-}));
-
-vi.mock('~/features/member/hooks/useDeleteProfileImage', () => ({
     useDeleteProfileImage: () => ({
         mutate: mockDeleteMutate,
         isPending: false,
@@ -58,7 +59,8 @@ const createWrapper = () => {
 describe('HostProfileCard', () => {
     beforeEach(() => {
         vi.mocked(useIsSelf).mockReturnValue(false);
-        mockMutate.mockReset();
+        mockProfileMutate.mockReset();
+        mockMemberMutate.mockReset();
         mockUploadMutate.mockReset();
         mockDeleteMutate.mockReset();
     });
@@ -126,6 +128,7 @@ describe('HostProfileCard', () => {
             await user.click(screen.getByTestId('profile-edit-button'));
 
             expect(screen.getByTestId('avatar-overlay')).toBeInTheDocument();
+            expect(screen.getByTestId('host-profile-name-input')).toBeInTheDocument();
             expect(screen.getByTestId('host-profile-job-input')).toBeInTheDocument();
             expect(screen.getByTestId('profile-edit-actions')).toBeInTheDocument();
         });
@@ -138,10 +141,30 @@ describe('HostProfileCard', () => {
             await user.click(screen.getByRole('button', { name: '취소' }));
 
             expect(screen.queryByTestId('avatar-overlay')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('host-profile-name-input')).not.toBeInTheDocument();
             expect(screen.queryByTestId('host-profile-job-input')).not.toBeInTheDocument();
         });
 
-        it('저장 버튼 클릭 시 updateProfile을 호출한다', async () => {
+        it('닉네임만 변경 시 updateMember를 호출한다', async () => {
+            const user = userEvent.setup();
+            render(<HostProfileCard host={baseHost} />, { wrapper: createWrapper() });
+
+            await user.click(screen.getByTestId('profile-edit-button'));
+
+            const nameInput = screen.getByTestId('host-profile-name-input');
+            await user.clear(nameInput);
+            await user.type(nameInput, '새닉네임');
+
+            await user.click(screen.getByRole('button', { name: '저장' }));
+
+            expect(mockMemberMutate).toHaveBeenCalledWith(
+                { displayName: '새닉네임' },
+                expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+            );
+            expect(mockProfileMutate).not.toHaveBeenCalled();
+        });
+
+        it('직업만 변경 시 updateProfile을 호출한다', async () => {
             const user = userEvent.setup();
             render(<HostProfileCard host={baseHost} />, { wrapper: createWrapper() });
 
@@ -153,10 +176,11 @@ describe('HostProfileCard', () => {
 
             await user.click(screen.getByRole('button', { name: '저장' }));
 
-            expect(mockMutate).toHaveBeenCalledWith(
+            expect(mockProfileMutate).toHaveBeenCalledWith(
                 { job: '프론트엔드 개발자' },
-                expect.objectContaining({ onSuccess: expect.any(Function) }),
+                expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
             );
+            expect(mockMemberMutate).not.toHaveBeenCalled();
         });
 
         it('편집 모드에서 아바타 오버레이에 변경/삭제 버튼이 표시된다', async () => {
