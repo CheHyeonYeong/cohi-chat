@@ -5,14 +5,10 @@ import { useToast } from '~/components/toast/useToast';
 import { TimeSlotForm, WeeklySchedulePreview, type TimeSlotEntry } from '~/features/host/components/timeslot';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
-import { useAuth, useUpdateProfile } from '~/features/member';
-import { useHost } from '~/hooks/useHost';
-import { Button } from '~/components/button';
 import { LinkButton } from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 import { formatKoreanDate, formatKoreanTime } from '~/libs/date';
-const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
 const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
@@ -60,39 +56,6 @@ export const TimeSlotSettings = () => {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
-
-    const { data: user } = useAuth();
-    const { data: hostProfile } = useHost(user?.username ?? '');
-    const [job, setJob] = useState('');
-    const [profileImageUrl, setProfileImageUrl] = useState('');
-    const [profileSaved, setProfileSaved] = useState(false);
-    const updateProfileMutation = useUpdateProfile();
-    const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => () => {
-        if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-    }, []);
-
-    useEffect(() => {
-        if (hostProfile) {
-            setJob(hostProfile.job ?? '');
-            setProfileImageUrl(hostProfile.profileImageUrl ?? '');
-        }
-    }, [hostProfile]);
-
-    const handleProfileSave = async () => {
-        try {
-            await updateProfileMutation.mutateAsync({
-                job: job || undefined,
-                profileImageUrl: profileImageUrl || undefined,
-            });
-            setProfileSaved(true);
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-            profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
-        } catch {
-            // 에러는 updateProfileMutation.isError / error로 표시
-        }
-    };
 
     const { showToast } = useToast();
     const handleDuplicateBlocked = () => {
@@ -241,48 +204,6 @@ export const TimeSlotSettings = () => {
     return (
         <PageLayout title="시간대 설정" className="pb-20">
             <div className="space-y-8">
-                <Card title="내 프로필">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
-                            <input
-                                type="text"
-                                value={job}
-                                onChange={(e) => setJob(e.target.value)}
-                                placeholder="예: 백엔드 개발자 @ 스타트업"
-                                maxLength={100}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
-                            <input
-                                type="url"
-                                value={profileImageUrl}
-                                onChange={(e) => setProfileImageUrl(e.target.value)}
-                                placeholder="https://..."
-                                maxLength={500}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cohi-primary/30 focus:border-cohi-primary"
-                            />
-                        </div>
-                        <div className="flex items-end gap-2">
-                            <Button
-                                variant="primary"
-                                onClick={handleProfileSave}
-                                loading={updateProfileMutation.isPending}
-                            >
-                                    저장
-                            </Button>
-                            {profileSaved && (
-                                <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
-                            )}
-                        </div>
-                    </div>
-                    {updateProfileMutation.isError && (
-                        <p className="mt-2 text-sm text-red-500">{getErrorMessage(updateProfileMutation.error)}</p>
-                    )}
-                </Card>
-
                 <div className="flex flex-col lg:flex-row gap-8">
                     <div className="w-full flex-1">
                         <WeeklySchedulePreview

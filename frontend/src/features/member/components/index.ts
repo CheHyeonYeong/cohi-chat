@@ -3,7 +3,6 @@ export { AuthPageLayout } from './AuthPageLayout';
 export { LoginForm } from './LoginForm';
 export { SignupForm } from './SignupForm';
 export { ProfileEditForm } from './ProfileEditForm';
-export { ProfileImageUpload } from './ProfileImageUpload';
 export { PasswordChangeForm } from './PasswordChangeForm';
 export { ForgotPasswordForm } from './ForgotPasswordForm';
 export { ForgotPasswordEmailForm } from './ForgotPasswordEmailForm';
