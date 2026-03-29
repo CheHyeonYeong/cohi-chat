@@ -42,17 +42,5 @@ export interface TimeSlotResponse {
     updatedAt: string;
 }
 
-// Host Profile
-export interface HostResponseDTO {
-    id: string;
-    username: string;
-    displayName: string;
-    job?: string;
-    profileImageUrl?: string;
-    chatCount: number;
-}
-
-export interface UpdateProfilePayload {
-    job?: string;
-    profileImageUrl?: string;
-}
+// Host Profile (shared types - re-export)
+export type { HostResponseDTO, UpdateProfilePayload } from '~/types/host';

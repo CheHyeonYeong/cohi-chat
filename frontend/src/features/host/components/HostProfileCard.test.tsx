@@ -10,7 +10,7 @@ const mockMemberMutate = vi.fn();
 const mockUploadMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
 
-vi.mock('~/contexts/IsSelfContext', () => ({
+vi.mock('~/contexts', () => ({
     useIsSelf: vi.fn(() => false),
     IsSelfProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -38,7 +38,7 @@ vi.mock('~/features/member', () => ({
     }),
 }));
 
-import { useIsSelf } from '~/contexts/IsSelfContext';
+import { useIsSelf } from '~/contexts';
 
 const baseHost: HostResponseDTO = {
     id: '1',

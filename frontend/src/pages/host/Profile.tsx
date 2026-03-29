@@ -10,7 +10,7 @@ import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
 import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
 import { useAuth } from '~/features/member';
-import { IsSelfProvider } from '~/contexts/IsSelfContext';
+import { IsSelfProvider } from '~/contexts';
 import dayjs from 'dayjs';
 import { formatDateToISO } from '~/libs/date';
 

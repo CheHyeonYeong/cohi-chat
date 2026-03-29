@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
 import { Button } from '~/components/button';
-import { useIsSelf } from '~/contexts/IsSelfContext';
+import { useIsSelf } from '~/contexts';
 import { useUpdateProfile, useUpdateMember } from '~/features/member';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { EditableAvatar } from './EditableAvatar';
