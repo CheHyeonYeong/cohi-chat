@@ -28,7 +28,7 @@ export class JwtGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, { algorithms: ['HS256'] });
       // request.user에 주입 — Spring의 SecurityContextHolder.getContext().getAuthentication() 역할
       request.user = payload;
       return true;

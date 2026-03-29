@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -28,15 +28,16 @@ jobs:
           host: ${{ secrets.EC2_CHAT_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          fingerprint: ${{ secrets.EC2_CHAT_HOST_FINGERPRINT }}
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           command_timeout: 20m
           script: |
+            set -euo pipefail
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
 
             source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
-              set -euo pipefail
               if [ ! -d ~/cohi-chat ]; then
                 git clone https://github.com/${{ github.repository }}.git ~/cohi-chat
               fi

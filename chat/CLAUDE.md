@@ -74,7 +74,8 @@ CREATE TABLE message (
     message_type VARCHAR(30)   NOT NULL,   -- TEXT | RESERVATION_CARD | SYSTEM
     content      VARCHAR(2000) NULL,        -- 정책상 1000자. 이모지 여유 확보
     payload      JSONB         NULL,        -- RESERVATION_CARD: 예약 snapshot / SYSTEM: 메타데이터
-    created_at   TIMESTAMPTZ   NOT NULL DEFAULT now()
+    created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    CONSTRAINT pk_message PRIMARY KEY (id)
     -- updated_at 없음: 불변 데이터
     -- deleted_at 없음: soft delete 미지원 (1차)
 );
