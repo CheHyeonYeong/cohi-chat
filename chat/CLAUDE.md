@@ -110,7 +110,7 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 | GET | /chat/rooms/:roomId/messages | 메시지 커서 페이징 |
 | POST | /chat/rooms/:roomId/messages | 메시지 전송 |
 | PATCH | /chat/rooms/:roomId/read | 읽음 처리 |
-| GET | /chat/poll | Long Polling 엔드포인트 |
+| GET | /chat/rooms/:roomId/events | Long Polling 엔드포인트 |
 | POST | /internal/rooms/upsert | Spring 전용. 채팅방 생성/복구 |
 
 ---
@@ -120,7 +120,7 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 ```text
 1단계 (MVP)
   - POST /internal/rooms/upsert (채팅방 생성/복구/RESERVATION_CARD)
-  - GET  /chat/poll             (Long Polling 핵심)
+  - GET  /chat/rooms/:id/events (Long Polling 핵심)
   - POST /chat/rooms/:id/messages (메시지 전송)
   - PATCH /chat/rooms/:id/read    (읽음 처리)
 
