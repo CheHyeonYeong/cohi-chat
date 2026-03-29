@@ -17,10 +17,16 @@ FROM base
 
 WORKDIR /app
 
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nestjs
+
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
+
+RUN chown -R nestjs:nodejs /app
+USER nestjs
 
 EXPOSE 3001
 

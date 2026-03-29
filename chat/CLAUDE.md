@@ -15,7 +15,7 @@
 
 ## 채팅 모듈 아키텍처
 
-```
+```text
 Client (React)
   ↓ Long Polling (GET /chat/poll)
 NestJS 채팅 서버 (이 모듈)
@@ -116,7 +116,7 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 
 ## 구현 우선순위
 
-```
+```text
 1단계 (MVP)
   - POST /internal/rooms/upsert (채팅방 생성/복구/RESERVATION_CARD)
   - GET  /chat/poll             (Long Polling 핵심)

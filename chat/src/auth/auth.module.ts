@@ -9,7 +9,7 @@ import { JwtGuard } from './jwt.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         // 검증만 담당 — 토큰 발급은 Spring 서버가 책임
       }),
       inject: [ConfigService],
