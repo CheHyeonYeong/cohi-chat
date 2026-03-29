@@ -41,6 +41,3 @@ export interface TimeSlotResponse {
     createdAt: string;
     updatedAt: string;
 }
-
-// Host Profile (shared types - re-export)
-export type { HostResponseDTO, UpdateProfilePayload } from '~/types/host';

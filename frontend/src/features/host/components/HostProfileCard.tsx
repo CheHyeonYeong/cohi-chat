@@ -4,11 +4,11 @@ import { Card } from '~/components/card';
 import { Button } from '~/components/button';
 import { useIsSelf } from '~/contexts';
 import { useUpdateProfile, useUpdateMember } from '~/features/member';
+import type { HostResponseDTO } from '~/features/member';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { EditableAvatar } from './EditableAvatar';
 import { EditableDisplayName } from './EditableDisplayName';
 import { EditableJob } from './EditableJob';
-import type { HostResponseDTO } from '../types';
 
 interface HostProfileCardProps {
     host: HostResponseDTO;

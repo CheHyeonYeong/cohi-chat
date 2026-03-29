@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HostProfileCard } from './HostProfileCard';
-import type { HostResponseDTO } from '../types';
+import type { HostResponseDTO } from '~/features/member';
 
 const mockProfileMutate = vi.fn();
 const mockMemberMutate = vi.fn();

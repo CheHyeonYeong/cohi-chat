@@ -11,7 +11,7 @@ import type {
     ProfileImageUploadResponse,
     ProfileImageConfirmRequest,
 } from '../types';
-import type { HostResponseDTO, UpdateProfilePayload } from '~/types/host';
+import type { HostResponseDTO, UpdateProfilePayload } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const MEMBER_API = `${API_BASE}/members/v1`;

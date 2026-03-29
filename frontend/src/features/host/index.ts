@@ -22,8 +22,6 @@ export type {
     CalendarResponse,
     TimeSlotCreatePayload,
     TimeSlotResponse,
-    HostResponseDTO,
-    UpdateProfilePayload,
 } from './types';
 
 // API

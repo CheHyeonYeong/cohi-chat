@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateProfileApi } from '../api/memberApi';
-import type { UpdateProfilePayload, HostResponseDTO } from '~/types/host';
+import type { UpdateProfilePayload, HostResponseDTO } from '../types';
 
 export const useUpdateProfile = () => {
     const queryClient = useQueryClient();
