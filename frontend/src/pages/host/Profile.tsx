@@ -51,7 +51,7 @@ export const Profile = () => {
     const { selectedDate: calSelectedDate, selectedTimeslot, formRef } = calendarState;
 
     const { data: bookings = [] } = useBookings({
-        hostname: host?.username ?? '',
+        username: host?.username ?? '',
         year: calendarState.year,
         month: calendarState.month,
     });
@@ -139,7 +139,7 @@ export const Profile = () => {
                                 <div ref={formRef} data-testid="host-profile-booking-form">
                                     <Card title="예약 정보">
                                         <BookingForm
-                                            slug={host.username}
+                                            username={host.username}
                                             calendar={calendar}
                                             timeSlotId={selectedTimeslot.id}
                                             when={calSelectedDate}

@@ -12,8 +12,8 @@ export const bookingKeys = {
 
 export const calendarKeys = {
     bookingsAll: () => ['bookings'] as const,
-    bookings: (hostname: string, year: number, month: number) =>
-        ['bookings', hostname, year, month] as const,
-    timeslots: (hostname: string, hostId?: string) => ['timeslots', hostname, hostId] as const,
-    calendarEvent: (slug: string) => ['calendar-event', slug] as const,
+    bookings: (username: string, year: number, month: number) =>
+        ['bookings', username, year, month] as const,
+    timeslots: (username: string, hostId?: string) => ['timeslots', username, hostId] as const,
+    calendarEvent: (username: string) => ['calendar-event', username] as const,
 };

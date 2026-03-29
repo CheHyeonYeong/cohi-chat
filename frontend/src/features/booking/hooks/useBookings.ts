@@ -3,13 +3,13 @@ import { getBookingsByDate } from '../api/calendar';
 import { calendarKeys } from './queryKeys';
 
 interface UseBookingsParams {
-    hostname: string;
+    username: string;
     year: number;
     month: number;
 }
 
-export const useBookings = ({ hostname, year, month }: UseBookingsParams) => useQuery({
-    queryKey: calendarKeys.bookings(hostname, year, month),
-    queryFn: () => getBookingsByDate(hostname, { year, month }),
-    enabled: !!hostname && year > 0 && month > 0,
+export const useBookings = ({ username, year, month }: UseBookingsParams) => useQuery({
+    queryKey: calendarKeys.bookings(username, year, month),
+    queryFn: () => getBookingsByDate(username, { year, month }),
+    enabled: !!username && year > 0 && month > 0,
 });

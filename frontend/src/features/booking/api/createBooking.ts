@@ -2,7 +2,7 @@ import { httpClient } from '~/libs/httpClient';
 import type { IBookingDetail, IBookingPayload } from '../types';
 import { API_URL } from './constants';
 
-export const createBooking = async (slug: string, bookingData: IBookingPayload): Promise<IBookingDetail> => {
+export const createBooking = async (username: string, bookingData: IBookingPayload): Promise<IBookingDetail> => {
     const response = await httpClient<IBookingDetail>(`${API_URL}/bookings`, {
         method: 'POST',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
