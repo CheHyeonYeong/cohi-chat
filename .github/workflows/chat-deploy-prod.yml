@@ -49,10 +49,7 @@ jobs:
             run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
             docker-compose -f docker-compose.chat.prod.yml build chat-server
-            docker-compose -f docker-compose.chat.prod.yml up -d
-
-            echo "Waiting for chat-server to start..."
-            sleep 15
+            docker-compose -f docker-compose.chat.prod.yml up -d --wait
 
             docker-compose -f docker-compose.chat.prod.yml ps
             docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server
