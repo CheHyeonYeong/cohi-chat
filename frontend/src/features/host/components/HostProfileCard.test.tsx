@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HostProfileCard } from './HostProfileCard';
-import type { HostResponseDTO } from '~/features/member';
+import type { HostResponseDTO } from '../types';
 
 const baseHost: HostResponseDTO = {
     id: '1',

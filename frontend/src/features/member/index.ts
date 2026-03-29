@@ -22,7 +22,6 @@ export type {
     Role,
     AuthProvider,
     MemberResponseDTO,
-    HostResponseDTO,
     IUserSimple,
     AuthUser,
     LoginCredentials,
@@ -30,6 +29,5 @@ export type {
     LoginResponse,
     SignupPayload,
     SignupResponse,
-    UpdateProfilePayload,
     UpdateMemberPayload,
 } from './types';

@@ -1,7 +1,7 @@
 import { cn } from '~/libs/cn';
 import { Card } from '~/components/card';
 import { Avatar } from '~/components/Avatar';
-import type { HostResponseDTO } from '~/features/member';
+import type { HostResponseDTO } from '../types';
 
 interface HostProfileCardProps {
     host: HostResponseDTO;

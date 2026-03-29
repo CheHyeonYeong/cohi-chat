@@ -1,6 +1,6 @@
 import { HostProfileCard } from './HostProfileCard';
 import { HostTopicTags } from './HostTopicTags';
-import type { HostResponseDTO } from '~/features/member';
+import type { HostResponseDTO } from '../types';
 
 interface ProfileSidebarProps {
     host: HostResponseDTO;

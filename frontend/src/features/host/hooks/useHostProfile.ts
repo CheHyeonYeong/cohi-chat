@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { httpClient } from '~/libs/httpClient';
 import { getCalendarEvent, getTimeslotsByHostId } from '~/features/booking';
-import type { HostResponseDTO } from '~/features/member';
+import type { HostResponseDTO } from '../types';
 import type { ICalendar, ITimeSlot } from '~/components/calendar';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';

@@ -11,15 +11,6 @@ export interface MemberResponseDTO {
     updatedAt: string;
 }
 
-export interface HostResponseDTO {
-    id: string;
-    username: string;
-    displayName: string;
-    job?: string;
-    profileImageUrl?: string;
-    chatCount: number;
-}
-
 export interface IUserSimple {
     username: string;
     displayName: string;
@@ -58,11 +49,6 @@ export interface SignupResponse {
     id: string;
     username: string;
     displayName: string;
-}
-
-export interface UpdateProfilePayload {
-    job?: string;
-    profileImageUrl?: string;
 }
 
 export interface UpdateMemberPayload {
