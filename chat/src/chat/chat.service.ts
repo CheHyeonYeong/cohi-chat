@@ -8,6 +8,9 @@ export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getRooms(username: string): Promise<RoomResponseDto[]> {
+    // Keep this query in SQL because the room list contract depends on
+    // lateral joins for the counterpart/last-message lookup and window
+    // functions for unread counts with a deterministic tie-breaker.
     const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
       SELECT
         cr.id,
