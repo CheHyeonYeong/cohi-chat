@@ -1,6 +1,5 @@
 package com.coDevs.cohiChat.chat.service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +18,8 @@ import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +31,7 @@ public class ChatService {
     private final RoomMemberRepository roomMemberRepository;
     private final MessageRepository messageRepository;
     private final BookingRepository bookingRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public void createRoomForBooking(Booking booking) {
@@ -37,7 +39,7 @@ public class ChatService {
         UUID guestId = booking.getGuestId();
 
         ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
-            .orElseGet(() -> createNewRoom(hostId, guestId, booking));
+            .orElseGet(() -> createNewRoom(hostId, guestId));
 
         insertReservationCard(room, booking);
     }
@@ -67,30 +69,29 @@ public class ChatService {
             .map(ChatRoom::getId);
     }
 
-    private ChatRoom createNewRoom(UUID hostId, UUID guestId, Booking booking) {
-        ChatRoom room = chatRoomRepository.save(ChatRoom.createReservationRoom(buildLegacyExternalRefId(booking)));
+    private ChatRoom createNewRoom(UUID hostId, UUID guestId) {
+        ChatRoom room = chatRoomRepository.save(ChatRoom.create());
         roomMemberRepository.save(RoomMember.create(room, hostId));
         roomMemberRepository.save(RoomMember.create(room, guestId));
         return room;
     }
 
     private void insertReservationCard(ChatRoom room, Booking booking) {
-        Map<String, String> payload = buildReservationCardPayload(booking);
+        String payload = buildReservationCardPayload(booking);
         messageRepository.save(Message.createReservationCard(room, payload));
     }
 
-    private Map<String, String> buildReservationCardPayload(Booking booking) {
-        return Map.of(
-            "topic", booking.getTopic(),
-            "bookingDate", booking.getBookingDate().toString(),
-            "startTime", booking.getTimeSlot().getStartTime().toString(),
-            "endTime", booking.getTimeSlot().getEndTime().toString()
-        );
-    }
-
-    // The local chat_room table still has legacy not-null columns from the first chat schema.
-    // Keep a deterministic compatibility value here until the schema is cleaned up.
-    private UUID buildLegacyExternalRefId(Booking booking) {
-        return UUID.nameUUIDFromBytes(("reservation:" + booking.getId()).getBytes(StandardCharsets.UTF_8));
+    private String buildReservationCardPayload(Booking booking) {
+        try {
+            Map<String, String> data = Map.of(
+                "topic", booking.getTopic(),
+                "bookingDate", booking.getBookingDate().toString(),
+                "startTime", booking.getTimeSlot().getStartTime().toString(),
+                "endTime", booking.getTimeSlot().getEndTime().toString()
+            );
+            return objectMapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("RESERVATION_CARD payload 직렬화 실패 (bookingId=" + booking.getId() + ")", e);
+        }
     }
 }

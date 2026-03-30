@@ -34,6 +34,7 @@ import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -57,6 +58,9 @@ class ChatServiceTest {
     private BookingRepository bookingRepository;
 
     @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
     private TimeSlot timeSlot;
 
     @InjectMocks
@@ -64,15 +68,16 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("creates a new room for a new host/guest pair")
-    void createRoomForBookingCreatesNewRoom() {
+    void createRoomForBookingCreatesNewRoom() throws Exception {
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.empty());
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom savedRoom = ChatRoom.createReservationRoom(UUID.randomUUID());
+        ChatRoom savedRoom = ChatRoom.create();
         given(chatRoomRepository.save(any(ChatRoom.class))).willReturn(savedRoom);
         given(roomMemberRepository.save(any(RoomMember.class))).willAnswer(inv -> inv.getArgument(0));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
@@ -86,13 +91,14 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("reuses an existing room for the same host/guest pair")
-    void createRoomForBookingReusesExistingRoom() {
+    void createRoomForBookingReusesExistingRoom() throws Exception {
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        ChatRoom existingRoom = ChatRoom.createReservationRoom(UUID.randomUUID());
+        ChatRoom existingRoom = ChatRoom.create();
         given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.of(existingRoom));
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
