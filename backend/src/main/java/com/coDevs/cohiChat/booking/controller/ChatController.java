@@ -14,6 +14,8 @@ import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +28,13 @@ public class ChatController {
     private final ChatService chatService;
     private final MemberService memberService;
 
-    @Operation(summary = "채팅방 조회", description = "예약에 연결된 채팅방 roomId를 반환합니다.")
+    @Operation(summary = "채팅방 조회", description = "예약과 연결된 채팅방 roomId를 반환합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Chat room lookup succeeded"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Requester is not part of the booking"),
+        @ApiResponse(responseCode = "404", description = "Booking or chat room was not found")
+    })
     @GetMapping("/{bookingId}/chat-room")
     public ResponseEntity<ApiResponseDTO<ChatRoomResponseDTO>> getChatRoom(
         @PathVariable Long bookingId,

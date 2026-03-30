@@ -1,0 +1,6 @@
+package com.coDevs.cohiChat.chat.entity;
+
+public enum ChatRoomType {
+    ONE_TO_ONE,
+    GROUP
+}

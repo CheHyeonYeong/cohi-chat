@@ -1,8 +1,11 @@
 package com.coDevs.cohiChat.chat.entity;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -48,14 +51,15 @@ public class Message {
     @Column(name = "content", length = 2000)
     private String content;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "jsonb")
-    private String payload;
+    private Map<String, String> payload;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
-    public static Message createReservationCard(ChatRoom room, String payload) {
+    public static Message createReservationCard(ChatRoom room, Map<String, String> payload) {
         Message message = new Message();
         message.room = room;
         message.messageType = MessageType.RESERVATION_CARD;

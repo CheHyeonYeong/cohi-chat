@@ -67,6 +67,7 @@ class BookingServiceTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
+    private static final UUID CHAT_ROOM_ID = UUID.randomUUID();
 
     @Mock
     private EntityManager entityManager;
@@ -148,6 +149,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(chatService.getChatRoomIdByBooking(any(Booking.class))).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
@@ -156,6 +158,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION, AttendanceStatus.SCHEDULED);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
         assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
         assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
@@ -257,6 +260,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(chatService.getChatRoomIdByBooking(any(Booking.class))).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
@@ -265,6 +269,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, AttendanceStatus.SCHEDULED);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
@@ -278,6 +283,7 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(chatService.getChatRoomIdByBooking(booking)).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.getBookingById(bookingId, GUEST_ID);
@@ -286,6 +292,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
@@ -299,6 +306,7 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(chatService.getChatRoomIdByBooking(booking)).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.getBookingById(bookingId, HOST_ID);
@@ -307,6 +315,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
