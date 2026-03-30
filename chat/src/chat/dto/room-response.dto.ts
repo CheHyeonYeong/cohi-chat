@@ -32,14 +32,19 @@ export class RoomResponseDto {
     dto.counterpartName = row.counterpart_name;
     dto.counterpartProfileImageUrl = row.counterpart_profile_image_url;
     dto.unreadCount = row.unread_count;
-    dto.lastMessage = row.last_message_id
-      ? {
-          id: row.last_message_id,
-          content: row.last_message_content,
-          messageType: row.last_message_type!,
-          createdAt: row.last_message_created_at!.toISOString(),
-        }
-      : null;
+    // WHY: 방에 메시지가 없거나 마지막 메시지 메타데이터가 불완전할 수 있어 null-safe하게 응답을 구성합니다.
+    // WHY: 날짜는 클라이언트가 타임존과 무관하게 처리할 수 있도록 ISO-8601 문자열로 직렬화합니다.
+    dto.lastMessage =
+      row.last_message_id &&
+      row.last_message_type &&
+      row.last_message_created_at instanceof Date
+        ? {
+            id: row.last_message_id,
+            content: row.last_message_content,
+            messageType: row.last_message_type,
+            createdAt: row.last_message_created_at.toISOString(),
+          }
+        : null;
     return dto;
   }
 }
