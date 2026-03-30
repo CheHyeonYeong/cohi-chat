@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import type { MessageType } from './enums/chat.enum';
 import { Message } from './entities/message.entity';
@@ -53,6 +54,43 @@ export class ChatService {
     });
 
     return savedMessage;
+  }
+
+  async getMessages(
+    roomId: string,
+    userId: string,
+    cursor: Date | undefined,
+    size: number,
+  ): Promise<MessagePageResponse> {
+    // 권한 체크: JWT userId가 해당 방의 RoomMember인지 확인
+    const member = await this.roomMemberRepository.findOne({
+      where: { roomId, memberId: userId },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
+    }
+
+    // 커서 기반 페이징 — Spring Slice<T>와 유사한 단방향(과거 방향) 조회
+    // size + 1개를 가져와서 다음 페이지 존재 여부를 판단
+    const qb = this.messageRepository
+      .createQueryBuilder('m')
+      .where('m.roomId = :roomId', { roomId })
+      .orderBy('m.createdAt', 'DESC')
+      .take(size + 1);
+
+    if (cursor) {
+      qb.andWhere('m.createdAt < :cursor', { cursor });
+    }
+
+    const rows = await qb.getMany();
+    const hasNext = rows.length > size;
+    const messages = hasNext ? rows.slice(0, size) : rows;
+    // 마지막 메시지의 createdAt을 다음 커서로 사용
+    const nextCursor =
+      hasNext ? messages[messages.length - 1].createdAt.toISOString() : null;
+
+    return { messages: messages.map(MessageDto.from), nextCursor };
   }
 
   private validateContent(content: unknown): void {

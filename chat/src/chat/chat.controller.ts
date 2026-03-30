@@ -1,18 +1,21 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ParseCursorPipe } from './pipes/parse-cursor.pipe';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -20,6 +23,23 @@ import { SendMessageDto } from './dto/send-message.dto';
 @UseGuards(JwtGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+
+  @Get('rooms/:roomId/messages')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '메시지 목록 조회 (커서 페이징)' })
+  @ApiQuery({ name: 'cursor', required: false, description: 'ISO 8601 타임스탬프. 없으면 최신 메시지부터 조회' })
+  @ApiQuery({ name: 'size', required: false, description: '페이지 크기 (기본 50, 최대 100)' })
+  async getMessages(
+    @Param('roomId') roomId: string,
+    @Query('cursor', ParseCursorPipe) cursor: Date | undefined,
+    @Query('size') size: string,
+    @Request() req: FastifyRequest,
+  ) {
+    // JwtGuard가 통과한 이후이므로 req.user는 항상 존재 — non-null assertion 사용
+    const userId = req.user!.sub;
+    const pageSize = Math.min(parseInt(size, 10) || 50, 100);
+    return this.chatService.getMessages(roomId, userId, cursor, pageSize);
+  }
 
   @Post('rooms/:roomId/messages')
   @HttpCode(HttpStatus.CREATED)
@@ -29,7 +49,8 @@ export class ChatController {
     @Body() dto: SendMessageDto,
     @Request() req: FastifyRequest,
   ) {
-    const userId = req.user.sub;
+    // JwtGuard가 통과한 이후이므로 req.user는 항상 존재 — non-null assertion 사용
+    const userId = req.user!.sub;
     return this.chatService.sendMessage(roomId, userId, dto);
   }
 }
