@@ -13,29 +13,70 @@ concurrency:
   group: chat-deploy-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  AWS_REGION: ap-northeast-2
+  S3_CHAT_IMAGE_PREFIX: s3://cohi-chat-config/chat
+  CHAT_IMAGE_NAME: cohi-chat-chat-server
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build chat server image
+        env:
+          CHAT_SERVER_IMAGE: ${{ env.CHAT_IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          docker buildx build \
+            --file chat/Dockerfile \
+            --tag "$CHAT_SERVER_IMAGE" \
+            --cache-from type=gha,scope=chat-server \
+            --cache-to type=gha,mode=max,scope=chat-server \
+            --load \
+            ./chat
+
+      - name: Package and upload chat image to S3
+        env:
+          CHAT_SERVER_IMAGE: ${{ env.CHAT_IMAGE_NAME }}:${{ github.sha }}
+          CHAT_IMAGE_S3_URI: ${{ env.S3_CHAT_IMAGE_PREFIX }}/${{ github.sha }}.tar.gz
+        run: |
+          docker save "$CHAT_SERVER_IMAGE" | gzip > chat-server-image.tar.gz
+          aws s3 cp chat-server-image.tar.gz "$CHAT_IMAGE_S3_URI"
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ap-northeast-2
+          AWS_REGION: ${{ env.AWS_REGION }}
+          CHAT_SERVER_IMAGE: ${{ env.CHAT_IMAGE_NAME }}:${{ github.sha }}
+          CHAT_IMAGE_S3_URI: ${{ env.S3_CHAT_IMAGE_PREFIX }}/${{ github.sha }}.tar.gz
         with:
           host: ${{ secrets.EC2_CHAT_HOST }}
           username: ${{ secrets.EC2_CHAT_USER }}
           key: ${{ secrets.EC2_CHAT_SSH_KEY }}
           fingerprint: ${{ secrets.EC2_CHAT_HOST_FINGERPRINT }}
-          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
-          command_timeout: 20m
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,CHAT_SERVER_IMAGE,CHAT_IMAGE_S3_URI
+          command_timeout: 40m
           script: |
             set -euo pipefail
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             export AWS_DEFAULT_REGION=$AWS_REGION
+            export CHAT_SERVER_IMAGE=$CHAT_SERVER_IMAGE
 
             source ~/cohi-chat/scripts/ec2-deploy-common.sh 2>/dev/null || {
               if [ ! -d ~/cohi-chat ]; then
@@ -49,10 +90,14 @@ jobs:
 
             run_common_setup "${{ github.repository }}" "${{ github.ref_name }}"
 
-            docker-compose -f docker-compose.chat.prod.yml build chat-server
+            mkdir -p /tmp/cohi-chat
+            aws s3 cp "$CHAT_IMAGE_S3_URI" /tmp/cohi-chat/chat-server-image.tar.gz
+            docker load --input /tmp/cohi-chat/chat-server-image.tar.gz
+
             docker-compose -f docker-compose.chat.prod.yml up -d --wait
 
             docker-compose -f docker-compose.chat.prod.yml ps
             docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server
 
+            rm -f /tmp/cohi-chat/chat-server-image.tar.gz
             log_deploy_success
