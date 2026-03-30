@@ -7,9 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
-import type { MessageType } from './enums/chat.enum';
 import { Message } from './entities/message.entity';
 import { RoomMember } from './entities/room-member.entity';
+import type { MessageType } from './enums/chat.enum';
 
 // Spring의 @Service에 대응
 @Injectable()
@@ -26,7 +26,7 @@ export class ChatService {
     roomId: string,
     userId: string,
     dto: SendMessageDto,
-  ): Promise<Message> {
+  ): Promise<MessageDto> {
     this.validateContent(dto.content);
 
     // 권한 체크: JWT userId가 해당 방의 RoomMember인지 확인
@@ -53,7 +53,7 @@ export class ChatService {
       lastReadMessageId: savedMessage.id,
     });
 
-    return savedMessage;
+    return MessageDto.from(savedMessage);
   }
 
   async getMessages(
