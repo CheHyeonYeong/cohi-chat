@@ -1,21 +1,10 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { RoomMember } from './entities/room-member.entity';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
 @Injectable()
 export class ChatService {
-  constructor(
-    @InjectRepository(RoomMember)
-    private readonly roomMemberRepository: Repository<RoomMember>,
-
-    private readonly dataSource: DataSource,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   private async getMemberIdByUsername(username: string): Promise<string> {
     const rows: Array<{ id: string }> = await this.dataSource.query(
@@ -71,23 +60,5 @@ export class ChatService {
     );
 
     return rows.map(RoomResponseDto.from);
-  }
-
-  async updateReadCursor(
-    roomId: string,
-    username: string,
-    lastReadMessageId: string,
-  ): Promise<void> {
-    const userId = await this.getMemberIdByUsername(username);
-
-    const member = await this.roomMemberRepository.findOne({
-      where: { roomId, memberId: userId },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('채팅방 접근 권한이 없습니다.');
-    }
-
-    await this.roomMemberRepository.update(member.id, { lastReadMessageId });
   }
 }
