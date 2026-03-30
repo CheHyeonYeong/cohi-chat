@@ -29,9 +29,10 @@ import { ChatModule } from './chat/chat.module';
         autoLoadEntities: true,
         // 운영에서는 false — 스키마는 직접 DDL로 관리
         synchronize: false,
-        ssl: config.get('NODE_ENV') === 'production'
-          ? { rejectUnauthorized: false }
-          : false,
+        ssl:
+          config.get('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
       inject: [ConfigService],
     }),

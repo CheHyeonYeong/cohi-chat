@@ -72,6 +72,6 @@ export class ChatService {
       [userId],
     );
 
-    return rows.map(RoomResponseDto.from);
+    return rows.map((row) => RoomResponseDto.from(row));
   }
 }

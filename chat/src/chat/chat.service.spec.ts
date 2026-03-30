@@ -32,9 +32,8 @@ describe('ChatService', () => {
     );
 
     expect(queryMock).toHaveBeenCalledTimes(1);
-    expect(queryMock.mock.calls[0][1]).toEqual([
-      '11111111-1111-1111-1111-111111111111',
-    ]);
+    const queryArgs = queryMock.mock.calls[0] as [string, string[]];
+    expect(queryArgs[1]).toEqual(['11111111-1111-1111-1111-111111111111']);
     expect(result).toEqual([
       {
         id: 'room-1',
