@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
 
 export interface JwtPayload {
-  sub: string;   // member UUID (Spring과 동일 클레임 구조)
+  sub: string; // member UUID (Spring과 동일 클레임 구조)
   username: string;
   role: 'GUEST' | 'HOST' | 'ADMIN';
 }
@@ -28,7 +28,9 @@ export class JwtGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, { algorithms: ['HS256'] });
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        algorithms: ['HS256'],
+      });
       // request.user에 주입 — Spring의 SecurityContextHolder.getContext().getAuthentication() 역할
       request.user = payload;
       return true;

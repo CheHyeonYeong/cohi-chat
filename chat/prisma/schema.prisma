@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChatRoomType {
+  ONE_TO_ONE
+  GROUP
+}
+
+enum ChatRoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MessageType {
+  TEXT
+  RESERVATION_CARD
+  SYSTEM
+}
+
+model ChatRoom {
+  id              String         @id @default(uuid()) @db.Uuid
+  type            ChatRoomType
+  status          ChatRoomStatus
+  externalRefType String?        @map("external_ref_type") @db.VarChar(50)
+  externalRefId   String?        @map("external_ref_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  members         RoomMember[]
+  messages        Message[]
+
+  @@map("chat_room")
+}
+
+model RoomMember {
+  id                String    @id @default(uuid()) @db.Uuid
+  roomId            String    @map("room_id") @db.Uuid
+  memberId          String    @map("member_id") @db.Uuid
+  lastReadMessageId String?   @map("last_read_message_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  room              ChatRoom  @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([roomId, memberId], map: "uq_room_member")
+  @@index([roomId], map: "idx_room_member_room_id")
+  @@map("room_member")
+}
+
+model Message {
+  id          String      @id @default(uuid()) @db.Uuid
+  roomId      String      @map("room_id") @db.Uuid
+  senderId    String?     @map("sender_id") @db.Uuid
+  messageType MessageType @map("message_type")
+  content     String?     @db.VarChar(2000)
+  payload     Json?
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  room        ChatRoom    @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
+  @@map("message")
+}
