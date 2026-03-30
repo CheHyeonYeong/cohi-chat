@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService
@@ -7,13 +7,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    super({
-      datasources: {
-        db: {
-          url: PrismaService.resolveDatabaseUrl(),
-        },
-      },
-    });
+    super(PrismaService.createClientOptions());
   }
 
   async onModuleInit(): Promise<void> {
@@ -44,5 +38,20 @@ export class PrismaService
     } catch {
       return databaseUrl;
     }
+  }
+
+  private static createClientOptions(): Prisma.PrismaClientOptions {
+    const databaseUrl = PrismaService.resolveDatabaseUrl();
+    if (!databaseUrl) {
+      return {};
+    }
+
+    return {
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+    };
   }
 }

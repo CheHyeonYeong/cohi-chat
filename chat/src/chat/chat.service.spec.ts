@@ -1,10 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
-import { ChatRoomStatus, ChatRoomType, MessageType } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ChatRoomStatus, ChatRoomType, MessageType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
 
 const createPrismaMock = () => ({
+  $queryRaw: jest.fn(),
   chatRoom: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
@@ -26,6 +27,7 @@ describe('ChatService', () => {
   let prisma: ReturnType<typeof createPrismaMock>;
 
   const memberId = '11111111-1111-1111-1111-111111111111';
+  const username = 'tester';
   const roomId = '22222222-2222-2222-2222-222222222222';
   const messageId = '33333333-3333-3333-3333-333333333333';
 
@@ -48,7 +50,7 @@ describe('ChatService', () => {
     jest.clearAllMocks();
   });
 
-  it('채팅방 진입 시 마지막 메시지까지 읽음 처리한다', async () => {
+  it('marks the room as read up to the latest message', async () => {
     prisma.chatRoom.findFirst.mockResolvedValue({
       id: roomId,
       type: ChatRoomType.ONE_TO_ONE,
@@ -88,7 +90,7 @@ describe('ChatService', () => {
     });
   });
 
-  it('접근할 수 없는 채팅방이면 404를 던진다', async () => {
+  it('throws 404 when the room is not accessible', async () => {
     prisma.chatRoom.findFirst.mockResolvedValue({
       id: roomId,
       type: ChatRoomType.ONE_TO_ONE,
@@ -103,7 +105,7 @@ describe('ChatService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('방 목록 조회 시 마지막 메시지와 unread count를 함께 반환한다', async () => {
+  it('returns room list with last message and unread count', async () => {
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -153,7 +155,7 @@ describe('ChatService', () => {
     ]);
   });
 
-  it('읽은 커서가 있으면 커서 이후 메시지만 unread로 계산한다', async () => {
+  it('counts only messages after the last read cursor', async () => {
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -194,7 +196,60 @@ describe('ChatService', () => {
     });
   });
 
-  it('다른 방 메시지를 lastRead cursor로 받으면 해당 방 전체 메시지를 unread로 계산한다', async () => {
+  it('resolves username subjects to member UUIDs before querying rooms', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
+    prisma.roomMember.findMany.mockResolvedValue([
+      {
+        id: 'member-row-id',
+        roomId,
+        memberId,
+        lastReadMessageId: null,
+        createdAt: new Date('2026-03-30T09:00:00.000Z'),
+      },
+    ]);
+    prisma.chatRoom.findMany.mockResolvedValue([
+      {
+        id: roomId,
+        type: ChatRoomType.ONE_TO_ONE,
+        status: ChatRoomStatus.ACTIVE,
+        externalRefType: null,
+        externalRefId: null,
+        updatedAt: new Date('2026-03-30T09:30:00.000Z'),
+      },
+    ]);
+    prisma.message.findFirst.mockResolvedValue({
+      id: messageId,
+      roomId,
+      senderId: memberId,
+      messageType: MessageType.TEXT,
+      content: 'latest',
+      createdAt: new Date('2026-03-30T10:00:00.000Z'),
+    });
+    prisma.message.count.mockResolvedValue(1);
+
+    await expect(service.listRooms(username)).resolves.toEqual([
+      {
+        roomId,
+        type: ChatRoomType.ONE_TO_ONE,
+        status: ChatRoomStatus.ACTIVE,
+        externalRefType: null,
+        externalRefId: null,
+        lastReadMessageId: null,
+        unreadCount: 1,
+        lastMessage: {
+          id: messageId,
+          senderId: memberId,
+          messageType: MessageType.TEXT,
+          content: 'latest',
+          createdAt: '2026-03-30T10:00:00.000Z',
+        },
+      },
+    ]);
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to counting the full room when the cursor points to another room', async () => {
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',

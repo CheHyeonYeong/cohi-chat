@@ -8,9 +8,13 @@ import {
 
 @Injectable()
 export class ChatService {
+  private static readonly UUID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   constructor(private readonly prisma: PrismaService) {}
 
-  async listRooms(memberId: string): Promise<ChatRoomResponseDto[]> {
+  async listRooms(memberIdentifier: string): Promise<ChatRoomResponseDto[]> {
+    const memberId = await this.resolveMemberId(memberIdentifier);
     const memberships = await this.getActiveMemberships(memberId);
     if (memberships.length === 0) {
       return [];
@@ -71,7 +75,10 @@ export class ChatService {
       });
   }
 
-  async getUnreadSummary(memberId: string): Promise<UnreadSummaryResponseDto> {
+  async getUnreadSummary(
+    memberIdentifier: string,
+  ): Promise<UnreadSummaryResponseDto> {
+    const memberId = await this.resolveMemberId(memberIdentifier);
     const memberships = await this.getActiveMemberships(memberId);
     if (memberships.length === 0) {
       return {
@@ -99,9 +106,10 @@ export class ChatService {
   }
 
   async markRoomAsRead(
-    memberId: string,
+    memberIdentifier: string,
     roomId: string,
   ): Promise<MarkRoomAsReadResponseDto> {
+    const memberId = await this.resolveMemberId(memberIdentifier);
     const room = await this.prisma.chatRoom.findFirst({
       where: {
         id: roomId,
@@ -142,6 +150,29 @@ export class ChatService {
       lastReadMessageId: nextLastReadMessageId,
       unreadCount: 0,
     };
+  }
+
+  private async resolveMemberId(memberIdentifier: string): Promise<string> {
+    if (ChatService.UUID_PATTERN.test(memberIdentifier)) {
+      return memberIdentifier;
+    }
+
+    const members = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id::text AS id
+      FROM member
+      WHERE username = ${memberIdentifier}
+        AND is_deleted = false
+        AND is_banned = false
+      LIMIT 1
+    `;
+    const member = members[0];
+    if (!member) {
+      throw new NotFoundException(
+        '인증된 사용자의 회원 정보를 찾을 수 없습니다.',
+      );
+    }
+
+    return member.id;
   }
 
   private async getActiveMemberships(memberId: string) {
