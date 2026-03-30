@@ -58,6 +58,11 @@ public class ProfileImageService {
     public String confirmUpload(String username, String objectKey) {
         var member = findMemberByUsername(username);
 
+        var expectedPrefix = PROFILE_IMAGE_PREFIX + member.getId() + "/";
+        if (!objectKey.startsWith(expectedPrefix)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
         var metadata = s3PresignedUrlService.getObjectMetadata(objectKey)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
