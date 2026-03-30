@@ -12,7 +12,7 @@ describe('ChatService', () => {
     } as unknown as DataSource);
   });
 
-  it('uses JWT subject as member id and maps room summaries', async () => {
+  it('uses JWT subject as username and maps room summaries', async () => {
     queryMock.mockResolvedValue([
       {
         id: 'room-1',
@@ -27,13 +27,11 @@ describe('ChatService', () => {
       },
     ]);
 
-    const result = await service.getRooms(
-      '11111111-1111-1111-1111-111111111111',
-    );
+    const result = await service.getRooms('testuser');
 
     expect(queryMock).toHaveBeenCalledTimes(1);
     const queryArgs = queryMock.mock.calls[0] as [string, string[]];
-    expect(queryArgs[1]).toEqual(['11111111-1111-1111-1111-111111111111']);
+    expect(queryArgs[1]).toEqual(['testuser']);
     expect(result).toEqual([
       {
         id: 'room-1',
@@ -66,9 +64,7 @@ describe('ChatService', () => {
       },
     ]);
 
-    const result = await service.getRooms(
-      '22222222-2222-2222-2222-222222222222',
-    );
+    const result = await service.getRooms('another-user');
 
     expect(result).toEqual([
       {

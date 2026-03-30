@@ -6,7 +6,7 @@ import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 export class ChatService {
   constructor(private readonly dataSource: DataSource) {}
 
-  async getRooms(userId: string): Promise<RoomResponseDto[]> {
+  async getRooms(username: string): Promise<RoomResponseDto[]> {
     const rows: RoomQueryRow[] = await this.dataSource.query(
       `
       SELECT
@@ -20,9 +20,11 @@ export class ChatService {
         last_msg.created_at                         AS last_message_created_at,
         COALESCE(unread.cnt, 0)::int                AS unread_count
       FROM chat_room cr
+      JOIN member me
+        ON me.username = $1
       JOIN room_member my_rm
         ON my_rm.room_id = cr.id
-        AND my_rm.member_id = $1::uuid
+        AND my_rm.member_id = me.id
         AND my_rm.deleted_at IS NULL
       JOIN LATERAL (
         SELECT
@@ -32,7 +34,7 @@ export class ChatService {
         FROM room_member rm
         LEFT JOIN member m ON m.id = rm.member_id
         WHERE rm.room_id = cr.id
-          AND rm.member_id != $1::uuid
+          AND rm.member_id != me.id
           AND rm.deleted_at IS NULL
         ORDER BY rm.created_at ASC, rm.id ASC
         LIMIT 1
@@ -69,7 +71,7 @@ export class ChatService {
       WHERE cr.is_disabled = false
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
       `,
-      [userId],
+      [username],
     );
 
     return rows.map((row) => RoomResponseDto.from(row));

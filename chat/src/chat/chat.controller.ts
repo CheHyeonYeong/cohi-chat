@@ -23,7 +23,7 @@ export class ChatController {
   @ApiOperation({
     summary: '채팅방 목록 조회',
     description:
-      '내가 속한 채팅방 목록과 상대방 정보, 마지막 메시지, unread 수를 반환합니다. 메시지가 한 번도 없는 방은 lastMessage가 null입니다.',
+      '내가 속한 채팅방 목록과 상대방 정보, 마지막 메시지, unread 수를 반환합니다. 메시지가 한 번도 없는 방은 lastMessage가 null입니다. Swagger Authorize에는 access token 원문만 넣고 Bearer 접두사는 따로 입력하지 않습니다.',
   })
   @ApiOkResponse({
     description: '채팅방 목록 조회 성공',
