@@ -1,6 +1,5 @@
 package com.coDevs.cohiChat.chat.service;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,16 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
-import com.coDevs.cohiChat.chat.entity.Message;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
-import com.coDevs.cohiChat.chat.repository.MessageRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,19 +24,15 @@ public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final RoomMemberRepository roomMemberRepository;
-    private final MessageRepository messageRepository;
     private final BookingRepository bookingRepository;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public void createRoomForBooking(Booking booking) {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
 
-        ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
+        chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
             .orElseGet(() -> createNewRoom(hostId, guestId));
-
-        insertReservationCard(room, booking);
     }
 
     @Transactional(readOnly = true)
@@ -74,24 +65,5 @@ public class ChatService {
         roomMemberRepository.save(RoomMember.create(room, hostId));
         roomMemberRepository.save(RoomMember.create(room, guestId));
         return room;
-    }
-
-    private void insertReservationCard(ChatRoom room, Booking booking) {
-        String payload = buildReservationCardPayload(booking);
-        messageRepository.save(Message.createReservationCard(room, payload));
-    }
-
-    private String buildReservationCardPayload(Booking booking) {
-        try {
-            Map<String, String> data = Map.of(
-                "topic", booking.getTopic(),
-                "bookingDate", booking.getBookingDate().toString(),
-                "startTime", booking.getTimeSlot().getStartTime().toString(),
-                "endTime", booking.getTimeSlot().getEndTime().toString()
-            );
-            return objectMapper.writeValueAsString(data);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("RESERVATION_CARD payload 직렬화 실패 (bookingId=" + booking.getId() + ")", e);
-        }
     }
 }
