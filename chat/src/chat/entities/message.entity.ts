@@ -6,6 +6,18 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+export interface ReservationCardPayload {
+  reservationId?: string;
+  [key: string]: unknown;
+}
+
+export interface SystemMessagePayload {
+  eventType?: string;
+  [key: string]: unknown;
+}
+
+export type MessagePayload = ReservationCardPayload | SystemMessagePayload;
+
 @Entity('message')
 @Index('idx_message_room_id_created_at', ['roomId', 'createdAt'])
 export class Message {
@@ -27,7 +39,7 @@ export class Message {
 
   // JSONB — RESERVATION_CARD: 예약 snapshot / SYSTEM: 메타데이터
   @Column({ type: 'jsonb', nullable: true })
-  payload: Record<string, unknown> | null;
+  payload: MessagePayload | null;
 
   // message는 불변 — updated_at, deleted_at 없음
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

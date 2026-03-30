@@ -1,7 +1,26 @@
-export interface LastMessageDto {
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class LastMessageDto {
+  @ApiProperty({
+    description: '마지막 메시지 ID',
+    example: '3f9b0f07-6f68-4cd1-8ae1-1f4ebbf4f9d2',
+  })
   id: string;
+
+  @ApiPropertyOptional({
+    description: '마지막 메시지 본문. 시스템/카드 메시지는 null일 수 있습니다.',
+    nullable: true,
+    example: '안녕하세요',
+  })
   content: string | null;
+
+  @ApiProperty({ description: '메시지 타입', example: 'TEXT' })
   messageType: string;
+
+  @ApiProperty({
+    description: 'UTC 기준 ISO-8601 문자열',
+    example: '2026-03-30T00:00:00.000Z',
+  })
   createdAt: string;
 }
 
@@ -18,11 +37,36 @@ export interface RoomQueryRow {
 }
 
 export class RoomResponseDto {
+  @ApiProperty({
+    description: '채팅방 ID',
+    example: '57d8aef0-a2cc-4f18-b673-0ab8f7242f4c',
+  })
   id: string;
+
+  @ApiProperty({
+    description: '상대방 member ID',
+    example: '763f94ea-3f54-42f9-bd1d-96e3516f0a1e',
+  })
   counterpartId: string;
+
+  @ApiProperty({ description: '상대방 표시 이름', example: 'Alex Kim' })
   counterpartName: string;
+
+  @ApiPropertyOptional({
+    description: '상대방 프로필 이미지 URL',
+    nullable: true,
+    example: 'https://cdn.example.com/profiles/alex.png',
+  })
   counterpartProfileImageUrl: string | null;
+
+  @ApiPropertyOptional({
+    description: '마지막 메시지. 메시지가 한 번도 없는 방이면 null입니다.',
+    type: () => LastMessageDto,
+    nullable: true,
+  })
   lastMessage: LastMessageDto | null;
+
+  @ApiProperty({ description: '현재 사용자의 미읽음 메시지 수', example: 3 })
   unreadCount: number;
 
   static from(row: RoomQueryRow): RoomResponseDto {

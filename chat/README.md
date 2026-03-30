@@ -21,6 +21,21 @@ pnpm run test      # 테스트
 
 `.env.example` 참고
 
+## API 문서
+
+- Swagger UI: `http://localhost:3001/swagger-ui`
+- 목록 조회: `GET /api/chat/rooms`
+
+응답 계약 메모:
+- `lastMessage`는 방에 메시지가 한 번도 없으면 `null`입니다.
+- 날짜는 모두 UTC 기준 ISO-8601 문자열로 내려갑니다.
+
+## DB 스키마
+
+- 현재 채팅 서버 구현 기준 DDL 참조: `./schema.sql`
+- `room_member(room_id, member_id)` 유니크 제약과 인덱스는 위 SQL에 명시되어 있습니다.
+- 목록 조회 구현은 `chat_room.deleted_at` 대신 `chat_room.is_disabled` 플래그를 사용합니다.
+
 ## 배포
 
 `chat/**` 변경 후 main 머지 시 GitHub Actions가 채팅 EC2에 자동 배포

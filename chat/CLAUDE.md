@@ -34,14 +34,10 @@ Spring 서버
 ### chat_room
 ```sql
 CREATE TABLE chat_room (
-    id                UUID          NOT NULL DEFAULT gen_random_uuid(),
-    type              VARCHAR(20)   NOT NULL,   -- ONE_TO_ONE | GROUP (멤버 수로도 판단 가능, 타입 컬럼 제거 논의 중)
-    status            VARCHAR(20)   NOT NULL,   -- ACTIVE | INACTIVE
-    external_ref_type VARCHAR(50)   NOT NULL,   -- RESERVATION 등
-    external_ref_id   UUID          NOT NULL,   -- 예약 ID 등
-    created_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    deleted_at        TIMESTAMPTZ   NULL,        -- soft delete. 1달 메시지 없으면 배치가 설정
+    id          UUID        NOT NULL DEFAULT gen_random_uuid(),
+    is_disabled BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_chat_room PRIMARY KEY (id)
 );
 -- FK 없음. 애플리케이션 레벨에서 관리
@@ -90,13 +86,13 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 | 항목 | 정책 |
 |------|------|
 | 채팅방 생성 | Spring이 POST /internal/rooms/upsert 호출 → NestJS가 생성 |
-| 채팅방 재사용 | external_ref_id 기준 조회 → soft delete 상태면 deleted_at = null 복구 |
+| 채팅방 비활성화 | 1달 이상 메시지가 없으면 is_disabled = true 처리 |
 | 예약 카드 | 채팅방 생성 시 RESERVATION_CARD 메시지 자동 저장 |
 | 시스템 메시지 | 미팅 하루 전 / 1시간 전 SYSTEM 메시지 (Spring 스케줄러 트리거) |
 | Long Polling | timeout 25초. 메시지 있으면 즉시 응답, 없으면 25초 후 빈 배열 |
 | 읽음 처리 | 브라우저 포커스 이벤트 기반. FE가 트리거 → PATCH /rooms/:id/read |
 | unread 계산 | `SELECT COUNT(*) WHERE id > last_read_message_id` |
-| soft delete | 1달 메시지 없으면 배치가 chat_room.deleted_at 설정. room_member/message는 건드리지 않음 |
+| soft delete | room_member만 deleted_at 사용. chat_room은 is_disabled 플래그 사용 |
 | 메시지 제한 | text only / 최대 1000자 / 공백-only 차단 |
 | FK 관리 | DB FK 없음. 애플리케이션 레벨에서 직접 검증 |
 
@@ -114,6 +110,10 @@ CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC)
 | POST | /internal/rooms/upsert | Spring 전용. 채팅방 생성/복구 |
 
 ---
+
+## 구현 메모
+
+- 현재 DDL 기준 참조 파일: `chat/schema.sql`
 
 ## 구현 우선순위
 
