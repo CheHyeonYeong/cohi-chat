@@ -47,6 +47,9 @@ export const EditableAvatar = ({ displayName, profileImageUrl, isEditing }: Edit
             const validationError = validateFile(file);
             if (validationError) {
                 setError(validationError);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
                 return;
             }
 

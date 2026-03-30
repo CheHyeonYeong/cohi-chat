@@ -40,43 +40,36 @@ export const HostProfileCard = ({ host, className }: HostProfileCardProps) => {
         setSaveError(null);
     }, [host.displayName, host.job]);
 
-    const handleSave = useCallback(() => {
+    const handleSave = useCallback(async () => {
         setSaveError(null);
 
-        const displayNameChanged = editDisplayName.trim() !== host.displayName;
-        const jobChanged = (editJob || undefined) !== (host.job || undefined);
+        const trimmedName = editDisplayName.trim();
+        const trimmedJob = editJob.trim() || undefined;
+        const displayNameChanged = trimmedName !== host.displayName;
+        const jobChanged = trimmedJob !== (host.job || undefined);
 
         if (!displayNameChanged && !jobChanged) {
             setIsEditing(false);
             return;
         }
 
-        const trimmedName = editDisplayName.trim();
-        if (trimmedName.length < 2 || trimmedName.length > 20) {
+        if (displayNameChanged && (trimmedName.length < 2 || trimmedName.length > 20)) {
             setSaveError('닉네임은 2자 이상 20자 이하로 입력해주세요.');
             return;
         }
 
-        const onAllDone = () => setIsEditing(false);
-        const onError = (err: Error) => setSaveError(getErrorMessage(err));
-
-        if (displayNameChanged && jobChanged) {
-            updateMemberMutation.mutate(
-                { displayName: trimmedName },
-                {
-                    onSuccess: () => {
-                        updateProfileMutation.mutate(
-                            { job: editJob || undefined },
-                            { onSuccess: onAllDone, onError },
-                        );
-                    },
-                    onError,
-                },
-            );
-        } else if (displayNameChanged) {
-            updateMemberMutation.mutate({ displayName: trimmedName }, { onSuccess: onAllDone, onError });
-        } else {
-            updateProfileMutation.mutate({ job: editJob || undefined }, { onSuccess: onAllDone, onError });
+        try {
+            const promises: Promise<unknown>[] = [];
+            if (displayNameChanged) {
+                promises.push(updateMemberMutation.mutateAsync({ displayName: trimmedName }));
+            }
+            if (jobChanged) {
+                promises.push(updateProfileMutation.mutateAsync({ job: trimmedJob }));
+            }
+            await Promise.all(promises);
+            setIsEditing(false);
+        } catch (err) {
+            setSaveError(getErrorMessage(err as Error));
         }
     }, [editDisplayName, editJob, host.displayName, host.job, updateMemberMutation, updateProfileMutation]);
 
