@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
@@ -6,24 +6,14 @@ import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 export class ChatService {
   constructor(private readonly dataSource: DataSource) {}
 
-  private async getMemberIdByUsername(username: string): Promise<string> {
-    const rows: Array<{ id: string }> = await this.dataSource.query(
-      `SELECT id FROM member WHERE username = $1`,
-      [username],
-    );
-    if (!rows.length) throw new NotFoundException('사용자를 찾을 수 없습니다.');
-    return rows[0].id;
-  }
-
-  async getRooms(username: string): Promise<RoomResponseDto[]> {
-    const userId = await this.getMemberIdByUsername(username);
+  async getRooms(userId: string): Promise<RoomResponseDto[]> {
     const rows: RoomQueryRow[] = await this.dataSource.query(
       `
       SELECT
         cr.id,
-        other_rm.member_id                          AS counterpart_id,
-        COALESCE(m.display_name, '')                AS counterpart_name,
-        m.profile_image_url                         AS counterpart_profile_image_url,
+        counterpart.member_id                       AS counterpart_id,
+        COALESCE(counterpart.display_name, '')      AS counterpart_name,
+        counterpart.profile_image_url               AS counterpart_profile_image_url,
         last_msg.id                                 AS last_message_id,
         last_msg.content                            AS last_message_content,
         last_msg.message_type                       AS last_message_type,
@@ -34,27 +24,50 @@ export class ChatService {
         ON my_rm.room_id = cr.id
         AND my_rm.member_id = $1::uuid
         AND my_rm.deleted_at IS NULL
-      LEFT JOIN room_member other_rm
-        ON other_rm.room_id = cr.id
-        AND other_rm.member_id != $1::uuid
-        AND other_rm.deleted_at IS NULL
-      LEFT JOIN member m ON m.id = other_rm.member_id
+      JOIN LATERAL (
+        SELECT
+          rm.member_id,
+          m.display_name,
+          m.profile_image_url
+        FROM room_member rm
+        LEFT JOIN member m ON m.id = rm.member_id
+        WHERE rm.room_id = cr.id
+          AND rm.member_id != $1::uuid
+          AND rm.deleted_at IS NULL
+        ORDER BY rm.created_at ASC, rm.id ASC
+        LIMIT 1
+      ) counterpart ON true
       LEFT JOIN LATERAL (
         SELECT id, content, message_type, created_at
         FROM message
         WHERE room_id = cr.id
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
         LIMIT 1
       ) last_msg ON true
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS cnt
-        FROM message msg
-        WHERE msg.room_id = cr.id
-          AND (my_rm.last_read_message_id IS NULL
-               OR msg.id > my_rm.last_read_message_id)
+        FROM (
+          SELECT
+            msg.id,
+            ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
+          FROM message msg
+          WHERE msg.room_id = cr.id
+        ) ordered_message
+        LEFT JOIN LATERAL (
+          SELECT cursor_message.seq
+          FROM (
+            SELECT
+              msg.id,
+              ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
+            FROM message msg
+            WHERE msg.room_id = cr.id
+          ) cursor_message
+          WHERE cursor_message.id = my_rm.last_read_message_id
+        ) cursor ON true
+        WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
       ) unread ON true
       WHERE cr.is_disabled = false
-      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC
+      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
       `,
       [userId],
     );
