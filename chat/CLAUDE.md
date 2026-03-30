@@ -1,37 +1,37 @@
-# Cohi-Chat / chat 모듈 전용 가이드
+# Cohi-Chat / chat 모듈 가이드
 
-> 이 파일은 `src/chat/` 폴더 안에서만 적용되는 규칙입니다.
-> 루트 CLAUDE.md의 공통 규칙을 상속하고, 채팅 모듈 전용 컨텍스트를 추가합니다.
-
----
-
-## 내 상황
-
-- Java 21 / Spring Boot 백엔드 경험 있음
-- Node.js / NestJS 거의 처음 — **반드시 Spring과 비교해서 설명할 것**
-- 학습하면서 함께 만드는 중이므로 코드보다 이해가 먼저
+> 이 문서는 `chat/` 디렉터리의 현재 구현 기준 문서입니다.
+> 설계 초안이나 이전 브랜치 계획이 아니라, 실제 코드와 `chat/schema.sql`을 source of truth로 봅니다.
 
 ---
 
-## 채팅 모듈 아키텍처
+## 현재 범위
+
+- NestJS + Fastify 기반 채팅 서버
+- Spring이 발급한 JWT access token 검증
+- 현재 `khs_500` 구현 범위의 공개 API는 채팅방 목록 조회 1건입니다.
+
+---
+
+## 현재 아키텍처
 
 ```text
-Client (React)
-  ↓ Long Polling (GET /chat/poll)
-NestJS 채팅 서버 (이 모듈)
-  ↓ SQL 직접 조회
-PostgreSQL (Spring과 공유 RDS)
-
-Spring 서버
-  → POST /internal/rooms/upsert  (예약 확정 시 채팅방 생성 요청)
-  → RabbitMQ produce             (채팅 메시지 알림 이벤트)
+Client
+  -> GET /api/chat/rooms
+NestJS chat server
+  -> DataSource.query()로 PostgreSQL 직접 조회
+PostgreSQL
+  -> member / chat_room / room_member / message 조회
 ```
 
 ---
 
-## DB 스키마 (확정)
+## 구현 기준 스키마
+
+현재 문서 기준 DDL 참조 파일은 `chat/schema.sql` 입니다.
 
 ### chat_room
+
 ```sql
 CREATE TABLE chat_room (
     id          UUID        NOT NULL DEFAULT gen_random_uuid(),
@@ -40,120 +40,90 @@ CREATE TABLE chat_room (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_chat_room PRIMARY KEY (id)
 );
--- FK 없음. 애플리케이션 레벨에서 관리
 ```
 
 ### room_member
+
 ```sql
 CREATE TABLE room_member (
     id                   UUID        NOT NULL DEFAULT gen_random_uuid(),
     room_id              UUID        NOT NULL,
-    member_id            UUID        NOT NULL,   -- Spring member id
-    last_read_message_id UUID        NULL,        -- read cursor. 읽음 기준
+    member_id            UUID        NOT NULL,
+    last_read_message_id UUID        NULL,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at           TIMESTAMPTZ NULL,        -- 그룹 채팅 나가기 전용 (1차 미사용)
+    deleted_at           TIMESTAMPTZ NULL,
     CONSTRAINT pk_room_member PRIMARY KEY (id),
     CONSTRAINT uq_room_member UNIQUE (room_id, member_id)
 );
--- role 컬럼 없음: HOST 테이블 분리로 역할 구분
--- FK 없음. 애플리케이션 레벨에서 관리
+
 CREATE INDEX idx_room_member_room_id ON room_member(room_id);
 ```
 
 ### message
+
 ```sql
 CREATE TABLE message (
-    id           UUID          NOT NULL DEFAULT gen_random_uuid(),  -- UUID v7 권장
-    room_id      UUID          NOT NULL,
-    sender_id    UUID          NULL,        -- NULL이면 시스템 메시지
-    message_type VARCHAR(30)   NOT NULL,   -- TEXT | RESERVATION_CARD | SYSTEM
-    content      VARCHAR(2000) NULL,        -- 정책상 1000자. 이모지 여유 확보
-    payload      JSONB         NULL,        -- RESERVATION_CARD: 예약 snapshot / SYSTEM: 메타데이터
-    created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    id           UUID         NOT NULL DEFAULT gen_random_uuid(),
+    room_id      UUID         NOT NULL,
+    sender_id    UUID         NULL,
+    message_type VARCHAR(30)  NOT NULL,
+    content      VARCHAR(2000) NULL,
+    payload      JSONB        NULL,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT pk_message PRIMARY KEY (id)
-    -- updated_at 없음: 불변 데이터
-    -- deleted_at 없음: soft delete 미지원 (1차)
 );
--- FK 없음. 애플리케이션 레벨에서 관리
+
 CREATE INDEX idx_message_room_id_created_at ON message(room_id, created_at DESC);
 ```
 
----
-
-## 핵심 정책 (구현 시 반드시 확인)
-
-| 항목 | 정책 |
-|------|------|
-| 채팅방 생성 | Spring이 POST /internal/rooms/upsert 호출 → NestJS가 생성 |
-| 채팅방 비활성화 | 1달 이상 메시지가 없으면 is_disabled = true 처리 |
-| 예약 카드 | 채팅방 생성 시 RESERVATION_CARD 메시지 자동 저장 |
-| 시스템 메시지 | 미팅 하루 전 / 1시간 전 SYSTEM 메시지 (Spring 스케줄러 트리거) |
-| Long Polling | timeout 25초. 메시지 있으면 즉시 응답, 없으면 25초 후 빈 배열 |
-| 읽음 처리 | 브라우저 포커스 이벤트 기반. FE가 트리거 → PATCH /rooms/:id/read |
-| unread 계산 | `SELECT COUNT(*) WHERE id > last_read_message_id` |
-| soft delete | room_member만 deleted_at 사용. chat_room은 is_disabled 플래그 사용 |
-| 메시지 제한 | text only / 최대 1000자 / 공백-only 차단 |
-| FK 관리 | DB FK 없음. 애플리케이션 레벨에서 직접 검증 |
+주의:
+- 운영 또는 로컬 DB에는 이전 스키마 컬럼이 남아 있을 수 있습니다.
+- 이 문서와 `khs_500` 구현은 `GET /api/chat/rooms`가 실제로 참조하는 컬럼 기준으로만 설명합니다.
 
 ---
 
-## API 목록
+## 현재 정책
+
+| 항목 | 현재 구현 기준 |
+|------|----------------|
+| 인증 | Spring access token 검증. JWT `sub`는 username으로 해석 |
+| 목록 조회 | `GET /api/chat/rooms` |
+| 방 필터 | `chat_room.is_disabled = false` 인 방만 조회 |
+| 멤버 필터 | `room_member.deleted_at IS NULL` 인 membership만 사용 |
+| unread 계산 | `last_read_message_id` 이후의 메시지 수를 unread로 계산 |
+| 마지막 메시지 | 가장 최근 `message.created_at DESC, id DESC` 기준 1건 |
+| lastMessage null | 메시지가 없는 방이면 `lastMessage = null` |
+| Swagger | `/api/swagger-ui` |
+
+`unread` 정의:
+- 사용자가 채팅방에 들어가지 않아 아직 읽지 못한 메시지 전체를 의미합니다.
+- 현재 목록 조회 구현은 `last_read_message_id` 이후 메시지 전체를 기준으로 계산합니다.
+
+---
+
+## 현재 API
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
-| GET | /chat/rooms | 방 목록 + 마지막 메시지 + unread 수 |
-| GET | /chat/rooms/:roomId/messages | 메시지 커서 페이징 |
-| POST | /chat/rooms/:roomId/messages | 메시지 전송 |
-| PATCH | /chat/rooms/:roomId/read | 읽음 처리 |
-| GET | /chat/rooms/:roomId/events | Long Polling 엔드포인트 |
-| POST | /internal/rooms/upsert | Spring 전용. 채팅방 생성/복구 |
+| GET | /api/chat/rooms | 내가 속한 채팅방 목록, 상대방 정보, 마지막 메시지, unread 수 조회 |
+
+주의:
+- 이 문서의 API 목록은 현재 브랜치 구현 기준입니다.
+- 다른 브랜치에서 작업 중인 전송, 메시지 조회, 읽음 처리 API는 여기서 source of truth로 다루지 않습니다.
 
 ---
 
 ## 구현 메모
 
-- 현재 DDL 기준 참조 파일: `chat/schema.sql`
-
-## 구현 우선순위
-
-```text
-1단계 (MVP)
-  - POST /internal/rooms/upsert (채팅방 생성/복구/RESERVATION_CARD)
-  - GET  /chat/rooms/:id/events (Long Polling 핵심)
-  - POST /chat/rooms/:id/messages (메시지 전송)
-  - PATCH /chat/rooms/:id/read    (읽음 처리)
-
-2단계
-  - GET /chat/rooms              (목록 + unread)
-  - GET /chat/rooms/:id/messages (커서 페이징)
-  - soft delete 배치 연동
-
-3단계
-  - SYSTEM 메시지 스케줄러
-  - RabbitMQ produce (채팅 → 알림 이벤트)
-```
+- Swagger UI 경로: `/api/swagger-ui`
+- Swagger Authorize에는 access token 원문만 넣고 `Bearer ` 접두사는 따로 입력하지 않습니다.
+- JWT 알고리즘은 Spring access token 기준 `HS512`로 검증합니다.
 
 ---
 
-## Claude 행동 규칙 (이 모듈 전용)
+## 작업 원칙
 
-1. **코드 짜기 전 개념 먼저** — Spring 대응 개념과 함께 설명
-   - 예: `NestJS @Injectable() = Spring @Service`
-   - 예: `NestJS Module = Spring @Configuration + Component Scan 범위`
-   - 예: `TypeORM Repository = Spring JpaRepository`
-
-2. **모르는 용어 즉시 짚기** — NestJS/Node 용어 등장 시 Spring 대응 용어로 즉시 설명
-
-3. **단계별 구현** — 기능 전체를 한 번에 주지 말고 단계별로 같이 짜기
-
-4. **구현 후 코멘트 필수** — "왜 이렇게 짰는지" 한 줄 설명 추가
-
-5. **실수 즉시 지적** — 잘못된 패턴, NestJS 안티패턴, 타입 오류 바로 잡기
-
-6. **Long Polling 구현 시 주의사항**
-   - Node.js는 싱글 스레드 이벤트 루프 — blocking 코드 절대 금지
-   - 25초 대기는 `setTimeout` + `Promise`로 구현
-   - Spring의 `DeferredResult`와 동작 방식 비교해서 설명할 것
-
-7. **TypeScript 타입 엄격하게** — `any` 사용 금지. DTO, Entity 타입 명시 필수
+1. 문서보다 구현이 우선이 아니라, 문서를 구현과 같이 유지합니다.
+2. 스키마 변경 시 `schema.sql`, `README.md`, 이 문서를 함께 갱신합니다.
+3. 현재 브랜치에 없는 API를 이미 구현된 것처럼 문서화하지 않습니다.

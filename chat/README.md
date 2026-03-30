@@ -23,7 +23,7 @@ pnpm run test      # 테스트
 
 ## API 문서
 
-- Swagger UI: `http://localhost:3001/swagger-ui`
+- Swagger UI: `http://localhost:3001/api/swagger-ui`
 - 목록 조회: `GET /api/chat/rooms`
 
 응답 계약 메모:
@@ -33,8 +33,9 @@ pnpm run test      # 테스트
 ## DB 스키마
 
 - 현재 채팅 서버 구현 기준 DDL 참조: `./schema.sql`
+- 구현 기준 상세 문서: `./CLAUDE.md`
 - `room_member(room_id, member_id)` 유니크 제약과 인덱스는 위 SQL에 명시되어 있습니다.
-- 목록 조회 구현은 `chat_room.deleted_at` 대신 `chat_room.is_disabled` 플래그를 사용합니다.
+- 목록 조회 구현은 `chat_room.is_disabled` 와 `room_member.deleted_at` 기준으로 필터링합니다.
 
 ## 배포
 
