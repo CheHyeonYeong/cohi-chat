@@ -1,19 +1,19 @@
+import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
-import type { DataSource } from 'typeorm';
 
 describe('ChatService', () => {
   let service: ChatService;
-  let queryMock: jest.Mock;
+  let queryRawMock: jest.Mock;
 
   beforeEach(() => {
-    queryMock = jest.fn();
+    queryRawMock = jest.fn();
     service = new ChatService({
-      query: queryMock,
-    } as unknown as DataSource);
+      $queryRaw: queryRawMock,
+    } as unknown as PrismaService);
   });
 
   it('uses JWT subject as username and maps room summaries', async () => {
-    queryMock.mockResolvedValue([
+    queryRawMock.mockResolvedValue([
       {
         id: 'room-1',
         counterpart_id: 'member-2',
@@ -29,9 +29,8 @@ describe('ChatService', () => {
 
     const result = await service.getRooms('testuser');
 
-    expect(queryMock).toHaveBeenCalledTimes(1);
-    const queryArgs = queryMock.mock.calls[0] as [string, string[]];
-    expect(queryArgs[1]).toEqual(['testuser']);
+    expect(queryRawMock).toHaveBeenCalledTimes(1);
+    expect(queryRawMock.mock.calls[0][0].values).toEqual(['testuser']);
     expect(result).toEqual([
       {
         id: 'room-1',
@@ -50,7 +49,7 @@ describe('ChatService', () => {
   });
 
   it('maps empty last message to null', async () => {
-    queryMock.mockResolvedValue([
+    queryRawMock.mockResolvedValue([
       {
         id: 'room-2',
         counterpart_id: 'member-3',

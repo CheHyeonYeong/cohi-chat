@@ -1,35 +1,37 @@
+import { Prisma } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { PrismaService } from '../prisma/prisma.service';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getRooms(username: string): Promise<RoomResponseDto[]> {
-    const rows: RoomQueryRow[] = await this.dataSource.query(
-      `
+    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
       SELECT
         cr.id,
         counterpart.member_id                       AS counterpart_id,
-        COALESCE(counterpart.display_name, '')      AS counterpart_name,
-        counterpart.profile_image_url               AS counterpart_profile_image_url,
-        last_msg.id                                 AS last_message_id,
-        last_msg.content                            AS last_message_content,
-        last_msg.message_type                       AS last_message_type,
-        last_msg.created_at                         AS last_message_created_at,
-        COALESCE(unread.cnt, 0)::int                AS unread_count
+        COALESCE(counterpart.display_name, '')     AS counterpart_name,
+        counterpart.profile_image_url              AS counterpart_profile_image_url,
+        last_msg.id                                AS last_message_id,
+        last_msg.content                           AS last_message_content,
+        last_msg.message_type                      AS last_message_type,
+        last_msg.created_at                        AS last_message_created_at,
+        COALESCE(unread.cnt, 0)::int               AS unread_count
       FROM chat_room cr
       JOIN member me
-        ON me.username = $1
+        ON me.username = ${username}
+       AND me.is_deleted = false
+       AND me.is_banned = false
       JOIN room_member my_rm
         ON my_rm.room_id = cr.id
-        AND my_rm.member_id = me.id
-        AND my_rm.deleted_at IS NULL
+       AND my_rm.member_id = me.id
+       AND my_rm.deleted_at IS NULL
       JOIN LATERAL (
         SELECT
           rm.member_id,
-          m.display_name,
+          COALESCE(m.display_name, m.username, '') AS display_name,
           m.profile_image_url
         FROM room_member rm
         LEFT JOIN member m ON m.id = rm.member_id
@@ -70,9 +72,7 @@ export class ChatService {
       ) unread ON true
       WHERE cr.is_disabled = false
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
-      `,
-      [username],
-    );
+    `);
 
     return rows.map((row) => RoomResponseDto.from(row));
   }

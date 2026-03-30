@@ -1,5 +1,7 @@
 -- Current chat server DDL reference.
--- Apply this explicitly because TypeORM synchronize=false in production.
+-- Apply this explicitly because Prisma does not manage production schema automatically here.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS chat_room (
     id          UUID        NOT NULL DEFAULT gen_random_uuid(),
