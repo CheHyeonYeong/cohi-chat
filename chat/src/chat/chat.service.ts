@@ -9,8 +9,8 @@ export class ChatService {
 
   async getRooms(username: string): Promise<RoomResponseDto[]> {
     // Keep this query in SQL because the room list contract depends on
-    // lateral joins for the counterpart/last-message lookup and window
-    // functions for unread counts with a deterministic tie-breaker.
+    // lateral joins and window functions that are easier to keep exact here
+    // than to spread across multiple ORM calls and post-processing steps.
     const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
       SELECT
         cr.id,
@@ -31,6 +31,8 @@ export class ChatService {
         ON my_rm.room_id = cr.id
        AND my_rm.member_id = me.id
        AND my_rm.deleted_at IS NULL
+      -- Pick exactly one counterpart row for a 1:1 room without duplicating
+      -- the parent room row in the result set.
       JOIN LATERAL (
         SELECT
           rm.member_id,
@@ -44,6 +46,8 @@ export class ChatService {
         ORDER BY rm.created_at ASC, rm.id ASC
         LIMIT 1
       ) counterpart ON true
+      -- Fetch only the latest message per room so the list stays compact while
+      -- still showing the most recent activity preview.
       LEFT JOIN LATERAL (
         SELECT id, content, message_type, created_at
         FROM message
@@ -51,6 +55,8 @@ export class ChatService {
         ORDER BY created_at DESC, id DESC
         LIMIT 1
       ) last_msg ON true
+      -- Compute unread counts by assigning a stable sequence per room and then
+      -- counting only rows that come after the stored last-read cursor.
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS cnt
         FROM (
@@ -74,9 +80,13 @@ export class ChatService {
         WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
       ) unread ON true
       WHERE cr.is_disabled = false
+      -- Sort by recent activity first, then by room id as a deterministic
+      -- tie-breaker when timestamps are equal or the room has no messages yet.
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
     `);
 
+    // The SQL aliases intentionally mirror RoomQueryRow so DTO mapping stays
+    // thin and the response contract is centralized in RoomResponseDto.from().
     return rows.map((row) => RoomResponseDto.from(row));
   }
 }
