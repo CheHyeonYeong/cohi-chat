@@ -1,36 +1,72 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { ChatRoomStatus, ChatRoomType, MessageType } from '@prisma/client';
 
-export interface ChatMessageSummaryDto {
-  id: string;
-  senderId: string | null;
-  messageType: MessageType;
-  content: string | null;
-  createdAt: string;
+export class ChatMessageSummaryDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  senderId!: string | null;
+
+  @ApiProperty({ enum: MessageType, enumName: 'MessageType' })
+  messageType!: MessageType;
+
+  @ApiProperty({ nullable: true })
+  content!: string | null;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
 }
 
-export interface ChatRoomResponseDto {
-  roomId: string;
-  type: ChatRoomType;
-  status: ChatRoomStatus;
-  externalRefType: string | null;
-  externalRefId: string | null;
-  lastReadMessageId: string | null;
-  unreadCount: number;
-  lastMessage: ChatMessageSummaryDto | null;
+export class ChatRoomResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  roomId!: string;
+
+  @ApiProperty({ enum: ChatRoomType, enumName: 'ChatRoomType' })
+  type!: ChatRoomType;
+
+  @ApiProperty({ enum: ChatRoomStatus, enumName: 'ChatRoomStatus' })
+  status!: ChatRoomStatus;
+
+  @ApiProperty({ nullable: true })
+  externalRefType!: string | null;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  externalRefId!: string | null;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  lastReadMessageId!: string | null;
+
+  @ApiProperty()
+  unreadCount!: number;
+
+  @ApiProperty({ type: () => ChatMessageSummaryDto, nullable: true })
+  lastMessage!: ChatMessageSummaryDto | null;
 }
 
-export interface RoomUnreadCountDto {
-  roomId: string;
-  unreadCount: number;
+export class RoomUnreadCountDto {
+  @ApiProperty({ format: 'uuid' })
+  roomId!: string;
+
+  @ApiProperty()
+  unreadCount!: number;
 }
 
-export interface UnreadSummaryResponseDto {
-  totalUnread: number;
-  rooms: RoomUnreadCountDto[];
+export class UnreadSummaryResponseDto {
+  @ApiProperty()
+  totalUnread!: number;
+
+  @ApiProperty({ type: () => RoomUnreadCountDto, isArray: true })
+  rooms!: RoomUnreadCountDto[];
 }
 
-export interface MarkRoomAsReadResponseDto {
-  roomId: string;
-  lastReadMessageId: string | null;
-  unreadCount: number;
+export class MarkRoomAsReadResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  roomId!: string;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  lastReadMessageId!: string | null;
+
+  @ApiProperty()
+  unreadCount!: number;
 }
