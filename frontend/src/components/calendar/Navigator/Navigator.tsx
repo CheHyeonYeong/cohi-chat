@@ -2,15 +2,15 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "~/libs/cn";
 
 interface NavigatorProps {
-    slug: string;
+    username: string;
     year: number;
     month: number;
     baseDate?: Date;
-    onPrevious: (slug: string, date: { year: number; month: number }) => void;
-    onNext: (slug: string, date: { year: number; month: number }) => void;
+    onPrevious: (username: string, date: { year: number; month: number }) => void;
+    onNext: (username: string, date: { year: number; month: number }) => void;
 }
 
-export const Navigator = ({ slug, year, month, baseDate, onPrevious, onNext }: NavigatorProps) => {
+export const Navigator = ({ username, year, month, baseDate, onPrevious, onNext }: NavigatorProps) => {
     const now = baseDate ?? new Date();
     const isPast = year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth() + 1);
 
@@ -18,17 +18,17 @@ export const Navigator = ({ slug, year, month, baseDate, onPrevious, onNext }: N
         if (isPast) return;
 
         if (month === 1) {
-            onPrevious(slug, { year: year - 1, month: 12 });
+            onPrevious(username, { year: year - 1, month: 12 });
         } else {
-            onPrevious(slug, { year, month: month - 1 });
+            onPrevious(username, { year, month: month - 1 });
         }
     };
 
     const handleNext = () => {
         if (month === 12) {
-            onNext(slug, { year: year + 1, month: 1 });
+            onNext(username, { year: year + 1, month: 1 });
         } else {
-            onNext(slug, { year, month: month + 1 });
+            onNext(username, { year, month: month + 1 });
         }
     };
 

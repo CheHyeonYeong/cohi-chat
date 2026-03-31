@@ -26,7 +26,7 @@ export {
 } from './hooks';
 
 // Query Keys
-export { calendarKeys } from './hooks/queryKeys';
+export { calendarKeys } from './hooks';
 
 // Types
 export type {

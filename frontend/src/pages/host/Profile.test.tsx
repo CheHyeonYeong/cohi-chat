@@ -20,7 +20,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('~/components/calendar', () => ({
-    Navigator: ({ year, month, slug, onPrevious, onNext }: { year: number; month: number; slug: string; onPrevious: (slug: string, date: { year: number; month: number }) => void; onNext: (slug: string, date: { year: number; month: number }) => void }) => {
+    Navigator: ({ year, month, username, onPrevious, onNext }: { year: number; month: number; username: string; onPrevious: (username: string, date: { year: number; month: number }) => void; onNext: (username: string, date: { year: number; month: number }) => void }) => {
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         const nextMonth = month === 12 ? 1 : month + 1;
@@ -28,8 +28,8 @@ vi.mock('~/components/calendar', () => ({
         return (
             <div data-testid="calendar-navigator">
                 <span>{`${year}년 ${month}월`}</span>
-                <button data-testid="prev-month-btn" onClick={() => onPrevious(slug, { year: prevYear, month: prevMonth })}>이전</button>
-                <button data-testid="next-month-btn" onClick={() => onNext(slug, { year: nextYear, month: nextMonth })}>다음</button>
+                <button data-testid="prev-month-btn" onClick={() => onPrevious(username, { year: prevYear, month: prevMonth })}>이전</button>
+                <button data-testid="next-month-btn" onClick={() => onNext(username, { year: nextYear, month: nextMonth })}>다음</button>
             </div>
         );
     },
