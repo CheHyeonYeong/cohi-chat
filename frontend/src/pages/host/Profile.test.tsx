@@ -20,8 +20,19 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('~/components/calendar', () => ({
-    Navigator: ({ year, month }: { year: number; month: number }) =>
-        <div data-testid="calendar-navigator">{`${year}년 ${month}월`}</div>,
+    Navigator: ({ year, month, slug, onPrevious, onNext }: { year: number; month: number; slug: string; onPrevious: (slug: string, date: { year: number; month: number }) => void; onNext: (slug: string, date: { year: number; month: number }) => void }) => {
+        const prevMonth = month === 1 ? 12 : month - 1;
+        const prevYear = month === 1 ? year - 1 : year;
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextYear = month === 12 ? year + 1 : year;
+        return (
+            <div data-testid="calendar-navigator">
+                <span>{`${year}년 ${month}월`}</span>
+                <button data-testid="prev-month-btn" onClick={() => onPrevious(slug, { year: prevYear, month: prevMonth })}>이전</button>
+                <button data-testid="next-month-btn" onClick={() => onNext(slug, { year: nextYear, month: nextMonth })}>다음</button>
+            </div>
+        );
+    },
     Body: ({ onSelectDay }: { onSelectDay: (date: Date) => void }) =>
         <div data-testid="calendar-body" onClick={() => onSelectDay(new Date(2024, 2, 15))}>calendar-body</div>,
     Timeslots: ({ onSelectTimeslot, baseDate }: { onSelectTimeslot: (ts: Record<string, unknown>) => void; baseDate: Date | null }) =>
@@ -49,14 +60,16 @@ vi.mock('~/features/member', () => ({
     useDeleteProfileImage: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+const mockUseBookings = vi.fn();
 vi.mock('~/features/booking', () => ({
-    useBookings: () => ({ data: [], refetch: vi.fn() }),
+    useBookings: (...args: unknown[]) => mockUseBookings(...args),
     useBooking: () => ({ data: null, refetch: vi.fn() }),
     useUploadBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
     useDeleteBookingFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useDownloadBookingFile: () => ({ mutate: vi.fn() }),
     BookingForm: () => <div data-testid="booking-form">BookingForm</div>,
     BookingDetailPanel: () => <div data-testid="booking-detail-panel">BookingDetailPanel</div>,
+    calendarKeys: { bookingsAll: () => ['bookings'] },
 }));
 
 const mockUseHostProfile = vi.fn();
@@ -104,6 +117,7 @@ const mockTimeslots = [
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mockUseBookings.mockReturnValue({ data: [] });
     mockUseHostProfile.mockReturnValue({ data: mockHost, isLoading: false, error: null });
     mockUseHostCalendar.mockReturnValue({
         data: { topics: ['개발 커리어', '이직 준비'], description: '안녕하세요, 프론트엔드 개발자입니다.' },
@@ -235,5 +249,32 @@ describe('Profile 페이지', () => {
 
         const headings = screen.getAllByRole('heading', { level: 1 });
         expect(headings.some(h => h.textContent?.includes('Test Host님과 약속잡기'))).toBe(true);
+    });
+
+    it('월 이동 시 useBookings가 변경된 year/month로 호출된다', () => {
+        render(<Profile />, { wrapper: createWrapper() });
+
+        const now = new Date();
+        const initialYear = now.getFullYear();
+        const initialMonth = now.getMonth() + 1;
+
+        expect(mockUseBookings).toHaveBeenCalledWith({
+            username: 'testhost',
+            year: initialYear,
+            month: initialMonth,
+        });
+
+        mockUseBookings.mockClear();
+
+        fireEvent.click(screen.getByTestId('next-month-btn'));
+
+        const expectedMonth = initialMonth === 12 ? 1 : initialMonth + 1;
+        const expectedYear = initialMonth === 12 ? initialYear + 1 : initialYear;
+
+        expect(mockUseBookings).toHaveBeenCalledWith({
+            username: 'testhost',
+            year: expectedYear,
+            month: expectedMonth,
+        });
     });
 });
