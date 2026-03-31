@@ -20,14 +20,9 @@ main() {
 
     echo "[info] Active: ${active} -> Rolling back to: ${previous}"
 
-    if container_running "$previous"; then
-        echo "[info] backend-${previous} is already running. Waiting for health."
-        wait_healthy "cohi-chat-backend-${previous}" "backend-${previous}"
-    else
-        echo "[info] backend-${previous} is stopped. Starting it..."
-        $COMPOSE start "backend-${previous}"
-        wait_healthy "cohi-chat-backend-${previous}" "backend-${previous}"
-    fi
+    echo "[rollback] Recreating backend-${previous} with current compose network settings..."
+    $COMPOSE up -d --no-deps "backend-${previous}"
+    wait_healthy "cohi-chat-backend-${previous}" "backend-${previous}"
 
     ensure_nginx_running
     switch_upstream "$previous"
