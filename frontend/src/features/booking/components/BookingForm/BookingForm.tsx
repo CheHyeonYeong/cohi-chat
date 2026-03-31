@@ -11,7 +11,7 @@ import { formatDateToISO } from '~/libs/date';
 
 interface BookingFormProps {
     calendar: ICalendar;
-    slug: string;
+    username: string;
     timeSlotId: number;
     when: Date;
     onCreated: () => void;
@@ -33,8 +33,8 @@ const createInitialState = (defaultTopic: string): BookingFormState => ({
     meetingLink: '',
 });
 
-export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) => {
-    const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
+export const BookingForm = ({ calendar, username, timeSlotId, when, onCreated }: BookingFormProps) => {
+    const createBookingMutation = useCreateBooking(username);
 
     const [formState, setFormState] = useState<BookingFormState>(() =>
         createInitialState(calendar.topics[0] ?? '')

@@ -50,7 +50,7 @@ export const ProfileCalendarSection = ({
                 <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex-1 min-w-0">
                         <Navigator
-                            slug={username}
+                            username={username}
                             year={year}
                             month={month}
                             onPrevious={handlePrevMonth}
