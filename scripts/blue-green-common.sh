@@ -3,6 +3,7 @@
 
 readonly COMPOSE="${COMPOSE:-docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml}"
 readonly NGINX_UPSTREAM_FILE="${NGINX_UPSTREAM_FILE:-./infra/app/nginx/upstream.conf}"
+readonly APP_NETWORK_NAME="${APP_NETWORK_NAME:-cohi-chat-app}"
 readonly HEALTH_INTERVAL="${HEALTH_INTERVAL:-5}"
 readonly DRAIN_DELAY_SECONDS="${DRAIN_DELAY_SECONDS:-15}"
 
@@ -95,15 +96,21 @@ container_running() {
     [ "$state" = "running" ]
 }
 
-container_networks() {
-    local name=$1
-    docker inspect --format='{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$name" 2>/dev/null || true
-}
-
 container_on_network() {
     local name=$1
     local network=$2
-    container_networks "$name" | grep -Fxq "$network"
+    docker inspect --format='{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$name" 2>/dev/null | grep -Fxq "$network"
+}
+
+ensure_container_on_app_network() {
+    local name=$1
+
+    if container_on_network "$name" "$APP_NETWORK_NAME"; then
+        return 0
+    fi
+
+    echo "[network] Connecting ${name} to ${APP_NETWORK_NAME}..."
+    docker network connect "$APP_NETWORK_NAME" "$name"
 }
 
 ensure_nginx_running() {
@@ -112,24 +119,10 @@ ensure_nginx_running() {
 
     if [ "$nginx_status" != "running" ]; then
         echo "[nginx] Starting nginx..."
-        $COMPOSE up -d nginx
+        $COMPOSE up -d --no-deps nginx
     fi
-}
 
-ensure_shared_network() {
-    local source_container=$1
-    local target_container=$2
-
-    while IFS= read -r network; do
-        [ -n "$network" ] || continue
-
-        if container_on_network "$target_container" "$network"; then
-            continue
-        fi
-
-        echo "[network] Connecting ${target_container} to ${network} for ${source_container}..."
-        docker network connect "$network" "$target_container"
-    done < <(container_networks "$source_container")
+    ensure_container_on_app_network "cohi-chat-nginx"
 }
 
 stop_backend_if_running() {
