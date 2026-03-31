@@ -65,6 +65,7 @@ export class ChatService {
         FROM (
           SELECT
             msg.id,
+            msg.sender_id,
             ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
           FROM message msg
           WHERE msg.room_id = cr.id
@@ -80,7 +81,8 @@ export class ChatService {
           ) cursor_message
           WHERE cursor_message.id = my_rm.last_read_message_id
         ) cursor ON true
-        WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
+        WHERE ordered_message.sender_id IS DISTINCT FROM me.id
+          AND (cursor.seq IS NULL OR ordered_message.seq > cursor.seq)
       ) unread ON true
       WHERE cr.is_disabled = false
       -- Sort by recent activity first, then by room id as a deterministic

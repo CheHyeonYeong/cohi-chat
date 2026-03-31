@@ -55,6 +55,9 @@ describe('ChatService', () => {
 
     expect(queryRawMock).toHaveBeenCalledTimes(1);
     expect(queryRawMock.mock.calls[0][0].values).toEqual(['testuser']);
+    expect(queryRawMock.mock.calls[0][0].strings.join('')).toContain(
+      'ordered_message.sender_id IS DISTINCT FROM me.id',
+    );
     expect(result).toEqual([
       {
         id: 'room-1',
