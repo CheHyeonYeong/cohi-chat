@@ -15,9 +15,7 @@ services:
     restart: unless-stopped
 
   chat-server:
-    build:
-      context: ./chat
-      dockerfile: Dockerfile
+    image: ${CHAT_SERVER_IMAGE:-cohi-chat-chat-server:local}
     container_name: cohi-chat-server
     env_file:
       - .env
