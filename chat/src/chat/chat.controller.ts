@@ -1,6 +1,16 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -33,5 +43,24 @@ export class ChatController {
   @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
   async getRooms(@Req() req: FastifyRequest): Promise<RoomResponseDto[]> {
     return this.chatService.getRooms(req.user!.sub);
+  }
+
+  @Patch('rooms/:roomId/read')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: '채팅방 읽음 처리',
+    description:
+      '현재 사용자의 채팅방 last_read_message_id를 해당 방의 최신 메시지로 갱신합니다.',
+  })
+  @ApiNoContentResponse({ description: '읽음 처리 성공' })
+  @ApiNotFoundResponse({
+    description: '사용자, 채팅방 또는 채팅방 멤버십을 찾을 수 없습니다.',
+  })
+  @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
+  async markRoomAsRead(
+    @Param('roomId') roomId: string,
+    @Req() req: FastifyRequest,
+  ): Promise<void> {
+    await this.chatService.markRoomAsRead(roomId, req.user!.sub);
   }
 }

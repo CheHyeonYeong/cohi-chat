@@ -26,9 +26,11 @@ See `.env.example`.
 
 - Swagger UI: `http://localhost:3001/api/swagger-ui`
 - Rooms API: `GET /api/chat/rooms`
+- Read API: `PATCH /api/chat/rooms/:roomId/read`
 
 Contract notes:
 - `lastMessage` is `null` when the room has no messages.
+- The read API marks the latest message in the room as read for the current member.
 - Timestamps are returned as UTC ISO-8601 strings.
 
 ## Schema

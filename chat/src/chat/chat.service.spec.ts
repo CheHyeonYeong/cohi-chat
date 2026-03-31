@@ -4,11 +4,34 @@ import { ChatService } from './chat.service';
 describe('ChatService', () => {
   let service: ChatService;
   let queryRawMock: jest.Mock;
+  let memberFindFirstMock: jest.Mock;
+  let chatRoomFindFirstMock: jest.Mock;
+  let roomMemberFindFirstMock: jest.Mock;
+  let messageFindFirstMock: jest.Mock;
+  let roomMemberUpdateManyMock: jest.Mock;
 
   beforeEach(() => {
     queryRawMock = jest.fn();
+    memberFindFirstMock = jest.fn();
+    chatRoomFindFirstMock = jest.fn();
+    roomMemberFindFirstMock = jest.fn();
+    messageFindFirstMock = jest.fn();
+    roomMemberUpdateManyMock = jest.fn();
     service = new ChatService({
       $queryRaw: queryRawMock,
+      member: {
+        findFirst: memberFindFirstMock,
+      },
+      chatRoom: {
+        findFirst: chatRoomFindFirstMock,
+      },
+      roomMember: {
+        findFirst: roomMemberFindFirstMock,
+        updateMany: roomMemberUpdateManyMock,
+      },
+      message: {
+        findFirst: messageFindFirstMock,
+      },
     } as unknown as PrismaService);
   });
 
@@ -75,5 +98,59 @@ describe('ChatService', () => {
         unreadCount: 0,
       },
     ]);
+  });
+
+  it('marks the latest room message as read for the current member', async () => {
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    chatRoomFindFirstMock.mockResolvedValue({ id: 'room-1' });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+      roomId: 'room-1',
+      memberId: 'member-1',
+    });
+    messageFindFirstMock.mockResolvedValue({ id: 'message-9' });
+    roomMemberUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await service.markRoomAsRead('room-1', 'testuser');
+
+    expect(memberFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        username: 'testuser',
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: { id: true },
+    });
+    expect(chatRoomFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        id: 'room-1',
+        isDisabled: false,
+      },
+      select: { id: true },
+    });
+    expect(roomMemberFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        roomId: 'room-1',
+        memberId: 'member-1',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(messageFindFirstMock).toHaveBeenCalledWith({
+      where: { roomId: 'room-1' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { id: true },
+    });
+    expect(roomMemberUpdateManyMock).toHaveBeenCalledWith({
+      where: {
+        roomId: 'room-1',
+        memberId: 'member-1',
+        deletedAt: null,
+      },
+      data: {
+        lastReadMessageId: 'message-9',
+        updatedAt: expect.any(Date),
+      },
+    });
   });
 });

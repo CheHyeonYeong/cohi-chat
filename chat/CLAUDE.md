@@ -6,13 +6,16 @@ This document describes the current `chat/` implementation on `khs_500`.
 
 - NestJS + Fastify chat server
 - JWT access token verification using the same secret as the Spring backend
-- Public API in this branch: `GET /api/chat/rooms`
+- Public APIs in this branch:
+  - `GET /api/chat/rooms`
+  - `PATCH /api/chat/rooms/:roomId/read`
 
 ## Architecture
 
 ```text
 Client
   -> GET /api/chat/rooms
+  -> PATCH /api/chat/rooms/:roomId/read
 NestJS chat server
   -> Prisma Client
   -> Prisma.$queryRaw(...) for the room list query
@@ -37,6 +40,8 @@ Keep both files aligned when the chat schema changes.
   - `chat_room.is_disabled = false`
   - `room_member.deleted_at IS NULL`
 - `unreadCount` is the number of messages after `last_read_message_id`.
+- `PATCH /api/chat/rooms/:roomId/read` updates `room_member.last_read_message_id`
+  to the latest message in the room for the authenticated member.
 - `lastMessage` is `null` when the room has never received a message.
 - Swagger lives at `/api/swagger-ui`.
 
