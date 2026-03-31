@@ -2,55 +2,50 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { PrismaService } from '../prisma/prisma.service';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
-import { Message } from './entities/message.entity';
-import { RoomMember } from './entities/room-member.entity';
-import type { MessageType } from './enums/chat.enum';
 
-// Spring의 @Service에 대응
 @Injectable()
 export class ChatService {
-  constructor(
-    // Spring의 @Autowired JpaRepository에 대응
-    @InjectRepository(Message)
-    private readonly messageRepository: Repository<Message>,
-    @InjectRepository(RoomMember)
-    private readonly roomMemberRepository: Repository<RoomMember>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async sendMessage(
     roomId: string,
-    userId: string,
+    username: string,
     dto: SendMessageDto,
   ): Promise<MessageDto> {
     this.validateContent(dto.content);
 
-    // 권한 체크: JWT userId가 해당 방의 RoomMember인지 확인
-    // @DeleteDateColumn 덕분에 soft-delete된 레코드는 자동 제외됨
-    const roomMember = await this.roomMemberRepository.findOne({
-      where: { roomId, memberId: userId },
+    const memberId = await this.resolveMemberId(username);
+
+    const roomMember = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+      },
+      select: { id: true },
     });
 
     if (!roomMember) {
       throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
     }
 
-    // 메시지 저장
-    const message = this.messageRepository.create({
-      roomId,
-      senderId: userId,
-      messageType: 'TEXT' satisfies MessageType,
-      content: dto.content,
+    const savedMessage = await this.prisma.message.create({
+      data: {
+        roomId,
+        senderId: memberId,
+        messageType: 'TEXT',
+        content: dto.content.trim(),
+      },
     });
-    const savedMessage = await this.messageRepository.save(message);
 
-    // sender의 last_read_message_id 갱신 — 본인이 보낸 메시지는 읽은 것으로 처리
-    await this.roomMemberRepository.update(roomMember.id, {
-      lastReadMessageId: savedMessage.id,
+    await this.prisma.roomMember.update({
+      where: { id: roomMember.id },
+      data: { lastReadMessageId: savedMessage.id },
     });
 
     return MessageDto.from(savedMessage);
@@ -58,39 +53,46 @@ export class ChatService {
 
   async getMessages(
     roomId: string,
-    userId: string,
+    username: string,
     cursor: Date | undefined,
     size: number,
   ): Promise<MessagePageResponse> {
-    // 권한 체크: JWT userId가 해당 방의 RoomMember인지 확인
-    const member = await this.roomMemberRepository.findOne({
-      where: { roomId, memberId: userId },
+    const memberId = await this.resolveMemberId(username);
+
+    const member = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+      },
+      select: { id: true },
     });
 
     if (!member) {
       throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
     }
 
-    // 커서 기반 페이징 — Spring Slice<T>와 유사한 단방향(과거 방향) 조회
-    // size + 1개를 가져와서 다음 페이지 존재 여부를 판단
-    const qb = this.messageRepository
-      .createQueryBuilder('m')
-      .where('m.roomId = :roomId', { roomId })
-      .orderBy('m.createdAt', 'DESC')
-      .take(size + 1);
+    const rows = await this.fetchMessagesPage(roomId, cursor, size);
+    return {
+      messages: rows.messages.map(MessageDto.from),
+      nextCursor: rows.nextCursor,
+    };
+  }
 
-    if (cursor) {
-      qb.andWhere('m.createdAt < :cursor', { cursor });
+  // Spring JWT sub = username이므로 member 테이블에서 UUID 조회
+  private async resolveMemberId(username: string): Promise<string> {
+    const member = await this.prisma.member.findFirst({
+      where: {
+        username,
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: { id: true },
+    });
+    if (!member) {
+      throw new UnauthorizedException('존재하지 않는 사용자입니다.');
     }
-
-    const rows = await qb.getMany();
-    const hasNext = rows.length > size;
-    const messages = hasNext ? rows.slice(0, size) : rows;
-    // 마지막 메시지의 createdAt을 다음 커서로 사용
-    const nextCursor =
-      hasNext ? messages[messages.length - 1].createdAt.toISOString() : null;
-
-    return { messages: messages.map(MessageDto.from), nextCursor };
+    return member.id;
   }
 
   private validateContent(content: unknown): void {
@@ -102,5 +104,74 @@ export class ChatService {
         '메시지는 최대 1000자까지 입력할 수 있습니다.',
       );
     }
+  }
+
+  private async fetchMessagesPage(
+    roomId: string,
+    cursor: Date | undefined,
+    size: number,
+  ): Promise<{ messages: Array<{ id: string; roomId: string; senderId: string | null; messageType: string; content: string | null; payload: unknown; createdAt: Date }>; nextCursor: string | null }> {
+    const rows = await this.fetchMessagesBatch(roomId, cursor, size + 1);
+
+    if (rows.length <= size) {
+      return { messages: rows, nextCursor: null };
+    }
+
+    const boundaryTime = rows[size - 1].createdAt;
+    let extendedRows = rows;
+    let firstOlderIndex = extendedRows.findIndex(
+      (row) => row.createdAt.getTime() < boundaryTime.getTime(),
+    );
+
+    while (firstOlderIndex === -1) {
+      const lastRow = extendedRows[extendedRows.length - 1];
+      const nextBatch = await this.fetchMessagesBatch(
+        roomId,
+        cursor,
+        size + 1,
+        lastRow,
+      );
+
+      if (nextBatch.length === 0) {
+        return { messages: extendedRows, nextCursor: null };
+      }
+
+      extendedRows = [...extendedRows, ...nextBatch];
+      firstOlderIndex = extendedRows.findIndex(
+        (row) => row.createdAt.getTime() < boundaryTime.getTime(),
+      );
+    }
+
+    return {
+      messages: extendedRows.slice(0, firstOlderIndex),
+      nextCursor: boundaryTime.toISOString(),
+    };
+  }
+
+  private async fetchMessagesBatch(
+    roomId: string,
+    cursor: Date | undefined,
+    take: number,
+    after?: { createdAt: Date; id: string },
+  ) {
+    return this.prisma.message.findMany({
+      where: {
+        roomId,
+        ...(cursor ? { createdAt: { lt: cursor } } : {}),
+        ...(after
+          ? {
+              OR: [
+                { createdAt: { lt: after.createdAt } },
+                {
+                  createdAt: after.createdAt,
+                  id: { lt: after.id },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+    });
   }
 }

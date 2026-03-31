@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Message } from '../entities/message.entity';
+
+type MessageLike = {
+  id: string;
+  roomId: string;
+  senderId: string | null;
+  messageType: string;
+  content: string | null;
+  payload: unknown;
+  createdAt: Date;
+};
 
 export class MessageDto {
   @ApiProperty({ example: 'uuid-v4', description: '메시지 UUID' })
@@ -27,14 +36,17 @@ export class MessageDto {
   @ApiProperty({ example: '2026-03-29T00:00:00.000Z', description: 'ISO 8601 생성 시각' })
   createdAt: string;
 
-  static from(message: Message): MessageDto {
+  static from(message: MessageLike): MessageDto {
     const dto = new MessageDto();
     dto.id = message.id;
     dto.roomId = message.roomId;
     dto.senderId = message.senderId;
     dto.messageType = message.messageType;
     dto.content = message.content;
-    dto.payload = message.payload;
+    dto.payload =
+      message.payload && typeof message.payload === 'object'
+        ? (message.payload as Record<string, unknown>)
+        : null;
     dto.createdAt = message.createdAt.toISOString();
     return dto;
   }

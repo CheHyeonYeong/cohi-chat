@@ -19,7 +19,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { ParseCursorPipe } from './pipes/parse-cursor.pipe';
 
 @ApiTags('chat')
-@ApiBearerAuth()
+@ApiBearerAuth('jwtAuth')
 @Controller('chat')
 @UseGuards(JwtGuard)
 export class ChatController {
@@ -39,10 +39,13 @@ export class ChatController {
     @Query('size') size: string,
     @Request() req: FastifyRequest,
   ) {
-    // JwtGuard가 통과한 이후이므로 req.user는 항상 존재 — non-null assertion 사용
-    const userId = req.user!.sub;
-    const pageSize = Math.min(parseInt(size, 10) || 50, 100);
-    return this.chatService.getMessages(roomId, userId, cursor, pageSize);
+    const username = req.user!.sub;
+    const parsedSize = parseInt(size, 10);
+    const pageSize =
+      Number.isNaN(parsedSize) || parsedSize <= 0
+        ? 50
+        : Math.min(parsedSize, 100);
+    return this.chatService.getMessages(roomId, username, cursor, pageSize);
   }
 
   @Post('rooms/:roomId/messages')
@@ -56,8 +59,7 @@ export class ChatController {
     @Body() dto: SendMessageDto,
     @Request() req: FastifyRequest,
   ) {
-    // JwtGuard가 통과한 이후이므로 req.user는 항상 존재 — non-null assertion 사용
-    const userId = req.user!.sub;
-    return this.chatService.sendMessage(roomId, userId, dto);
+    const username = req.user!.sub;
+    return this.chatService.sendMessage(roomId, username, dto);
   }
 }
