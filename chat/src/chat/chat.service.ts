@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+﻿import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   ForbiddenException,
@@ -11,6 +11,16 @@ import {
   PollMessagesCommand,
 } from './dto/poll-messages.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
+
+interface PollingMessageRecord {
+  id: string;
+  roomId: string;
+  senderId: string | null;
+  messageType: string;
+  content: string | null;
+  payload: Prisma.JsonValue | null;
+  createdAt: Date;
+}
 
 @Injectable()
 export class ChatService {
@@ -143,7 +153,12 @@ export class ChatService {
       throw new ForbiddenException('Access to the chat room is denied.');
     }
 
-    const messages = await this.findMessagesAfter(roomId, sinceMessageId);
+    const pollingStartedAt = new Date();
+    const messages = await this.findMessagesAfter(
+      roomId,
+      sinceMessageId,
+      pollingStartedAt,
+    );
     if (messages.length > 0 || timeoutSeconds === 0) {
       return messages.map((message) => this.toPollMessageResponse(message));
     }
@@ -152,6 +167,7 @@ export class ChatService {
       roomId,
       sinceMessageId,
       timeoutSeconds,
+      pollingStartedAt,
       abortSignal,
     );
 
@@ -170,11 +186,18 @@ export class ChatService {
     }
   }
 
-  private async findMessagesAfter(roomId: string, sinceMessageId?: string) {
+  private async findMessagesAfter(
+    roomId: string,
+    sinceMessageId: string | undefined,
+    pollingStartedAt: Date,
+  ): Promise<PollingMessageRecord[]> {
     if (!sinceMessageId) {
       return this.prisma.message.findMany({
         where: {
           roomId,
+          createdAt: {
+            gt: pollingStartedAt,
+          },
         },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       });
@@ -198,48 +221,33 @@ export class ChatService {
       );
     }
 
-    return this.prisma.message.findMany({
+    const orderedMessages = await this.prisma.message.findMany({
       where: {
         roomId,
-        OR: [
-          {
-            createdAt: {
-              gt: anchorMessage.createdAt,
-            },
-          },
-          {
-            createdAt: anchorMessage.createdAt,
-            id: {
-              gt: anchorMessage.id,
-            },
-          },
-        ],
+        createdAt: {
+          gte: anchorMessage.createdAt,
+        },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
+
+    // UUID v4 order is not chronological, so keep every message from the
+    // anchor timestamp onward except the anchor itself to avoid drops.
+    return orderedMessages.filter((message) => message.id !== anchorMessage.id);
   }
 
   private waitForMessages(
     roomId: string,
     sinceMessageId: string | undefined,
     timeoutSeconds: number,
+    pollingStartedAt: Date,
     abortSignal?: AbortSignal,
   ) {
     if (abortSignal?.aborted) {
       return Promise.resolve([]);
     }
 
-    return new Promise<
-      Array<{
-        id: string;
-        roomId: string;
-        senderId: string | null;
-        messageType: string;
-        content: string | null;
-        payload: Prisma.JsonValue | null;
-        createdAt: Date;
-      }>
-    >((resolve, reject) => {
+    return new Promise<PollingMessageRecord[]>((resolve, reject) => {
       let settled = false;
       let checking = false;
 
@@ -249,17 +257,7 @@ export class ChatService {
         abortSignal?.removeEventListener('abort', abortHandler);
       };
 
-      const resolveWith = (
-        messages: Array<{
-          id: string;
-          roomId: string;
-          senderId: string | null;
-          messageType: string;
-          content: string | null;
-          payload: Prisma.JsonValue | null;
-          createdAt: Date;
-        }>,
-      ) => {
+      const resolveWith = (messages: PollingMessageRecord[]) => {
         if (settled) {
           return;
         }
@@ -292,7 +290,7 @@ export class ChatService {
 
         checking = true;
 
-        void this.findMessagesAfter(roomId, sinceMessageId)
+        void this.findMessagesAfter(roomId, sinceMessageId, pollingStartedAt)
           .then((messages) => {
             if (messages.length > 0) {
               resolveWith(messages);
@@ -318,15 +316,9 @@ export class ChatService {
     });
   }
 
-  private toPollMessageResponse(message: {
-    id: string;
-    roomId: string;
-    senderId: string | null;
-    messageType: string;
-    content: string | null;
-    payload: Prisma.JsonValue | null;
-    createdAt: Date;
-  }): PollMessageResponse {
+  private toPollMessageResponse(
+    message: PollingMessageRecord,
+  ): PollMessageResponse {
     return {
       id: message.id,
       roomId: message.roomId,

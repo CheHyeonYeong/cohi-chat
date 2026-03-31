@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Controller,
   Get,
@@ -56,7 +56,7 @@ export class ChatController {
   @ApiOperation({
     summary: '새 메시지 long polling',
     description:
-      'sinceMessageId 이후 메시지가 있으면 즉시 반환하고, 없으면 timeout 초까지 대기한 뒤 빈 배열을 반환합니다.',
+      'sinceMessageId 이후 메시지가 있으면 즉시 반환하고, 없으면 최대 25초까지 대기한 뒤 빈 배열을 반환합니다. sinceMessageId를 생략하면 요청 시점 이후 도착한 새 메시지만 반환합니다.',
   })
   @ApiQuery({
     name: 'roomId',
@@ -70,7 +70,8 @@ export class ChatController {
     required: false,
     type: String,
     format: 'uuid',
-    description: '클라이언트가 마지막으로 받은 메시지 UUID',
+    description:
+      '클라이언트가 마지막으로 받은 메시지 UUID. 없으면 poll 시작 이후 새 메시지만 기다립니다.',
   })
   @ApiQuery({
     name: 'timeout',
