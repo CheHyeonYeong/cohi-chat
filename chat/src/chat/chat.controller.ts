@@ -4,6 +4,7 @@ import {
   HttpCode,
   Param,
   Patch,
+  ParseUUIDPipe,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -58,7 +59,7 @@ export class ChatController {
   })
   @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
   async markRoomAsRead(
-    @Param('roomId') roomId: string,
+    @Param('roomId', new ParseUUIDPipe({ version: '4' })) roomId: string,
     @Req() req: FastifyRequest,
   ): Promise<void> {
     await this.chatService.markRoomAsRead(roomId, req.user!.sub);

@@ -1,5 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -152,5 +153,20 @@ describe('ChatService', () => {
         updatedAt: expect.any(Date),
       },
     });
+  });
+
+  it('throws a generic not found error when the user is not an active room member', async () => {
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    roomMemberFindFirstMock.mockResolvedValue(null);
+
+    await expect(
+      service.markRoomAsRead('550e8400-e29b-41d4-a716-446655440000', 'testuser'),
+    ).rejects.toThrow(
+      new NotFoundException('채팅방을 찾을 수 없거나 접근 권한이 없습니다.'),
+    );
+
+    expect(chatRoomFindFirstMock).not.toHaveBeenCalled();
+    expect(messageFindFirstMock).not.toHaveBeenCalled();
+    expect(roomMemberUpdateManyMock).not.toHaveBeenCalled();
   });
 });

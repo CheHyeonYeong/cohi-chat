@@ -7,6 +7,9 @@ import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private static readonly ROOM_NOT_FOUND_MESSAGE =
+    '채팅방을 찾을 수 없거나 접근 권한이 없습니다.';
+
   async getRooms(username: string): Promise<RoomResponseDto[]> {
     // Keep this query in SQL because the room list contract depends on
     // lateral joins and window functions that are easier to keep exact here
@@ -104,18 +107,6 @@ export class ChatService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    const room = await this.prisma.chatRoom.findFirst({
-      where: {
-        id: roomId,
-        isDisabled: false,
-      },
-      select: { id: true },
-    });
-
-    if (!room) {
-      throw new NotFoundException('채팅방을 찾을 수 없습니다.');
-    }
-
     const roomMember = await this.prisma.roomMember.findFirst({
       where: {
         roomId,
@@ -126,7 +117,19 @@ export class ChatService {
     });
 
     if (!roomMember) {
-      throw new NotFoundException('채팅방 접근 권한이 없습니다.');
+      throw new NotFoundException(ChatService.ROOM_NOT_FOUND_MESSAGE);
+    }
+
+    const room = await this.prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        isDisabled: false,
+      },
+      select: { id: true },
+    });
+
+    if (!room) {
+      throw new NotFoundException(ChatService.ROOM_NOT_FOUND_MESSAGE);
     }
 
     const latestMessage = await this.prisma.message.findFirst({
