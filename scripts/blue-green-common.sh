@@ -95,6 +95,17 @@ container_running() {
     [ "$state" = "running" ]
 }
 
+container_networks() {
+    local name=$1
+    docker inspect --format='{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$name" 2>/dev/null || true
+}
+
+container_on_network() {
+    local name=$1
+    local network=$2
+    container_networks "$name" | grep -Fxq "$network"
+}
+
 ensure_nginx_running() {
     local nginx_status
     nginx_status=$(container_status "cohi-chat-nginx")
@@ -103,6 +114,22 @@ ensure_nginx_running() {
         echo "[nginx] Starting nginx..."
         $COMPOSE up -d nginx
     fi
+}
+
+ensure_shared_network() {
+    local source_container=$1
+    local target_container=$2
+
+    while IFS= read -r network; do
+        [ -n "$network" ] || continue
+
+        if container_on_network "$target_container" "$network"; then
+            continue
+        fi
+
+        echo "[network] Connecting ${target_container} to ${network} for ${source_container}..."
+        docker network connect "$network" "$target_container"
+    done < <(container_networks "$source_container")
 }
 
 stop_backend_if_running() {
