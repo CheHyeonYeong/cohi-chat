@@ -7,33 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ChatRoomType {
-  ONE_TO_ONE
-  GROUP
-}
-
-enum ChatRoomStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum MessageType {
-  TEXT
-  RESERVATION_CARD
-  SYSTEM
-}
-
 model ChatRoom {
   id              String         @id @default(uuid()) @db.Uuid
-  type            ChatRoomType
-  status          ChatRoomStatus
+  type            String         @db.VarChar(20)
+  status          String         @db.VarChar(20)
   externalRefType String?        @map("external_ref_type") @db.VarChar(50)
   externalRefId   String?        @map("external_ref_id") @db.Uuid
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime?      @map("deleted_at") @db.Timestamptz(6)
-  members         RoomMember[]
-  messages        Message[]
 
   @@map("chat_room")
 }
@@ -46,9 +28,9 @@ model RoomMember {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
-  room              ChatRoom  @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([roomId, memberId], map: "uq_room_member")
+  @@index([memberId, deletedAt], map: "idx_room_member_member_id_deleted_at")
   @@index([roomId], map: "idx_room_member_room_id")
   @@map("room_member")
 }
@@ -57,12 +39,12 @@ model Message {
   id          String      @id @default(uuid()) @db.Uuid
   roomId      String      @map("room_id") @db.Uuid
   senderId    String?     @map("sender_id") @db.Uuid
-  messageType MessageType @map("message_type")
+  messageType String      @map("message_type") @db.VarChar(30)
   content     String?     @db.VarChar(2000)
   payload     Json?
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  room        ChatRoom    @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cursorSeq   BigInt      @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
 
-  @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
+  @@index([roomId, cursorSeq(sort: Desc)], map: "idx_message_room_id_cursor_seq")
   @@map("message")
 }

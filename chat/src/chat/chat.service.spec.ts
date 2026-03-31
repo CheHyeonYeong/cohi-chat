@@ -1,7 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChatRoomStatus, ChatRoomType, MessageType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ChatRoomStatus,
+  ChatRoomType,
+  MessageType,
+} from './dto/chat-response.dto';
 import { ChatService } from './chat.service';
 
 const createPrismaMock = () => ({
@@ -53,8 +57,8 @@ describe('ChatService', () => {
   it('marks the room as read up to the latest message', async () => {
     prisma.chatRoom.findFirst.mockResolvedValue({
       id: roomId,
-      type: ChatRoomType.ONE_TO_ONE,
-      status: ChatRoomStatus.ACTIVE,
+      type: 'ONE_TO_ONE' satisfies ChatRoomType,
+      status: 'ACTIVE' satisfies ChatRoomStatus,
       externalRefType: 'RESERVATION',
       externalRefId: null,
     });
@@ -68,9 +72,10 @@ describe('ChatService', () => {
       id: messageId,
       roomId,
       senderId: memberId,
-      messageType: MessageType.TEXT,
+      messageType: 'TEXT' satisfies MessageType,
       content: 'hello',
       createdAt: new Date('2026-03-30T10:00:00.000Z'),
+      cursorSeq: 11n,
     });
     prisma.roomMember.update.mockResolvedValue({ id: 'member-row-id' });
 
@@ -93,8 +98,8 @@ describe('ChatService', () => {
   it('throws 404 when the room is not accessible', async () => {
     prisma.chatRoom.findFirst.mockResolvedValue({
       id: roomId,
-      type: ChatRoomType.ONE_TO_ONE,
-      status: ChatRoomStatus.ACTIVE,
+      type: 'ONE_TO_ONE' satisfies ChatRoomType,
+      status: 'ACTIVE' satisfies ChatRoomStatus,
       externalRefType: 'RESERVATION',
       externalRefId: null,
     });
@@ -118,8 +123,8 @@ describe('ChatService', () => {
     prisma.chatRoom.findMany.mockResolvedValue([
       {
         id: roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE' satisfies ChatRoomType,
+        status: 'ACTIVE' satisfies ChatRoomStatus,
         externalRefType: 'RESERVATION',
         externalRefId: '44444444-4444-4444-4444-444444444444',
         updatedAt: new Date('2026-03-30T09:30:00.000Z'),
@@ -129,17 +134,18 @@ describe('ChatService', () => {
       id: messageId,
       roomId,
       senderId: '55555555-5555-5555-5555-555555555555',
-      messageType: MessageType.TEXT,
+      messageType: 'TEXT' satisfies MessageType,
       content: 'latest',
       createdAt: new Date('2026-03-30T10:00:00.000Z'),
+      cursorSeq: 21n,
     });
     prisma.message.count.mockResolvedValue(3);
 
     await expect(service.listRooms(memberId)).resolves.toEqual([
       {
         roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE',
+        status: 'ACTIVE',
         externalRefType: 'RESERVATION',
         externalRefId: '44444444-4444-4444-4444-444444444444',
         lastReadMessageId: null,
@@ -147,7 +153,7 @@ describe('ChatService', () => {
         lastMessage: {
           id: messageId,
           senderId: '55555555-5555-5555-5555-555555555555',
-          messageType: MessageType.TEXT,
+          messageType: 'TEXT',
           content: 'latest',
           createdAt: '2026-03-30T10:00:00.000Z',
         },
@@ -168,8 +174,8 @@ describe('ChatService', () => {
     prisma.chatRoom.findMany.mockResolvedValue([
       {
         id: roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE' satisfies ChatRoomType,
+        status: 'ACTIVE' satisfies ChatRoomStatus,
         externalRefType: 'RESERVATION',
         externalRefId: null,
         updatedAt: new Date('2026-03-30T09:30:00.000Z'),
@@ -179,9 +185,10 @@ describe('ChatService', () => {
       id: messageId,
       roomId,
       senderId: memberId,
-      messageType: MessageType.TEXT,
+      messageType: 'TEXT' satisfies MessageType,
       content: 'old',
       createdAt: new Date('2026-03-30T09:45:00.000Z'),
+      cursorSeq: 42n,
     });
     prisma.message.count.mockResolvedValue(2);
 
@@ -210,8 +217,8 @@ describe('ChatService', () => {
     prisma.chatRoom.findMany.mockResolvedValue([
       {
         id: roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE' satisfies ChatRoomType,
+        status: 'ACTIVE' satisfies ChatRoomStatus,
         externalRefType: null,
         externalRefId: null,
         updatedAt: new Date('2026-03-30T09:30:00.000Z'),
@@ -221,17 +228,18 @@ describe('ChatService', () => {
       id: messageId,
       roomId,
       senderId: memberId,
-      messageType: MessageType.TEXT,
+      messageType: 'TEXT' satisfies MessageType,
       content: 'latest',
       createdAt: new Date('2026-03-30T10:00:00.000Z'),
+      cursorSeq: 51n,
     });
     prisma.message.count.mockResolvedValue(1);
 
     await expect(service.listRooms(username)).resolves.toEqual([
       {
         roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE',
+        status: 'ACTIVE',
         externalRefType: null,
         externalRefId: null,
         lastReadMessageId: null,
@@ -239,7 +247,7 @@ describe('ChatService', () => {
         lastMessage: {
           id: messageId,
           senderId: memberId,
-          messageType: MessageType.TEXT,
+          messageType: 'TEXT',
           content: 'latest',
           createdAt: '2026-03-30T10:00:00.000Z',
         },
@@ -262,8 +270,8 @@ describe('ChatService', () => {
     prisma.chatRoom.findMany.mockResolvedValue([
       {
         id: roomId,
-        type: ChatRoomType.ONE_TO_ONE,
-        status: ChatRoomStatus.ACTIVE,
+        type: 'ONE_TO_ONE' satisfies ChatRoomType,
+        status: 'ACTIVE' satisfies ChatRoomStatus,
         externalRefType: 'RESERVATION',
         externalRefId: null,
         updatedAt: new Date('2026-03-30T09:30:00.000Z'),
@@ -273,9 +281,10 @@ describe('ChatService', () => {
       id: messageId,
       roomId: '99999999-9999-9999-9999-999999999999',
       senderId: memberId,
-      messageType: MessageType.TEXT,
+      messageType: 'TEXT' satisfies MessageType,
       content: 'foreign-room-message',
       createdAt: new Date('2026-03-30T09:45:00.000Z'),
+      cursorSeq: 99n,
     });
     prisma.message.count.mockResolvedValue(4);
 
@@ -287,6 +296,30 @@ describe('ChatService', () => {
           unreadCount: 4,
         },
       ],
+    });
+  });
+
+  it('counts unread messages by cursor sequence instead of timestamp ties', async () => {
+    prisma.message.findUnique.mockResolvedValue({
+      id: messageId,
+      roomId,
+      senderId: memberId,
+      messageType: 'TEXT' satisfies MessageType,
+      content: 'old',
+      createdAt: new Date('2026-03-30T09:45:00.000Z'),
+      cursorSeq: 77n,
+    });
+    prisma.message.count.mockResolvedValue(2);
+
+    await service['getUnreadCount'](roomId, messageId);
+
+    expect(prisma.message.count).toHaveBeenCalledWith({
+      where: {
+        roomId,
+        cursorSeq: {
+          gt: 77n,
+        },
+      },
     });
   });
 });

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChatRoomStatus, ChatRoomType, MessageType } from '@prisma/client';
+
+export const CHAT_ROOM_TYPES = ['ONE_TO_ONE', 'GROUP'] as const;
+export const CHAT_ROOM_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
+export const MESSAGE_TYPES = ['TEXT', 'RESERVATION_CARD', 'SYSTEM'] as const;
+
+export type ChatRoomType = (typeof CHAT_ROOM_TYPES)[number];
+export type ChatRoomStatus = (typeof CHAT_ROOM_STATUSES)[number];
+export type MessageType = (typeof MESSAGE_TYPES)[number];
 
 export class ChatMessageSummaryDto {
   @ApiProperty({ format: 'uuid' })
@@ -8,7 +15,7 @@ export class ChatMessageSummaryDto {
   @ApiProperty({ format: 'uuid', nullable: true })
   senderId!: string | null;
 
-  @ApiProperty({ enum: MessageType, enumName: 'MessageType' })
+  @ApiProperty({ enum: MESSAGE_TYPES, enumName: 'MessageType' })
   messageType!: MessageType;
 
   @ApiProperty({ nullable: true })
@@ -22,10 +29,10 @@ export class ChatRoomResponseDto {
   @ApiProperty({ format: 'uuid' })
   roomId!: string;
 
-  @ApiProperty({ enum: ChatRoomType, enumName: 'ChatRoomType' })
+  @ApiProperty({ enum: CHAT_ROOM_TYPES, enumName: 'ChatRoomType' })
   type!: ChatRoomType;
 
-  @ApiProperty({ enum: ChatRoomStatus, enumName: 'ChatRoomStatus' })
+  @ApiProperty({ enum: CHAT_ROOM_STATUSES, enumName: 'ChatRoomStatus' })
   status!: ChatRoomStatus;
 
   @ApiProperty({ nullable: true })

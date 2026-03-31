@@ -1,8 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  CHAT_ROOM_STATUSES,
+  CHAT_ROOM_TYPES,
   ChatRoomResponseDto,
   MarkRoomAsReadResponseDto,
+  MESSAGE_TYPES,
+  MessageType,
+  ChatRoomStatus,
+  ChatRoomType,
   UnreadSummaryResponseDto,
 } from './dto/chat-response.dto';
 
@@ -45,8 +55,8 @@ export class ChatService {
 
           return {
             roomId: room.id,
-            type: room.type,
-            status: room.status,
+            type: this.parseChatRoomType(room.type),
+            status: this.parseChatRoomStatus(room.status),
             externalRefType: room.externalRefType,
             externalRefId: room.externalRefId,
             lastReadMessageId: membership.lastReadMessageId,
@@ -55,7 +65,7 @@ export class ChatService {
               ? {
                   id: lastMessage.id,
                   senderId: lastMessage.senderId,
-                  messageType: lastMessage.messageType,
+                  messageType: this.parseMessageType(lastMessage.messageType),
                   content: lastMessage.content,
                   createdAt: lastMessage.createdAt.toISOString(),
                 }
@@ -207,7 +217,9 @@ export class ChatService {
       where: {
         roomId,
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: {
+        cursorSeq: 'desc',
+      },
     });
   }
 
@@ -222,6 +234,10 @@ export class ChatService {
     }
 
     const lastReadMessage = await this.prisma.message.findUnique({
+      select: {
+        roomId: true,
+        cursorSeq: true,
+      },
       where: {
         id: lastReadMessageId,
       },
@@ -235,20 +251,40 @@ export class ChatService {
     return this.prisma.message.count({
       where: {
         roomId,
-        OR: [
-          {
-            createdAt: {
-              gt: lastReadMessage.createdAt,
-            },
-          },
-          {
-            createdAt: lastReadMessage.createdAt,
-            id: {
-              gt: lastReadMessageId,
-            },
-          },
-        ],
+        cursorSeq: {
+          gt: lastReadMessage.cursorSeq,
+        },
       },
     });
+  }
+
+  private parseChatRoomType(value: string): ChatRoomType {
+    if (CHAT_ROOM_TYPES.includes(value as ChatRoomType)) {
+      return value as ChatRoomType;
+    }
+
+    throw new InternalServerErrorException(
+      `지원하지 않는 chat_room.type 값입니다: ${value}`,
+    );
+  }
+
+  private parseChatRoomStatus(value: string): ChatRoomStatus {
+    if (CHAT_ROOM_STATUSES.includes(value as ChatRoomStatus)) {
+      return value as ChatRoomStatus;
+    }
+
+    throw new InternalServerErrorException(
+      `지원하지 않는 chat_room.status 값입니다: ${value}`,
+    );
+  }
+
+  private parseMessageType(value: string): MessageType {
+    if (MESSAGE_TYPES.includes(value as MessageType)) {
+      return value as MessageType;
+    }
+
+    throw new InternalServerErrorException(
+      `지원하지 않는 message.message_type 값입니다: ${value}`,
+    );
   }
 }
