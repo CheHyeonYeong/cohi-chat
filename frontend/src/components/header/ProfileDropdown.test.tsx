@@ -90,7 +90,7 @@ describe('ProfileDropdown', () => {
         expect(screen.queryByTestId('menu-item-host-calendar')).not.toBeInTheDocument();
     });
 
-    it('호스트(캘린더 있음): "내 프로필 미리보기", "시간대 설정", "호스트 설정" 메뉴가 표시된다, "호스트 등록하기"는 없다', async () => {
+    it('호스트(캘린더 있음): "내 프로필", "시간대 설정", "호스트 설정" 메뉴가 표시된다, "호스트 등록하기"는 없다', async () => {
         mockUseAuth.mockReturnValue({ data: hostUser });
         mockUseMyCalendar.mockReturnValue({ data: { googleCalendarId: 'test@gmail.com' }, isLoading: false });
         const user = userEvent.setup();
@@ -98,7 +98,7 @@ describe('ProfileDropdown', () => {
         render(<ProfileDropdown />, { wrapper: createWrapper() });
         await user.click(screen.getByTestId('profile-avatar'));
 
-        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveTextContent('내 프로필 미리보기');
+        expect(screen.getByTestId('menu-item-host-profile-preview')).toHaveTextContent('내 프로필');
         expect(screen.getByTestId('menu-item-host-timeslots')).toHaveTextContent('시간대 설정');
         expect(screen.getByTestId('menu-item-host-calendar')).toHaveTextContent('호스트 설정');
 
