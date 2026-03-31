@@ -8,9 +8,11 @@ FROM base AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=chat-pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
-RUN pnpm run build && pnpm prune --prod
+RUN pnpm run postinstall --if-present \
+    && pnpm run build \
+    && pnpm prune --prod
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
