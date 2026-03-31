@@ -10,7 +10,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=chat-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
-RUN pnpm run postinstall --if-present \
+RUN pnpm run prisma:generate \
     && pnpm run build \
     && pnpm prune --prod
 

@@ -6,9 +6,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "pnpm run prisma:generate && nest build",
+    "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "postinstall": "prisma generate",
+    "postinstall": "pnpm run prisma:generate",
     "prisma:generate": "prisma generate",
     "start": "nest start",
     "start:dev": "nest start --watch",
