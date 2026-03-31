@@ -10,8 +10,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=chat-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
-RUN pnpm run postinstall --if-present \
-    && pnpm run build \
+RUN pnpm run build \
     && pnpm prune --prod
 
 FROM node:22-alpine AS runtime
