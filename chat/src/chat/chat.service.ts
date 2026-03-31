@@ -1,10 +1,24 @@
 import { Prisma } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  PollMessageResponse,
+  PollMessagesCommand,
+} from './dto/poll-messages.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
 @Injectable()
 export class ChatService {
+  private static readonly MAX_TIMEOUT_SECONDS = 25;
+  private static readonly POLL_INTERVAL_MS = 1000;
+
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getRooms(username: string): Promise<RoomResponseDto[]> {
@@ -88,5 +102,239 @@ export class ChatService {
     // The SQL aliases intentionally mirror RoomQueryRow so DTO mapping stays
     // thin and the response contract is centralized in RoomResponseDto.from().
     return rows.map((row) => RoomResponseDto.from(row));
+  }
+
+  async pollMessages({
+    roomId,
+    sinceMessageId,
+    timeoutSeconds,
+    username,
+    abortSignal,
+  }: PollMessagesCommand): Promise<PollMessageResponse[]> {
+    this.validateTimeout(timeoutSeconds);
+
+    const member = await this.prisma.member.findFirst({
+      where: {
+        username,
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const membership = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId: member.id,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const messages = await this.findMessagesAfter(roomId, sinceMessageId);
+    if (messages.length > 0 || timeoutSeconds === 0) {
+      return messages.map((message) => this.toPollMessageResponse(message));
+    }
+
+    const waitedMessages = await this.waitForMessages(
+      roomId,
+      sinceMessageId,
+      timeoutSeconds,
+      abortSignal,
+    );
+
+    return waitedMessages.map((message) => this.toPollMessageResponse(message));
+  }
+
+  private validateTimeout(timeoutSeconds: number): void {
+    if (
+      !Number.isInteger(timeoutSeconds) ||
+      timeoutSeconds < 0 ||
+      timeoutSeconds > ChatService.MAX_TIMEOUT_SECONDS
+    ) {
+      throw new BadRequestException(
+        `timeout must be an integer between 0 and ${ChatService.MAX_TIMEOUT_SECONDS}.`,
+      );
+    }
+  }
+
+  private async findMessagesAfter(roomId: string, sinceMessageId?: string) {
+    if (!sinceMessageId) {
+      return this.prisma.message.findMany({
+        where: {
+          roomId,
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      });
+    }
+
+    const anchorMessage = await this.prisma.message.findFirst({
+      where: {
+        id: sinceMessageId,
+        roomId,
+      },
+      select: {
+        id: true,
+        roomId: true,
+        createdAt: true,
+      },
+    });
+
+    if (!anchorMessage) {
+      throw new BadRequestException(
+        'sinceMessageId does not belong to the specified room.',
+      );
+    }
+
+    return this.prisma.message.findMany({
+      where: {
+        roomId,
+        OR: [
+          {
+            createdAt: {
+              gt: anchorMessage.createdAt,
+            },
+          },
+          {
+            createdAt: anchorMessage.createdAt,
+            id: {
+              gt: anchorMessage.id,
+            },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  private waitForMessages(
+    roomId: string,
+    sinceMessageId: string | undefined,
+    timeoutSeconds: number,
+    abortSignal?: AbortSignal,
+  ) {
+    if (abortSignal?.aborted) {
+      return Promise.resolve([]);
+    }
+
+    return new Promise<
+      Array<{
+        id: string;
+        roomId: string;
+        senderId: string | null;
+        messageType: string;
+        content: string | null;
+        payload: Prisma.JsonValue | null;
+        createdAt: Date;
+      }>
+    >((resolve, reject) => {
+      let settled = false;
+      let checking = false;
+
+      const cleanup = () => {
+        clearInterval(intervalHandle);
+        clearTimeout(timeoutHandle);
+        abortSignal?.removeEventListener('abort', abortHandler);
+      };
+
+      const resolveWith = (
+        messages: Array<{
+          id: string;
+          roomId: string;
+          senderId: string | null;
+          messageType: string;
+          content: string | null;
+          payload: Prisma.JsonValue | null;
+          createdAt: Date;
+        }>,
+      ) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        resolve(messages);
+      };
+
+      const rejectWith = (error: Error) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        reject(error);
+      };
+
+      const abortHandler = () => {
+        resolveWith([]);
+      };
+
+      abortSignal?.addEventListener('abort', abortHandler, { once: true });
+
+      const intervalHandle = setInterval(() => {
+        if (checking || settled) {
+          return;
+        }
+
+        checking = true;
+
+        void this.findMessagesAfter(roomId, sinceMessageId)
+          .then((messages) => {
+            if (messages.length > 0) {
+              resolveWith(messages);
+            }
+          })
+          .catch((error: unknown) => {
+            const pollingError =
+              error instanceof Error ? error : new Error(String(error));
+            this.logger.error(
+              `Long polling failed for room ${roomId}`,
+              pollingError.stack,
+            );
+            rejectWith(pollingError);
+          })
+          .finally(() => {
+            checking = false;
+          });
+      }, ChatService.POLL_INTERVAL_MS);
+
+      const timeoutHandle = setTimeout(() => {
+        resolveWith([]);
+      }, timeoutSeconds * 1000);
+    });
+  }
+
+  private toPollMessageResponse(message: {
+    id: string;
+    roomId: string;
+    senderId: string | null;
+    messageType: string;
+    content: string | null;
+    payload: Prisma.JsonValue | null;
+    createdAt: Date;
+  }): PollMessageResponse {
+    return {
+      id: message.id,
+      roomId: message.roomId,
+      senderId: message.senderId,
+      messageType: message.messageType,
+      content: message.content,
+      payload: message.payload,
+      createdAt: message.createdAt.toISOString(),
+    };
   }
 }
