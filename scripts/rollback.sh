@@ -30,6 +30,7 @@ main() {
     fi
 
     ensure_nginx_running
+    ensure_shared_network "cohi-chat-backend-${previous}" "cohi-chat-nginx"
     switch_upstream "$previous"
 
     stop_backend_if_running "$active" "problematic"

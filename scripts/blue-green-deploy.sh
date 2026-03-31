@@ -31,6 +31,7 @@ main() {
 
     wait_healthy "cohi-chat-backend-${inactive}" "backend-${inactive}"
     ensure_nginx_running
+    ensure_shared_network "cohi-chat-backend-${inactive}" "cohi-chat-nginx"
     switch_upstream "$inactive"
 
     stop_backend_if_running "$active" "old"
