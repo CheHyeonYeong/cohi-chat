@@ -1,5 +1,13 @@
-import type { PrismaService } from '../prisma/prisma.service';
+﻿import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
+
+type FindManyCall = {
+  where: {
+    roomId: string;
+    createdAt?: { gt?: Date; gte?: Date };
+  };
+  orderBy: Array<{ createdAt?: 'asc' | 'desc'; id?: 'asc' | 'desc' }>;
+};
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -150,6 +158,7 @@ describe('ChatService', () => {
 
   it('waits up to the timeout before returning an empty array when there are no new messages', async () => {
     jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-31T00:00:00.000Z'));
 
     memberFindFirstMock.mockResolvedValue({
       id: 'member-1',
@@ -165,6 +174,24 @@ describe('ChatService', () => {
       username: 'tester',
     });
 
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const findManyCalls = messageFindManyMock.mock.calls as unknown as Array<
+      [FindManyCall]
+    >;
+    const firstQueryArgs = findManyCalls[0][0];
+
+    expect(firstQueryArgs).toEqual({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        createdAt: {
+          gt: new Date('2026-03-31T00:00:00.000Z'),
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
     await jest.advanceTimersByTimeAsync(24_000);
 
     const sentinel = Symbol('pending');
@@ -175,5 +202,111 @@ describe('ChatService', () => {
     await jest.advanceTimersByTimeAsync(1_000);
 
     await expect(resultPromise).resolves.toEqual([]);
+  });
+
+  it('returns same-timestamp messages except the anchor to avoid missing messages when UUID order differs', async () => {
+    const anchorCreatedAt = new Date('2026-03-31T00:00:00.000Z');
+
+    memberFindFirstMock.mockResolvedValue({
+      id: 'member-1',
+    });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+    });
+    messageFindFirstMock.mockResolvedValue({
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      roomId: '11111111-1111-1111-1111-111111111111',
+      createdAt: anchorCreatedAt,
+    });
+    messageFindManyMock.mockResolvedValue([
+      {
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'same-time-lower-id',
+        payload: null,
+        createdAt: anchorCreatedAt,
+      },
+      {
+        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'anchor',
+        payload: null,
+        createdAt: anchorCreatedAt,
+      },
+      {
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'same-time-higher-id',
+        payload: null,
+        createdAt: anchorCreatedAt,
+      },
+      {
+        id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'later-message',
+        payload: null,
+        createdAt: new Date('2026-03-31T00:00:01.000Z'),
+      },
+    ]);
+
+    const result = await service.pollMessages({
+      roomId: '11111111-1111-1111-1111-111111111111',
+      sinceMessageId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      timeoutSeconds: 25,
+      username: 'tester',
+    });
+
+    const findManyCalls = messageFindManyMock.mock.calls as unknown as Array<
+      [FindManyCall]
+    >;
+    const secondQueryArgs = findManyCalls[0][0];
+
+    expect(secondQueryArgs).toEqual({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        createdAt: {
+          gte: anchorCreatedAt,
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    expect(result).toEqual([
+      {
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'same-time-lower-id',
+        payload: null,
+        createdAt: anchorCreatedAt.toISOString(),
+      },
+      {
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'same-time-higher-id',
+        payload: null,
+        createdAt: anchorCreatedAt.toISOString(),
+      },
+      {
+        id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'later-message',
+        payload: null,
+        createdAt: '2026-03-31T00:00:01.000Z',
+      },
+    ]);
   });
 });
