@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Controller,
   Get,
@@ -22,12 +22,33 @@ import {
   PollMessageResponse,
   PollMessagesQuery,
 } from './dto/poll-messages.dto';
-import { ChatService } from './chat.service';
+import { ChatService, MAX_POLL_TIMEOUT_SECONDS } from './chat.service';
 import { RoomResponseDto } from './dto/room-response.dto';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const INTEGER_STRING_PATTERN = /^\d+$/;
+
+const ROOMS_SUMMARY = '\uCC44\uD305\uBC29 \uBAA9\uB85D \uC870\uD68C';
+const ROOMS_DESCRIPTION =
+  '\uB0B4\uAC00 \uC18D\uD55C \uCC44\uD305\uBC29 \uBAA9\uB85D\uACFC \uC0C1\uB300\uBC29 \uC815\uBCF4, \uB9C8\uC9C0\uB9C9 \uBA54\uC2DC\uC9C0, unread \uC218\uB97C \uBC18\uD658\uD569\uB2C8\uB2E4. \uBA54\uC2DC\uC9C0\uAC00 \uD55C \uBC88\uB3C4 \uC5C6\uB294 \uBC29\uC740 lastMessage\uAC00 null\uC785\uB2C8\uB2E4. Swagger Authorize\uC5D0\uB294 access token \uC6D0\uBB38\uB9CC \uB123\uACE0 Bearer \uC811\uB450\uC0AC\uB294 \uB530\uB85C \uC785\uB825\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.';
+const ROOMS_OK = '\uCC44\uD305\uBC29 \uBAA9\uB85D \uC870\uD68C \uC131\uACF5';
+const AUTH_REQUIRED =
+  '\uC720\uD6A8\uD55C Bearer JWT\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4.';
+const POLL_SUMMARY = '\uC0C8 \uBA54\uC2DC\uC9C0 long polling';
+const POLL_DESCRIPTION =
+  'sinceMessageId \uC774\uD6C4 \uBA54\uC2DC\uC9C0\uAC00 \uC788\uC73C\uBA74 \uC989\uC2DC \uBC18\uD658\uD558\uACE0, \uC5C6\uC73C\uBA74 \uCD5C\uB300 25\uCD08\uAE4C\uC9C0 \uB300\uAE30\uD55C \uB4A4 \uBE48 \uBC30\uC5F4\uC744 \uBC18\uD658\uD569\uB2C8\uB2E4. sinceMessageId\uB97C \uC0DD\uB7B5\uD558\uBA74 \uC694\uCCAD \uC2DC\uC810 \uC774\uD6C4 \uB3C4\uCC29\uD55C \uC0C8 \uBA54\uC2DC\uC9C0\uB9CC \uBC18\uD658\uD569\uB2C8\uB2E4.';
+const ROOM_ID_DESCRIPTION = '\uCC44\uD305\uBC29 UUID';
+const SINCE_MESSAGE_ID_DESCRIPTION =
+  '\uD074\uB77C\uC774\uC5B8\uD2B8\uAC00 \uB9C8\uC9C0\uB9C9\uC73C\uB85C \uBC1B\uC740 \uBA54\uC2DC\uC9C0 UUID. \uC5C6\uC73C\uBA74 poll \uC2DC\uC791 \uC774\uD6C4 \uC0C8 \uBA54\uC2DC\uC9C0\uB9CC \uAE30\uB2E4\uB9BD\uB2C8\uB2E4.';
+const TIMEOUT_DESCRIPTION =
+  'long polling timeout \uCD08. \uCD5C\uB300 25\uCD08';
+const POLL_OK =
+  '\uC0C8 \uBA54\uC2DC\uC9C0 \uBC30\uC5F4 \uB610\uB294 timeout \uC2DC \uBE48 \uBC30\uC5F4';
+const POLL_BAD_REQUEST =
+  'roomId, sinceMessageId, timeout \uD615\uC2DD\uC774 \uC798\uBABB\uB410\uC2B5\uB2C8\uB2E4.';
+const POLL_FORBIDDEN =
+  '\uD574\uB2F9 \uCC44\uD305\uBC29 \uC811\uADFC \uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.';
 
 @ApiTags('chat')
 @ApiBearerAuth('jwtAuth')
@@ -38,58 +59,55 @@ export class ChatController {
 
   @Get('rooms')
   @ApiOperation({
-    summary: '채팅방 목록 조회',
-    description:
-      '내가 속한 채팅방 목록과 상대방 정보, 마지막 메시지, unread 수를 반환합니다. 메시지가 한 번도 없는 방은 lastMessage가 null입니다. Swagger Authorize에는 access token 원문만 넣고 Bearer 접두사는 따로 입력하지 않습니다.',
+    summary: ROOMS_SUMMARY,
+    description: ROOMS_DESCRIPTION,
   })
   @ApiOkResponse({
-    description: '채팅방 목록 조회 성공',
+    description: ROOMS_OK,
     type: RoomResponseDto,
     isArray: true,
   })
-  @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
+  @ApiUnauthorizedResponse({ description: AUTH_REQUIRED })
   async getRooms(@Req() req: FastifyRequest): Promise<RoomResponseDto[]> {
     return this.chatService.getRooms(req.user!.sub);
   }
 
   @Get('poll')
   @ApiOperation({
-    summary: '새 메시지 long polling',
-    description:
-      'sinceMessageId 이후 메시지가 있으면 즉시 반환하고, 없으면 최대 25초까지 대기한 뒤 빈 배열을 반환합니다. sinceMessageId를 생략하면 요청 시점 이후 도착한 새 메시지만 반환합니다.',
+    summary: POLL_SUMMARY,
+    description: POLL_DESCRIPTION,
   })
   @ApiQuery({
     name: 'roomId',
     required: true,
     type: String,
     format: 'uuid',
-    description: '채팅방 UUID',
+    description: ROOM_ID_DESCRIPTION,
   })
   @ApiQuery({
     name: 'sinceMessageId',
     required: false,
     type: String,
     format: 'uuid',
-    description:
-      '클라이언트가 마지막으로 받은 메시지 UUID. 없으면 poll 시작 이후 새 메시지만 기다립니다.',
+    description: SINCE_MESSAGE_ID_DESCRIPTION,
   })
   @ApiQuery({
     name: 'timeout',
     required: false,
     type: Number,
-    example: 25,
-    description: 'long polling timeout 초. 최대 25초',
+    example: MAX_POLL_TIMEOUT_SECONDS,
+    description: TIMEOUT_DESCRIPTION,
   })
   @ApiOkResponse({
-    description: '새 메시지 배열 또는 timeout 시 빈 배열',
+    description: POLL_OK,
     type: PollMessageResponse,
     isArray: true,
   })
   @ApiBadRequestResponse({
-    description: 'roomId, sinceMessageId, timeout 형식이 잘못됐습니다.',
+    description: POLL_BAD_REQUEST,
   })
-  @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
-  @ApiForbiddenResponse({ description: '해당 채팅방 접근 권한이 없습니다.' })
+  @ApiUnauthorizedResponse({ description: AUTH_REQUIRED })
+  @ApiForbiddenResponse({ description: POLL_FORBIDDEN })
   async pollMessages(
     @Query('roomId') roomId: string | undefined,
     @Query('sinceMessageId') sinceMessageId: string | undefined,
@@ -103,12 +121,13 @@ export class ChatController {
     });
 
     const abortController = new AbortController();
+    const socket = request.raw.socket;
     const closeHandler = () => {
       abortController.abort();
     };
 
     request.raw.once('aborted', closeHandler);
-    request.raw.once('close', closeHandler);
+    socket?.once('close', closeHandler);
 
     try {
       return await this.chatService.pollMessages({
@@ -118,7 +137,7 @@ export class ChatController {
       });
     } finally {
       request.raw.off('aborted', closeHandler);
-      request.raw.off('close', closeHandler);
+      socket?.off('close', closeHandler);
     }
   }
 
@@ -139,7 +158,15 @@ export class ChatController {
     }
 
     const timeoutSeconds =
-      timeoutText === undefined ? 25 : Number.parseInt(timeoutText, 10);
+      timeoutText === undefined
+        ? MAX_POLL_TIMEOUT_SECONDS
+        : Number.parseInt(timeoutText, 10);
+
+    if (timeoutSeconds < 0 || timeoutSeconds > MAX_POLL_TIMEOUT_SECONDS) {
+      throw new BadRequestException(
+        `timeout must be between 0 and ${MAX_POLL_TIMEOUT_SECONDS}.`,
+      );
+    }
 
     if (!roomId || !UUID_PATTERN.test(roomId)) {
       throw new BadRequestException('roomId must be a UUID.');
@@ -147,10 +174,6 @@ export class ChatController {
 
     if (sinceMessageId && !UUID_PATTERN.test(sinceMessageId)) {
       throw new BadRequestException('sinceMessageId must be a UUID.');
-    }
-
-    if (!Number.isInteger(timeoutSeconds)) {
-      throw new BadRequestException('timeout must be an integer.');
     }
 
     return {

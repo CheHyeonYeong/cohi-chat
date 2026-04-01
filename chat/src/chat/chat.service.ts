@@ -1,4 +1,4 @@
-﻿import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   ForbiddenException,
@@ -22,9 +22,11 @@ interface PollingMessageRecord {
   createdAt: Date;
 }
 
+export const MAX_POLL_TIMEOUT_SECONDS = 25;
+export const MAX_POLL_MESSAGES = 100;
+
 @Injectable()
 export class ChatService {
-  private static readonly MAX_TIMEOUT_SECONDS = 25;
   private static readonly POLL_INTERVAL_MS = 1000;
 
   private readonly logger = new Logger(ChatService.name);
@@ -143,6 +145,9 @@ export class ChatService {
         roomId,
         memberId: member.id,
         deletedAt: null,
+        room: {
+          isDisabled: false,
+        },
       },
       select: {
         id: true,
@@ -178,10 +183,10 @@ export class ChatService {
     if (
       !Number.isInteger(timeoutSeconds) ||
       timeoutSeconds < 0 ||
-      timeoutSeconds > ChatService.MAX_TIMEOUT_SECONDS
+      timeoutSeconds > MAX_POLL_TIMEOUT_SECONDS
     ) {
       throw new BadRequestException(
-        `timeout must be an integer between 0 and ${ChatService.MAX_TIMEOUT_SECONDS}.`,
+        `timeout must be an integer between 0 and ${MAX_POLL_TIMEOUT_SECONDS}.`,
       );
     }
   }
@@ -200,6 +205,7 @@ export class ChatService {
           },
         },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: MAX_POLL_MESSAGES,
       });
     }
 
@@ -229,11 +235,14 @@ export class ChatService {
         },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: MAX_POLL_MESSAGES + 1,
     });
 
     // UUID v4 order is not chronological, so keep every message from the
     // anchor timestamp onward except the anchor itself to avoid drops.
-    return orderedMessages.filter((message) => message.id !== anchorMessage.id);
+    return orderedMessages
+      .filter((message) => message.id !== anchorMessage.id)
+      .slice(0, MAX_POLL_MESSAGES);
   }
 
   private waitForMessages(
