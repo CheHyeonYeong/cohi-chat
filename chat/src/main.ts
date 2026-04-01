@@ -15,25 +15,20 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('cohi-chat Chat API')
-    .setDescription('채팅 읽음 처리 및 unread 조회 API 문서')
+    .setTitle('cohiChat chat service')
+    .setDescription(
+      'Chat room list, unread summary, and mark-as-read APIs.',
+    )
     .setVersion('1.0')
     .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Authorization: Bearer <token> 형식으로 JWT를 전달합니다.',
-      },
-      'bearer',
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'jwtAuth',
     )
     .build();
-  const swaggerDocumentFactory = () =>
-    SwaggerModule.createDocument(app, swaggerConfig);
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
 
-  SwaggerModule.setup('swagger-ui', app, swaggerDocumentFactory, {
+  SwaggerModule.setup('swagger-ui', app, swaggerDocument, {
     useGlobalPrefix: true,
-    jsonDocumentUrl: 'swagger-json',
   });
 
   await app.listen(Number(process.env.PORT) || 3001, '0.0.0.0');

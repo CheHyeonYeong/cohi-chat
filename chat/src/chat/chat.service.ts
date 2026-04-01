@@ -1,20 +1,11 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  CHAT_ROOM_STATUSES,
-  CHAT_ROOM_TYPES,
-  ChatRoomResponseDto,
   MarkRoomAsReadResponseDto,
-  MESSAGE_TYPES,
-  MessageType,
-  ChatRoomStatus,
-  ChatRoomType,
   UnreadSummaryResponseDto,
 } from './dto/chat-response.dto';
+import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
 @Injectable()
 export class ChatService {
@@ -23,66 +14,62 @@ export class ChatService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async listRooms(memberIdentifier: string): Promise<ChatRoomResponseDto[]> {
+  async getRooms(memberIdentifier: string): Promise<RoomResponseDto[]> {
     const memberId = await this.resolveMemberId(memberIdentifier);
-    const memberships = await this.getActiveMemberships(memberId);
-    if (memberships.length === 0) {
-      return [];
-    }
 
-    const roomIds = memberships.map((membership) => membership.roomId);
-    const rooms = await this.prisma.chatRoom.findMany({
-      where: {
-        id: { in: roomIds },
-        deletedAt: null,
-      },
-    });
-    const roomMap = new Map(rooms.map((room) => [room.id, room]));
+    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
+      SELECT
+        cr.id,
+        counterpart.member_id                       AS counterpart_id,
+        COALESCE(counterpart.display_name, '')     AS counterpart_name,
+        counterpart.profile_image_url              AS counterpart_profile_image_url,
+        last_msg.id                                AS last_message_id,
+        last_msg.content                           AS last_message_content,
+        last_msg.message_type                      AS last_message_type,
+        last_msg.created_at                        AS last_message_created_at,
+        COALESCE(unread.cnt, 0)::int               AS unread_count
+      FROM chat_room cr
+      JOIN room_member my_rm
+        ON my_rm.room_id = cr.id
+       AND my_rm.member_id = CAST(${memberId} AS UUID)
+       AND my_rm.deleted_at IS NULL
+      JOIN LATERAL (
+        SELECT
+          rm.member_id,
+          COALESCE(m.display_name, m.username, '') AS display_name,
+          m.profile_image_url
+        FROM room_member rm
+        LEFT JOIN member m ON m.id = rm.member_id
+        WHERE rm.room_id = cr.id
+          AND rm.member_id != CAST(${memberId} AS UUID)
+          AND rm.deleted_at IS NULL
+        ORDER BY rm.created_at ASC, rm.id ASC
+        LIMIT 1
+      ) counterpart ON true
+      LEFT JOIN LATERAL (
+        SELECT id, content, message_type, created_at
+        FROM message
+        WHERE room_id = cr.id
+        ORDER BY cursor_seq DESC, created_at DESC, id DESC
+        LIMIT 1
+      ) last_msg ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*)::int AS cnt
+        FROM message msg
+        LEFT JOIN message cursor_message
+          ON cursor_message.id = my_rm.last_read_message_id
+         AND cursor_message.room_id = cr.id
+        WHERE msg.room_id = cr.id
+          AND (
+            cursor_message.cursor_seq IS NULL
+            OR msg.cursor_seq > cursor_message.cursor_seq
+          )
+      ) unread ON true
+      WHERE cr.is_disabled = false
+      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
+    `);
 
-    const roomsWithMetadata = await Promise.all(
-      memberships
-        .filter((membership) => roomMap.has(membership.roomId))
-        .map(async (membership) => {
-          const room = roomMap.get(membership.roomId);
-          if (!room) {
-            return null;
-          }
-
-          const [lastMessage, unreadCount] = await Promise.all([
-            this.findLastMessage(room.id),
-            this.getUnreadCount(room.id, membership.lastReadMessageId),
-          ]);
-
-          return {
-            roomId: room.id,
-            type: this.parseChatRoomType(room.type),
-            status: this.parseChatRoomStatus(room.status),
-            externalRefType: room.externalRefType,
-            externalRefId: room.externalRefId,
-            lastReadMessageId: membership.lastReadMessageId,
-            unreadCount,
-            lastMessage: lastMessage
-              ? {
-                  id: lastMessage.id,
-                  senderId: lastMessage.senderId,
-                  messageType: this.parseMessageType(lastMessage.messageType),
-                  content: lastMessage.content,
-                  createdAt: lastMessage.createdAt.toISOString(),
-                }
-              : null,
-            sortKey: lastMessage?.createdAt ?? room.updatedAt,
-          };
-        }),
-    );
-
-    return roomsWithMetadata
-      .filter((room): room is NonNullable<typeof room> => room !== null)
-      .sort((left, right) => right.sortKey.getTime() - left.sortKey.getTime())
-      .map((roomWithSortKey) => {
-        const { sortKey, ...room } = roomWithSortKey;
-        void sortKey;
-        return room;
-      });
+    return rows.map((row) => RoomResponseDto.from(row));
   }
 
   async getUnreadSummary(
@@ -123,11 +110,11 @@ export class ChatService {
     const room = await this.prisma.chatRoom.findFirst({
       where: {
         id: roomId,
-        deletedAt: null,
+        isDisabled: false,
       },
     });
     if (!room) {
-      throw new NotFoundException('접근 가능한 채팅방을 찾을 수 없습니다.');
+      throw new NotFoundException('Accessible chat room not found.');
     }
 
     const membership = await this.prisma.roomMember.findFirst({
@@ -138,7 +125,7 @@ export class ChatService {
       },
     });
     if (!membership) {
-      throw new NotFoundException('접근 가능한 채팅방을 찾을 수 없습니다.');
+      throw new NotFoundException('Accessible chat room not found.');
     }
 
     const latestMessage = await this.findLastMessage(roomId);
@@ -163,23 +150,21 @@ export class ChatService {
   }
 
   private async resolveMemberId(memberIdentifier: string): Promise<string> {
-    if (ChatService.UUID_PATTERN.test(memberIdentifier)) {
-      return memberIdentifier;
-    }
+    const lookupCondition = ChatService.UUID_PATTERN.test(memberIdentifier)
+      ? Prisma.sql`id = CAST(${memberIdentifier} AS UUID)`
+      : Prisma.sql`username = ${memberIdentifier}`;
 
-    const members = await this.prisma.$queryRaw<Array<{ id: string }>>`
+    const members = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       SELECT id::text AS id
       FROM member
-      WHERE username = ${memberIdentifier}
+      WHERE ${lookupCondition}
         AND is_deleted = false
         AND is_banned = false
       LIMIT 1
-    `;
+    `);
     const member = members[0];
     if (!member) {
-      throw new NotFoundException(
-        '인증된 사용자의 회원 정보를 찾을 수 없습니다.',
-      );
+      throw new NotFoundException('Authenticated member not found.');
     }
 
     return member.id;
@@ -202,7 +187,7 @@ export class ChatService {
     const activeRooms = await this.prisma.chatRoom.findMany({
       where: {
         id: { in: memberships.map((membership) => membership.roomId) },
-        deletedAt: null,
+        isDisabled: false,
       },
     });
     const activeRoomIds = new Set(activeRooms.map((room) => room.id));
@@ -256,35 +241,5 @@ export class ChatService {
         },
       },
     });
-  }
-
-  private parseChatRoomType(value: string): ChatRoomType {
-    if (CHAT_ROOM_TYPES.includes(value as ChatRoomType)) {
-      return value as ChatRoomType;
-    }
-
-    throw new InternalServerErrorException(
-      `지원하지 않는 chat_room.type 값입니다: ${value}`,
-    );
-  }
-
-  private parseChatRoomStatus(value: string): ChatRoomStatus {
-    if (CHAT_ROOM_STATUSES.includes(value as ChatRoomStatus)) {
-      return value as ChatRoomStatus;
-    }
-
-    throw new InternalServerErrorException(
-      `지원하지 않는 chat_room.status 값입니다: ${value}`,
-    );
-  }
-
-  private parseMessageType(value: string): MessageType {
-    if (MESSAGE_TYPES.includes(value as MessageType)) {
-      return value as MessageType;
-    }
-
-    throw new InternalServerErrorException(
-      `지원하지 않는 message.message_type 값입니다: ${value}`,
-    );
   }
 }

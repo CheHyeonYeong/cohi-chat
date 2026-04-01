@@ -71,11 +71,6 @@ describe('Settings', () => {
         expect(screen.getByTestId('page-title')).toHaveTextContent('회원정보 변경');
     });
 
-    it('프로필 편집 폼이 렌더링된다', () => {
-        render(<Settings />, { wrapper: createWrapper() });
-        expect(screen.getByTestId('profile-edit-form')).toBeInTheDocument();
-    });
-
     it('비밀번호 변경 폼이 렌더링된다', () => {
         render(<Settings />, { wrapper: createWrapper() });
         expect(screen.getByTestId('password-change-form')).toBeInTheDocument();

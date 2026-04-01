@@ -3,6 +3,7 @@
 
 readonly COMPOSE="${COMPOSE:-docker-compose -p cohi-chat --env-file .env -f infra/app/docker-compose.server.yml -f infra/observability/docker-compose.backend-observability.yml}"
 readonly NGINX_UPSTREAM_FILE="${NGINX_UPSTREAM_FILE:-./infra/app/nginx/upstream.conf}"
+readonly APP_NETWORK_NAME="${APP_NETWORK_NAME:-cohi-chat-app}"
 readonly HEALTH_INTERVAL="${HEALTH_INTERVAL:-5}"
 readonly DRAIN_DELAY_SECONDS="${DRAIN_DELAY_SECONDS:-15}"
 
@@ -95,14 +96,33 @@ container_running() {
     [ "$state" = "running" ]
 }
 
+container_on_network() {
+    local name=$1
+    local network=$2
+    docker inspect --format='{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$name" 2>/dev/null | grep -Fxq "$network"
+}
+
+ensure_container_on_app_network() {
+    local name=$1
+
+    if container_on_network "$name" "$APP_NETWORK_NAME"; then
+        return 0
+    fi
+
+    echo "[network] Connecting ${name} to ${APP_NETWORK_NAME}..."
+    docker network connect "$APP_NETWORK_NAME" "$name"
+}
+
 ensure_nginx_running() {
     local nginx_status
     nginx_status=$(container_status "cohi-chat-nginx")
 
     if [ "$nginx_status" != "running" ]; then
         echo "[nginx] Starting nginx..."
-        $COMPOSE up -d nginx
+        $COMPOSE up -d --no-deps nginx
     fi
+
+    ensure_container_on_app_network "cohi-chat-nginx"
 }
 
 stop_backend_if_running() {

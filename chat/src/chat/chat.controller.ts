@@ -19,82 +19,85 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
 import {
-  ChatRoomResponseDto,
   MarkRoomAsReadResponseDto,
   UnreadSummaryResponseDto,
 } from './dto/chat-response.dto';
+import { RoomResponseDto } from './dto/room-response.dto';
 import { ChatService } from './chat.service';
 
 @ApiTags('chat')
-@ApiBearerAuth('bearer')
+@ApiBearerAuth('jwtAuth')
 @Controller('chat')
 @UseGuards(JwtGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Get('rooms')
   @ApiOperation({
-    summary: '채팅방 목록 조회',
+    summary: 'List chat rooms',
     description:
-      '사용자가 속한 채팅방 목록과 마지막 메시지, unread count를 반환합니다.',
+      'Returns counterpart information, last message preview, and unread count for each room.',
   })
   @ApiOkResponse({
-    type: ChatRoomResponseDto,
+    description: 'Chat room list retrieved successfully.',
+    type: RoomResponseDto,
     isArray: true,
   })
   @ApiUnauthorizedResponse({
-    description: '유효한 JWT가 필요합니다.',
+    description: 'A valid Bearer JWT is required.',
   })
-  @Get('rooms')
-  listRooms(@Req() request: FastifyRequest): Promise<ChatRoomResponseDto[]> {
-    return this.chatService.listRooms(this.getMemberId(request));
+  getRooms(@Req() request: FastifyRequest): Promise<RoomResponseDto[]> {
+    return this.chatService.getRooms(this.getMemberIdentifier(request));
   }
 
+  @Get('unread-summary')
   @ApiOperation({
-    summary: '전체 unread 요약 조회',
-    description:
-      '사용자가 속한 채팅방의 unread 합계와 방별 unread count를 반환합니다.',
+    summary: 'Get unread summary',
+    description: 'Returns total unread count and per-room unread counts.',
   })
   @ApiOkResponse({
     type: UnreadSummaryResponseDto,
   })
   @ApiUnauthorizedResponse({
-    description: '유효한 JWT가 필요합니다.',
+    description: 'A valid Bearer JWT is required.',
   })
-  @Get('unread-summary')
   getUnreadSummary(
     @Req() request: FastifyRequest,
   ): Promise<UnreadSummaryResponseDto> {
-    return this.chatService.getUnreadSummary(this.getMemberId(request));
+    return this.chatService.getUnreadSummary(this.getMemberIdentifier(request));
   }
 
+  @Patch('rooms/:roomId/read')
   @ApiOperation({
-    summary: '채팅방 읽음 처리',
+    summary: 'Mark a room as read',
     description:
-      '사용자가 채팅방에 진입했을 때 해당 방의 최신 메시지까지 읽음으로 처리합니다.',
+      'Stores the latest message in the room as the member read cursor.',
   })
   @ApiOkResponse({
     type: MarkRoomAsReadResponseDto,
   })
   @ApiUnauthorizedResponse({
-    description: '유효한 JWT가 필요합니다.',
+    description: 'A valid Bearer JWT is required.',
   })
   @ApiNotFoundResponse({
-    description: '접근 가능한 채팅방이 아닙니다.',
+    description: 'The chat room is not accessible.',
   })
-  @Patch('rooms/:roomId/read')
   markRoomAsRead(
     @Req() request: FastifyRequest,
     @Param('roomId', new ParseUUIDPipe()) roomId: string,
   ): Promise<MarkRoomAsReadResponseDto> {
-    return this.chatService.markRoomAsRead(this.getMemberId(request), roomId);
+    return this.chatService.markRoomAsRead(
+      this.getMemberIdentifier(request),
+      roomId,
+    );
   }
 
-  private getMemberId(request: FastifyRequest): string {
-    const memberId = request.user?.sub;
-    if (!memberId) {
-      throw new UnauthorizedException('인증이 필요합니다.');
+  private getMemberIdentifier(request: FastifyRequest): string {
+    const memberIdentifier = request.user?.username ?? request.user?.sub;
+    if (!memberIdentifier) {
+      throw new UnauthorizedException('Authentication required.');
     }
 
-    return memberId;
+    return memberIdentifier;
   }
 }

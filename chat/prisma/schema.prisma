@@ -7,26 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Member {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username        String    @unique @db.VarChar(50)
+  displayName     String    @map("display_name") @db.VarChar(50)
+  role            String    @db.VarChar(20)
+  isDeleted       Boolean   @map("is_deleted")
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  isBanned        Boolean   @map("is_banned")
+  profileImageUrl String?   @map("profile_image_url") @db.VarChar(500)
+
+  @@map("member")
+}
+
 model ChatRoom {
-  id              String         @id @default(uuid()) @db.Uuid
-  type            String         @db.VarChar(20)
-  status          String         @db.VarChar(20)
-  externalRefType String?        @map("external_ref_type") @db.VarChar(50)
-  externalRefId   String?        @map("external_ref_id") @db.Uuid
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  isDisabled Boolean  @default(false) @map("is_disabled")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@map("chat_room")
 }
 
 model RoomMember {
-  id                String    @id @default(uuid()) @db.Uuid
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   roomId            String    @map("room_id") @db.Uuid
   memberId          String    @map("member_id") @db.Uuid
   lastReadMessageId String?   @map("last_read_message_id") @db.Uuid
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([roomId, memberId], map: "uq_room_member")
@@ -36,15 +45,16 @@ model RoomMember {
 }
 
 model Message {
-  id          String      @id @default(uuid()) @db.Uuid
-  roomId      String      @map("room_id") @db.Uuid
-  senderId    String?     @map("sender_id") @db.Uuid
-  messageType String      @map("message_type") @db.VarChar(30)
-  content     String?     @db.VarChar(2000)
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId      String    @map("room_id") @db.Uuid
+  senderId    String?   @map("sender_id") @db.Uuid
+  messageType String    @map("message_type") @db.VarChar(30)
+  content     String?   @db.VarChar(2000)
   payload     Json?
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  cursorSeq   BigInt      @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  cursorSeq   BigInt    @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
 
+  @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
   @@index([roomId, cursorSeq(sort: Desc)], map: "idx_message_room_id_cursor_seq")
   @@map("message")
 }

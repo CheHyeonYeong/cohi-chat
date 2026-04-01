@@ -38,6 +38,9 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.20.0
+      prisma:
+        specifier: ^6.19.2
+        version: 6.19.2(typescript@5.9.3)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2

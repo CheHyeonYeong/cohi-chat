@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { Link, useParams, useSearch, useNavigate } from '@tanstack/react-router';
 import { PageLayout } from '~/components';
@@ -8,8 +9,9 @@ import { ProfileSidebar } from '~/features/host/components/ProfileSidebar';
 import { ProfileCalendarSection } from '~/features/host/components/ProfileCalendarSection';
 import { useProfileCalendar } from '~/features/host/hooks/useProfileCalendar';
 import { useProfileBookingDetail } from '~/features/host/hooks/useProfileBookingDetail';
-import { useBookings, BookingForm, BookingDetailPanel } from '~/features/booking';
+import { useBookings, BookingForm, BookingDetailPanel, calendarKeys } from '~/features/booking';
 import { useAuth } from '~/features/member';
+import { IsSelfProvider } from '~/contexts';
 import dayjs from 'dayjs';
 import { formatDateToISO } from '~/libs/date';
 
@@ -19,6 +21,7 @@ export const Profile = () => {
     const { hostId } = useParams({ from: '/host/$hostId' });
     const { date, selectedBookingId } = useSearch({ from: '/host/$hostId' });
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     useEffect(() => { window.scrollTo(0, 0); }, [hostId]);
 
     const { data: host, isLoading: isHostLoading, error: hostError } = useHostProfile(hostId);
@@ -47,14 +50,20 @@ export const Profile = () => {
     });
     const { selectedDate: calSelectedDate, selectedTimeslot, formRef } = calendarState;
 
-    const { data: bookings = [], refetch: refetchBookings } = useBookings(
-        host?.username ?? '', calendarState.selectedDate
-    );
+    const { data: bookings = [] } = useBookings({
+        username: host?.username ?? '',
+        year: calendarState.year,
+        month: calendarState.month,
+    });
+
+    const invalidateBookings = () => {
+        queryClient.invalidateQueries({ queryKey: calendarKeys.bookingsAll() });
+    };
 
     const bookingDetail = useProfileBookingDetail({
         selectedBookingId,
         enabled: isSelf,
-        onRefetchBookings: refetchBookings,
+        onRefetchBookings: invalidateBookings,
     });
 
     const handleSelectBooking = (bookingId: number) => {
@@ -72,11 +81,11 @@ export const Profile = () => {
 
     const handleBookingCreated = () => {
         calendarState.resetSelection();
-        refetchBookings();
+        invalidateBookings();
     };
 
     const title = isSelf
-        ? '내 프로필 미리보기'
+        ? '내 프로필'
         : host ? `${host.displayName}님과 약속잡기` : '호스트 프로필';
 
     return (
@@ -95,51 +104,53 @@ export const Profile = () => {
             )}
 
             {host && (
-                <div className="flex flex-col md:flex-row gap-6">
-                    <ProfileSidebar host={host} description={calendar?.description} topics={topics} />
+                <IsSelfProvider value={isSelf}>
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <ProfileSidebar host={host} description={calendar?.description} topics={topics} />
 
-                    <div className="flex-1 min-w-0 space-y-6">
-                        <ProfileCalendarSection
-                            isSelf={isSelf}
-                            username={host.username}
-                            calendar={calendarState}
-                            timeslots={timeslots}
-                            bookings={bookings}
-                            selectedBookingId={selectedBookingId}
-                            onSelectBooking={handleSelectBooking}
-                        />
+                        <div className="flex-1 min-w-0 space-y-6">
+                            <ProfileCalendarSection
+                                isSelf={isSelf}
+                                username={host.username}
+                                calendar={calendarState}
+                                timeslots={timeslots}
+                                bookings={bookings}
+                                selectedBookingId={selectedBookingId}
+                                onSelectBooking={handleSelectBooking}
+                            />
 
-                        {isSelf && selectedBookingId && bookingDetail.selectedBooking && bookingDetail.selectedBooking.id === selectedBookingId && calSelectedDate && dayjs(bookingDetail.selectedBooking.startedAt).isSame(calSelectedDate, 'day') && (
-                            <div ref={formRef} data-testid="host-profile-booking-detail">
-                                <BookingDetailPanel
-                                    booking={bookingDetail.selectedBooking}
-                                    onUpload={bookingDetail.handleUpload}
-                                    onDownload={bookingDetail.handleDownload}
-                                    onDelete={bookingDetail.handleDelete}
-                                    isUploading={bookingDetail.isUploading}
-                                    isDeleting={bookingDetail.isDeleting}
-                                    uploadError={bookingDetail.uploadError}
-                                    role="host"
-                                    counterpart={bookingDetail.selectedBooking.guest}
-                                />
-                            </div>
-                        )}
-
-                        {!isSelf && calSelectedDate && selectedTimeslot && calendar && (
-                            <div ref={formRef} data-testid="host-profile-booking-form">
-                                <Card title="예약 정보">
-                                    <BookingForm
-                                        slug={host.username}
-                                        calendar={calendar}
-                                        timeSlotId={selectedTimeslot.id}
-                                        when={calSelectedDate}
-                                        onCreated={handleBookingCreated}
+                            {isSelf && selectedBookingId && bookingDetail.selectedBooking && bookingDetail.selectedBooking.id === selectedBookingId && calSelectedDate && dayjs(bookingDetail.selectedBooking.startedAt).isSame(calSelectedDate, 'day') && (
+                                <div ref={formRef} data-testid="host-profile-booking-detail">
+                                    <BookingDetailPanel
+                                        booking={bookingDetail.selectedBooking}
+                                        onUpload={bookingDetail.handleUpload}
+                                        onDownload={bookingDetail.handleDownload}
+                                        onDelete={bookingDetail.handleDelete}
+                                        isUploading={bookingDetail.isUploading}
+                                        isDeleting={bookingDetail.isDeleting}
+                                        uploadError={bookingDetail.uploadError}
+                                        role="host"
+                                        counterpart={bookingDetail.selectedBooking.guest}
                                     />
-                                </Card>
-                            </div>
-                        )}
+                                </div>
+                            )}
+
+                            {!isSelf && calSelectedDate && selectedTimeslot && calendar && (
+                                <div ref={formRef} data-testid="host-profile-booking-form">
+                                    <Card title="예약 정보">
+                                        <BookingForm
+                                            username={host.username}
+                                            calendar={calendar}
+                                            timeSlotId={selectedTimeslot.id}
+                                            when={calSelectedDate}
+                                            onCreated={handleBookingCreated}
+                                        />
+                                    </Card>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                </IsSelfProvider>
             )}
         </PageLayout>
     );
