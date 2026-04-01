@@ -27,8 +27,10 @@ import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +64,7 @@ public class MemberService {
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
         private final SmtpEmailValidator smtpEmailValidator;
+        private final GoogleCalendarProperties googleCalendarProperties;
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
@@ -223,7 +226,9 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.from(booking, role);
+                String timezone = googleCalendarProperties.getTimezone();
+                ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
+                return AffectedBookingDTO.from(booking, role, zoneId);
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {

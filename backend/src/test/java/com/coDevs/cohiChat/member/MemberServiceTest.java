@@ -21,6 +21,7 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -112,6 +113,9 @@ class MemberServiceTest {
 
 	@Mock
 	private SmtpEmailValidator smtpEmailValidator;
+
+	@Mock
+	private GoogleCalendarProperties googleCalendarProperties;
 
 	@InjectMocks
 	private MemberService memberService;
@@ -584,6 +588,7 @@ class MemberServiceTest {
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명", MeetingType.ONLINE, null, null);
 
+		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));
@@ -609,6 +614,7 @@ class MemberServiceTest {
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명", MeetingType.ONLINE, null, null);
 
+		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
 		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));

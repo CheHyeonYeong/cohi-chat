@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
@@ -26,7 +27,7 @@ public class NoShowHistoryResponseDTO {
     private final Instant bookingEndedAt;
     private final String bookingTopic;
 
-    public static NoShowHistoryResponseDTO from(NoShowHistory history) {
+    public static NoShowHistoryResponseDTO from(NoShowHistory history, ZoneId zoneId) {
         var booking = history.getBooking();
         var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
@@ -38,8 +39,8 @@ public class NoShowHistoryResponseDTO {
             .reportedBy(history.getReportedBy())
             .reason(history.getReason())
             .reportedAt(history.getReportedAt())
-            .bookingStartedAt(toUtcInstant(date, timeSlot.getStartTime()))
-            .bookingEndedAt(toUtcInstant(date, timeSlot.getEndTime()))
+            .bookingStartedAt(toUtcInstant(date, timeSlot.getStartTime(), zoneId))
+            .bookingEndedAt(toUtcInstant(date, timeSlot.getEndTime(), zoneId))
             .bookingTopic(booking.getTopic())
             .build();
     }

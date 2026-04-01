@@ -281,7 +281,7 @@ public class BookingService {
         String guestUsername = guest != null ? guest.getUsername() : null;
         String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-        return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+        return BookingResponseDTO.from(booking, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
@@ -309,7 +309,7 @@ public class BookingService {
                 String guestUsername = guest != null ? guest.getUsername() : null;
                 String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-                return BookingResponseDTO.from(b, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+                return BookingResponseDTO.from(b, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
             })
             .toList();
     }
@@ -552,7 +552,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
-            .map(NoShowHistoryResponseDTO::from)
+            .map(history -> NoShowHistoryResponseDTO.from(history, calendarZoneId))
             .toList();
     }
 
@@ -565,7 +565,7 @@ public class BookingService {
 
         List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
         return bookings.stream()
-            .map(BookingPublicResponseDTO::from)
+            .map(booking -> BookingPublicResponseDTO.from(booking, calendarZoneId))
             .toList();
     }
 
