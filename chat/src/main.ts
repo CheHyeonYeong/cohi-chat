@@ -34,12 +34,13 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Spring 서버와 동일한 prefix 구조 유지. /health는 docker healthcheck용으로 제외
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
-  // Spring SwaggerConfig와 동일한 Bearer JWT 인증 스킴
   const config = new DocumentBuilder()
-    .setTitle('cohiChat 채팅 서버')
+    .setTitle('cohiChat Chat API')
+    .setDescription(
+      'NestJS chat server for sending messages and reading message history. In Swagger Authorize, paste only the Spring access token without the Bearer prefix.',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -47,9 +48,9 @@ async function bootstrap() {
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  // Spring context-path /api 하위 swagger-ui와 동일한 경로
   SwaggerModule.setup('api/swagger-ui', app, document);
 
   await app.listen(Number(process.env.PORT) || 3001, '0.0.0.0');
 }
-bootstrap();
+
+void bootstrap();

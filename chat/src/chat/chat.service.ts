@@ -8,6 +8,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
+const MESSAGE_MAX_LENGTH = 1000;
+
+type MessageRow = {
+  id: string;
+  roomId: string;
+  senderId: string | null;
+  messageType: string;
+  content: string | null;
+  payload: unknown;
+  createdAt: Date;
+};
+
 @Injectable()
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
@@ -17,8 +29,7 @@ export class ChatService {
     username: string,
     dto: SendMessageDto,
   ): Promise<MessageDto> {
-    this.validateContent(dto.content);
-
+    const normalizedContent = this.normalizeContent(dto.content);
     const memberId = await this.resolveMemberId(username);
 
     const roomMember = await this.prisma.roomMember.findFirst({
@@ -31,21 +42,25 @@ export class ChatService {
     });
 
     if (!roomMember) {
-      throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
+      throw new ForbiddenException('Access to the chat room is denied.');
     }
 
-    const savedMessage = await this.prisma.message.create({
-      data: {
-        roomId,
-        senderId: memberId,
-        messageType: 'TEXT',
-        content: dto.content.trim(),
-      },
-    });
+    const savedMessage = await this.prisma.$transaction(async (tx) => {
+      const message = await tx.message.create({
+        data: {
+          roomId,
+          senderId: memberId,
+          messageType: 'TEXT',
+          content: normalizedContent,
+        },
+      });
 
-    await this.prisma.roomMember.update({
-      where: { id: roomMember.id },
-      data: { lastReadMessageId: savedMessage.id },
+      await tx.roomMember.update({
+        where: { id: roomMember.id },
+        data: { lastReadMessageId: message.id },
+      });
+
+      return message;
     });
 
     return MessageDto.from(savedMessage);
@@ -69,17 +84,16 @@ export class ChatService {
     });
 
     if (!member) {
-      throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
+      throw new ForbiddenException('Access to the chat room is denied.');
     }
 
     const rows = await this.fetchMessagesPage(roomId, cursor, size);
     return {
-      messages: rows.messages.map(MessageDto.from),
+      messages: rows.messages.map((message) => MessageDto.from(message)),
       nextCursor: rows.nextCursor,
     };
   }
 
-  // Spring JWT sub = username이므로 member 테이블에서 UUID 조회
   private async resolveMemberId(username: string): Promise<string> {
     const member = await this.prisma.member.findFirst({
       where: {
@@ -89,28 +103,39 @@ export class ChatService {
       },
       select: { id: true },
     });
+
     if (!member) {
-      throw new UnauthorizedException('존재하지 않는 사용자입니다.');
+      throw new UnauthorizedException('The authenticated user does not exist.');
     }
+
     return member.id;
   }
 
-  private validateContent(content: unknown): void {
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      throw new BadRequestException('메시지 내용은 공백일 수 없습니다.');
+  private normalizeContent(content: unknown): string {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Message content must be a string.');
     }
-    if (content.length > 1000) {
+
+    const normalizedContent = content.trim();
+
+    if (normalizedContent.length === 0) {
+      throw new BadRequestException('Message content cannot be blank.');
+    }
+
+    if (normalizedContent.length > MESSAGE_MAX_LENGTH) {
       throw new BadRequestException(
-        '메시지는 최대 1000자까지 입력할 수 있습니다.',
+        `Message content cannot exceed ${MESSAGE_MAX_LENGTH} characters.`,
       );
     }
+
+    return normalizedContent;
   }
 
   private async fetchMessagesPage(
     roomId: string,
     cursor: Date | undefined,
     size: number,
-  ): Promise<{ messages: Array<{ id: string; roomId: string; senderId: string | null; messageType: string; content: string | null; payload: unknown; createdAt: Date }>; nextCursor: string | null }> {
+  ): Promise<{ messages: MessageRow[]; nextCursor: string | null }> {
     const rows = await this.fetchMessagesBatch(roomId, cursor, size + 1);
 
     if (rows.length <= size) {
@@ -153,7 +178,7 @@ export class ChatService {
     cursor: Date | undefined,
     take: number,
     after?: { createdAt: Date; id: string },
-  ) {
+  ): Promise<MessageRow[]> {
     return this.prisma.message.findMany({
       where: {
         roomId,

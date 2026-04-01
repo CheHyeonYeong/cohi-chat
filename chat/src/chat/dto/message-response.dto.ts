@@ -11,29 +11,43 @@ type MessageLike = {
 };
 
 export class MessageDto {
-  @ApiProperty({ example: 'uuid-v4', description: '메시지 UUID' })
+  @ApiProperty({ example: 'uuid-v4', description: 'Message UUID' })
   id: string;
 
-  @ApiProperty({ example: 'uuid-v4', description: '채팅방 UUID' })
+  @ApiProperty({ example: 'uuid-v4', description: 'Room UUID' })
   roomId: string;
 
-  @ApiProperty({ example: 'uuid-v4', nullable: true, description: '발신자 UUID. null이면 시스템 메시지' })
+  @ApiProperty({
+    example: 'uuid-v4',
+    nullable: true,
+    description: 'Sender UUID. null for system messages.',
+  })
   senderId: string | null;
 
-  @ApiProperty({ example: 'TEXT', description: 'TEXT | RESERVATION_CARD | SYSTEM' })
+  @ApiProperty({
+    example: 'TEXT',
+    description: 'TEXT | RESERVATION_CARD | SYSTEM',
+  })
   messageType: string;
 
-  @ApiProperty({ example: '안녕하세요!', nullable: true, description: '메시지 본문. TEXT 타입에서만 존재' })
+  @ApiProperty({
+    example: 'hello',
+    nullable: true,
+    description: 'Message text body.',
+  })
   content: string | null;
 
   @ApiProperty({
     nullable: true,
-    description: 'RESERVATION_CARD: 예약 스냅샷 / SYSTEM: 메타데이터 / TEXT: null',
+    description: 'Additional JSON payload for non-text messages.',
     example: null,
   })
   payload: Record<string, unknown> | null;
 
-  @ApiProperty({ example: '2026-03-29T00:00:00.000Z', description: 'ISO 8601 생성 시각' })
+  @ApiProperty({
+    example: '2026-03-29T00:00:00.000Z',
+    description: 'Creation time in ISO 8601 format.',
+  })
   createdAt: string;
 
   static from(message: MessageLike): MessageDto {
@@ -52,11 +66,15 @@ export class MessageDto {
   }
 }
 
-// 커서 페이징 응답 — Spring Page<T>와 달리 단방향(과거 방향) 커서만 제공
 export class MessagePageResponse {
   @ApiProperty({ type: [MessageDto] })
   messages: MessageDto[];
 
-  @ApiProperty({ nullable: true, example: '2026-03-28T23:59:00.000Z', description: 'null이면 더 이상 이전 메시지 없음' })
+  @ApiProperty({
+    nullable: true,
+    example: '2026-03-28T23:59:00.000Z',
+    description:
+      'Cursor for the next page. null when there are no older messages.',
+  })
   nextCursor: string | null;
 }

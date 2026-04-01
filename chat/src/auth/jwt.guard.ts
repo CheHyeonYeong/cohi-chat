@@ -7,13 +7,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
 
+const ALLOWED_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'] as const;
+
 export interface JwtPayload {
-  sub: string;   // Spring JWT subject = username
+  sub: string;
   role: 'GUEST' | 'HOST' | 'ADMIN';
 }
 
-// Spring의 JwtAuthenticationFilter에 대응
-// NestJS Guard = Spring Filter/HandlerInterceptor의 인증 책임 부분
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
@@ -27,9 +27,9 @@ export class JwtGuard implements CanActivate {
     }
 
     try {
-      // 알고리즘은 jjwt가 키 길이 기준으로 자동 선택하므로 제한하지 않음
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
-      // request.user에 주입 — Spring의 SecurityContextHolder.getContext().getAuthentication() 역할
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        algorithms: [...ALLOWED_JWT_ALGORITHMS],
+      });
       request.user = payload;
       return true;
     } catch {
