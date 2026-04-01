@@ -60,4 +60,8 @@ public class RoomMember {
         member.memberId = memberId;
         return member;
     }
+
+    public void updateLastReadMessageId(UUID lastReadMessageId) {
+        this.lastReadMessageId = lastReadMessageId;
+    }
 }

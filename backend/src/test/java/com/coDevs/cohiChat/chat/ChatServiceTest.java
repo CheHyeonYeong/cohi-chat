@@ -25,11 +25,14 @@ import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
+import com.coDevs.cohiChat.chat.repository.ChatMessageQueryRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
+import com.coDevs.cohiChat.chat.response.ChatReadStateResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +42,7 @@ class ChatServiceTest {
     private static final UUID GUEST_ID = UUID.randomUUID();
     private static final UUID OUTSIDER_ID = UUID.randomUUID();
     private static final UUID ROOM_ID = UUID.randomUUID();
+    private static final UUID MESSAGE_ID = UUID.randomUUID();
     private static final Long BOOKING_ID = 1L;
 
     @Mock
@@ -51,6 +55,12 @@ class ChatServiceTest {
     private BookingRepository bookingRepository;
 
     @Mock
+    private ChatMessageQueryRepository chatMessageQueryRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
     private TimeSlot timeSlot;
 
     @InjectMocks
@@ -61,6 +71,8 @@ class ChatServiceTest {
     void createRoomForBookingCreatesNewRoom() {
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
+        given(memberRepository.findByIdWithLock(GUEST_ID)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
         given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
             .willReturn(Optional.empty());
 
@@ -75,10 +87,32 @@ class ChatServiceTest {
     }
 
     @Test
+    @DisplayName("locks participants in stable order before creating a room")
+    void createRoomForBookingLocksParticipantsInStableOrder() {
+        UUID higherId = UUID.fromString("70000000-0000-0000-0000-000000000000");
+        UUID lowerId = UUID.fromString("10000000-0000-0000-0000-000000000000");
+        Booking booking = makeBooking(lowerId);
+
+        given(timeSlot.getUserId()).willReturn(higherId);
+        given(memberRepository.findByIdWithLock(lowerId)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
+        given(memberRepository.findByIdWithLock(higherId)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
+        given(chatRoomRepository.findActiveRoomByMembersForUpdate(higherId, lowerId))
+            .willReturn(Optional.of(ChatRoom.create()));
+
+        chatService.createRoomForBooking(booking);
+
+        org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(memberRepository);
+        inOrder.verify(memberRepository).findByIdWithLock(lowerId);
+        inOrder.verify(memberRepository).findByIdWithLock(higherId);
+    }
+
+    @Test
     @DisplayName("reuses an existing room for the same host/guest pair")
     void createRoomForBookingReusesExistingRoom() {
         Booking booking = makeBooking();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
+        given(memberRepository.findByIdWithLock(GUEST_ID)).willReturn(Optional.of(org.mockito.Mockito.mock(com.coDevs.cohiChat.member.entity.Member.class)));
 
         ChatRoom existingRoom = ChatRoom.create();
         given(chatRoomRepository.findActiveRoomByMembersForUpdate(HOST_ID, GUEST_ID))
@@ -131,10 +165,68 @@ class ChatServiceTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
     }
 
+    @Test
+    @DisplayName("updates last read message id for a booking participant")
+    void updateLastReadMessageIdUpdatesRoomMember() {
+        Booking booking = makeBooking();
+        ChatRoom existingRoom = org.mockito.Mockito.mock(ChatRoom.class);
+        RoomMember roomMember = RoomMember.create(ChatRoom.create(), GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(existingRoom.getId()).willReturn(ROOM_ID);
+        given(chatRoomRepository.findActiveRoomByMembers(HOST_ID, GUEST_ID))
+            .willReturn(Optional.of(existingRoom));
+        given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.of(roomMember));
+        given(chatMessageQueryRepository.existsByIdAndRoomId(MESSAGE_ID, ROOM_ID)).willReturn(true);
+
+        ChatReadStateResponseDTO response = chatService.updateLastReadMessageId(BOOKING_ID, GUEST_ID, MESSAGE_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.lastReadMessageId()).isEqualTo(MESSAGE_ID);
+        assertThat(roomMember.getLastReadMessageId()).isEqualTo(MESSAGE_ID);
+    }
+
+    @Test
+    @DisplayName("rejects read state updates from users outside the booking room")
+    void updateLastReadMessageIdRejectsOutsider() {
+        Booking booking = makeBooking();
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> chatService.updateLastReadMessageId(BOOKING_ID, OUTSIDER_ID, MESSAGE_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
+    @DisplayName("rejects read state updates when the message is not in the room")
+    void updateLastReadMessageIdRejectsUnknownMessage() {
+        Booking booking = makeBooking();
+        ChatRoom existingRoom = org.mockito.Mockito.mock(ChatRoom.class);
+        RoomMember roomMember = RoomMember.create(ChatRoom.create(), GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(booking));
+        given(existingRoom.getId()).willReturn(ROOM_ID);
+        given(chatRoomRepository.findActiveRoomByMembers(HOST_ID, GUEST_ID))
+            .willReturn(Optional.of(existingRoom));
+        given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.of(roomMember));
+        given(chatMessageQueryRepository.existsByIdAndRoomId(MESSAGE_ID, ROOM_ID)).willReturn(false);
+
+        assertThatThrownBy(() -> chatService.updateLastReadMessageId(BOOKING_ID, GUEST_ID, MESSAGE_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT);
+    }
+
     private Booking makeBooking() {
+        return makeBooking(GUEST_ID);
+    }
+
+    private Booking makeBooking(UUID guestId) {
         return Booking.create(
             timeSlot,
-            GUEST_ID,
+            guestId,
             LocalDate.now().plusDays(7),
             "test topic",
             "test description",
