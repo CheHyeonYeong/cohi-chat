@@ -13,6 +13,7 @@ import { Register } from '~/pages/host/Register'
 import { TimeSlotSettings } from '~/pages/host/TimeSlotSettings'
 import { Settings as HostSettings } from '~/pages/host/Settings'
 import { Settings as MemberSettings } from '~/pages/member/Settings'
+import { Logout } from '~/pages/Logout'
 import { Profile } from '~/pages/host/Profile'
 import { Footer } from '~/components/Footer'
 import { Terms } from '~/pages/Terms'
@@ -115,6 +116,10 @@ const hostProfileRoute = createRoute({
     params: z.object({
         hostId: z.string(),
     }),
+    validateSearch: z.object({
+        date: z.string().optional(),
+        selectedBookingId: z.number().optional(),
+    }),
 })
 
 
@@ -147,6 +152,12 @@ const memberSettingsRoute = createRoute({
     component: () => <AuthGuard><MemberSettings /></AuthGuard>,
 })
 
+const logoutRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/logout',
+    component: Logout,
+})
+
 const forgotPasswordRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/forgot-password',
@@ -177,6 +188,7 @@ export const routeTree = RootRoute.addChildren([
     termsRoute,
     privacyRoute,
     memberSettingsRoute,
+    logoutRoute,
     forgotPasswordRoute,
     resetPasswordRoute,
 ])

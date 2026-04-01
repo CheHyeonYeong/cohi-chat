@@ -6,6 +6,9 @@ export {
     getUserApi,
     updateProfileApi,
     updateMemberApi,
+    getProfileImagePresignedUrlApi,
+    confirmProfileImageUploadApi,
+    deleteProfileImageApi,
 } from './memberApi';
 
 export {

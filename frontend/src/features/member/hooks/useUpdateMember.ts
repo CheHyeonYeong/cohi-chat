@@ -8,6 +8,7 @@ export const useUpdateMember = (username: string) => {
         mutationFn: (payload) => updateMemberApi(username, payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['auth'] });
+            queryClient.invalidateQueries({ queryKey: ['hosts'] });
         },
     });
 };

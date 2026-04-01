@@ -131,7 +131,11 @@ const doRequest = async <T>(url: string, options: HttpClientOptions, isRetry = f
             throw new Error(`HTTP error! status: ${response.status}`, { cause: response.status });
         }
         const message = data?.error?.message ?? `HTTP error! status: ${response.status}`;
-        throw new Error(message, { cause: response.status });
+        const error = new Error(message, { cause: response.status });
+        if (import.meta.env.DEV && response.status >= 500) {
+            console.error('[httpClient] 서버 에러:', error, data);
+        }
+        throw error;
     }
 
     const text = await response.text();

@@ -11,6 +11,24 @@ export const isTimeslotAvailableOnDate = (timeslot: ITimeSlot, year: number, mon
     return true;
 };
 
+export const isTimeslotBooked = (timeslot: ITimeSlot, bookings: Array<IBooking | ICalendarEvent>, year: number, month: number, day: number): boolean => {
+    const [startHour, startMinute] = timeslot.startedAt.split(":");
+    const startTime = Number(startHour) * 60 + Number(startMinute);
+    const [endHour, endMinute] = timeslot.endedAt.split(":");
+    const endTime = Number(endHour) * 60 + Number(endMinute);
+
+    return bookings.some((booking) => {
+        const bookingStart = new Date(booking.startedAt);
+        if (bookingStart.getFullYear() !== year || bookingStart.getMonth() + 1 !== month || bookingStart.getDate() !== day) {
+            return false;
+        }
+        const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+        const bookingEnd = new Date(booking.endedAt);
+        const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+        return bookingStartTime < endTime && bookingEndTime > startTime;
+    });
+};
+
 export const checkAvailableBookingDate = (baseDate: Date, timeslots: ITimeSlot[], bookings: Array<IBooking | ICalendarEvent>, year: number, month: number, day: number, weekday: number): boolean => {
     const isUnavailable =
         (year < baseDate.getFullYear() ||

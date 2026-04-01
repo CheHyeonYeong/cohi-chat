@@ -163,6 +163,35 @@ body {
   }
 }
 
+/* cohiChat Selectable Styles ??罹섎┛???좎쭨, ??꾩뒳濡?踰꾪듉 ???좏깮 媛?ν븳 ?붿냼 */
+.cohi-selectable {
+  color: var(--color-cohi-primary);
+  background-color: var(--color-cohi-bg-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable:hover {
+  background-color: var(--color-cohi-bg-warm);
+}
+
+.cohi-selectable-active {
+  background-color: var(--color-cohi-primary);
+  color: var(--color-cohi-text-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cohi-selectable-active:hover {
+  background-color: var(--color-cohi-primary-dark);
+}
+
+.cohi-selectable-disabled {
+  color: #AAAAAA;
+  background: inherit;
+  cursor: default;
+}
+
 /* cohiChat Global Styles */
 .cohi-bg-gradient {
   background: linear-gradient(135deg, var(--color-cohi-bg-warm) 0%, var(--color-cohi-bg-hero) 100%);

@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useCallback, useMemo, useState } from 'react';
 import { Button } from '~/components/button';
 import { Select } from '~/components/select';
@@ -111,7 +112,7 @@ export const BookingEditForm = ({ booking, topics, onCancel, onSuccess }: Bookin
 
             {isError && (
                 <p data-testid="booking-edit-error" className="text-sm text-red-500">
-                    {error.message}
+                    {getErrorMessage(error)}
                 </p>
             )}
 

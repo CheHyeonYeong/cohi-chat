@@ -75,3 +75,22 @@ jobs:
         run: |
           cd frontend
           pnpm build
+
+  chat:
+    name: Chat Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build chat server image
+        run: |
+          docker buildx build \
+            --file chat/Dockerfile \
+            --tag cohi-chat-chat-server:ci \
+            --load \
+            ./chat

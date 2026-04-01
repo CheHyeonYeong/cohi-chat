@@ -5,3 +5,5 @@ export { HostProfileCard } from './HostProfileCard';
 export { HostTimeSlotPreview } from './HostTimeSlotPreview';
 export { HostTopicTags } from './HostTopicTags';
 export { MeetingInfoForm } from './MeetingInfoForm';
+export { ProfileCalendarSection } from './ProfileCalendarSection';
+export { ProfileSidebar } from './ProfileSidebar';

@@ -6,10 +6,12 @@ import type {
     SignupPayload,
     SignupResponse,
     MemberResponseDTO,
-    HostResponseDTO,
-    UpdateProfilePayload,
     UpdateMemberPayload,
+    ProfileImageUploadRequest,
+    ProfileImageUploadResponse,
+    ProfileImageConfirmRequest,
 } from '../types';
+import type { HostResponseDTO, UpdateProfilePayload } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const MEMBER_API = `${API_BASE}/members/v1`;
@@ -85,4 +87,42 @@ export const updateMemberApi = async (username: string, payload: UpdateMemberPay
         throw new Error('회원 정보 수정에 실패했습니다.');
     }
     return response;
+};
+
+export const getProfileImagePresignedUrlApi = async (
+    request: ProfileImageUploadRequest
+): Promise<ProfileImageUploadResponse> => {
+    const response = await httpClient<ProfileImageUploadResponse>(
+        `${MEMBER_API}/me/profile-image/presigned-url`,
+        {
+            method: 'POST',
+            body: request,
+        }
+    );
+    if (!response) {
+        throw new Error('프로필 이미지 업로드 URL 생성에 실패했습니다.');
+    }
+    return response;
+};
+
+export const confirmProfileImageUploadApi = async (
+    request: ProfileImageConfirmRequest
+): Promise<string> => {
+    const response = await httpClient<string>(
+        `${MEMBER_API}/me/profile-image/confirm`,
+        {
+            method: 'POST',
+            body: request,
+        }
+    );
+    if (!response) {
+        throw new Error('프로필 이미지 업로드 확인에 실패했습니다.');
+    }
+    return response;
+};
+
+export const deleteProfileImageApi = async (): Promise<void> => {
+    await httpClient<void>(`${MEMBER_API}/me/profile-image`, {
+        method: 'DELETE',
+    });
 };

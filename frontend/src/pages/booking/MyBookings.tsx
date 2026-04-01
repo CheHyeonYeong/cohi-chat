@@ -155,7 +155,7 @@ export const MyBookings = () => {
 
             {error && (
                 <div className="text-center py-16 space-y-4">
-                    <p className="text-red-500">{error.message}</p>
+                    <p className="text-red-500">{getErrorMessage(error)}</p>
                     {error.cause === 401 && (
                         <LinkButton variant="primary" to="/login">로그인하기</LinkButton>
                     )}

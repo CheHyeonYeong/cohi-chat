@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateBooking } from '../../hooks';
 import { Button } from '~/components/button';
@@ -10,7 +11,7 @@ import { formatDateToISO } from '~/libs/date';
 
 interface BookingFormProps {
     calendar: ICalendar;
-    slug: string;
+    username: string;
     timeSlotId: number;
     when: Date;
     onCreated: () => void;
@@ -32,8 +33,8 @@ const createInitialState = (defaultTopic: string): BookingFormState => ({
     meetingLink: '',
 });
 
-export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) => {
-    const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
+export const BookingForm = ({ calendar, username, timeSlotId, when, onCreated }: BookingFormProps) => {
+    const createBookingMutation = useCreateBooking(username);
 
     const [formState, setFormState] = useState<BookingFormState>(() =>
         createInitialState(calendar.topics[0] ?? '')
@@ -122,7 +123,7 @@ export const BookingForm = ({ calendar, slug, timeSlotId, when, onCreated }: Boo
 
             {isError && (
                 <p data-testid="booking-error" className="text-sm text-red-500">
-                    {error.message}
+                    {getErrorMessage(error)}
                 </p>
             )}
 
