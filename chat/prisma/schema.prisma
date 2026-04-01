@@ -24,27 +24,27 @@ model Member {
 }
 
 model ChatRoom {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  isDisabled  Boolean      @default(false) @map("is_disabled")
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  isDisabled Boolean      @default(false) @map("is_disabled")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
   roomMembers RoomMember[]
-  messages    Message[]
+  messages   Message[]
 
   @@map("chat_room")
 }
 
 model RoomMember {
-  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  roomId            String      @map("room_id") @db.Uuid
-  memberId          String      @map("member_id") @db.Uuid
-  lastReadMessageId String?     @map("last_read_message_id") @db.Uuid
-  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
-  deletedAt         DateTime?   @map("deleted_at") @db.Timestamptz(6)
-  room              ChatRoom    @relation(fields: [roomId], references: [id])
-  member            Member      @relation(fields: [memberId], references: [id])
-  lastReadMessage   Message?    @relation("RoomMemberLastReadMessage", fields: [lastReadMessageId], references: [id])
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId            String       @map("room_id") @db.Uuid
+  memberId          String       @map("member_id") @db.Uuid
+  lastReadMessageId String?      @map("last_read_message_id") @db.Uuid
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  room              ChatRoom     @relation(fields: [roomId], references: [id])
+  member            Member       @relation(fields: [memberId], references: [id])
+  lastReadMessage   Message?     @relation("RoomMemberLastReadMessage", fields: [lastReadMessageId], references: [id])
 
   @@unique([roomId, memberId], map: "uq_room_member")
   @@index([roomId], map: "idx_room_member_room_id")

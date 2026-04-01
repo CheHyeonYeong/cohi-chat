@@ -1,10 +1,10 @@
+import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
@@ -146,7 +146,7 @@ export class ChatService {
   ): Promise<MessagePageResponse> {
     const memberId = await this.resolveMemberId(username);
 
-    const roomMember = await this.prisma.roomMember.findFirst({
+    const member = await this.prisma.roomMember.findFirst({
       where: {
         roomId,
         memberId,
@@ -155,7 +155,7 @@ export class ChatService {
       select: { id: true },
     });
 
-    if (!roomMember) {
+    if (!member) {
       throw new ForbiddenException('Access to the chat room is denied.');
     }
 

@@ -1,9 +1,9 @@
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -37,9 +37,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('cohiChat Chat API')
+    .setTitle('cohiChat 채팅 서버')
     .setDescription(
-      'NestJS chat server for room list, message send, and message history APIs. Paste the Spring access token without the Bearer prefix into Swagger Authorize.',
+      '채팅 서버 API 문서. /api/chat/rooms 는 채팅방 목록을, /api/chat/rooms/{roomId}/messages 는 메시지 전송/조회 기능을 제공합니다.',
     )
     .setVersion('1.0')
     .addBearerAuth(

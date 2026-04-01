@@ -19,7 +19,6 @@ describe('ChatService', () => {
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
   let rootMessageCreateMock: jest.Mock;
-  let messageFindManyMock: jest.Mock;
   let transactionMock: jest.Mock;
   let txMessageCreateMock: jest.Mock;
   let txRoomMemberUpdateMock: jest.Mock;
@@ -31,7 +30,6 @@ describe('ChatService', () => {
       .fn()
       .mockResolvedValue({ id: 'room-member-1' });
     rootMessageCreateMock = jest.fn();
-    messageFindManyMock = jest.fn();
     txMessageCreateMock = jest.fn(
       ({
         data,
@@ -68,7 +66,7 @@ describe('ChatService', () => {
       $queryRaw: queryRawMock,
       member: { findFirst: memberFindFirstMock },
       roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
-      message: { create: rootMessageCreateMock, findMany: messageFindManyMock },
+      message: { create: rootMessageCreateMock, findMany: jest.fn() },
       $transaction: transactionMock,
     } as unknown as PrismaService);
   });
@@ -91,7 +89,9 @@ describe('ChatService', () => {
     const result = await service.getRooms('testuser');
 
     expect(queryRawMock).toHaveBeenCalledTimes(1);
-    expect(queryRawMock.mock.calls[0][0].values).toEqual(['testuser']);
+    expect(queryRawMock).toHaveBeenCalledWith(
+      expect.objectContaining({ values: ['testuser'] }),
+    );
     expect(result).toEqual([
       {
         id: 'room-1',

@@ -29,7 +29,6 @@ describe('JwtGuard', () => {
     expect(request.user).toEqual({
       sub: 'tester',
       role: 'GUEST',
-      username: 'tester',
     });
   });
 
