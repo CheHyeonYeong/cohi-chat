@@ -3,17 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model Member {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username  String    @unique @db.VarChar(50)
-  role      String    @db.VarChar(20)
-  isDeleted Boolean   @map("is_deleted")
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
-  isBanned  Boolean   @map("is_banned")
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username     String       @unique @db.VarChar(50)
+  role         String       @db.VarChar(20)
+  isDeleted    Boolean      @map("is_deleted")
+  deletedAt    DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  isBanned     Boolean      @map("is_banned")
+  roomMembers  RoomMember[]
+  sentMessages Message[]    @relation("MessageSender")
 
   @@map("member")
 }
@@ -22,11 +25,14 @@ model ChatRoom {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type            String    @db.VarChar(20)
   status          String    @db.VarChar(20)
+  isDisabled      Boolean   @default(false) @map("is_disabled")
   externalRefType String    @map("external_ref_type") @db.VarChar(50)
   externalRefId   String    @map("external_ref_id") @db.Uuid
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  roomMembers     RoomMember[]
+  messages        Message[]
 
   @@map("chat_room")
 }
@@ -39,9 +45,13 @@ model RoomMember {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  room              ChatRoom  @relation(fields: [roomId], references: [id])
+  member            Member    @relation(fields: [memberId], references: [id])
+  lastReadMessage   Message?  @relation("RoomMemberLastReadMessage", fields: [lastReadMessageId], references: [id])
 
   @@unique([roomId, memberId], map: "uq_room_member")
   @@index([roomId], map: "idx_room_member_room_id")
+  @@index([memberId], map: "idx_room_member_member_id")
   @@map("room_member")
 }
 
@@ -53,7 +63,10 @@ model Message {
   content     String?  @db.VarChar(2000)
   payload     Json?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  room        ChatRoom @relation(fields: [roomId], references: [id])
+  sender      Member?  @relation("MessageSender", fields: [senderId], references: [id])
+  readBy      RoomMember[] @relation("RoomMemberLastReadMessage")
 
-  @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
+  @@index([roomId, createdAt(sort: Desc), id(sort: Desc)], map: "idx_message_room_id_created_at")
   @@map("message")
 }
