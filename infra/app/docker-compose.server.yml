@@ -68,8 +68,10 @@ services:
 
 networks:
   cohi-chat-network:
+    name: cohi-chat-app
     driver: bridge
 
 volumes:
   redis-data:
     driver: local
+

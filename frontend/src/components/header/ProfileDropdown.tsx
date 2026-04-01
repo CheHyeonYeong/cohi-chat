@@ -59,7 +59,7 @@ export const ProfileDropdown = () => {
                                 to="/host/$hostId"
                                 params={{ hostId: user.username }}
                             >
-                                내 프로필 미리보기
+                                내 프로필
                             </DropdownMenuItem>
 
                             <DropdownMenuItem

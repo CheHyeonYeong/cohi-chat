@@ -4,8 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
+import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
 const MESSAGE_MAX_LENGTH = 1000;
@@ -23,6 +25,76 @@ type MessageRow = {
 @Injectable()
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getRooms(username: string): Promise<RoomResponseDto[]> {
+    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
+      SELECT
+        cr.id,
+        counterpart.member_id                       AS counterpart_id,
+        COALESCE(counterpart.display_name, '')     AS counterpart_name,
+        counterpart.profile_image_url              AS counterpart_profile_image_url,
+        last_msg.id                                AS last_message_id,
+        last_msg.content                           AS last_message_content,
+        last_msg.message_type                      AS last_message_type,
+        last_msg.created_at                        AS last_message_created_at,
+        COALESCE(unread.cnt, 0)::int               AS unread_count
+      FROM chat_room cr
+      JOIN member me
+        ON me.username = ${username}
+       AND me.is_deleted = false
+       AND me.is_banned = false
+      JOIN room_member my_rm
+        ON my_rm.room_id = cr.id
+       AND my_rm.member_id = me.id
+       AND my_rm.deleted_at IS NULL
+      JOIN LATERAL (
+        SELECT
+          rm.member_id,
+          COALESCE(m.display_name, m.username, '') AS display_name,
+          m.profile_image_url
+        FROM room_member rm
+        LEFT JOIN member m ON m.id = rm.member_id
+        WHERE rm.room_id = cr.id
+          AND rm.member_id != me.id
+          AND rm.deleted_at IS NULL
+        ORDER BY rm.created_at ASC, rm.id ASC
+        LIMIT 1
+      ) counterpart ON true
+      LEFT JOIN LATERAL (
+        SELECT id, content, message_type, created_at
+        FROM message
+        WHERE room_id = cr.id
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      ) last_msg ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*)::int AS cnt
+        FROM (
+          SELECT
+            msg.id,
+            ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
+          FROM message msg
+          WHERE msg.room_id = cr.id
+        ) ordered_message
+        LEFT JOIN LATERAL (
+          SELECT cursor_message.seq
+          FROM (
+            SELECT
+              msg.id,
+              ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
+            FROM message msg
+            WHERE msg.room_id = cr.id
+          ) cursor_message
+          WHERE cursor_message.id = my_rm.last_read_message_id
+        ) cursor ON true
+        WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
+      ) unread ON true
+      WHERE cr.is_disabled = false
+      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
+    `);
+
+    return rows.map((row) => RoomResponseDto.from(row));
+  }
 
   async sendMessage(
     roomId: string,
@@ -74,7 +146,7 @@ export class ChatService {
   ): Promise<MessagePageResponse> {
     const memberId = await this.resolveMemberId(username);
 
-    const member = await this.prisma.roomMember.findFirst({
+    const roomMember = await this.prisma.roomMember.findFirst({
       where: {
         roomId,
         memberId,
@@ -83,7 +155,7 @@ export class ChatService {
       select: { id: true },
     });
 
-    if (!member) {
+    if (!roomMember) {
       throw new ForbiddenException('Access to the chat room is denied.');
     }
 

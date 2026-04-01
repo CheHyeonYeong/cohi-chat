@@ -26,7 +26,11 @@ describe('JwtGuard', () => {
     expect(verifyAsync).toHaveBeenCalledWith('token-value', {
       algorithms: ['HS256', 'HS384', 'HS512'],
     });
-    expect(request.user).toEqual({ sub: 'tester', role: 'GUEST' });
+    expect(request.user).toEqual({
+      sub: 'tester',
+      role: 'GUEST',
+      username: 'tester',
+    });
   });
 
   it('throws when the authorization header is missing', async () => {

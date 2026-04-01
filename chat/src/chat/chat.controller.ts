@@ -8,22 +8,26 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  Request,
+  Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
+import type { JwtPayload } from '../auth/jwt.guard';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ChatService } from './chat.service';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
+import { RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ParseCursorPipe } from './pipes/parse-cursor.pipe';
 
@@ -36,6 +40,22 @@ const MAX_PAGE_SIZE = 100;
 @UseGuards(JwtGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+
+  @Get('rooms')
+  @ApiOperation({
+    summary: 'Get chat rooms',
+    description:
+      'Returns the current user room list with counterpart info, last message preview, and unread count.',
+  })
+  @ApiOkResponse({
+    description: 'Chat room summaries.',
+    type: RoomResponseDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'A valid Bearer JWT is required.' })
+  async getRooms(@Req() req: FastifyRequest): Promise<RoomResponseDto[]> {
+    return this.chatService.getRooms(this.getUsername(req));
+  }
 
   @Get('rooms/:roomId/messages')
   @HttpCode(HttpStatus.OK)
@@ -80,9 +100,12 @@ export class ChatController {
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Query('cursor', ParseCursorPipe) cursor: Date | undefined,
     @Query('size') size: string | undefined,
-    @Request() req: FastifyRequest,
+    @Req() req: FastifyRequest,
   ) {
     const username = this.getUsername(req);
+
+    // Keep pagination predictable for clients while capping large requests
+    // so one call cannot pull an arbitrarily large message window.
     const parsedSize = Number.parseInt(size ?? '', 10);
     const pageSize =
       Number.isNaN(parsedSize) || parsedSize <= 0
@@ -122,19 +145,20 @@ export class ChatController {
   async sendMessage(
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() dto: SendMessageDto,
-    @Request() req: FastifyRequest,
+    @Req() req: FastifyRequest,
   ) {
     const username = this.getUsername(req);
     return this.chatService.sendMessage(roomId, username, dto);
   }
 
   private getUsername(request: FastifyRequest): string {
-    const user = request.user;
+    const user = request.user as JwtPayload | undefined;
+    const username = user?.username ?? user?.sub;
 
-    if (!user?.sub) {
+    if (!username) {
       throw new UnauthorizedException('Missing authenticated user context.');
     }
 
-    return user.sub;
+    return username;
   }
 }

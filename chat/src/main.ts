@@ -1,9 +1,9 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -36,10 +36,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
-  const config = new DocumentBuilder()
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('cohiChat Chat API')
     .setDescription(
-      'NestJS chat server for sending messages and reading message history. In Swagger Authorize, paste only the Spring access token without the Bearer prefix.',
+      'NestJS chat server for room list, message send, and message history APIs. Paste the Spring access token without the Bearer prefix into Swagger Authorize.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -47,8 +47,10 @@ async function bootstrap() {
       'jwtAuth',
     )
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/swagger-ui', app, document);
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('swagger-ui', app, swaggerDocument, {
+    useGlobalPrefix: true,
+  });
 
   await app.listen(Number(process.env.PORT) || 3001, '0.0.0.0');
 }
