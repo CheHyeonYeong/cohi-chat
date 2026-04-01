@@ -1,7 +1,10 @@
 package com.coDevs.cohiChat.booking;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -21,7 +24,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.coDevs.cohiChat.booking.controller.ChatController;
+import com.coDevs.cohiChat.booking.controller.BookingChatController;
 import com.coDevs.cohiChat.chat.response.ChatReadStateResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.chat.service.ChatService;
@@ -29,10 +32,10 @@ import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
 
-@WebMvcTest(ChatController.class)
+@WebMvcTest(BookingChatController.class)
 @AutoConfigureMockMvc
 @WithMockUser(username = "guest")
-class ChatControllerTest {
+class BookingChatControllerTest {
 
     private static final Long BOOKING_ID = 1L;
     private static final UUID MEMBER_ID = UUID.randomUUID();
@@ -90,5 +93,18 @@ class ChatControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.roomId").value(ROOM_ID.toString()))
             .andExpect(jsonPath("$.data.lastReadMessageId").value(MESSAGE_ID.toString()));
+    }
+
+    @Test
+    @DisplayName("rejects missing messageId in read state update")
+    void updateChatReadStateRejectsMissingMessageId() throws Exception {
+        mockMvc.perform(patch("/bookings/{bookingId}/chat-room/read", BOOKING_ID)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false));
+
+        verify(chatService, never()).updateLastReadMessageId(eq(BOOKING_ID), eq(MEMBER_ID), any());
     }
 }

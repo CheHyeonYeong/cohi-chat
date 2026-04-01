@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.chat.service;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,8 +12,8 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
-import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
 import com.coDevs.cohiChat.chat.repository.ChatMessageQueryRepository;
+import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
 import com.coDevs.cohiChat.chat.response.ChatReadStateResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
@@ -67,9 +69,19 @@ public class ChatService {
         RoomMember roomMember = roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(roomId, requesterId)
             .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        validateMessageBelongsToRoom(messageId, roomId);
-        roomMember.updateLastReadMessageId(messageId);
+        Instant targetMessageCreatedAt = findMessageCreatedAtOrThrow(messageId, roomId);
+        UUID currentLastReadMessageId = roomMember.getLastReadMessageId();
 
+        if (currentLastReadMessageId != null) {
+            Optional<Instant> currentLastReadCreatedAt = chatMessageQueryRepository
+                .findCreatedAtByIdAndRoomId(currentLastReadMessageId, roomId);
+
+            if (currentLastReadCreatedAt.isPresent() && !targetMessageCreatedAt.isAfter(currentLastReadCreatedAt.get())) {
+                return new ChatReadStateResponseDTO(roomId, currentLastReadMessageId);
+            }
+        }
+
+        roomMember.updateLastReadMessageId(messageId);
         return new ChatReadStateResponseDTO(roomId, messageId);
     }
 
@@ -83,8 +95,10 @@ public class ChatService {
 
     private ChatRoom createNewRoom(UUID hostId, UUID guestId) {
         ChatRoom room = chatRoomRepository.save(ChatRoom.create());
-        roomMemberRepository.save(RoomMember.create(room, hostId));
-        roomMemberRepository.save(RoomMember.create(room, guestId));
+        roomMemberRepository.saveAll(List.of(
+            RoomMember.create(room, hostId),
+            RoomMember.create(room, guestId)
+        ));
         return room;
     }
 
@@ -101,10 +115,9 @@ public class ChatService {
         }
     }
 
-    private void validateMessageBelongsToRoom(UUID messageId, UUID roomId) {
-        if (!chatMessageQueryRepository.existsByIdAndRoomId(messageId, roomId)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
+    private Instant findMessageCreatedAtOrThrow(UUID messageId, UUID roomId) {
+        return chatMessageQueryRepository.findCreatedAtByIdAndRoomId(messageId, roomId)
+            .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT));
     }
 
     private void validateParticipant(Booking booking, UUID requesterId) {

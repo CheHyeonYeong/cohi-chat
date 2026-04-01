@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.chat.repository;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -13,17 +15,22 @@ public class ChatMessageQueryRepository {
 
     private final EntityManager entityManager;
 
-    public boolean existsByIdAndRoomId(UUID messageId, UUID roomId) {
-        Number count = (Number) entityManager.createNativeQuery("""
-            SELECT COUNT(1)
+    public Optional<Instant> findCreatedAtByIdAndRoomId(UUID messageId, UUID roomId) {
+        @SuppressWarnings("unchecked")
+        var rows = entityManager.createNativeQuery("""
+            SELECT created_at
             FROM message
             WHERE id = :messageId
               AND room_id = :roomId
             """)
             .setParameter("messageId", messageId)
             .setParameter("roomId", roomId)
-            .getSingleResult();
+            .getResultList();
 
-        return count.longValue() > 0;
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of((Instant) rows.get(0));
     }
 }

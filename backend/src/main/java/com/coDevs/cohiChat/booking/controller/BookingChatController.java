@@ -24,16 +24,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Chat", description = "채팅 API")
+@Tag(name = "Chat", description = "Booking chat API")
 @RestController
 @RequestMapping("/bookings")
 @RequiredArgsConstructor
-public class ChatController {
+public class BookingChatController {
 
     private final ChatService chatService;
     private final MemberService memberService;
 
-    @Operation(summary = "채팅방 조회", description = "예약과 연결된 채팅방 roomId를 반환합니다.")
+    @Operation(summary = "Get booking chat room", description = "Returns the chat room linked to the booking.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Chat room lookup succeeded"),
         @ApiResponse(responseCode = "401", description = "Authentication required"),
@@ -50,7 +50,7 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 
-    @Operation(summary = "梨꾪똿 ?쎌쓬 ?곹깭 媛깆떊", description = "?덉빟???곌껐??梨꾪똿諛⑹뿉???꾩옱 ?ъ슜?먯쓽 留덉?留??쎌? 硫붿떆吏 ID瑜???ν빀?덈떎.")
+    @Operation(summary = "Update booking chat read state", description = "Stores the current member's last read message for the booking chat room.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Chat read state updated"),
         @ApiResponse(responseCode = "400", description = "Invalid request body or messageId"),
