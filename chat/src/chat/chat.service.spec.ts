@@ -19,6 +19,7 @@ describe('ChatService', () => {
   let queryRawMock: jest.Mock;
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
+  let chatRoomFindFirstMock: jest.Mock;
   let messageFindFirstMock: jest.Mock;
   let messageFindManyMock: jest.Mock;
 
@@ -26,6 +27,9 @@ describe('ChatService', () => {
     queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn();
     roomMemberFindFirstMock = jest.fn();
+    chatRoomFindFirstMock = jest.fn().mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+    });
     messageFindFirstMock = jest.fn();
     messageFindManyMock = jest.fn();
 
@@ -36,6 +40,9 @@ describe('ChatService', () => {
       },
       roomMember: {
         findFirst: roomMemberFindFirstMock,
+      },
+      chatRoom: {
+        findFirst: chatRoomFindFirstMock,
       },
       message: {
         findFirst: messageFindFirstMock,
@@ -153,9 +160,15 @@ describe('ChatService', () => {
         roomId: '11111111-1111-1111-1111-111111111111',
         memberId: 'member-1',
         deletedAt: null,
-        room: {
-          isDisabled: false,
-        },
+      },
+      select: {
+        id: true,
+      },
+    });
+    expect(chatRoomFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        id: '11111111-1111-1111-1111-111111111111',
+        isDisabled: false,
       },
       select: {
         id: true,
@@ -193,6 +206,7 @@ describe('ChatService', () => {
       username: 'tester',
     });
 
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -345,5 +359,6 @@ describe('ChatService', () => {
     expect(memberFindFirstMock).not.toHaveBeenCalled();
     expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
     expect(messageFindManyMock).not.toHaveBeenCalled();
+    expect(chatRoomFindFirstMock).not.toHaveBeenCalled();
   });
 });

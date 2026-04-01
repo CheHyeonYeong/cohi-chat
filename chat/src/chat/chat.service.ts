@@ -145,9 +145,6 @@ export class ChatService {
         roomId,
         memberId: member.id,
         deletedAt: null,
-        room: {
-          isDisabled: false,
-        },
       },
       select: {
         id: true,
@@ -155,6 +152,20 @@ export class ChatService {
     });
 
     if (!membership) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const room = await this.prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        isDisabled: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!room) {
       throw new ForbiddenException('Access to the chat room is denied.');
     }
 
