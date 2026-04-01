@@ -1,5 +1,9 @@
-﻿import type { PrismaService } from '../prisma/prisma.service';
-import { ChatService } from './chat.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import {
+  ChatService,
+  MAX_POLL_MESSAGES,
+  MAX_POLL_TIMEOUT_SECONDS,
+} from './chat.service';
 
 type FindManyCall = {
   where: {
@@ -7,6 +11,7 @@ type FindManyCall = {
     createdAt?: { gt?: Date; gte?: Date };
   };
   orderBy: Array<{ createdAt?: 'asc' | 'desc'; id?: 'asc' | 'desc' }>;
+  take: number;
 };
 
 describe('ChatService', () => {
@@ -139,8 +144,22 @@ describe('ChatService', () => {
     const result = await service.pollMessages({
       roomId: '11111111-1111-1111-1111-111111111111',
       sinceMessageId: '00000000-0000-0000-0000-000000000001',
-      timeoutSeconds: 25,
+      timeoutSeconds: MAX_POLL_TIMEOUT_SECONDS,
       username: 'tester',
+    });
+
+    expect(roomMemberFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        memberId: 'member-1',
+        deletedAt: null,
+        room: {
+          isDisabled: false,
+        },
+      },
+      select: {
+        id: true,
+      },
     });
 
     expect(result).toEqual([
@@ -170,7 +189,7 @@ describe('ChatService', () => {
 
     const resultPromise = service.pollMessages({
       roomId: '11111111-1111-1111-1111-111111111111',
-      timeoutSeconds: 25,
+      timeoutSeconds: MAX_POLL_TIMEOUT_SECONDS,
       username: 'tester',
     });
 
@@ -190,6 +209,7 @@ describe('ChatService', () => {
         },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: MAX_POLL_MESSAGES,
     });
 
     await jest.advanceTimersByTimeAsync(24_000);
@@ -260,7 +280,7 @@ describe('ChatService', () => {
     const result = await service.pollMessages({
       roomId: '11111111-1111-1111-1111-111111111111',
       sinceMessageId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      timeoutSeconds: 25,
+      timeoutSeconds: MAX_POLL_TIMEOUT_SECONDS,
       username: 'tester',
     });
 
@@ -277,6 +297,7 @@ describe('ChatService', () => {
         },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: MAX_POLL_MESSAGES + 1,
     });
 
     expect(result).toEqual([
@@ -308,5 +329,21 @@ describe('ChatService', () => {
         createdAt: '2026-03-31T00:00:01.000Z',
       },
     ]);
+  });
+
+  it('rejects a timeout above 25 seconds before querying the database', async () => {
+    await expect(
+      service.pollMessages({
+        roomId: '11111111-1111-1111-1111-111111111111',
+        timeoutSeconds: MAX_POLL_TIMEOUT_SECONDS + 1,
+        username: 'tester',
+      }),
+    ).rejects.toThrow(
+      `timeout must be an integer between 0 and ${MAX_POLL_TIMEOUT_SECONDS}.`,
+    );
+
+    expect(memberFindFirstMock).not.toHaveBeenCalled();
+    expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
+    expect(messageFindManyMock).not.toHaveBeenCalled();
   });
 });
