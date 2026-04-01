@@ -31,6 +31,7 @@ import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 
 import jakarta.annotation.PostConstruct;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -70,18 +71,21 @@ public class MemberService {
 
         private volatile ZoneId calendarZoneId;
 
+        private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
+
         @PostConstruct
         void initZoneId() {
                 String timezone = googleCalendarProperties.getTimezone();
-                if (timezone == null) {
-                        calendarZoneId = ZoneId.systemDefault();
+                if (timezone == null || timezone.isBlank()) {
+                        log.warn("google.calendar.timezone is null/blank. Falling back to Asia/Seoul");
+                        calendarZoneId = DEFAULT_ZONE;
                         return;
                 }
                 try {
                         calendarZoneId = ZoneId.of(timezone);
-                } catch (Exception e) {
-                        log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
-                        calendarZoneId = ZoneId.systemDefault();
+                } catch (DateTimeException e) {
+                        log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to Asia/Seoul: {}", timezone, e.getMessage());
+                        calendarZoneId = DEFAULT_ZONE;
                 }
         }
 

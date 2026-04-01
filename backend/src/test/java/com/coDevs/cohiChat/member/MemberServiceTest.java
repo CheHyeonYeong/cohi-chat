@@ -42,6 +42,7 @@ import io.jsonwebtoken.JwtException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -601,6 +602,12 @@ class MemberServiceTest {
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings()).hasSize(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("GUEST");
+
+		var booking = result.getAffectedBookings().get(0);
+		ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalDate()).isEqualTo(futureDate);
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+		assertThat(booking.getEndedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
 	}
 
 	@Test
@@ -629,6 +636,12 @@ class MemberServiceTest {
 		// then
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("HOST");
+
+		var booking = result.getAffectedBookings().get(0);
+		ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalDate()).isEqualTo(futureDate);
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+		assertThat(booking.getEndedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
 	}
 
 	@Test
