@@ -173,7 +173,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         SELECT b FROM Booking b
         JOIN FETCH b.timeSlot t
         WHERE b.guestId = :userId OR t.userId = :userId
-        ORDER BY b.bookingDate DESC
+        ORDER BY b.bookingDate DESC, t.startTime DESC
         """,
         countQuery = """
         SELECT COUNT(DISTINCT b) FROM Booking b
