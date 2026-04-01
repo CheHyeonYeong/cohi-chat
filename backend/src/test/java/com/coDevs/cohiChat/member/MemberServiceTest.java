@@ -589,6 +589,7 @@ class MemberServiceTest {
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명", MeetingType.ONLINE, null, null);
 
 		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+		memberService.initZoneId();
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));
@@ -615,6 +616,7 @@ class MemberServiceTest {
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명", MeetingType.ONLINE, null, null);
 
 		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+		memberService.initZoneId();
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
 		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));

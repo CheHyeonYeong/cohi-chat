@@ -29,6 +29,8 @@ import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 
+import jakarta.annotation.PostConstruct;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -65,6 +67,23 @@ public class MemberService {
         private final ApplicationEventPublisher eventPublisher;
         private final SmtpEmailValidator smtpEmailValidator;
         private final GoogleCalendarProperties googleCalendarProperties;
+
+        private volatile ZoneId calendarZoneId;
+
+        @PostConstruct
+        void initZoneId() {
+                String timezone = googleCalendarProperties.getTimezone();
+                if (timezone == null) {
+                        calendarZoneId = ZoneId.systemDefault();
+                        return;
+                }
+                try {
+                        calendarZoneId = ZoneId.of(timezone);
+                } catch (Exception e) {
+                        log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
+                        calendarZoneId = ZoneId.systemDefault();
+                }
+        }
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
@@ -226,9 +245,7 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                String timezone = googleCalendarProperties.getTimezone();
-                ZoneId zoneId = (timezone != null) ? ZoneId.of(timezone) : ZoneId.systemDefault();
-                return AffectedBookingDTO.from(booking, role, zoneId);
+                return AffectedBookingDTO.from(booking, role, calendarZoneId);
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {
