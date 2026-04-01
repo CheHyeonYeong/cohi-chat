@@ -165,4 +165,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         """)
     Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
+    /**
+     * 사용자가 게스트 또는 호스트인 모든 예약을 통합 조회 (예약 날짜 내림차순)
+     * FETCH JOIN으로 N+1 문제 방지
+     */
+    @Query(value = """
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE b.guestId = :userId OR t.userId = :userId
+        ORDER BY b.bookingDate DESC, t.startTime DESC
+        """,
+        countQuery = """
+        SELECT COUNT(DISTINCT b) FROM Booking b
+        JOIN b.timeSlot t
+        WHERE b.guestId = :userId OR t.userId = :userId
+        """)
+    Page<Booking> findAllMyBookings(@Param("userId") UUID userId, Pageable pageable);
+
 }

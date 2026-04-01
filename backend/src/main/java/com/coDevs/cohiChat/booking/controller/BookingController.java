@@ -26,6 +26,7 @@ import com.coDevs.cohiChat.booking.request.NoShowReportRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingWithRoleResponseDTO;
 import com.coDevs.cohiChat.global.response.ApiResponseDTO;
 import com.coDevs.cohiChat.member.MemberService;
 import com.coDevs.cohiChat.member.entity.Member;
@@ -79,6 +80,22 @@ public class BookingController {
     ) {
         Member member = memberService.getMember(userDetails.getUsername());
         BookingResponseDTO response = bookingService.getBookingById(bookingId, member.getId());
+        return ResponseEntity.ok(ApiResponseDTO.success(response));
+    }
+
+    @Operation(summary = "내 예약 통합 조회", description = "내가 게스트 또는 호스트인 모든 예약을 통합 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponseDTO<PaginatedBookingWithRoleResponseDTO>> getAllMyBookings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Member member = memberService.getMember(userDetails.getUsername());
+        PaginatedBookingWithRoleResponseDTO response = bookingService.getAllMyBookingsPaginated(member.getId(), page, size);
         return ResponseEntity.ok(ApiResponseDTO.success(response));
     }
 

@@ -32,8 +32,10 @@ import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.BookingWithRoleResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingWithRoleResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -247,6 +249,14 @@ public class BookingService {
         return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
     }
 
+    @Transactional(readOnly = true)
+    public PaginatedBookingWithRoleResponseDTO getAllMyBookingsPaginated(UUID userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findAllMyBookings(userId, pageable);
+        List<BookingWithRoleResponseDTO> bookings = toBookingWithRoleResponseDTOs(bookingPage.getContent(), userId);
+        return PaginatedBookingWithRoleResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
+    }
+
     /**
      * 예약 스트림을 처리하며 100개 단위로 영속성 컨텍스트에서 detach하여 메모리 효율을 개선합니다.
      */
@@ -285,33 +295,63 @@ public class BookingService {
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
-        List<UUID> hostIds = bookings.stream()
-            .map(b -> b.getTimeSlot().getUserId())
-            .distinct()
-            .toList();
-        Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
-            .collect(Collectors.toMap(Member::getId, m -> m));
-
-        List<UUID> guestIds = bookings.stream()
-            .map(Booking::getGuestId)
-            .distinct()
-            .toList();
-        Map<UUID, Member> guestMap = memberRepository.findAllById(guestIds).stream()
-            .collect(Collectors.toMap(Member::getId, m -> m));
+        var memberMaps = fetchMemberMaps(bookings);
 
         return bookings.stream()
             .map(b -> {
-                Member host = hostMap.get(b.getTimeSlot().getUserId());
-                String hostUsername = host != null ? host.getUsername() : null;
-                String hostDisplayName = host != null ? host.getDisplayName() : null;
+                var host = memberMaps.hosts().get(b.getTimeSlot().getUserId());
+                var guest = memberMaps.guests().get(b.getGuestId());
 
-                Member guest = guestMap.get(b.getGuestId());
-                String guestUsername = guest != null ? guest.getUsername() : null;
-                String guestDisplayName = guest != null ? guest.getDisplayName() : null;
-
-                return BookingResponseDTO.from(b, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+                return BookingResponseDTO.from(
+                    b,
+                    host != null ? host.getUsername() : null,
+                    host != null ? host.getDisplayName() : null,
+                    guest != null ? guest.getUsername() : null,
+                    guest != null ? guest.getDisplayName() : null
+                );
             })
             .toList();
+    }
+
+    private List<BookingWithRoleResponseDTO> toBookingWithRoleResponseDTOs(List<Booking> bookings, UUID userId) {
+        var memberMaps = fetchMemberMaps(bookings);
+
+        return bookings.stream()
+            .map(b -> {
+                var host = memberMaps.hosts().get(b.getTimeSlot().getUserId());
+                var guest = memberMaps.guests().get(b.getGuestId());
+                var role = b.getGuestId().equals(userId) ? "guest" : "host";
+
+                return BookingWithRoleResponseDTO.from(
+                    b,
+                    host != null ? host.getUsername() : null,
+                    host != null ? host.getDisplayName() : null,
+                    guest != null ? guest.getUsername() : null,
+                    guest != null ? guest.getDisplayName() : null,
+                    role
+                );
+            })
+            .toList();
+    }
+
+    private record MemberMaps(Map<UUID, Member> hosts, Map<UUID, Member> guests) {}
+
+    private MemberMaps fetchMemberMaps(List<Booking> bookings) {
+        var hostIds = bookings.stream()
+            .map(b -> b.getTimeSlot().getUserId())
+            .distinct()
+            .toList();
+        var hostMap = memberRepository.findAllById(hostIds).stream()
+            .collect(Collectors.toMap(Member::getId, m -> m));
+
+        var guestIds = bookings.stream()
+            .map(Booking::getGuestId)
+            .distinct()
+            .toList();
+        var guestMap = memberRepository.findAllById(guestIds).stream()
+            .collect(Collectors.toMap(Member::getId, m -> m));
+
+        return new MemberMaps(hostMap, guestMap);
     }
 
     @Transactional

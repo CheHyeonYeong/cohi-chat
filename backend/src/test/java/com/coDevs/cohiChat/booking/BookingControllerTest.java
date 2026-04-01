@@ -36,8 +36,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.BookingWithRoleResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
 import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingWithRoleResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -349,6 +351,87 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.data.bookings[0].topic").value("기술 면접"))
             .andExpect(jsonPath("$.data.totalCount").value(1))
             .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    // ===== 내 예약 통합 조회 테스트 (Issue #449) =====
+
+    @Test
+    @DisplayName("성공: 내 예약 통합 조회 - 200 OK (guest + host 역할 포함)")
+    void getAllMyBookingsSuccess() throws Exception {
+        // given
+        UUID hostId = UUID.randomUUID();
+        BookingWithRoleResponseDTO guestBooking = new BookingWithRoleResponseDTO(
+            1L, TIME_SLOT_ID, GUEST_ID, hostId,
+            toInstant(FUTURE_DATE, 10, 0), toInstant(FUTURE_DATE, 11, 0),
+            "게스트로 신청한 예약", "설명1", AttendanceStatus.SCHEDULED, null, Instant.now(),
+            "hostUser", "Host Name", "guestUser", "Guest Name",
+            null, null, null, "guest"
+        );
+        BookingWithRoleResponseDTO hostBooking = new BookingWithRoleResponseDTO(
+            2L, TIME_SLOT_ID, UUID.randomUUID(), GUEST_ID,
+            toInstant(FUTURE_DATE, 14, 0), toInstant(FUTURE_DATE, 15, 0),
+            "호스트로 받은 예약", "설명2", AttendanceStatus.SCHEDULED, null, Instant.now(),
+            "myUser", "My Name", "otherGuest", "Other Guest",
+            null, null, null, "host"
+        );
+
+        PaginatedBookingWithRoleResponseDTO response = PaginatedBookingWithRoleResponseDTO.of(
+            List.of(guestBooking, hostBooking), 2, 1, 10
+        );
+        given(bookingService.getAllMyBookingsPaginated(GUEST_ID, 1, 10)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/bookings/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.bookings").isArray())
+            .andExpect(jsonPath("$.data.bookings.length()").value(2))
+            .andExpect(jsonPath("$.data.bookings[0].id").value(1))
+            .andExpect(jsonPath("$.data.bookings[0].role").value("guest"))
+            .andExpect(jsonPath("$.data.bookings[1].id").value(2))
+            .andExpect(jsonPath("$.data.bookings[1].role").value("host"))
+            .andExpect(jsonPath("$.data.totalCount").value(2))
+            .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    @Test
+    @DisplayName("성공: 내 예약 통합 조회 - 빈 목록")
+    void getAllMyBookingsEmptyList() throws Exception {
+        // given
+        PaginatedBookingWithRoleResponseDTO response = PaginatedBookingWithRoleResponseDTO.of(
+            List.of(), 0, 1, 10
+        );
+        given(bookingService.getAllMyBookingsPaginated(GUEST_ID, 1, 10)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/bookings/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.bookings").isArray())
+            .andExpect(jsonPath("$.data.bookings").isEmpty())
+            .andExpect(jsonPath("$.data.totalCount").value(0));
+    }
+
+    @Test
+    @DisplayName("성공: 내 예약 통합 조회 - 페이지네이션 파라미터 적용")
+    void getAllMyBookingsWithPagination() throws Exception {
+        // given
+        PaginatedBookingWithRoleResponseDTO response = PaginatedBookingWithRoleResponseDTO.of(
+            List.of(), 0, 2, 5
+        );
+        given(bookingService.getAllMyBookingsPaginated(GUEST_ID, 2, 5)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/bookings/me")
+                .param("page", "2")
+                .param("size", "5"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.page").value(2))
+            .andExpect(jsonPath("$.data.size").value(5));
+
+        // then - 올바른 파라미터로 서비스가 호출되었는지 검증
+        verify(bookingService).getAllMyBookingsPaginated(GUEST_ID, 2, 5);
     }
 
     @Test
