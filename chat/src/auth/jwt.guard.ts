@@ -39,7 +39,9 @@ export class JwtGuard implements CanActivate {
 
   private extractToken(request: FastifyRequest): string | null {
     const authHeader = request.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return null;
-    return authHeader.slice(7);
+    if (!authHeader) return null;
+
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    return match?.[1]?.trim() || null;
   }
 }

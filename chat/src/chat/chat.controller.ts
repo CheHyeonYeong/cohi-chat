@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -98,11 +99,7 @@ export class ChatController {
     @Request() req: FastifyRequest,
   ) {
     const username = this.getUsername(req);
-    const parsedSize = Number.parseInt(size ?? '', 10);
-    const pageSize =
-      Number.isNaN(parsedSize) || parsedSize <= 0
-        ? DEFAULT_PAGE_SIZE
-        : Math.min(parsedSize, MAX_PAGE_SIZE);
+    const pageSize = this.parsePageSize(size);
 
     return this.chatService.getMessages(roomId, username, cursor, pageSize);
   }
@@ -142,5 +139,20 @@ export class ChatController {
     }
 
     return user.sub;
+  }
+
+  private parsePageSize(size: string | undefined): number {
+    const normalizedSize = size?.trim();
+    if (!normalizedSize) {
+      return DEFAULT_PAGE_SIZE;
+    }
+
+    const parsedSize = Number(normalizedSize);
+    if (!Number.isSafeInteger(parsedSize) || parsedSize < 1) {
+      throw new BadRequestException('size must be a positive integer.');
+    }
+
+    // 50 keeps the initial chat history page readable, while 100 caps payload and query cost.
+    return Math.min(parsedSize, MAX_PAGE_SIZE);
   }
 }

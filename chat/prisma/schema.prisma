@@ -48,7 +48,6 @@ model RoomMember {
 
   @@unique([roomId, memberId], map: "uq_room_member")
   @@index([roomId], map: "idx_room_member_room_id")
-  @@index([memberId], map: "idx_room_member_member_id")
   @@map("room_member")
 }
 

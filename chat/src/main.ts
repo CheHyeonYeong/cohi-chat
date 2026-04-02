@@ -3,6 +3,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -22,12 +23,23 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
   const configService = app.get(ConfigService);
-  const corsAllowedOrigins =
+  const configuredCorsAllowedOrigins =
     configService
       .get<string>('APP_AUTH_CORS_ALLOWED_ORIGINS')
       ?.split(',')
       .map((origin) => origin.trim())
-      .filter(Boolean) ?? DEFAULT_ALLOWED_ORIGINS;
+      .filter(Boolean) ?? [];
+  const corsAllowedOrigins =
+    configuredCorsAllowedOrigins.length > 0
+      ? configuredCorsAllowedOrigins
+      : DEFAULT_ALLOWED_ORIGINS;
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
 
   app.enableCors({
     origin: corsAllowedOrigins,

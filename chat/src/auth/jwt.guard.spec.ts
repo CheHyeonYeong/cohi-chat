@@ -42,4 +42,21 @@ describe('JwtGuard', () => {
       guard.canActivate(createContext(request)),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it('accepts lowercase bearer schemes', async () => {
+    const verifyAsync = jest
+      .fn()
+      .mockResolvedValue({ sub: 'tester', role: 'GUEST' });
+    const guard = new JwtGuard({ verifyAsync } as unknown as JwtService);
+    const request = {
+      headers: {
+        authorization: 'bearer token-value',
+      },
+    } as FastifyRequest;
+
+    await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
+    expect(verifyAsync).toHaveBeenCalledWith('token-value', {
+      algorithms: ['HS256', 'HS384', 'HS512'],
+    });
+  });
 });
