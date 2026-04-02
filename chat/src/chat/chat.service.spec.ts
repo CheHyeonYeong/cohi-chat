@@ -169,16 +169,17 @@ describe('ChatService', () => {
     expect(prisma.roomMember.findFirst).not.toHaveBeenCalled();
   });
 
-  it('throws 404 when the room does not exist', async () => {
+  it('throws 404 when the room membership is missing', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ room_id: roomId }]);
+    prisma.roomMember.findFirst.mockResolvedValue(null);
 
     await expect(
       service.markRoomAsRead(username, roomId),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    expect(prisma.roomMember.findFirst).not.toHaveBeenCalled();
+    expect(prisma.roomMember.findFirst).toHaveBeenCalled();
   });
 
   it('counts only messages after the last read cursor', async () => {
