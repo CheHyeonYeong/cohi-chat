@@ -58,7 +58,7 @@ model Message {
   content     String?   @db.VarChar(2000)
   payload     Json?
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  cursorSeq   BigInt    @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
+  cursorSeq   BigInt    @default(autoincrement()) @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
 
   @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
   @@index([roomId, cursorSeq(sort: Desc)], map: "idx_message_room_id_cursor_seq")
