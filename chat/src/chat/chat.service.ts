@@ -39,7 +39,10 @@ export class ChatService {
           COALESCE(m.display_name, m.username, '') AS display_name,
           m.profile_image_url
         FROM room_member rm
-        LEFT JOIN member m ON m.id = rm.member_id
+        JOIN member m
+          ON m.id = rm.member_id
+         AND m.is_deleted = false
+         AND m.is_banned = false
         WHERE rm.room_id = cr.id
           AND rm.member_id != CAST(${memberId} AS UUID)
           AND rm.deleted_at IS NULL
@@ -154,7 +157,9 @@ export class ChatService {
       ? Prisma.sql`id = CAST(${memberIdentifier} AS UUID)`
       : Prisma.sql`username = ${memberIdentifier}`;
 
-    const members = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    const members = await this.prisma.$queryRaw<
+      Array<{ id: string }>
+    >(Prisma.sql`
       SELECT id::text AS id
       FROM member
       WHERE ${lookupCondition}
@@ -199,6 +204,9 @@ export class ChatService {
 
   private async findLastMessage(roomId: string) {
     return this.prisma.message.findFirst({
+      select: {
+        id: true,
+      },
       where: {
         roomId,
       },
