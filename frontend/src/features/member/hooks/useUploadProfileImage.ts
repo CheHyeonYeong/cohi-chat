@@ -4,10 +4,10 @@ import {
     confirmProfileImageUploadApi,
 } from '../api';
 
-const uploadToS3 = async (uploadUrl: string, file: File): Promise<void> => {
+const uploadToS3 = async (uploadUrl: string, file: File, contentType: string): Promise<void> => {
     const response = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type },
+        headers: { 'Content-Type': contentType },
         body: file,
     });
 
@@ -21,13 +21,13 @@ export const useUploadProfileImage = () => {
 
     return useMutation({
         mutationFn: async (file: File) => {
-            const { uploadUrl, objectKey } = await getProfileImagePresignedUrlApi({
+            const { uploadUrl, objectKey, contentType } = await getProfileImagePresignedUrlApi({
                 fileName: file.name,
                 contentType: file.type,
                 fileSize: file.size,
             });
 
-            await uploadToS3(uploadUrl, file);
+            await uploadToS3(uploadUrl, file, contentType);
 
             return confirmProfileImageUploadApi({ objectKey });
         },
