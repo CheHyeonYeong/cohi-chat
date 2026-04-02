@@ -11,8 +11,6 @@ import {
     useUpdateTimeslot,
 } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
-import { useAuth, useUpdateProfile } from '~/features/member';
-import { useHost } from '~/hooks/useHost';
 import type { TimeSlotEntry } from '~/features/host/components/timeslot/TimeSlotForm';
 
 const {
@@ -125,15 +123,6 @@ vi.mock('~/features/host', () => ({
     useMyTimeslots: vi.fn(),
 }));
 
-vi.mock('~/features/member', () => ({
-    useAuth: vi.fn(),
-    useUpdateProfile: vi.fn(),
-}));
-
-vi.mock('~/hooks/useHost', () => ({
-    useHost: vi.fn(),
-}));
-
 const makeTimeslot = (overrides: Partial<TimeSlotResponse> = {}): TimeSlotResponse => ({
     id: 101,
     userId: 'tester',
@@ -149,21 +138,6 @@ const makeTimeslot = (overrides: Partial<TimeSlotResponse> = {}): TimeSlotRespon
 
 beforeEach(() => {
     vi.clearAllMocks();
-
-    vi.mocked(useAuth).mockReturnValue({
-        data: { username: 'tester' },
-    } as unknown as ReturnType<typeof useAuth>);
-
-    vi.mocked(useHost).mockReturnValue({
-        data: null,
-    } as unknown as ReturnType<typeof useHost>);
-
-    vi.mocked(useUpdateProfile).mockReturnValue({
-        mutateAsync: vi.fn(),
-        isPending: false,
-        isError: false,
-        error: null,
-    } as unknown as ReturnType<typeof useUpdateProfile>);
 
     vi.mocked(useMyTimeslots).mockReturnValue({
         data: [],

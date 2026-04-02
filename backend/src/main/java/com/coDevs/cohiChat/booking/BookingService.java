@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -55,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
     private static final long NO_SHOW_BAN_THRESHOLD = 20;
 
     private final BookingRepository bookingRepository;
@@ -71,15 +73,16 @@ public class BookingService {
     @PostConstruct
     void initZoneId() {
         String timezone = googleCalendarProperties.getTimezone();
-        if (timezone == null) {
-            calendarZoneId = ZoneId.systemDefault();
+        if (timezone == null || timezone.isBlank()) {
+            log.warn("Google calendar timezone is not configured. Falling back to default timezone: {}", DEFAULT_ZONE);
+            calendarZoneId = DEFAULT_ZONE;
             return;
         }
         try {
             calendarZoneId = ZoneId.of(timezone);
-        } catch (Exception e) {
-            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
-            calendarZoneId = ZoneId.systemDefault();
+        } catch (DateTimeException e) {
+            log.warn("Invalid timezone '{}' in GoogleCalendarProperties. Falling back to default timezone: {}", timezone, DEFAULT_ZONE);
+            calendarZoneId = DEFAULT_ZONE;
         }
     }
 
