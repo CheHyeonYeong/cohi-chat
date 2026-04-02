@@ -60,6 +60,17 @@ public class ProfileImageUploadValidator {
         }
     }
 
+    /**
+     * Content-Type을 정규화하여 반환합니다.
+     * 예: "image/jpeg; charset=utf-8" → "image/jpeg"
+     *
+     * <p>Locale.ROOT를 사용하여 로케일에 독립적인 소문자 변환을 보장합니다.
+     * 표준 MIME 타입은 ASCII만 사용하므로 국제 문자 처리 이슈가 없습니다.</p>
+     *
+     * @param contentType 정규화할 Content-Type
+     * @return 정규화된 Content-Type (소문자, 파라미터 제거)
+     * @throws CustomException contentType이 null, 빈 문자열, 또는 유효하지 않은 형식인 경우
+     */
     public String normalizeContentType(String contentType) {
         if (contentType == null || contentType.isBlank()) {
             throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
