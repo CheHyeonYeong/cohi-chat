@@ -78,6 +78,8 @@ class BookingServiceNoShowExceptionTest {
     @DisplayName("reportHostNoShow rethrows unrelated integrity violations")
     void reportHostNoShowRethrowsOtherIntegrityViolations() {
         Long bookingId = 1L;
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(
             timeSlot,
             GUEST_ID,
@@ -98,7 +100,6 @@ class BookingServiceNoShowExceptionTest {
         );
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
         given(noShowHistoryRepository.save(any(NoShowHistory.class))).willThrow(exception);
 

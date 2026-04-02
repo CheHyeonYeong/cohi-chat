@@ -1458,7 +1458,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(20L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1474,7 +1474,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(19L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1490,7 +1490,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(1L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1506,7 +1506,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(21L);
-        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1554,7 +1554,14 @@ class BookingServiceTest {
         Long bookingId = 1L;
         setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.save(any(NoShowHistory.class)))
-            .willThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+            .willThrow(new org.springframework.dao.DataIntegrityViolationException(
+                "duplicate",
+                new org.hibernate.exception.ConstraintViolationException(
+                    "duplicate",
+                    new java.sql.SQLException("duplicate key"),
+                    "uq_noshow_history_booking_id"
+                )
+            ));
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))

@@ -54,7 +54,7 @@ describe('Timeslots', () => {
 
         render(
             <Timeslots
-                baseDate={new Date('2025-03-17T00:00:00+09:00')}
+                baseDate={new Date('2025-03-17T12:00:00+09:00')}
                 timeslots={timeslots}
                 bookings={bookings}
                 onSelectTimeslot={onSelectTimeslot}
