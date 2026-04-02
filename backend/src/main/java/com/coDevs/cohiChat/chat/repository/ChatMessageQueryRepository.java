@@ -1,6 +1,8 @@
 package com.coDevs.cohiChat.chat.repository;
 
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +33,10 @@ public class ChatMessageQueryRepository {
             return Optional.empty();
         }
 
-        return Optional.of((Instant) rows.get(0));
+        Object raw = rows.get(0);
+        Instant value = raw instanceof OffsetDateTime odt
+            ? odt.toInstant()
+            : ((Timestamp) raw).toInstant();
+        return Optional.of(value);
     }
 }

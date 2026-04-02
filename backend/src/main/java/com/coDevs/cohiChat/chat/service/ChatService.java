@@ -34,14 +34,15 @@ public class ChatService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void createRoomForBooking(Booking booking) {
+    public UUID createRoomForBooking(Booking booking) {
         UUID hostId = booking.getTimeSlot().getUserId();
         UUID guestId = booking.getGuestId();
 
         lockParticipants(hostId, guestId);
 
-        chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
-            .orElseGet(() -> createNewRoom(hostId, guestId));
+        return chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
+            .map(ChatRoom::getId)
+            .orElseGet(() -> createNewRoom(hostId, guestId).getId());
     }
 
     @Transactional(readOnly = true)

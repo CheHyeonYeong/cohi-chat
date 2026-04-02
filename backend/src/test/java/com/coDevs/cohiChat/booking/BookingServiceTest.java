@@ -150,7 +150,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
-        given(chatService.getChatRoomIdByBooking(any(Booking.class))).willReturn(Optional.of(CHAT_ROOM_ID));
+        given(chatService.createRoomForBooking(any(Booking.class))).willReturn(CHAT_ROOM_ID);
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
@@ -261,7 +261,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
-        given(chatService.getChatRoomIdByBooking(any(Booking.class))).willReturn(Optional.of(CHAT_ROOM_ID));
+        given(chatService.createRoomForBooking(any(Booking.class))).willReturn(CHAT_ROOM_ID);
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);

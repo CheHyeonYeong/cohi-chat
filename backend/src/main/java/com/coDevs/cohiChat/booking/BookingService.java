@@ -117,12 +117,12 @@ public class BookingService {
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
-        chatService.createRoomForBooking(savedBooking);
+        UUID chatRoomId = chatService.createRoomForBooking(savedBooking);
 
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());
 
-        return toBookingResponseDTOWithChatRoom(savedBooking);
+        return toBookingResponseDTOWithChatRoom(savedBooking, chatRoomId);
     }
 
     private String buildEventSummary(Member guest) {
@@ -213,10 +213,11 @@ public class BookingService {
 
         validateBookingAccess(booking, requesterId);
 
-        return toBookingResponseDTOWithChatRoom(booking);
+        UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
+        return toBookingResponseDTOWithChatRoom(booking, chatRoomId);
     }
 
-    private BookingResponseDTO toBookingResponseDTOWithChatRoom(Booking booking) {
+    private BookingResponseDTO toBookingResponseDTOWithChatRoom(Booking booking, UUID chatRoomId) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
         String hostUsername = host != null ? host.getUsername() : null;
         String hostDisplayName = host != null ? host.getDisplayName() : null;
@@ -225,7 +226,6 @@ public class BookingService {
         String guestUsername = guest != null ? guest.getUsername() : null;
         String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-        UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
         return BookingResponseDTO.from(
             booking,
             calendarZoneId,
