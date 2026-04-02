@@ -27,29 +27,25 @@ const formatWeekdaySummary = (weekdays: number[]): string => {
     return isConsecutive && sorted.length >= 2 ? `${names[0]}~${names[names.length - 1]}` : names.join(', ');
 };
 
-const normalizeTime = (value?: string | null): string => {
-    return typeof value === 'string' ? value.slice(0, 5) : '';
-};
+const normalizeTime = (value?: string | null): string => (typeof value === 'string' ? value.slice(0, 5) : '');
 
-const readTimeslotStart = (timeslot: TimeSlotResponse): string => {
-    return normalizeTime(
+const readTimeslotStart = (timeslot: TimeSlotResponse): string =>
+    normalizeTime(
         ('startedAt' in timeslot ? timeslot.startedAt : undefined) ??
             ('startTime' in (timeslot as TimeSlotResponse & { startTime?: string })
                 ? (timeslot as TimeSlotResponse & { startTime?: string }).startTime
                 : undefined) ??
             null,
     );
-};
 
-const readTimeslotEnd = (timeslot: TimeSlotResponse): string => {
-    return normalizeTime(
+const readTimeslotEnd = (timeslot: TimeSlotResponse): string =>
+    normalizeTime(
         ('endedAt' in timeslot ? timeslot.endedAt : undefined) ??
             ('endTime' in (timeslot as TimeSlotResponse & { endTime?: string })
                 ? (timeslot as TimeSlotResponse & { endTime?: string }).endTime
                 : undefined) ??
             null,
     );
-};
 
 const toEntry = (timeslot: TimeSlotResponse): TimeSlotEntry | null => {
     const startTime = readTimeslotStart(timeslot);
@@ -66,18 +62,15 @@ const toEntry = (timeslot: TimeSlotResponse): TimeSlotEntry | null => {
     };
 };
 
-const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] => {
-    return timeslots.map(toEntry).filter((entry): entry is TimeSlotEntry => entry != null);
-};
+const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] =>
+    timeslots.map(toEntry).filter((entry): entry is TimeSlotEntry => entry != null);
 
-const buildPayload = (entry: TimeSlotEntry): TimeSlotCreatePayload => {
-    return {
-        startTime: `${entry.startTime}:00`,
-        endTime: `${entry.endTime}:00`,
-        weekdays: entry.weekdays,
-        ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
-    };
-};
+const buildPayload = (entry: TimeSlotEntry): TimeSlotCreatePayload => ({
+    startTime: `${entry.startTime}:00`,
+    endTime: `${entry.endTime}:00`,
+    weekdays: entry.weekdays,
+    ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
+});
 
 const areEntriesEqual = (left: TimeSlotEntry, right: TimeSlotEntry): boolean => {
     const leftWeekdays = [...left.weekdays].sort((a, b) => a - b);
@@ -114,17 +107,13 @@ export const TimeSlotSettings = () => {
     const updateTimeslotMutation = useUpdateTimeslot();
     const deleteTimeslotMutation = useDeleteTimeslot();
 
-    useEffect(() => {
-        return () => {
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-        };
+    useEffect(() => () => {
+        if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
     }, []);
 
     useEffect(() => {
         if (!hostProfile) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setJob(hostProfile.job ?? '');
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setProfileImageUrl(hostProfile.profileImageUrl ?? '');
     }, [hostProfile]);
 

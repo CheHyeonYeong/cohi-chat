@@ -49,6 +49,17 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
         @Param("endDate") LocalDate endDate
     );
 
+    default List<TimeSlot> findOverlappingTimeSlots(
+        UUID userId,
+        LocalTime startTime,
+        LocalTime endTime,
+        List<Integer> weekdays,
+        LocalDate startDate,
+        LocalDate endDate
+    ) {
+        return findOverlappingTimeSlots(userId, null, startTime, endTime, weekdays, startDate, endDate);
+    }
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM TimeSlot t WHERE t.id = :id AND t.deletedAt IS NULL")
     Optional<TimeSlot> findByIdWithLock(@Param("id") Long id);

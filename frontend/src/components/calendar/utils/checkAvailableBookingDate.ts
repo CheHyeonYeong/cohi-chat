@@ -29,10 +29,7 @@ const isBookingOnDate = (
         && bookingStart.getDate() === day;
 };
 
-const parseTimeToMinutes = (time: string): number => {
-    const [hour, minute] = time.split(':');
-    return Number(hour) * 60 + Number(minute);
-};
+const parseTimeToMinutes = (time: string): number => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
 
 export const isTimeslotBookedOnDate = (
     timeslot: ITimeSlot,
