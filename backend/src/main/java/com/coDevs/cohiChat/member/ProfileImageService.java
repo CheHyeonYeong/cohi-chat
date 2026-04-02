@@ -43,13 +43,12 @@ public class ProfileImageService {
             long fileSize
     ) {
         validator.validate(fileName, contentType, fileSize);
-        var normalizedContentType = validator.normalizeContentType(contentType);
 
         var member = findMemberByUsername(username);
         var objectKey = generateObjectKey(member.getId(), fileName);
-        var uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, normalizedContentType);
+        var uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, contentType);
 
-        return ProfileImageUploadResponseDTO.of(uploadUrl, objectKey, normalizedContentType);
+        return ProfileImageUploadResponseDTO.of(uploadUrl, objectKey);
     }
 
     /**

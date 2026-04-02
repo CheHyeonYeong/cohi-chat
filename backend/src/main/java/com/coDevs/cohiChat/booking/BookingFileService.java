@@ -150,7 +150,7 @@ public class BookingFileService {
             )
         );
 
-        return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS, normalizedContentType);
+        return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS);
     }
 
     @Transactional(readOnly = true)
