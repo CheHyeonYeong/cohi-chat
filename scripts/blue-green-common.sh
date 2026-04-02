@@ -147,7 +147,7 @@ switch_upstream() {
     cat > "$NGINX_UPSTREAM_FILE" <<EOF
 # Blue-Green deployment upstream target
 upstream backend {
-    server backend-${target}:8080;
+    server cohi-chat-backend-${target}:8080;
 }
 EOF
 
