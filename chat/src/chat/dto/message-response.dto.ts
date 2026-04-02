@@ -10,6 +10,9 @@ type MessageLike = {
   createdAt: Date;
 };
 
+const NEXT_CURSOR_EXAMPLE =
+  'eyJjcmVhdGVkQXQiOiIyMDI2LTAzLTMxVDAwOjAwOjAwLjEyMzAwMVoiLCJpZCI6IjExMTExMTExLTExMTEtNDExMS04MTExLTExMTExMTExMTExMSJ9';
+
 export class MessageDto {
   @ApiProperty({ example: 'uuid-v4', description: 'Message UUID' })
   id: string;
@@ -72,9 +75,9 @@ export class MessagePageResponse {
 
   @ApiProperty({
     nullable: true,
-    example: '2026-03-28T23:59:00.000Z',
+    example: NEXT_CURSOR_EXAMPLE,
     description:
-      'Cursor for the next page. null when there are no older messages.',
+      'Opaque cursor for the next page. Pass back the value returned by the previous response. null when there are no older messages.',
   })
   nextCursor: string | null;
 }

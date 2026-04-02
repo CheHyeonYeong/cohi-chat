@@ -112,6 +112,7 @@ Expected results:
 
 - the first page returns the newest messages first
 - the next page continues with older messages
+- `nextCursor` is an opaque value returned by the previous response
 - `nextCursor: null` means there are no older messages left
 
 ### 6. Validate error cases

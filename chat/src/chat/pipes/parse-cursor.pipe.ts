@@ -1,27 +1,25 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-
-const ISO_8601_CURSOR_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+import {
+  decodeMessageCursor,
+  INVALID_CURSOR_MESSAGE,
+  MessageCursor,
+} from '../message-cursor';
 
 @Injectable()
 export class ParseCursorPipe implements PipeTransform<
   string | undefined,
-  Date | undefined
+  MessageCursor | undefined
 > {
-  transform(value: string | undefined): Date | undefined {
+  transform(value: string | undefined): MessageCursor | undefined {
     if (value === undefined || value === '') {
       return undefined;
     }
 
-    if (!ISO_8601_CURSOR_PATTERN.test(value)) {
-      throw new BadRequestException('cursor must be an ISO 8601 date string.');
+    const cursor = decodeMessageCursor(value);
+    if (!cursor) {
+      throw new BadRequestException(INVALID_CURSOR_MESSAGE);
     }
 
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException('cursor must be an ISO 8601 date string.');
-    }
-
-    return date;
+    return cursor;
   }
 }

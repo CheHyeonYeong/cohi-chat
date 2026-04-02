@@ -26,6 +26,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ChatService } from './chat.service';
+import { MessageCursor } from './message-cursor';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -33,6 +34,8 @@ import { ParseCursorPipe } from './pipes/parse-cursor.pipe';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
+const CURSOR_EXAMPLE =
+  'eyJjcmVhdGVkQXQiOiIyMDI2LTAzLTMxVDAwOjAwOjAwLjEyMzAwMVoiLCJpZCI6IjExMTExMTExLTExMTEtNDExMS04MTExLTExMTExMTExMTExMSJ9';
 
 @ApiTags('chat')
 @ApiBearerAuth('jwtAuth')
@@ -43,16 +46,18 @@ export class ChatController {
 
   @Get('rooms')
   @ApiOperation({
-    summary: '채팅방 목록 조회',
+    summary: 'Get chat rooms',
     description:
-      '내가 속한 채팅방 목록과 상대방 정보, 마지막 메시지, unread 수를 반환합니다. 메시지가 없는 방은 lastMessage가 null입니다.',
+      'Returns the authenticated user\'s room list with counterpart info, last message, and unread counts. lastMessage is null when the room has no messages.',
   })
   @ApiOkResponse({
-    description: '채팅방 목록 조회 성공',
+    description: 'Successfully fetched the chat room list.',
     type: RoomResponseDto,
     isArray: true,
   })
-  @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
+  @ApiUnauthorizedResponse({
+    description: 'A valid Bearer JWT is required.',
+  })
   async getRooms(@Request() req: FastifyRequest): Promise<RoomResponseDto[]> {
     return this.chatService.getRooms(this.getUsername(req));
   }
@@ -60,41 +65,42 @@ export class ChatController {
   @Get('rooms/:roomId/messages')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '메시지 목록 조회',
+    summary: 'Get room messages',
     description:
-      '특정 채팅방의 메시지를 최신순으로 조회합니다. nextCursor를 사용하면 이전 페이지를 이어서 조회할 수 있습니다.',
+      'Returns room messages in reverse chronological order. Use nextCursor to continue fetching older pages.',
   })
   @ApiParam({
     name: 'roomId',
-    description: '조회할 채팅방 UUID',
+    description: 'Chat room UUID.',
     example: '11111111-1111-1111-1111-111111111111',
   })
   @ApiQuery({
     name: 'cursor',
     required: false,
-    description: '이전 페이지 조회용 ISO 8601 커서',
-    example: '2026-03-28T23:59:00.000Z',
+    description:
+      'Opaque cursor copied from the previous response\'s nextCursor value.',
+    example: CURSOR_EXAMPLE,
   })
   @ApiQuery({
     name: 'size',
     required: false,
-    description: `페이지 크기. 기본 ${DEFAULT_PAGE_SIZE}, 최대 ${MAX_PAGE_SIZE}`,
+    description: `Page size. Default ${DEFAULT_PAGE_SIZE}, maximum ${MAX_PAGE_SIZE}.`,
     example: DEFAULT_PAGE_SIZE,
   })
   @ApiResponse({
     status: 200,
     type: MessagePageResponse,
-    description: '메시지 목록과 다음 페이지 cursor를 반환합니다.',
+    description: 'Returns messages and the next page cursor.',
   })
   @ApiResponse({
     status: 400,
-    description: 'roomId 또는 cursor 형식이 잘못되었습니다.',
+    description: 'roomId or cursor format is invalid.',
   })
-  @ApiResponse({ status: 401, description: '유효한 Bearer JWT가 필요합니다.' })
-  @ApiResponse({ status: 403, description: '해당 채팅방 멤버가 아닙니다.' })
+  @ApiResponse({ status: 401, description: 'A valid Bearer JWT is required.' })
+  @ApiResponse({ status: 403, description: 'The user is not a member of the room.' })
   async getMessages(
     @Param('roomId', ParseUUIDPipe) roomId: string,
-    @Query('cursor', ParseCursorPipe) cursor: Date | undefined,
+    @Query('cursor', ParseCursorPipe) cursor: MessageCursor | undefined,
     @Query('size') size: string | undefined,
     @Request() req: FastifyRequest,
   ) {
@@ -107,22 +113,22 @@ export class ChatController {
   @Post('rooms/:roomId/messages')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: '메시지 전송',
+    summary: 'Send a message',
     description:
-      '채팅방 멤버가 텍스트 메시지를 전송합니다. content는 trim 후 저장되고 공백-only 입력은 거부됩니다.',
+      'Sends a text message to a room. content is trimmed before save and whitespace-only input is rejected.',
   })
   @ApiParam({
     name: 'roomId',
-    description: '메시지를 전송할 채팅방 UUID',
+    description: 'Chat room UUID to send the message to.',
     example: '11111111-1111-1111-1111-111111111111',
   })
-  @ApiResponse({ status: 201, type: MessageDto, description: '저장된 메시지' })
+  @ApiResponse({ status: 201, type: MessageDto, description: 'Stored message.' })
   @ApiResponse({
     status: 400,
-    description: 'roomId 형식이 잘못됐거나 메시지 내용이 비어 있습니다.',
+    description: 'roomId is invalid or the message content is empty.',
   })
-  @ApiResponse({ status: 401, description: '유효한 Bearer JWT가 필요합니다.' })
-  @ApiResponse({ status: 403, description: '해당 채팅방 멤버가 아닙니다.' })
+  @ApiResponse({ status: 401, description: 'A valid Bearer JWT is required.' })
+  @ApiResponse({ status: 403, description: 'The user is not a member of the room.' })
   async sendMessage(
     @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() dto: SendMessageDto,
@@ -135,7 +141,7 @@ export class ChatController {
     const user = request.user;
 
     if (!user?.sub) {
-      throw new UnauthorizedException('유효한 인증 정보가 없습니다.');
+      throw new UnauthorizedException('Authenticated user info is missing.');
     }
 
     return user.sub;

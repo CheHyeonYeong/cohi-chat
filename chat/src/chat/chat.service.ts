@@ -6,6 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  encodeMessageCursor,
+  MessageCursor,
+} from './message-cursor';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -20,6 +24,7 @@ type MessageRow = {
   content: string | null;
   payload: unknown;
   createdAt: Date;
+  cursorCreatedAt: string;
 };
 
 @Injectable()
@@ -103,19 +108,7 @@ export class ChatService {
   ): Promise<MessageDto> {
     const normalizedContent = this.normalizeContent(dto.content);
     const memberId = await this.resolveMemberId(username);
-
-    const roomMember = await this.prisma.roomMember.findFirst({
-      where: {
-        roomId,
-        memberId,
-        deletedAt: null,
-      },
-      select: { id: true },
-    });
-
-    if (!roomMember) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
+    const roomMember = await this.ensureActiveRoomMember(roomId, memberId);
 
     const savedMessage = await this.prisma.$transaction(async (tx) => {
       const message = await tx.message.create({
@@ -141,23 +134,11 @@ export class ChatService {
   async getMessages(
     roomId: string,
     username: string,
-    cursor: Date | undefined,
+    cursor: MessageCursor | undefined,
     size: number,
   ): Promise<MessagePageResponse> {
     const memberId = await this.resolveMemberId(username);
-
-    const member = await this.prisma.roomMember.findFirst({
-      where: {
-        roomId,
-        memberId,
-        deletedAt: null,
-      },
-      select: { id: true },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
+    await this.ensureActiveRoomMember(roomId, memberId);
 
     const rows = await this.fetchMessagesPage(roomId, cursor, size);
     return {
@@ -183,6 +164,29 @@ export class ChatService {
     return member.id;
   }
 
+  private async ensureActiveRoomMember(
+    roomId: string,
+    memberId: string,
+  ): Promise<{ id: string }> {
+    const roomMember = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+        room: {
+          isDisabled: false,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!roomMember) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    return roomMember;
+  }
+
   private normalizeContent(content: unknown): string {
     if (typeof content !== 'string') {
       throw new BadRequestException('Message content must be a string.');
@@ -205,7 +209,7 @@ export class ChatService {
 
   private async fetchMessagesPage(
     roomId: string,
-    cursor: Date | undefined,
+    cursor: MessageCursor | undefined,
     size: number,
   ): Promise<{ messages: MessageRow[]; nextCursor: string | null }> {
     const rows = await this.fetchMessagesBatch(roomId, cursor, size + 1);
@@ -214,61 +218,53 @@ export class ChatService {
       return { messages: rows, nextCursor: null };
     }
 
-    const boundaryTime = rows[size - 1].createdAt;
-    let extendedRows = rows;
-    let firstOlderIndex = extendedRows.findIndex(
-      (row) => row.createdAt.getTime() < boundaryTime.getTime(),
-    );
-
-    while (firstOlderIndex === -1) {
-      const lastRow = extendedRows[extendedRows.length - 1];
-      const nextBatch = await this.fetchMessagesBatch(
-        roomId,
-        cursor,
-        size + 1,
-        lastRow,
-      );
-
-      if (nextBatch.length === 0) {
-        return { messages: extendedRows, nextCursor: null };
-      }
-
-      extendedRows = [...extendedRows, ...nextBatch];
-      firstOlderIndex = extendedRows.findIndex(
-        (row) => row.createdAt.getTime() < boundaryTime.getTime(),
-      );
-    }
+    const pageRows = rows.slice(0, size);
+    const lastVisibleRow = pageRows[pageRows.length - 1];
 
     return {
-      messages: extendedRows.slice(0, firstOlderIndex),
-      nextCursor: boundaryTime.toISOString(),
+      messages: pageRows,
+      nextCursor: encodeMessageCursor({
+        createdAt: lastVisibleRow.cursorCreatedAt,
+        id: lastVisibleRow.id,
+      }),
     };
   }
 
   private async fetchMessagesBatch(
     roomId: string,
-    cursor: Date | undefined,
+    cursor: MessageCursor | undefined,
     take: number,
-    after?: { createdAt: Date; id: string },
   ): Promise<MessageRow[]> {
-    return this.prisma.message.findMany({
-      where: {
-        roomId,
-        ...(cursor ? { createdAt: { lt: cursor } } : {}),
-        ...(after
-          ? {
-              OR: [
-                { createdAt: { lt: after.createdAt } },
-                {
-                  createdAt: after.createdAt,
-                  id: { lt: after.id },
-                },
-              ],
-            }
-          : {}),
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take,
-    });
+    const cursorFilter = cursor
+      ? Prisma.sql`
+          AND (
+            m.created_at < ${cursor.createdAt}::timestamptz
+            OR (
+              m.created_at = ${cursor.createdAt}::timestamptz
+              AND m.id < ${cursor.id}::uuid
+            )
+          )
+        `
+      : Prisma.empty;
+
+    return this.prisma.$queryRaw<MessageRow[]>(Prisma.sql`
+      SELECT
+        m.id,
+        m.room_id AS "roomId",
+        m.sender_id AS "senderId",
+        m.message_type AS "messageType",
+        m.content,
+        m.payload,
+        m.created_at AS "createdAt",
+        to_char(
+          m.created_at AT TIME ZONE 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        ) AS "cursorCreatedAt"
+      FROM message m
+      WHERE m.room_id = ${roomId}::uuid
+      ${cursorFilter}
+      ORDER BY m.created_at DESC, m.id DESC
+      LIMIT ${take}
+    `);
   }
 }
