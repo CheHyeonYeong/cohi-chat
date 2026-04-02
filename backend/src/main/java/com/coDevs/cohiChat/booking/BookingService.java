@@ -16,6 +16,9 @@ import java.util.stream.Stream;
 import jakarta.persistence.EntityManager;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
+import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -96,7 +100,10 @@ public class BookingService {
             guest.getId(),
             request.getBookingDate(),
             request.getTopic(),
-            request.getDescription()
+            request.getDescription(),
+            request.getMeetingType(),
+            request.getLocation(),
+            request.getMeetingLink()
         );
 
         Booking savedBooking = bookingRepository.save(booking);
@@ -125,15 +132,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * 예약 날짜의 요일이 타임슬롯에서 허용하는 요일인지 검증
-     *
-     * 요일 매핑 (일요일 = 0 기준):
-     * - 일=0, 월=1, 화=2, 수=3, 목=4, 금=5, 토=6
-     *
-     * Java DayOfWeek.getValue(): 월=1, 화=2, ..., 일=7
-     * 변환: (dayOfWeek.getValue() % 7) -> 일=0, 월=1, ..., 토=6
-     */
     private void validateWeekdayAvailable(TimeSlot timeSlot, LocalDate bookingDate) {
         int weekday = convertToSundayBasedWeekday(bookingDate.getDayOfWeek());
         if (!timeSlot.getWeekdays().contains(weekday)) {
@@ -141,11 +139,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * Java DayOfWeek를 일요일=0 기준 요일 숫자로 변환
-     * @param dayOfWeek Java DayOfWeek (MONDAY=1 ~ SUNDAY=7)
-     * @return 일요일=0 기준 요일 (일=0, 월=1, ..., 토=6)
-     */
     private int convertToSundayBasedWeekday(DayOfWeek dayOfWeek) {
         return dayOfWeek.getValue() % 7;
     }
@@ -175,11 +168,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * 예약 주제(topic)가 호스트 캘린더에 정의된 topics 목록에 포함되는지 검증
-     * @param hostId 호스트 ID
-     * @param topic 검증할 주제
-     */
     private void validateTopic(UUID hostId, String topic) {
         Calendar calendar = calendarRepository.findById(hostId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
@@ -222,9 +210,22 @@ public class BookingService {
         }
     }
 
-    /**
-     * 예약 스트림을 처리하며 100개 단위로 영속성 컨텍스트에서 detach하여 메모리 효율을 개선합니다.
-     */
+    @Transactional(readOnly = true)
+    public PaginatedBookingResponseDTO getBookingsByGuestIdPaginated(UUID guestId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId, pageable);
+        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
+        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedBookingResponseDTO getBookingsByHostIdPaginated(UUID hostId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Booking> bookingPage = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId, pageable);
+        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
+        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
+    }
+
     private List<BookingResponseDTO> processBookingStreamWithBatchFlush(Stream<Booking> bookingStream) {
         List<Booking> batch = new ArrayList<>(BATCH_FLUSH_SIZE);
         List<BookingResponseDTO> result = new ArrayList<>();
@@ -249,9 +250,14 @@ public class BookingService {
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String username = host != null ? host.getUsername() : null;
-        String displayName = host != null ? host.getDisplayName() : null;
-        return BookingResponseDTO.from(booking, username, displayName);
+        String hostUsername = host != null ? host.getUsername() : null;
+        String hostDisplayName = host != null ? host.getDisplayName() : null;
+
+        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
+        String guestUsername = guest != null ? guest.getUsername() : null;
+        String guestDisplayName = guest != null ? guest.getDisplayName() : null;
+
+        return BookingResponseDTO.from(booking, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
@@ -262,12 +268,24 @@ public class BookingService {
         Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
             .collect(Collectors.toMap(Member::getId, m -> m));
 
+        List<UUID> guestIds = bookings.stream()
+            .map(Booking::getGuestId)
+            .distinct()
+            .toList();
+        Map<UUID, Member> guestMap = memberRepository.findAllById(guestIds).stream()
+            .collect(Collectors.toMap(Member::getId, m -> m));
+
         return bookings.stream()
             .map(b -> {
                 Member host = hostMap.get(b.getTimeSlot().getUserId());
-                String username = host != null ? host.getUsername() : null;
-                String displayName = host != null ? host.getDisplayName() : null;
-                return BookingResponseDTO.from(b, username, displayName);
+                String hostUsername = host != null ? host.getUsername() : null;
+                String hostDisplayName = host != null ? host.getDisplayName() : null;
+
+                Member guest = guestMap.get(b.getGuestId());
+                String guestUsername = guest != null ? guest.getUsername() : null;
+                String guestDisplayName = guest != null ? guest.getDisplayName() : null;
+
+                return BookingResponseDTO.from(b, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
             })
             .toList();
     }
@@ -419,37 +437,20 @@ public class BookingService {
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
         validateTopic(newTimeSlot.getUserId(), request.getTopic());
 
-        booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
+        booking.update(
+            request.getTopic(),
+            request.getDescription(),
+            newTimeSlot,
+            request.getBookingDate(),
+            request.getMeetingType(),
+            request.getLocation(),
+            request.getMeetingLink()
+        );
 
         Member guest = memberRepository.findById(guestId).orElse(null);
         upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
 
         return toBookingResponseDTO(booking);
-    }
-
-    private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {
-        if (booking.getGoogleEventId() == null) {
-            return;
-        }
-
-        UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
-            Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
-            Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
-
-            boolean updated = googleCalendarService.updateEvent(
-                booking.getGoogleEventId(),
-                request.getTopic(),
-                request.getDescription(),
-                startDateTime,
-                endDateTime,
-                calendar.getGoogleCalendarId()
-            );
-
-            if (updated) {
-                log.info("Google Calendar event updated for booking: {}", booking.getId());
-            }
-        });
     }
 
     @Transactional
@@ -493,7 +494,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
-            .map(NoShowHistoryResponseDTO::from)
+            .map(history -> NoShowHistoryResponseDTO.from(history, calendarZoneId))
             .toList();
     }
 
@@ -506,7 +507,7 @@ public class BookingService {
 
         List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
         return bookings.stream()
-            .map(BookingPublicResponseDTO::from)
+            .map(booking -> BookingPublicResponseDTO.from(booking, calendarZoneId))
             .toList();
     }
 

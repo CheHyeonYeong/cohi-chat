@@ -86,12 +86,35 @@ public class Booking {
     @Column(name = "cancelled_reason", length = 100)
     private String cancelledReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meeting_type", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ONLINE'")
+    private MeetingType meetingType = MeetingType.ONLINE;
+
+    @Column(name = "location", length = 500)
+    private String location;
+
+    @Column(name = "meeting_link", length = 2000, columnDefinition = "varchar(2000) default 'https://www.cohi-chat.com'")
+    private String meetingLink = "https://www.cohi-chat.com";
+
     public static Booking create(
         TimeSlot timeSlot,
         UUID guestId,
         LocalDate bookingDate,
         String topic,
         String description
+    ) {
+        return create(timeSlot, guestId, bookingDate, topic, description, MeetingType.ONLINE, null, null);
+    }
+
+    public static Booking create(
+        TimeSlot timeSlot,
+        UUID guestId,
+        LocalDate bookingDate,
+        String topic,
+        String description,
+        MeetingType meetingType,
+        String location,
+        String meetingLink
     ) {
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(guestId, "guestId must not be null");
@@ -108,22 +131,16 @@ public class Booking {
         booking.topic = topic;
         booking.description = description;
         booking.attendanceStatus = AttendanceStatus.SCHEDULED;
+        booking.meetingType = meetingType != null ? meetingType : MeetingType.ONLINE;
+        booking.location = location;
+        booking.meetingLink = meetingLink != null ? meetingLink : "https://www.cohi-chat.com";
         return booking;
     }
 
-    /**
-     * 게스트 예약 취소
-     * 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED
-     */
     public void cancel() {
         cancel(null);
     }
 
-    /**
-     * 예약 취소 (사유 포함)
-     * 당일 취소 시 SAME_DAY_CANCEL, 사전 취소 시 CANCELLED
-     * @param reason 취소 사유 (nullable)
-     */
     public void cancel(String reason) {
         if (!this.attendanceStatus.isCancellable()) {
             throw new IllegalStateException("취소할 수 없는 예약 상태입니다: " + this.attendanceStatus);
@@ -136,19 +153,11 @@ public class Booking {
         this.cancelledReason = reason;
     }
 
-    /**
-     * 시스템에 의한 예약 강제 취소 (회원 탈퇴 시 사용)
-     * 상태에 관계없이 취소 처리
-     * @param reason 취소 사유
-     */
     public void forceCancel(String reason) {
         this.attendanceStatus = AttendanceStatus.CANCELLED;
         this.cancelledReason = reason;
     }
 
-    /**
-     * 호스트가 예약 상태 변경 (출석/노쇼/지각)
-     */
     public void updateStatus(AttendanceStatus newStatus) {
         Objects.requireNonNull(newStatus, "status must not be null");
         if (!this.attendanceStatus.isModifiable()) {
@@ -170,6 +179,18 @@ public class Booking {
     }
 
     public void update(String topic, String description, TimeSlot timeSlot, LocalDate bookingDate) {
+        update(topic, description, timeSlot, bookingDate, this.meetingType, this.location, this.meetingLink);
+    }
+
+    public void update(
+        String topic,
+        String description,
+        TimeSlot timeSlot,
+        LocalDate bookingDate,
+        MeetingType meetingType,
+        String location,
+        String meetingLink
+    ) {
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
@@ -181,16 +202,15 @@ public class Booking {
         this.bookingDate = bookingDate;
         this.startTime = timeSlot.getStartTime();
         this.endTime = timeSlot.getEndTime();
+        this.meetingType = meetingType != null ? meetingType : MeetingType.ONLINE;
+        this.location = location;
+        this.meetingLink = meetingLink != null ? meetingLink : "https://www.cohi-chat.com";
     }
 
     public void setGoogleEventId(String googleEventId) {
         this.googleEventId = googleEventId;
     }
 
-    /**
-     * 게스트가 호스트 노쇼를 신고. 상태 전이 가능 여부는 서비스 레이어에서 검증 후 호출.
-     * @param now 신고 시각 (결정적 테스트를 위해 호출자가 주입)
-     */
     public void reportHostNoShow(Instant now) {
         this.attendanceStatus = AttendanceStatus.HOST_NO_SHOW;
         this.noshowReportedAt = now;

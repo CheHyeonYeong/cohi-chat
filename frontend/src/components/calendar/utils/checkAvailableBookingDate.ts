@@ -1,12 +1,12 @@
 import type { IBooking, ICalendarEvent, ITimeSlot } from '../types';
 
-export function isTimeslotAvailableOnDate(
+export const isTimeslotAvailableOnDate = (
     timeslot: ITimeSlot,
     year: number,
     month: number,
     day: number,
     weekday: number
-): boolean {
+): boolean => {
     if (!timeslot.weekdays.includes(weekday)) return false;
     const { startDate, endDate } = timeslot;
     if (startDate || endDate) {
@@ -15,32 +15,32 @@ export function isTimeslotAvailableOnDate(
         if (endDate && dateStr > endDate) return false;
     }
     return true;
-}
+};
 
-function isBookingOnDate(
+const isBookingOnDate = (
     booking: IBooking | ICalendarEvent,
     year: number,
     month: number,
     day: number
-): boolean {
+): boolean => {
     const bookingStart = new Date(booking.startedAt);
     return bookingStart.getFullYear() === year
         && bookingStart.getMonth() + 1 === month
         && bookingStart.getDate() === day;
-}
+};
 
-function parseTimeToMinutes(time: string): number {
+const parseTimeToMinutes = (time: string): number => {
     const [hour, minute] = time.split(':');
     return Number(hour) * 60 + Number(minute);
-}
+};
 
-export function isTimeslotBookedOnDate(
+export const isTimeslotBookedOnDate = (
     timeslot: ITimeSlot,
     bookings: Array<IBooking | ICalendarEvent>,
     year: number,
     month: number,
     day: number
-): boolean {
+): boolean => {
     return bookings.some((booking) => {
         if (!isBookingOnDate(booking, year, month, day)) {
             return false;
@@ -59,9 +59,9 @@ export function isTimeslotBookedOnDate(
 
         return bookingStartTime < endTime && bookingEndTime > startTime;
     });
-}
+};
 
-export function checkAvailableBookingDate(
+export const checkAvailableBookingDate = (
     baseDate: Date,
     timeslots: ITimeSlot[],
     _bookings: Array<IBooking | ICalendarEvent>,
@@ -69,7 +69,7 @@ export function checkAvailableBookingDate(
     month: number,
     day: number,
     weekday: number
-): boolean {
+): boolean => {
     const isUnavailable =
         (year < baseDate.getFullYear() ||
             (year === baseDate.getFullYear() && month < baseDate.getMonth() + 1)) ||
@@ -89,5 +89,5 @@ export function checkAvailableBookingDate(
         return false;
     }
 
-    return timeslots.some(timeslot => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
-}
+    return timeslots.some((timeslot) => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
+};

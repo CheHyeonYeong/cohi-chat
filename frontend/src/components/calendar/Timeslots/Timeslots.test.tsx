@@ -1,4 +1,4 @@
-import React from 'react';
+import type { PropsWithChildren } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
@@ -6,8 +6,8 @@ import { Timeslots } from './Timeslots';
 import type { IBooking, ITimeSlot } from '../types';
 
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', { href: to, ...props }, children),
+    Link: ({ children, to, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a href={String(to)} {...props}>{children}</a>,
 }));
 
 vi.mock('~/features/member', () => ({

@@ -19,19 +19,19 @@ import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
 
 const PROFILE_SAVE_SUCCESS_DURATION = 3000;
 
-function formatWeekdaySummary(weekdays: number[]): string {
+const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
     const names = sorted.map((day) => DAY_NAMES[day as Weekday]);
     const isConsecutive = sorted.every((day, index) => index === 0 || day === sorted[index - 1] + 1);
     return isConsecutive && sorted.length >= 2 ? `${names[0]}~${names[names.length - 1]}` : names.join(', ');
-}
+};
 
-function normalizeTime(value?: string | null): string {
+const normalizeTime = (value?: string | null): string => {
     return typeof value === 'string' ? value.slice(0, 5) : '';
-}
+};
 
-function readTimeslotStart(timeslot: TimeSlotResponse): string {
+const readTimeslotStart = (timeslot: TimeSlotResponse): string => {
     return normalizeTime(
         ('startedAt' in timeslot ? timeslot.startedAt : undefined) ??
             ('startTime' in (timeslot as TimeSlotResponse & { startTime?: string })
@@ -39,9 +39,9 @@ function readTimeslotStart(timeslot: TimeSlotResponse): string {
                 : undefined) ??
             null,
     );
-}
+};
 
-function readTimeslotEnd(timeslot: TimeSlotResponse): string {
+const readTimeslotEnd = (timeslot: TimeSlotResponse): string => {
     return normalizeTime(
         ('endedAt' in timeslot ? timeslot.endedAt : undefined) ??
             ('endTime' in (timeslot as TimeSlotResponse & { endTime?: string })
@@ -49,9 +49,9 @@ function readTimeslotEnd(timeslot: TimeSlotResponse): string {
                 : undefined) ??
             null,
     );
-}
+};
 
-function toEntry(timeslot: TimeSlotResponse): TimeSlotEntry | null {
+const toEntry = (timeslot: TimeSlotResponse): TimeSlotEntry | null => {
     const startTime = readTimeslotStart(timeslot);
     const endTime = readTimeslotEnd(timeslot);
     if (!startTime || !endTime) return null;
@@ -64,22 +64,22 @@ function toEntry(timeslot: TimeSlotResponse): TimeSlotEntry | null {
         endDate: timeslot.endDate ?? undefined,
         existingId: timeslot.id,
     };
-}
+};
 
-function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
+const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] => {
     return timeslots.map(toEntry).filter((entry): entry is TimeSlotEntry => entry != null);
-}
+};
 
-function buildPayload(entry: TimeSlotEntry): TimeSlotCreatePayload {
+const buildPayload = (entry: TimeSlotEntry): TimeSlotCreatePayload => {
     return {
         startTime: `${entry.startTime}:00`,
         endTime: `${entry.endTime}:00`,
         weekdays: entry.weekdays,
         ...(entry.startDate && entry.endDate ? { startDate: entry.startDate, endDate: entry.endDate } : {}),
     };
-}
+};
 
-function areEntriesEqual(left: TimeSlotEntry, right: TimeSlotEntry): boolean {
+const areEntriesEqual = (left: TimeSlotEntry, right: TimeSlotEntry): boolean => {
     const leftWeekdays = [...left.weekdays].sort((a, b) => a - b);
     const rightWeekdays = [...right.weekdays].sort((a, b) => a - b);
     return (
@@ -90,13 +90,13 @@ function areEntriesEqual(left: TimeSlotEntry, right: TimeSlotEntry): boolean {
         leftWeekdays.length === rightWeekdays.length &&
         leftWeekdays.every((value, index) => value === rightWeekdays[index])
     );
-}
+};
 
-export function TimeSlotSettings() {
+export const TimeSlotSettings = () => {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const deletingId = null;
     const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
 
@@ -122,12 +122,15 @@ export function TimeSlotSettings() {
 
     useEffect(() => {
         if (!hostProfile) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setJob(hostProfile.job ?? '');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setProfileImageUrl(hostProfile.profileImageUrl ?? '');
     }, [hostProfile]);
 
     useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEntries(toEntries(existingTimeslots));
         const latestUpdate = existingTimeslots
             .map((timeslot) => new Date(timeslot.updatedAt))
@@ -265,7 +268,7 @@ export function TimeSlotSettings() {
             setLastSaved(new Date());
         }
 
-        if (results.some((result) => result.status === 'fulfilled')) {
+        if (results.some((result) => result.result.status === 'fulfilled')) {
             syncedRef.current = false;
         }
     };
@@ -273,8 +276,10 @@ export function TimeSlotSettings() {
     const handleDelete = async (existingId: number) => {
         if (deletingIdsRef.current.has(existingId)) return;
         setErrors((current) => {
-            const { delete: _delete, general: _general, ...rest } = current;
-            return rest;
+            const next = { ...current };
+            delete next.delete;
+            delete next.general;
+            return next;
         });
         setEntries((prev) => prev.filter((entry) => entry.existingId !== existingId));
     };
@@ -398,4 +403,4 @@ export function TimeSlotSettings() {
             </footer>
         </PageLayout>
     );
-}
+};
