@@ -7,6 +7,9 @@ on:
       - 'chat/**'
       - 'docker-compose.chat.prod.yml'
       - '.github/workflows/chat-deploy-prod.yml'
+      - 'scripts/chat-blue-green-common.sh'
+      - 'scripts/chat-blue-green-deploy.sh'
+      - 'scripts/chat-rollback.sh'
   workflow_dispatch:
 
 concurrency:
@@ -94,10 +97,12 @@ jobs:
             aws s3 cp "$CHAT_IMAGE_S3_URI" /tmp/cohi-chat/chat-server-image.tar.gz
             docker load --input /tmp/cohi-chat/chat-server-image.tar.gz
 
-            docker-compose -f docker-compose.chat.prod.yml up -d --wait
+            bash scripts/chat-blue-green-deploy.sh
 
             docker-compose -f docker-compose.chat.prod.yml ps
-            docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server
+            docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server-blue
+            docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-server-green
+            docker-compose -f docker-compose.chat.prod.yml logs --tail=50 chat-nginx
 
             rm -f /tmp/cohi-chat/chat-server-image.tar.gz
             log_deploy_success
