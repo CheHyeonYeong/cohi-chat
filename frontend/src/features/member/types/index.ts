@@ -65,7 +65,6 @@ export interface ProfileImageUploadRequest {
 export interface ProfileImageUploadResponse {
     uploadUrl: string;
     objectKey: string;
-    contentType: string;
 }
 
 export interface ProfileImageConfirmRequest {
