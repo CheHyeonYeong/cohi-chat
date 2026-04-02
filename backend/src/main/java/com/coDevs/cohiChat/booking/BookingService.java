@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -461,6 +462,10 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateMeetingStarted(booking);
 
+        if (!booking.getAttendanceStatus().isGuestReportable()) {
+            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
+        }
+
         booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
@@ -468,17 +473,33 @@ public class BookingService {
         try {
             noShowHistoryRepository.save(history);
         } catch (DataIntegrityViolationException e) {
-            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+            throw mapDuplicateNoShowException(e);
         }
 
-        long reportCount = noShowHistoryRepository.countByHostId(hostId);
-        if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
-            memberRepository.findById(hostId).ifPresent(Member::ban);
-        }
+        memberRepository.findByIdWithLock(hostId).ifPresent(host -> {
+            long reportCount = noShowHistoryRepository.countByHostId(hostId);
+            if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
+                host.ban();
+            }
+        });
 
         log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
 
         return toBookingResponseDTO(booking);
+    }
+
+    private RuntimeException mapDuplicateNoShowException(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintViolationException) {
+                if ("uq_noshow_history_booking_id".equals(constraintViolationException.getConstraintName())) {
+                    return new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
+                }
+                break;
+            }
+            cause = cause.getCause();
+        }
+        return exception;
     }
 
     private void validateMeetingStarted(Booking booking) {

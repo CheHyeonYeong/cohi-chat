@@ -37,8 +37,8 @@ export const isTimeslotBookedOnDate = (
     year: number,
     month: number,
     day: number
-): boolean => {
-    return bookings.some((booking) => {
+): boolean =>
+    bookings.some((booking) => {
         if (!isBookingOnDate(booking, year, month, day)) {
             return false;
         }
@@ -56,7 +56,6 @@ export const isTimeslotBookedOnDate = (
 
         return bookingStartTime < endTime && bookingEndTime > startTime;
     });
-};
 
 export const checkAvailableBookingDate = (
     baseDate: Date,

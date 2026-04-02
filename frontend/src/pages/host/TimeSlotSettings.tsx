@@ -95,8 +95,8 @@ export const TimeSlotSettings = () => {
 
     const { data: user } = useAuth();
     const { data: hostProfile } = useHost(user?.username ?? '');
-    const [job, setJob] = useState('');
-    const [profileImageUrl, setProfileImageUrl] = useState('');
+    const [jobDraft, setJobDraft] = useState<string | null>(null);
+    const [profileImageUrlDraft, setProfileImageUrlDraft] = useState<string | null>(null);
     const [profileSaved, setProfileSaved] = useState(false);
     const updateProfileMutation = useUpdateProfile();
     const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,12 +112,6 @@ export const TimeSlotSettings = () => {
     }, []);
 
     useEffect(() => {
-        if (!hostProfile) return;
-        setJob(hostProfile.job ?? '');
-        setProfileImageUrl(hostProfile.profileImageUrl ?? '');
-    }, [hostProfile]);
-
-    useEffect(() => {
         if (!existingTimeslots || syncedRef.current) return;
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setEntries(toEntries(existingTimeslots));
@@ -127,6 +121,9 @@ export const TimeSlotSettings = () => {
         if (latestUpdate) setLastSaved(latestUpdate);
         syncedRef.current = true;
     }, [existingTimeslots]);
+
+    const job = jobDraft ?? hostProfile?.job ?? '';
+    const profileImageUrl = profileImageUrlDraft ?? hostProfile?.profileImageUrl ?? '';
 
     const originalEntriesById = useMemo(() => {
         const map = new Map<number, TimeSlotEntry>();
@@ -326,7 +323,7 @@ export const TimeSlotSettings = () => {
                             <input
                                 type="text"
                                 value={job}
-                                onChange={(event) => setJob(event.target.value)}
+                                onChange={(event) => setJobDraft(event.target.value)}
                                 placeholder="예: 백엔드 개발자 @ 스타트업"
                                 maxLength={100}
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--cohi-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30"
@@ -337,7 +334,7 @@ export const TimeSlotSettings = () => {
                             <input
                                 type="url"
                                 value={profileImageUrl}
-                                onChange={(event) => setProfileImageUrl(event.target.value)}
+                                onChange={(event) => setProfileImageUrlDraft(event.target.value)}
                                 placeholder="https://..."
                                 maxLength={500}
                                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--cohi-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30"
