@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { httpClient } from '~/libs/httpClient';
 import { getCalendarEvent, getTimeslotsByHostId } from '~/features/booking';
 import type { HostResponseDTO } from '~/features/member';
 import type { ICalendar, ITimeSlot } from '~/components/calendar';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { getHosts } from '../api';
+import { hostKeys } from './queryKeys';
 
 export const useHostProfile = (username: string) => useQuery<HostResponseDTO[], Error, HostResponseDTO>({
-    queryKey: ['hosts'],
-    queryFn: () => httpClient<HostResponseDTO[]>(`${API_BASE}/members/v1/hosts`),
+    queryKey: hostKeys.all(),
+    queryFn: getHosts,
     select: (hosts) => {
         const host = hosts.find((h) => h.username === username);
         if (!host) throw new Error('호스트를 찾을 수 없습니다.');

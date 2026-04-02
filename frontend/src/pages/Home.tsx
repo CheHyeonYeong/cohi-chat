@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { Button } from '~/components/button';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { Header } from '~/components/header';
-import { useHosts } from '~/hooks/useHost';
 import { useAuth } from '~/features/member';
-import { HostCard } from '~/features/host';
+import { HostCard, HostSearchInput, useHostDirectory } from '~/features/host';
 
 export const Home = () => {
-    const hosts = useHosts();
+    const [searchQuery, setSearchQuery] = useState('');
+    const trimmedSearchQuery = searchQuery.trim();
+    const hosts = useHostDirectory(searchQuery);
+    const isSearchMode = trimmedSearchQuery.length > 0;
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
@@ -19,6 +22,9 @@ export const Home = () => {
             navigate({ to: '/login' });
         }
     };
+
+    const loadingMessage = isSearchMode ? '검색 결과를 불러오는 중...' : '읽어오는 중...';
+    const emptyMessage = isSearchMode ? '검색 결과가 없습니다.' : '등록된 호스트가 없습니다.';
 
     return (
         <div className='w-full min-h-screen bg-cohi-bg-light'>
@@ -91,9 +97,17 @@ export const Home = () => {
                         호스트 목록
                     </h2>
 
+                    <HostSearchInput value={searchQuery} onChange={setSearchQuery} />
+
+                    {isSearchMode && hosts.data && !hosts.isLoading && !hosts.error && (
+                        <p data-testid="host-search-summary" className='mb-4 text-sm text-gray-500'>
+                            "{trimmedSearchQuery}" 검색 결과 {hosts.data.length}명
+                        </p>
+                    )}
+
                     {hosts.isLoading && (
                         <div className='text-center py-8 text-gray-500'>
-                            읽어오는 중...
+                            {loadingMessage}
                         </div>
                     )}
 
@@ -120,7 +134,7 @@ export const Home = () => {
 
                     {hosts.data && hosts.data.length === 0 && (
                         <div className='text-center py-8 text-gray-500'>
-                            등록된 호스트가 없습니다.
+                            {emptyMessage}
                         </div>
                     )}
                 </div>

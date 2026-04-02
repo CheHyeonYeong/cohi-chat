@@ -7,5 +7,7 @@ export { useDeleteTimeslot } from './useDeleteTimeslot';
 export { useServiceAccountEmail } from './useServiceAccountEmail';
 export { useHostCalendar } from './useHostProfile';
 export { useProfileCalendar } from './useProfileCalendar';
+export { useHostDirectory, useHostSearch } from './useHostSearch';
+export { hostKeys } from './queryKeys';
 export type { ProfileCalendarState } from './useProfileCalendar';
 export { useProfileBookingDetail } from './useProfileBookingDetail';
