@@ -163,7 +163,7 @@ body {
   }
 }
 
-/* cohiChat Selectable Styles ??罹섎┛???좎쭨, ??꾩뒳濡?踰꾪듉 ???좏깮 媛?ν븳 ?붿냼 */
+/* cohiChat Selectable Styles — 캘린더 날짜, 타임슬롯 버튼 등 선택 가능한 요소 */
 .cohi-selectable {
   color: var(--color-cohi-primary);
   background-color: var(--color-cohi-bg-light);

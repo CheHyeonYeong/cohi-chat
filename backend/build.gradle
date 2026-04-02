@@ -70,11 +70,6 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
-    implementation 'org.mapstruct:mapstruct:1.6.3'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-    testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
-    
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
