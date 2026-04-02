@@ -18,10 +18,13 @@ export class PrismaService
     await this.$disconnect();
   }
 
-  private static resolveDatabaseUrl(): string | undefined {
+  private static resolveDatabaseUrl(): string {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      return undefined;
+      // Fail fast so missing DB config is obvious during Nest bootstrap.
+      throw new Error(
+        `DATABASE_URL must be set before starting PrismaService (NODE_ENV=${process.env.NODE_ENV ?? 'undefined'}).`,
+      );
     }
 
     if (process.env.NODE_ENV !== 'production') {
@@ -41,15 +44,10 @@ export class PrismaService
   }
 
   private static createClientOptions(): Prisma.PrismaClientOptions {
-    const databaseUrl = PrismaService.resolveDatabaseUrl();
-    if (!databaseUrl) {
-      return {};
-    }
-
     return {
       datasources: {
         db: {
-          url: databaseUrl,
+          url: PrismaService.resolveDatabaseUrl(),
         },
       },
     };
