@@ -26,8 +26,6 @@ CREATE TABLE IF NOT EXISTS room_member (
 CREATE INDEX IF NOT EXISTS idx_room_member_room_id
     ON room_member(room_id);
 
-CREATE SEQUENCE IF NOT EXISTS message_cursor_seq_seq;
-
 CREATE TABLE IF NOT EXISTS message (
     id           UUID         NOT NULL DEFAULT gen_random_uuid(),
     room_id      UUID         NOT NULL,
@@ -36,15 +34,8 @@ CREATE TABLE IF NOT EXISTS message (
     content      VARCHAR(2000) NULL,
     payload      JSONB        NULL,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    cursor_seq   BIGINT       NOT NULL DEFAULT nextval('message_cursor_seq_seq'),
     CONSTRAINT pk_message PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_message_cursor_seq
-    ON message(cursor_seq);
-
 CREATE INDEX IF NOT EXISTS idx_message_room_id_created_at
     ON message(room_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_message_room_id_cursor_seq
-    ON message(room_id, cursor_seq DESC);

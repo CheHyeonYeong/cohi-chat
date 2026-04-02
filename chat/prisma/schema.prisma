@@ -21,11 +21,17 @@ model Member {
 }
 
 model ChatRoom {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  isDisabled Boolean  @default(false) @map("is_disabled")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type            String    @db.VarChar(20)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+  externalRefType String?   @map("external_ref_type") @db.VarChar(50)
+  externalRefId   String?   @map("external_ref_id") @db.Uuid
+  isDisabled      Boolean   @default(false) @map("is_disabled")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
 
+  @@index([externalRefType, externalRefId, deletedAt], map: "idx_chat_room_external_ref_deleted_at")
   @@map("chat_room")
 }
 
