@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -418,5 +419,65 @@ class TimeSlotControllerTest {
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value(ErrorCode.TIMESLOT_HAS_BOOKINGS.toString()));
+    }
+
+    @Test
+    @DisplayName("Success: update time slot returns 200 OK")
+    void updateTimeSlotSuccess() throws Exception {
+        // given
+        TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
+            .startTime(LocalTime.of(11, 0))
+            .endTime(LocalTime.of(12, 0))
+            .weekdays(List.of(1, 2))
+            .build();
+
+        TimeSlotResponseDTO response = TimeSlotResponseDTO.builder()
+            .id(1L)
+            .userId(TEST_USER_ID)
+            .startedAt(LocalTime.of(11, 0))
+            .endedAt(LocalTime.of(12, 0))
+            .weekdays(List.of(1, 2))
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
+
+        when(timeSlotService.updateTimeSlot(any(Member.class), eq(1L), any(TimeSlotCreateRequestDTO.class)))
+            .thenReturn(response);
+
+        // when & then
+        mockMvc.perform(patch("/timeslot/v1/{timeSlotId}", 1L)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.data.startedAt").value("11:00:00"))
+            .andExpect(jsonPath("$.data.endedAt").value("12:00:00"))
+            .andExpect(jsonPath("$.data.weekdays[0]").value(1))
+            .andExpect(jsonPath("$.error").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Failure: update time slot returns 409 Conflict when overlapping")
+    void updateTimeSlotFailWhenOverlapping() throws Exception {
+        // given
+        TimeSlotCreateRequestDTO request = TimeSlotCreateRequestDTO.builder()
+            .startTime(LocalTime.of(11, 0))
+            .endTime(LocalTime.of(12, 0))
+            .weekdays(List.of(1, 2))
+            .build();
+
+        when(timeSlotService.updateTimeSlot(any(Member.class), eq(1L), any(TimeSlotCreateRequestDTO.class)))
+            .thenThrow(new CustomException(ErrorCode.TIMESLOT_OVERLAP));
+
+        // when & then
+        mockMvc.perform(patch("/timeslot/v1/{timeSlotId}", 1L)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value(ErrorCode.TIMESLOT_OVERLAP.toString()));
     }
 }
