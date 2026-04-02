@@ -68,21 +68,33 @@ public class CloudFrontUrlService {
         // CloudFront URL에서 추출
         if (isCloudFrontEnabled() && url.contains(cloudfrontDomain)) {
             int prefixIndex = url.indexOf(cloudfrontDomain);
-            return Optional.of(url.substring(prefixIndex + cloudfrontDomain.length() + 1));
+            int keyStartIndex = prefixIndex + cloudfrontDomain.length() + 1;
+            if (keyStartIndex >= url.length()) {
+                return Optional.empty();
+            }
+            return Optional.of(url.substring(keyStartIndex));
         }
 
         // S3 URL에서 추출 (리전 포함)
         String s3Host = bucketName + ".s3.ap-northeast-2.amazonaws.com/";
         if (url.contains(s3Host)) {
             int prefixIndex = url.indexOf(s3Host);
-            return Optional.of(url.substring(prefixIndex + s3Host.length()));
+            int keyStartIndex = prefixIndex + s3Host.length();
+            if (keyStartIndex >= url.length()) {
+                return Optional.empty();
+            }
+            return Optional.of(url.substring(keyStartIndex));
         }
 
         // S3 URL에서 추출 (리전 미포함)
         String s3HostAlt = bucketName + ".s3.amazonaws.com/";
         if (url.contains(s3HostAlt)) {
             int prefixIndex = url.indexOf(s3HostAlt);
-            return Optional.of(url.substring(prefixIndex + s3HostAlt.length()));
+            int keyStartIndex = prefixIndex + s3HostAlt.length();
+            if (keyStartIndex >= url.length()) {
+                return Optional.empty();
+            }
+            return Optional.of(url.substring(keyStartIndex));
         }
 
         return Optional.empty();
