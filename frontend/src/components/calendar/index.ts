@@ -5,7 +5,7 @@ export { Navigator } from './Navigator';
 export { Timeslots } from './Timeslots';
 
 // Utils
-export { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBooked, getCalendarDays, getDaysInMonth } from './utils';
+export { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBookedOnDate, getCalendarDays, getDaysInMonth } from './utils';
 
 // Types
 export type {

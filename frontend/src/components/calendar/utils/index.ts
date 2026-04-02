@@ -1,2 +1,2 @@
-export { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBooked } from './checkAvailableBookingDate';
+export { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBookedOnDate } from './checkAvailableBookingDate';
 export { getCalendarDays, getDaysInMonth } from './getCalendarDays';
