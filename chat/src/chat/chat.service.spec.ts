@@ -112,6 +112,14 @@ describe('ChatService', () => {
     ]);
   });
 
+  it('returns an empty room list when no accessible room exists', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([]);
+
+    await expect(service.getRooms(username)).resolves.toEqual([]);
+  });
+
   it('marks the room as read up to the latest message', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
@@ -202,6 +210,19 @@ describe('ChatService', () => {
         },
       ],
     });
+  });
+
+  it('returns an empty unread summary when no accessible room exists', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([]);
+
+    await expect(service.getUnreadSummary(username)).resolves.toEqual({
+      totalUnread: 0,
+      rooms: [],
+    });
+
+    expect(prisma.roomMember.findMany).not.toHaveBeenCalled();
   });
 
   it('falls back to counting the full room when the cursor points to another room', async () => {

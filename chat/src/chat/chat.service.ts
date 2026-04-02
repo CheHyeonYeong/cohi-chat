@@ -73,6 +73,7 @@ export class ChatService {
           )
       ) unread ON true
       WHERE cr.is_disabled = false
+        AND cr.deleted_at IS NULL
         AND cr.id IN (${Prisma.join(
           [...accessibleRoomIds].map((id) => Prisma.sql`CAST(${id} AS UUID)`),
         )})
@@ -187,6 +188,7 @@ export class ChatService {
          AND my_rm.member_id = CAST(${memberId} AS UUID)
          AND my_rm.deleted_at IS NULL
         WHERE cr.is_disabled = false
+          AND cr.deleted_at IS NULL
           AND EXISTS (
             SELECT 1
             FROM room_member rm
