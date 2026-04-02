@@ -31,7 +31,12 @@ public class OAuthMemberService {
 
 		return memberRepository.findByProviderAndProviderIdAndIsDeletedFalse(
 			userInfo.getProvider(), userInfo.getProviderId()
-		).orElseGet(() -> reactivateOrCreate(userInfo));
+		).map(member -> {
+			if (member.isBanned()) {
+				throw new CustomException(ErrorCode.MEMBER_BANNED);
+			}
+			return member;
+		}).orElseGet(() -> reactivateOrCreate(userInfo));
 	}
 
 	/**

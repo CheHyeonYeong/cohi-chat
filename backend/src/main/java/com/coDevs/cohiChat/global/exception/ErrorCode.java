@@ -45,6 +45,7 @@ public enum ErrorCode {
 
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 정보에 접근할 권한이 없습니다."),
     GUEST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게스트 권한으로는 이용할 수 없는 기능입니다."),
+	MEMBER_BANNED(HttpStatus.FORBIDDEN, "계정이 정지되었습니다. 고객센터에 문의해주세요."),
 
 	/**
 	 * 시스템 관련.

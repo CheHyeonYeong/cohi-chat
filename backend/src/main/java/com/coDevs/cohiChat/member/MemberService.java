@@ -142,6 +142,10 @@ public class MemberService {
                 Member member = memberRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
                         .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
+                if (member.isBanned()) {
+                        log.warn("[login] [FAIL] reason=MEMBER_BANNED username={}", member.getUsername());
+                        throw new CustomException(ErrorCode.MEMBER_BANNED);
+                }
                 if (member.getProvider() != Provider.LOCAL) {
                         log.warn("[login] [FAIL] reason=SOCIAL_LOGIN_REQUIRED");
                         throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
