@@ -16,6 +16,10 @@ export class ChatService {
 
   async getRooms(memberIdentifier: string): Promise<RoomResponseDto[]> {
     const memberId = await this.resolveMemberId(memberIdentifier);
+    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
+    if (accessibleRoomIds.size === 0) {
+      return [];
+    }
 
     const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
       SELECT
@@ -69,6 +73,9 @@ export class ChatService {
           )
       ) unread ON true
       WHERE cr.is_disabled = false
+        AND cr.id IN (${Prisma.join(
+          [...accessibleRoomIds].map((id) => Prisma.sql`CAST(${id} AS UUID)`),
+        )})
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
     `);
 
@@ -110,13 +117,8 @@ export class ChatService {
     roomId: string,
   ): Promise<MarkRoomAsReadResponseDto> {
     const memberId = await this.resolveMemberId(memberIdentifier);
-    const room = await this.prisma.chatRoom.findFirst({
-      where: {
-        id: roomId,
-        isDisabled: false,
-      },
-    });
-    if (!room) {
+    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
+    if (!accessibleRoomIds.has(roomId)) {
       throw new NotFoundException('Accessible chat room not found.');
     }
 
@@ -175,7 +177,39 @@ export class ChatService {
     return member.id;
   }
 
+  private async getAccessibleRoomIds(memberId: string): Promise<Set<string>> {
+    const rooms = await this.prisma.$queryRaw<Array<{ room_id: string }>>(
+      Prisma.sql`
+        SELECT DISTINCT cr.id::text AS room_id
+        FROM chat_room cr
+        JOIN room_member my_rm
+          ON my_rm.room_id = cr.id
+         AND my_rm.member_id = CAST(${memberId} AS UUID)
+         AND my_rm.deleted_at IS NULL
+        WHERE cr.is_disabled = false
+          AND EXISTS (
+            SELECT 1
+            FROM room_member rm
+            JOIN member m
+              ON m.id = rm.member_id
+             AND m.is_deleted = false
+             AND m.is_banned = false
+            WHERE rm.room_id = cr.id
+              AND rm.member_id != CAST(${memberId} AS UUID)
+              AND rm.deleted_at IS NULL
+          )
+      `,
+    );
+
+    return new Set(rooms.map((room) => room.room_id));
+  }
+
   private async getActiveMemberships(memberId: string) {
+    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
+    if (accessibleRoomIds.size === 0) {
+      return [];
+    }
+
     const memberships = await this.prisma.roomMember.findMany({
       where: {
         memberId,
@@ -189,16 +223,8 @@ export class ChatService {
       return [];
     }
 
-    const activeRooms = await this.prisma.chatRoom.findMany({
-      where: {
-        id: { in: memberships.map((membership) => membership.roomId) },
-        isDisabled: false,
-      },
-    });
-    const activeRoomIds = new Set(activeRooms.map((room) => room.id));
-
     return memberships.filter((membership) =>
-      activeRoomIds.has(membership.roomId),
+      accessibleRoomIds.has(membership.roomId),
     );
   }
 

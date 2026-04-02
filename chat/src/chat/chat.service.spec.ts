@@ -41,6 +41,7 @@ describe('ChatService', () => {
   it('resolves username subjects and maps room summaries', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([{ room_id: 'room-1' }])
       .mockResolvedValueOnce([
         {
           id: 'room-1',
@@ -56,14 +57,12 @@ describe('ChatService', () => {
       ]);
 
     const result = await service.getRooms(username);
-    const secondQueryCall = prisma.$queryRaw.mock.calls[1] as [
+    const roomQueryCall = prisma.$queryRaw.mock.calls[2] as [
       { values: readonly unknown[] },
     ];
 
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
-    expect(secondQueryCall[0].values).toEqual(
-      expect.arrayContaining([memberId]),
-    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
+    expect(roomQueryCall[0].values).toEqual(expect.arrayContaining([memberId]));
     expect(result).toEqual([
       {
         id: 'room-1',
@@ -84,6 +83,7 @@ describe('ChatService', () => {
   it('maps empty last message to null', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([{ room_id: 'room-2' }])
       .mockResolvedValueOnce([
         {
           id: 'room-2',
@@ -113,11 +113,9 @@ describe('ChatService', () => {
   });
 
   it('marks the room as read up to the latest message', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
-    prisma.chatRoom.findFirst.mockResolvedValue({
-      id: roomId,
-      isDisabled: false,
-    });
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([{ room_id: roomId }]);
     prisma.roomMember.findFirst.mockResolvedValue({
       id: 'member-row-id',
       roomId,
@@ -152,21 +150,21 @@ describe('ChatService', () => {
   });
 
   it('throws 404 when the room is not accessible', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
-    prisma.chatRoom.findFirst.mockResolvedValue({
-      id: roomId,
-      isDisabled: false,
-    });
-    prisma.roomMember.findFirst.mockResolvedValue(null);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([]);
 
     await expect(
       service.markRoomAsRead(username, roomId),
     ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(prisma.roomMember.findFirst).not.toHaveBeenCalled();
   });
 
   it('throws 404 when the room does not exist', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
-    prisma.chatRoom.findFirst.mockResolvedValue(null);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([]);
 
     await expect(
       service.markRoomAsRead(username, roomId),
@@ -176,7 +174,9 @@ describe('ChatService', () => {
   });
 
   it('counts only messages after the last read cursor', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([{ room_id: roomId }]);
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -184,12 +184,6 @@ describe('ChatService', () => {
         memberId,
         lastReadMessageId: messageId,
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
-      },
-    ]);
-    prisma.chatRoom.findMany.mockResolvedValue([
-      {
-        id: roomId,
-        isDisabled: false,
       },
     ]);
     prisma.message.findUnique.mockResolvedValue({
@@ -211,7 +205,9 @@ describe('ChatService', () => {
   });
 
   it('falls back to counting the full room when the cursor points to another room', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ id: memberId }]);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: memberId }])
+      .mockResolvedValueOnce([{ room_id: roomId }]);
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -219,12 +215,6 @@ describe('ChatService', () => {
         memberId,
         lastReadMessageId: messageId,
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
-      },
-    ]);
-    prisma.chatRoom.findMany.mockResolvedValue([
-      {
-        id: roomId,
-        isDisabled: false,
       },
     ]);
     prisma.message.findUnique.mockResolvedValue({
