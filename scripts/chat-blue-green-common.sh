@@ -5,7 +5,7 @@ readonly CHAT_COMPOSE="${CHAT_COMPOSE:-docker-compose -f docker-compose.chat.pro
 readonly CHAT_UPSTREAM_FILE="${CHAT_UPSTREAM_FILE:-./chat/nginx/upstream.conf}"
 readonly HEALTH_INTERVAL="${HEALTH_INTERVAL:-5}"
 readonly DRAIN_DELAY_SECONDS="${DRAIN_DELAY_SECONDS:-10}"
-readonly CHAT_SMOKE_PATH="${CHAT_SMOKE_PATH:-http://127.0.0.1/api/swagger-ui}"
+readonly CHAT_SMOKE_PATH="${CHAT_SMOKE_PATH:-http://127.0.0.1/upstream-health}"
 
 print_banner() {
     local message=$1
@@ -60,6 +60,15 @@ detect_active() {
         return 0
     fi
 
+    if [ "$blue_status" = "running" ] && [ "$green_status" = "running" ]; then
+        current_upstream_target
+        return 0
+    fi
+
+    echo "none"
+}
+
+current_upstream_target() {
     if [ ! -s "$CHAT_UPSTREAM_FILE" ]; then
         echo "[warn] Chat upstream file is missing or empty. Defaulting to blue." >&2
         echo "blue"
@@ -104,6 +113,18 @@ container_running() {
     local state
     state=$(container_status "$(chat_container_name "$color")")
     [ "$state" = "running" ]
+}
+
+slot_healthy() {
+    local color=$1
+    local status
+
+    if ! container_running "$color"; then
+        return 1
+    fi
+
+    status=$(container_health "$(chat_container_name "$color")")
+    [ "$status" = "healthy" ]
 }
 
 ensure_nginx_running() {
@@ -164,7 +185,7 @@ EOF
 smoke_check_proxy() {
     echo "[smoke] Checking proxied chat response via nginx..."
 
-    if docker exec cohi-chat-nginx wget --quiet --tries=1 --spider "$CHAT_SMOKE_PATH"; then
+    if curl --fail --silent --show-error "$CHAT_SMOKE_PATH" >/dev/null; then
         echo "[smoke] Proxy smoke check passed."
         return 0
     fi

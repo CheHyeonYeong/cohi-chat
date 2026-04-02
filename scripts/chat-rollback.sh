@@ -12,6 +12,12 @@ main() {
 
     local active
     active=$(detect_active)
+
+    if [ "$active" = "none" ]; then
+        echo "[error] No active chat slot detected. Rollback requires a currently active slot."
+        exit 1
+    fi
+
     local previous
     previous=$(opposite_color "$active")
 
