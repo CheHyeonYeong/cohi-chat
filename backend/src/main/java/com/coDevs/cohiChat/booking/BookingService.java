@@ -4,7 +4,6 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,10 +15,6 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +29,6 @@ import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingPublicResponseDTO;
 import com.coDevs.cohiChat.booking.response.BookingResponseDTO;
 import com.coDevs.cohiChat.booking.response.NoShowHistoryResponseDTO;
-import com.coDevs.cohiChat.booking.response.PaginatedBookingResponseDTO;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -69,21 +63,18 @@ public class BookingService {
 
     private volatile ZoneId calendarZoneId;
 
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
-
     @PostConstruct
     void initZoneId() {
         String timezone = googleCalendarProperties.getTimezone();
-        if (timezone == null || timezone.isBlank()) {
-            log.warn("google.calendar.timezone is null/blank. Falling back to Asia/Seoul");
-            calendarZoneId = DEFAULT_ZONE;
+        if (timezone == null) {
+            calendarZoneId = ZoneId.systemDefault();
             return;
         }
         try {
             calendarZoneId = ZoneId.of(timezone);
-        } catch (DateTimeException e) {
-            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to Asia/Seoul: {}", timezone, e.getMessage());
-            calendarZoneId = DEFAULT_ZONE;
+        } catch (Exception e) {
+            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
+            calendarZoneId = ZoneId.systemDefault();
         }
     }
 
@@ -91,7 +82,7 @@ public class BookingService {
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot timeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         validateNotSelfBooking(guest, timeSlot);
@@ -105,18 +96,12 @@ public class BookingService {
             guest.getId(),
             request.getBookingDate(),
             request.getTopic(),
-            request.getDescription(),
-            request.getMeetingType(),
-            request.getLocation(),
-            request.getMeetingLink()
+            request.getDescription()
         );
 
         Booking savedBooking = bookingRepository.save(booking);
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
-
-        log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
-            savedBooking.getId(), savedBooking.getBookingDate());
 
         return toBookingResponseDTO(savedBooking);
     }
@@ -177,9 +162,11 @@ public class BookingService {
     }
 
     private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
-        boolean exists = bookingRepository.existsDuplicateBooking(
-            timeSlot.getId(),
+        boolean exists = bookingRepository.existsOverlappingBooking(
+            timeSlot.getUserId(),
             bookingDate,
+            timeSlot.getStartTime(),
+            timeSlot.getEndTime(),
             AttendanceStatus.getExcludedFromDuplicateCheck(),
             excludedId
         );
@@ -235,22 +222,6 @@ public class BookingService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public PaginatedBookingResponseDTO getBookingsByGuestIdPaginated(UUID guestId, int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Booking> bookingPage = bookingRepository.findByGuestIdOrderByBookingDateDesc(guestId, pageable);
-        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
-        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
-    }
-
-    @Transactional(readOnly = true)
-    public PaginatedBookingResponseDTO getBookingsByHostIdPaginated(UUID hostId, int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Booking> bookingPage = bookingRepository.findByHostIdOrderByBookingDateDesc(hostId, pageable);
-        List<BookingResponseDTO> bookings = toBookingResponseDTOs(bookingPage.getContent());
-        return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
-    }
-
     /**
      * 예약 스트림을 처리하며 100개 단위로 영속성 컨텍스트에서 detach하여 메모리 효율을 개선합니다.
      */
@@ -278,14 +249,9 @@ public class BookingService {
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
         Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String hostUsername = host != null ? host.getUsername() : null;
-        String hostDisplayName = host != null ? host.getDisplayName() : null;
-
-        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
-        String guestUsername = guest != null ? guest.getUsername() : null;
-        String guestDisplayName = guest != null ? guest.getDisplayName() : null;
-
-        return BookingResponseDTO.from(booking, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+        String username = host != null ? host.getUsername() : null;
+        String displayName = host != null ? host.getDisplayName() : null;
+        return BookingResponseDTO.from(booking, username, displayName);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
@@ -296,24 +262,12 @@ public class BookingService {
         Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
             .collect(Collectors.toMap(Member::getId, m -> m));
 
-        List<UUID> guestIds = bookings.stream()
-            .map(Booking::getGuestId)
-            .distinct()
-            .toList();
-        Map<UUID, Member> guestMap = memberRepository.findAllById(guestIds).stream()
-            .collect(Collectors.toMap(Member::getId, m -> m));
-
         return bookings.stream()
             .map(b -> {
                 Member host = hostMap.get(b.getTimeSlot().getUserId());
-                String hostUsername = host != null ? host.getUsername() : null;
-                String hostDisplayName = host != null ? host.getDisplayName() : null;
-
-                Member guest = guestMap.get(b.getGuestId());
-                String guestUsername = guest != null ? guest.getUsername() : null;
-                String guestDisplayName = guest != null ? guest.getDisplayName() : null;
-
-                return BookingResponseDTO.from(b, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+                String username = host != null ? host.getUsername() : null;
+                String displayName = host != null ? host.getDisplayName() : null;
+                return BookingResponseDTO.from(b, username, displayName);
             })
             .toList();
     }
@@ -326,7 +280,7 @@ public class BookingService {
         validateHostAccess(booking, hostId);
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot newTimeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         if (!newTimeSlot.getUserId().equals(hostId)) {
@@ -349,7 +303,7 @@ public class BookingService {
         UUID hostId = timeSlot.getUserId();
         var calendarOpt = calendarRepository.findById(hostId);
         if (calendarOpt.isEmpty()) {
-            log.debug("[syncGoogleCalendar] [SKIP] reason=CALENDAR_NOT_LINKED");
+            log.debug("No Google Calendar linked for host: {}", hostId);
             return;
         }
 
@@ -365,17 +319,22 @@ public class BookingService {
                 );
                 if (eventId != null) {
                     booking.setGoogleEventId(eventId);
+                    log.info("Google Calendar event created for booking: {}", booking.getId());
+                } else {
+                    log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
                 }
                 return;
             }
 
-            googleCalendarService.updateEvent(
+            boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(), summary, description,
                 startDateTime, endDateTime, calendar.getGoogleCalendarId()
             );
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
         } catch (Exception e) {
-            log.error("[syncGoogleCalendar] [FAIL] bookingId={} cause={}",
-                booking.getId(), e.getClass().getSimpleName(), e);
+            log.error("Google Calendar event upsert failed for booking: {}", booking.getId(), e);
         }
     }
 
@@ -419,8 +378,6 @@ public class BookingService {
         deleteGoogleCalendarEvent(booking);
 
         booking.cancel();
-
-        log.info("[cancelBooking] [SUCCESS] bookingId={}", bookingId);
     }
 
     private void deleteGoogleCalendarEvent(Booking booking) {
@@ -430,10 +387,14 @@ public class BookingService {
 
         UUID hostId = booking.getTimeSlot().getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            googleCalendarService.deleteEvent(
+            boolean deleted = googleCalendarService.deleteEvent(
                 booking.getGoogleEventId(),
                 calendar.getGoogleCalendarId()
             );
+
+            if (deleted) {
+                log.info("Google Calendar event deleted for booking: {}", booking.getId());
+            }
         });
     }
 
@@ -445,7 +406,7 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot newTimeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         UUID originalHostId = booking.getTimeSlot().getUserId();
@@ -458,15 +419,7 @@ public class BookingService {
         validateNotDuplicateBooking(newTimeSlot, request.getBookingDate(), bookingId);
         validateTopic(newTimeSlot.getUserId(), request.getTopic());
 
-        booking.update(
-            request.getTopic(),
-            request.getDescription(),
-            newTimeSlot,
-            request.getBookingDate(),
-            request.getMeetingType(),
-            request.getLocation(),
-            request.getMeetingLink()
-        );
+        booking.update(request.getTopic(), request.getDescription(), newTimeSlot, request.getBookingDate());
 
         Member guest = memberRepository.findById(guestId).orElse(null);
         upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
@@ -484,7 +437,7 @@ public class BookingService {
             Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
 
-            googleCalendarService.updateEvent(
+            boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(),
                 request.getTopic(),
                 request.getDescription(),
@@ -492,6 +445,10 @@ public class BookingService {
                 endDateTime,
                 calendar.getGoogleCalendarId()
             );
+
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
         });
     }
 
@@ -503,10 +460,6 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateMeetingStarted(booking);
 
-        if (!booking.getAttendanceStatus().isGuestReportable()) {
-            throw new CustomException(ErrorCode.NOSHOW_NOT_REPORTABLE);
-        }
-
         booking.reportHostNoShow(Instant.now());
 
         UUID hostId = booking.getTimeSlot().getUserId();
@@ -514,38 +467,22 @@ public class BookingService {
         try {
             noShowHistoryRepository.save(history);
         } catch (DataIntegrityViolationException e) {
-            throw mapDuplicateNoShowException(e);
+            throw new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
         }
 
-        memberRepository.findByIdWithLock(hostId).ifPresent(host -> {
-            long reportCount = noShowHistoryRepository.countByHostId(hostId);
-            if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
-                host.ban();
-            }
-        });
+        long reportCount = noShowHistoryRepository.countByHostId(hostId);
+        if (reportCount >= NO_SHOW_BAN_THRESHOLD) {
+            memberRepository.findById(hostId).ifPresent(Member::ban);
+        }
 
-        log.info("[reportHostNoShow] [SUCCESS] bookingId={}", bookingId);
+        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
 
         return toBookingResponseDTO(booking);
     }
 
-    private RuntimeException mapDuplicateNoShowException(DataIntegrityViolationException exception) {
-        Throwable cause = exception;
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException constraintViolationException) {
-                if ("uq_noshow_history_booking_id".equals(constraintViolationException.getConstraintName())) {
-                    return new CustomException(ErrorCode.NOSHOW_ALREADY_REPORTED);
-                }
-                break;
-            }
-            cause = cause.getCause();
-        }
-        return exception;
-    }
-
     private void validateMeetingStarted(Booking booking) {
         LocalDate bookingDate = booking.getBookingDate();
-        LocalTime startTime = booking.getTimeSlot().getStartTime();
+        LocalTime startTime = booking.getStartTime();
         Instant meetingStart = bookingDate.atTime(startTime).atZone(calendarZoneId).toInstant();
 
         if (Instant.now().isBefore(meetingStart)) {
@@ -556,7 +493,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
-            .map(history -> NoShowHistoryResponseDTO.from(history, calendarZoneId))
+            .map(NoShowHistoryResponseDTO::from)
             .toList();
     }
 
@@ -569,7 +506,7 @@ public class BookingService {
 
         List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
         return bookings.stream()
-            .map(booking -> BookingPublicResponseDTO.from(booking, calendarZoneId))
+            .map(BookingPublicResponseDTO::from)
             .toList();
     }
 

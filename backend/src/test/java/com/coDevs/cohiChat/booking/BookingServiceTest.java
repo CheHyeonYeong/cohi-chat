@@ -12,14 +12,12 @@ import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.sql.SQLException;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,11 +27,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
@@ -66,7 +62,6 @@ class BookingServiceTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
-    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     @Mock
     private EntityManager entityManager;
@@ -110,6 +105,11 @@ class BookingServiceTest {
     void setUp() {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
         bookingService.initZoneId();
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(bookingRepository.existsOverlappingBooking(any(), any(), any(), any(), any(), any())).willReturn(false);
 
         // 기본 Calendar mock 설정 (TEST_TOPIC 포함)
         Calendar defaultCalendar = Calendar.create(
@@ -125,8 +125,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic(TEST_TOPIC)
             .description(TEST_DESCRIPTION)
-            .meetingType(MeetingType.ONLINE)
-            .meetingLink("https://meet.google.com/test")
             .build();
     }
 
@@ -140,7 +138,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -153,16 +151,16 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION, AttendanceStatus.SCHEDULED);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
     }
 
     @Test
     @DisplayName("실패: 존재하지 않는 타임슬롯에 예약할 수 없다")
     void createBookingFailWhenTimeSlotNotFound() {
         // given - 과거 날짜 검증 통과 후, TimeSlot 조회에서 실패
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.empty());
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -176,7 +174,7 @@ class BookingServiceTest {
         // given
         given(guestMember.getId()).willReturn(HOST_ID); // 게스트 ID == 호스트 ID
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -193,7 +191,6 @@ class BookingServiceTest {
             .bookingDate(PAST_DATE)
             .topic(TEST_TOPIC)
             .description(TEST_DESCRIPTION)
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -207,12 +204,10 @@ class BookingServiceTest {
     void createBookingFailWhenAlreadyExists() {
         // given
         given(guestMember.getId()).willReturn(GUEST_ID);
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
-        given(bookingRepository.existsDuplicateBooking(
-            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsOverlappingBooking(
+            eq(HOST_ID), eq(FUTURE_DATE), eq(LocalTime.of(10, 0)), eq(LocalTime.of(11, 0)), any(), isNull()
         )).willReturn(true);
 
         // when & then
@@ -229,7 +224,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(timeSlot.getWeekdays()).willReturn(List.of((FUTURE_DATE.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -247,7 +242,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         // 취소된 예약만 존재하므로 중복 체크에서 false 반환
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
@@ -272,7 +267,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when
@@ -293,7 +288,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when
@@ -325,7 +320,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         UUID otherUserId = UUID.randomUUID();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when & then - 게스트도 호스트도 아닌 사용자
@@ -341,8 +336,8 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2", MeetingType.ONLINE, null, null);
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
         given(bookingRepository.streamByGuestIdOrderByBookingDateDesc(GUEST_ID))
             .willReturn(Stream.of(booking2, booking1));
 
@@ -351,8 +346,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -376,8 +371,8 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2", MeetingType.ONLINE, null, null);
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
         given(bookingRepository.streamByHostIdOrderByBookingDateDesc(HOST_ID))
             .willReturn(Stream.of(booking2, booking1));
 
@@ -386,8 +381,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -415,7 +410,7 @@ class BookingServiceTest {
         Long newTimeSlotId = 2L;
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // 새 타임슬롯 mock
@@ -423,9 +418,11 @@ class BookingServiceTest {
         given(newTimeSlot.getId()).willReturn(newTimeSlotId);
         given(newTimeSlot.getUserId()).willReturn(HOST_ID);
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
+        given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -440,9 +437,9 @@ class BookingServiceTest {
 
         // then
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
-        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
     }
 
     @Test
@@ -452,7 +449,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         UUID otherUserId = UUID.randomUUID();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
@@ -472,7 +469,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
@@ -510,7 +507,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
@@ -532,14 +529,14 @@ class BookingServiceTest {
         LocalDate newDate = FUTURE_DATE.plusDays(7);
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getUserId()).willReturn(HOST_ID);
         // 예약하려는 날짜의 요일이 타임슬롯의 weekdays에 포함되지 않음
         given(newTimeSlot.getWeekdays()).willReturn(List.of((newDate.getDayOfWeek().getValue() + 1) % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -560,17 +557,19 @@ class BookingServiceTest {
         LocalDate newDate = FUTURE_DATE.plusDays(7);
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         TimeSlot newTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(newTimeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(newTimeSlot.getUserId()).willReturn(HOST_ID);
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
+        given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(newTimeSlot));
         // 해당 날짜에 이미 다른 예약이 존재
-        given(bookingRepository.existsDuplicateBooking(
-            eq(TIME_SLOT_ID), eq(newDate), any(), eq(bookingId)
+        given(bookingRepository.existsOverlappingBooking(
+            eq(HOST_ID), eq(newDate), eq(LocalTime.of(10, 0)), eq(LocalTime.of(11, 0)), any(), eq(bookingId)
         )).willReturn(true);
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
@@ -592,9 +591,9 @@ class BookingServiceTest {
         Long newTimeSlotId = 999L;
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.empty());
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.empty());
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(newTimeSlotId)
@@ -617,12 +616,12 @@ class BookingServiceTest {
         LocalDate newDate = FUTURE_DATE.plusDays(7);
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         TimeSlot anotherHostTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(anotherHostTimeSlot.getUserId()).willReturn(anotherHostId); // 다른 호스트의 타임슬롯
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(anotherHostTimeSlot));
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.of(anotherHostTimeSlot));
 
         BookingScheduleUpdateRequestDTO request = BookingScheduleUpdateRequestDTO.builder()
             .timeSlotId(newTimeSlotId)
@@ -646,7 +645,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -669,7 +668,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -692,7 +691,7 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -713,7 +712,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         UUID otherUserId = UUID.randomUUID();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -732,7 +731,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -768,7 +767,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION);
         booking.cancel(); // 예약 취소 (CANCELLED)
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -788,7 +787,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingStatusUpdateRequestDTO request = BookingStatusUpdateRequestDTO.builder()
@@ -809,7 +808,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         LocalDate futureBookingDate = LocalDate.now().plusDays(3); // 사전 취소
-        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when
@@ -825,7 +824,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         LocalDate today = LocalDate.now(); // 당일 취소
-        Booking booking = Booking.create(timeSlot, GUEST_ID, today, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, today, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when
@@ -841,7 +840,7 @@ class BookingServiceTest {
         // given
         Long bookingId = 1L;
         UUID otherUserId = UUID.randomUUID();
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when & then
@@ -855,7 +854,7 @@ class BookingServiceTest {
     void cancelBookingFailWhenHost() {
         // given
         Long bookingId = 1L;
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when & then - 호스트는 게스트가 아니므로 취소 불가
@@ -882,7 +881,7 @@ class BookingServiceTest {
     void cancelBookingFailWhenAlreadyAttended() {
         // given
         Long bookingId = 1L;
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.updateStatus(AttendanceStatus.ATTENDED); // 이미 출석 처리됨
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -897,7 +896,7 @@ class BookingServiceTest {
     void cancelBookingFailWhenAlreadyCancelled() {
         // given
         Long bookingId = 1L;
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), TEST_TOPIC, TEST_DESCRIPTION);
         booking.cancel(); // 이미 취소됨
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -924,9 +923,9 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
 
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(newBookingDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -936,7 +935,6 @@ class BookingServiceTest {
             .bookingDate(newBookingDate)
             .topic(newTopic)
             .description(newDescription)
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when
@@ -945,7 +943,7 @@ class BookingServiceTest {
         // then
         assertThat(response.getTopic()).isEqualTo(newTopic);
         assertThat(response.getDescription()).isEqualTo(newDescription);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newBookingDate);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newBookingDate);
     }
 
     @Test
@@ -955,7 +953,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
@@ -963,7 +961,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic("새 주제")
             .description("새 설명")
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -980,7 +977,7 @@ class BookingServiceTest {
         UUID otherGuestId = UUID.randomUUID();
         TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
@@ -988,7 +985,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic("새 주제")
             .description("새 설명")
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -1009,7 +1005,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic("새 주제")
             .description("새 설명")
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -1025,7 +1020,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         TimeSlot mockTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(mockTimeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(mockTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
@@ -1033,7 +1028,6 @@ class BookingServiceTest {
             .bookingDate(PAST_DATE)
             .topic("새 주제")
             .description("새 설명")
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -1052,19 +1046,18 @@ class BookingServiceTest {
 
         TimeSlot originalTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(originalTimeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(originalTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(originalTimeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         TimeSlot otherHostTimeSlot = org.mockito.Mockito.mock(TimeSlot.class);
         given(otherHostTimeSlot.getUserId()).willReturn(otherHostId);
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(otherHostTimeSlot));
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.of(otherHostTimeSlot));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
             .timeSlotId(newTimeSlotId)
             .bookingDate(FUTURE_DATE)
             .topic("새 주제")
             .description("새 설명")
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when & then
@@ -1087,7 +1080,7 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartDate()).willReturn(startDate);
         given(timeSlot.getEndDate()).willReturn(endDate);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then - FUTURE_DATE는 startDate보다 이전이므로 범위 밖
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -1107,7 +1100,7 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartDate()).willReturn(null);
         given(timeSlot.getEndDate()).willReturn(null);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1135,7 +1128,7 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartDate()).willReturn(startDate);
         given(timeSlot.getEndDate()).willReturn(endDate);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1145,7 +1138,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1163,7 +1156,7 @@ class BookingServiceTest {
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
         given(timeSlot.getStartDate()).willReturn(startDate);
         given(timeSlot.getEndDate()).willReturn(endDate);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1173,7 +1166,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1188,7 +1181,7 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartDate()).willReturn(startDate);
         given(timeSlot.getEndDate()).willReturn(endDate);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -1208,7 +1201,7 @@ class BookingServiceTest {
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
         given(timeSlot.getStartDate()).willReturn(startDate);
         given(timeSlot.getEndDate()).willReturn(endDate);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -1232,7 +1225,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1266,7 +1259,7 @@ class BookingServiceTest {
         String googleEventId = "existing-event-id";
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -1279,7 +1272,7 @@ class BookingServiceTest {
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -1314,7 +1307,7 @@ class BookingServiceTest {
         LocalDate futureBookingDate = LocalDate.now().plusDays(3);
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -1336,7 +1329,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         LocalDate futureBookingDate = LocalDate.now().plusDays(3);
 
-        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
         // googleEventId is null
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -1359,7 +1352,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1392,7 +1385,7 @@ class BookingServiceTest {
         String googleEventId = "existing-event-id";
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -1404,7 +1397,7 @@ class BookingServiceTest {
         given(newTimeSlot.getWeekdays()).willReturn(List.of(newDate.getDayOfWeek().getValue() % 7));
         given(newTimeSlot.getStartTime()).willReturn(LocalTime.of(14, 0));
         given(newTimeSlot.getEndTime()).willReturn(LocalTime.of(15, 0));
-        given(timeSlotRepository.findById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
+        given(timeSlotRepository.findActiveById(newTimeSlotId)).willReturn(Optional.of(newTimeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -1426,29 +1419,31 @@ class BookingServiceTest {
 
         // then - 예약 수정은 정상 완료
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
     }
 
     // ===== 호스트 노쇼 신고 테스트 (Issue #195) =====
+
+    private Booking setupNoShowScenario(Long bookingId, LocalDate date) {
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        Booking booking = Booking.create(timeSlot, GUEST_ID, date, TEST_TOPIC, TEST_DESCRIPTION);
+        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        return booking;
+    }
 
     @Test
     @DisplayName("성공: 게스트가 미팅 시간 경과 후 호스트 노쇼 신고")
     void reportHostNoShowSuccess() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        String reason = "호스트가 나타나지 않았습니다.";
-
-        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
 
         // when
-        BookingResponseDTO response = bookingService.reportHostNoShow(bookingId, GUEST_ID, reason);
+        BookingResponseDTO response = bookingService.reportHostNoShow(bookingId, GUEST_ID, "호스트가 나타나지 않았습니다.");
 
         // then
         assertThat(response.getAttendanceStatus()).isEqualTo(AttendanceStatus.HOST_NO_SHOW);
@@ -1460,15 +1455,9 @@ class BookingServiceTest {
     void reportHostNoShowTriggersBanAt20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(20L);
-        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1482,15 +1471,9 @@ class BookingServiceTest {
     void reportHostNoShowDoesNotBanBelow20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(19L);
-        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1504,15 +1487,9 @@ class BookingServiceTest {
     void reportHostNoShowDoesNotBanAt1() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(1L);
-        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1522,19 +1499,13 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("성공: 신고 누적 21회 시에도 밴이 유지된다")
+    @DisplayName("성공: 신고 누적 21회 시에도 밴이 유지된다 (>= 조건)")
     void reportHostNoShowKeepsBanAbove20() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(noShowHistoryRepository.save(any(NoShowHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.countByHostId(HOST_ID)).willReturn(21L);
-        given(memberRepository.findByIdWithLock(HOST_ID)).willReturn(Optional.of(hostMember));
+        given(memberRepository.findById(HOST_ID)).willReturn(Optional.of(hostMember));
 
         // when
         bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유");
@@ -1550,7 +1521,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         UUID otherUserId = UUID.randomUUID();
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when & then
@@ -1566,7 +1537,7 @@ class BookingServiceTest {
         Long bookingId = 1L;
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(23, 59));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(1), TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, LocalDate.now().plusDays(1), TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
         // when & then
@@ -1576,48 +1547,18 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("실패: 이미 노쇼 신고된 예약에 재신고 시도")
+    @DisplayName("실패: 이미 노쇼 신고된 예약에 재신고 시도 (DB 유니크 제약 위반)")
     void reportHostNoShowFailWhenAlreadyReported() {
         // given
         Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        setupNoShowScenario(bookingId, LocalDate.now().minusDays(1));
         given(noShowHistoryRepository.save(any(NoShowHistory.class)))
-            .willThrow(new DataIntegrityViolationException(
-                "duplicate",
-                new ConstraintViolationException(
-                    "duplicate",
-                    new SQLException("duplicate key"),
-                    "uq_noshow_history_booking_id"
-                )
-            ));
+            .willThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
 
         // when & then
         assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_ALREADY_REPORTED);
-    }
-
-    @Test
-    @DisplayName("실패: SCHEDULED가 아닌 상태에서 노쇼 신고 시도")
-    void reportHostNoShowFailWhenNotScheduledStatus() {
-        // given
-        Long bookingId = 1L;
-        LocalDate pastDate = LocalDate.now().minusDays(1);
-        given(timeSlot.getUserId()).willReturn(HOST_ID);
-        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
-        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
-        Booking booking = Booking.create(timeSlot, GUEST_ID, pastDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        booking.updateStatus(AttendanceStatus.ATTENDED);
-        given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-
-        // when & then
-        assertThatThrownBy(() -> bookingService.reportHostNoShow(bookingId, GUEST_ID, "사유"))
-            .isInstanceOf(CustomException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOSHOW_NOT_REPORTABLE);
     }
 
     @Test
@@ -1642,8 +1583,8 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
 
-        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
-        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2", MeetingType.ONLINE, null, null);
+        Booking booking1 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
+        Booking booking2 = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE.plusDays(1), "토픽2", "설명2");
 
         NoShowHistory history1 = NoShowHistory.create(booking1, HOST_ID, GUEST_ID, "사유1");
         NoShowHistory history2 = NoShowHistory.create(booking2, HOST_ID, GUEST_ID, "사유2");
@@ -1682,7 +1623,7 @@ class BookingServiceTest {
         LocalDate futureBookingDate = LocalDate.now().plusDays(3);
 
         given(timeSlot.getUserId()).willReturn(HOST_ID);
-        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, futureBookingDate, TEST_TOPIC, TEST_DESCRIPTION);
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
@@ -1713,7 +1654,7 @@ class BookingServiceTest {
         given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1728,7 +1669,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic(validTopic)
             .description(TEST_DESCRIPTION)
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when
@@ -1748,7 +1688,7 @@ class BookingServiceTest {
         given(guestMember.getId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1762,8 +1702,6 @@ class BookingServiceTest {
             .bookingDate(FUTURE_DATE)
             .topic(invalidTopic)
             .description(TEST_DESCRIPTION)
-            .meetingType(MeetingType.OFFLINE)
-            .location("스타벅스")
             .build();
 
         // when & then
@@ -1779,7 +1717,7 @@ class BookingServiceTest {
         given(guestMember.getId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
@@ -1808,9 +1746,9 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
 
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(newBookingDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -1824,7 +1762,6 @@ class BookingServiceTest {
             .bookingDate(newBookingDate)
             .topic(validTopic)
             .description(newDescription)
-            .meetingType(MeetingType.ONLINE)
             .build();
 
         // when
@@ -1848,9 +1785,9 @@ class BookingServiceTest {
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(timeSlot.getWeekdays()).willReturn(List.of(newBookingDate.getDayOfWeek().getValue() % 7));
 
-        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
+        Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
-        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(timeSlotRepository.findActiveById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
         given(bookingRepository.existsDuplicateBooking(
             eq(TIME_SLOT_ID), eq(newBookingDate), any(), eq(bookingId)
         )).willReturn(false);
@@ -1864,8 +1801,6 @@ class BookingServiceTest {
             .bookingDate(newBookingDate)
             .topic(invalidTopic)
             .description(TEST_DESCRIPTION)
-            .meetingType(MeetingType.OFFLINE)
-            .location("스타벅스")
             .build();
 
         // when & then

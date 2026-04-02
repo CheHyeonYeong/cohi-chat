@@ -1,70 +1,73 @@
 import { Suspense } from 'react';
 import { Link } from "@tanstack/react-router";
-import dayjs from 'dayjs';
 
 import { Button } from "~/components/button";
-import { formatKoreanDate } from '~/libs/date';
 import { useAuth } from "~/features/member";
-import { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBooked } from "../utils";
+import { isTimeslotAvailableOnDate, isTimeslotBookedOnDate } from "../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../types";
 
 interface TimeslotsProps {
-    baseDate: Date;
+    baseDate: Date | null;
     timeslots: ITimeSlot[];
     bookings: Array<IBooking | ICalendarEvent>;
-    selectedTimeslotId?: number;
     onSelectTimeslot: (timeslot: ITimeSlot) => void;
 }
 
-export const Timeslots = ({ baseDate, timeslots, bookings, selectedTimeslotId, onSelectTimeslot }: TimeslotsProps) => {
+export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) {
     const { isAuthenticated } = useAuth();
 
-    const date = dayjs(baseDate);
-    const year = date.year();
-    const month = date.month() + 1;
-    const day = date.date();
-    const weekday = date.day();
-
-    const isAvailable = checkAvailableBookingDate(date.toDate(), timeslots, bookings, year, month, day, weekday);
+    const now = baseDate ?? new Date();
+    const weekday = now.getDay();
     const availableTimeslots = timeslots
-        .filter((ts) => isTimeslotAvailableOnDate(ts, year, month, day, weekday) && !isTimeslotBooked(ts, bookings, year, month, day))
+        .filter((timeslot) => isTimeslotAvailableOnDate(timeslot, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday))
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
         <div className="flex flex-col gap-4 items-center justify-start mx-auto">
-            <h3 className="text-2xl font-bold">{formatKoreanDate(date.toDate())}</h3>
+            <h3 className="text-2xl font-bold">{now.getFullYear()}년 {now.getMonth() + 1}월 {now.getDate()}일</h3>
             {!isAuthenticated && (
                 <div
                     role="status"
                     role-label="no-date"
-                    className="space-y-3 md:space-y-4 w-full text-center md:text-left">
+                    className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
                     <Link
                         to="/login"
                         className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
-                        로그인 후 커피챗 신청하기
+                        로그인하고 커피챗 요청하기
                     </Link>
                 </div>
             )}
 
-            {isAuthenticated && (timeslots.length === 0 || !isAvailable) && (<div role="status" role-label="no-timeslots">
+            {isAuthenticated && availableTimeslots.length === 0 && (<div role="status" role-label="no-timeslots">
                 <p>예약 가능한 시간대가 없는 날입니다.</p>
             </div>
             )}
 
-            {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
-                <Button
-                    variant="selectable"
-                    selected={selectedTimeslotId === timeslot.id}
-                    type="button"
-                    role="button"
-                    role-label={`timeslot-${timeslot.id}`}
-                    key={`${timeslot.startedAt}-${timeslot.endedAt}`}
-                    className="w-full h-fit"
-                    onClick={() => onSelectTimeslot(timeslot)}
-                >
-                    <span role="time">{timeslot.startedAt}</span>
-                </Button>
-            ))}
+            {isAuthenticated && availableTimeslots.map((timeslot) => {
+                const isBooked = isTimeslotBookedOnDate(
+                    timeslot,
+                    bookings,
+                    now.getFullYear(),
+                    now.getMonth() + 1,
+                    now.getDate()
+                );
+
+                return (
+                    <Button
+                        variant="primary"
+                        type="button"
+                        role="button"
+                        role-label={`timeslot-${timeslot.id}`}
+                        key={timeslot.id}
+                        className="w-full h-fit flex items-center justify-between gap-2"
+                        disabled={isBooked}
+                        onClick={() => onSelectTimeslot(timeslot)}
+                    >
+                        <span role="time">{timeslot.startedAt}</span>
+                        {isBooked && <span className="text-xs">예약 마감</span>}
+                    </Button>
+                );
+            })}
         </div>
-    </Suspense>
-};
+    </Suspense>;
+}

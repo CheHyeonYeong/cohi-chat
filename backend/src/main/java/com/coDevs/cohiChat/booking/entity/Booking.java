@@ -2,6 +2,7 @@ package com.coDevs.cohiChat.booking.entity;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -52,6 +53,12 @@ public class Booking {
     @Column(name = "booking_date", nullable = false)
     private LocalDate bookingDate;
 
+    @Column(name = "start_time", nullable = false)
+    private LocalTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalTime endTime;
+
     @Column(name = "topic", nullable = false, length = 255)
     private String topic;
 
@@ -79,43 +86,28 @@ public class Booking {
     @Column(name = "cancelled_reason", length = 100)
     private String cancelledReason;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "meeting_type", nullable = false, length = 20, columnDefinition = "varchar(20) default 'ONLINE'")
-    private MeetingType meetingType = MeetingType.ONLINE;
-
-    @Column(name = "location", length = 500)
-    private String location;
-
-    @Column(name = "meeting_link", length = 2000, columnDefinition = "varchar(2000) default 'https://www.cohi-chat.com'")
-    private String meetingLink = "https://www.cohi-chat.com";
-
     public static Booking create(
         TimeSlot timeSlot,
         UUID guestId,
         LocalDate bookingDate,
         String topic,
-        String description,
-        MeetingType meetingType,
-        String location,
-        String meetingLink
+        String description
     ) {
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(guestId, "guestId must not be null");
         Objects.requireNonNull(bookingDate, "bookingDate must not be null");
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
-        Objects.requireNonNull(meetingType, "meetingType must not be null");
 
         Booking booking = new Booking();
         booking.timeSlot = timeSlot;
         booking.guestId = guestId;
         booking.bookingDate = bookingDate;
+        booking.startTime = timeSlot.getStartTime();
+        booking.endTime = timeSlot.getEndTime();
         booking.topic = topic;
         booking.description = description;
         booking.attendanceStatus = AttendanceStatus.SCHEDULED;
-        booking.meetingType = meetingType;
-        booking.location = location;
-        booking.meetingLink = meetingLink;
         return booking;
     }
 
@@ -173,30 +165,22 @@ public class Booking {
         Objects.requireNonNull(newBookingDate, "bookingDate must not be null");
         this.timeSlot = newTimeSlot;
         this.bookingDate = newBookingDate;
+        this.startTime = newTimeSlot.getStartTime();
+        this.endTime = newTimeSlot.getEndTime();
     }
 
-    public void update(
-        String topic,
-        String description,
-        TimeSlot timeSlot,
-        LocalDate bookingDate,
-        MeetingType meetingType,
-        String location,
-        String meetingLink
-    ) {
+    public void update(String topic, String description, TimeSlot timeSlot, LocalDate bookingDate) {
         Objects.requireNonNull(topic, "topic must not be null");
         Objects.requireNonNull(description, "description must not be null");
         Objects.requireNonNull(timeSlot, "timeSlot must not be null");
         Objects.requireNonNull(bookingDate, "bookingDate must not be null");
-        Objects.requireNonNull(meetingType, "meetingType must not be null");
 
         this.topic = topic;
         this.description = description;
         this.timeSlot = timeSlot;
         this.bookingDate = bookingDate;
-        this.meetingType = meetingType;
-        this.location = location;
-        this.meetingLink = meetingLink;
+        this.startTime = timeSlot.getStartTime();
+        this.endTime = timeSlot.getEndTime();
     }
 
     public void setGoogleEventId(String googleEventId) {

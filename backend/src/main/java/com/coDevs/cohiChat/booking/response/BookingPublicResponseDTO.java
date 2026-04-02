@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
-import java.time.ZoneId;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
 
@@ -22,17 +21,18 @@ import static com.coDevs.cohiChat.global.util.TimeUtils.toUtcInstant;
 public class BookingPublicResponseDTO {
 
     private final long id;
+    private final Long timeSlotId;
     private final Instant startedAt;
     private final Instant endedAt;
 
-    public static BookingPublicResponseDTO from(Booking booking, ZoneId zoneId) {
-        var timeSlot = booking.getTimeSlot();
+    public static BookingPublicResponseDTO from(Booking booking) {
         var date = booking.getBookingDate();
 
         return BookingPublicResponseDTO.builder()
             .id(booking.getId())
-            .startedAt(toUtcInstant(date, timeSlot.getStartTime(), zoneId))
-            .endedAt(toUtcInstant(date, timeSlot.getEndTime(), zoneId))
+            .timeSlotId(booking.getTimeSlot().getId())
+            .startedAt(toUtcInstant(date, booking.getStartTime()))
+            .endedAt(toUtcInstant(date, booking.getEndTime()))
             .build();
     }
 }

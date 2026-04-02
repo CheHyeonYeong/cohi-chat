@@ -1,6 +1,12 @@
 import type { IBooking, ICalendarEvent, ITimeSlot } from '../types';
 
-export const isTimeslotAvailableOnDate = (timeslot: ITimeSlot, year: number, month: number, day: number, weekday: number): boolean => {
+export function isTimeslotAvailableOnDate(
+    timeslot: ITimeSlot,
+    year: number,
+    month: number,
+    day: number,
+    weekday: number
+): boolean {
     if (!timeslot.weekdays.includes(weekday)) return false;
     const { startDate, endDate } = timeslot;
     if (startDate || endDate) {
@@ -9,27 +15,61 @@ export const isTimeslotAvailableOnDate = (timeslot: ITimeSlot, year: number, mon
         if (endDate && dateStr > endDate) return false;
     }
     return true;
-};
+}
 
-export const isTimeslotBooked = (timeslot: ITimeSlot, bookings: Array<IBooking | ICalendarEvent>, year: number, month: number, day: number): boolean => {
-    const [startHour, startMinute] = timeslot.startedAt.split(":");
-    const startTime = Number(startHour) * 60 + Number(startMinute);
-    const [endHour, endMinute] = timeslot.endedAt.split(":");
-    const endTime = Number(endHour) * 60 + Number(endMinute);
+function isBookingOnDate(
+    booking: IBooking | ICalendarEvent,
+    year: number,
+    month: number,
+    day: number
+): boolean {
+    const bookingStart = new Date(booking.startedAt);
+    return bookingStart.getFullYear() === year
+        && bookingStart.getMonth() + 1 === month
+        && bookingStart.getDate() === day;
+}
 
+function parseTimeToMinutes(time: string): number {
+    const [hour, minute] = time.split(':');
+    return Number(hour) * 60 + Number(minute);
+}
+
+export function isTimeslotBookedOnDate(
+    timeslot: ITimeSlot,
+    bookings: Array<IBooking | ICalendarEvent>,
+    year: number,
+    month: number,
+    day: number
+): boolean {
     return bookings.some((booking) => {
-        const bookingStart = new Date(booking.startedAt);
-        if (bookingStart.getFullYear() !== year || bookingStart.getMonth() + 1 !== month || bookingStart.getDate() !== day) {
+        if (!isBookingOnDate(booking, year, month, day)) {
             return false;
         }
-        const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+
+        if ('timeSlotId' in booking && typeof booking.timeSlotId === 'number') {
+            return booking.timeSlotId === timeslot.id;
+        }
+
+        const startTime = parseTimeToMinutes(timeslot.startedAt);
+        const endTime = parseTimeToMinutes(timeslot.endedAt);
+        const bookingStart = new Date(booking.startedAt);
         const bookingEnd = new Date(booking.endedAt);
+        const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
         const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+
         return bookingStartTime < endTime && bookingEndTime > startTime;
     });
-};
+}
 
-export const checkAvailableBookingDate = (baseDate: Date, timeslots: ITimeSlot[], bookings: Array<IBooking | ICalendarEvent>, year: number, month: number, day: number, weekday: number): boolean => {
+export function checkAvailableBookingDate(
+    baseDate: Date,
+    timeslots: ITimeSlot[],
+    _bookings: Array<IBooking | ICalendarEvent>,
+    year: number,
+    month: number,
+    day: number,
+    weekday: number
+): boolean {
     const isUnavailable =
         (year < baseDate.getFullYear() ||
             (year === baseDate.getFullYear() && month < baseDate.getMonth() + 1)) ||
@@ -45,34 +85,9 @@ export const checkAvailableBookingDate = (baseDate: Date, timeslots: ITimeSlot[]
         return false;
     }
 
-    // day === 0은 달력 그리드의 빈 셀 (getCalendarDays에서 패딩으로 채운 값)
     if (day === 0) {
         return false;
     }
 
-    const hasAvailableTimeslot = timeslots.some(timeslot => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
-    if (!hasAvailableTimeslot) return false;
-
-    return !bookings.some((booking) => {
-        const bookingStart = new Date(booking.startedAt);
-        const bookingYear = bookingStart.getFullYear();
-        const bookingMonth = bookingStart.getMonth() + 1;
-        const bookingDay = bookingStart.getDate();
-        if (bookingYear !== year || bookingMonth !== month || bookingDay !== day) {
-            return false;
-        }
-
-        const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
-        const bookingEnd = new Date(booking.endedAt);
-        const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
-
-        return timeslots.some((timeslot) => {
-            const [startHour, startMinute] = timeslot.startedAt.split(":");
-            const startTime = Number(startHour) * 60 + Number(startMinute);
-            const [endHour, endMinute] = timeslot.endedAt.split(":");
-            const endTime = Number(endHour) * 60 + Number(endMinute);
-
-            return bookingStartTime < endTime && bookingEndTime > startTime;
-        });
-    });
-};
+    return timeslots.some(timeslot => isTimeslotAvailableOnDate(timeslot, year, month, day, weekday));
+}

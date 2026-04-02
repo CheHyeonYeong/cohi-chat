@@ -1,14 +1,13 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
@@ -20,6 +19,8 @@ import static org.hibernate.jpa.HibernateHints.HINT_FETCH_SIZE;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -42,17 +43,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Stream<Booking> streamByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 
     /**
-     * 게스트 ID로 예약 페이지 조회 (예약 날짜 내림차순)
+     * 게스트 ID로 예약 목록 페이징 조회 (날짜 내림차순)
      */
-    @Query(value = "SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC",
-           countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.guestId = :guestId")
+    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId")
     Page<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId, Pageable pageable);
 
     /**
-     * 호스트 ID로 예약 페이지 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
+     * 호스트 ID로 예약 목록 페이징 조회 (날짜 내림차순)
      */
-    @Query(value = "SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC",
-           countQuery = "SELECT COUNT(b) FROM Booking b JOIN b.timeSlot t WHERE t.userId = :hostId")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId")
     Page<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId, Pageable pageable);
 
     /**
@@ -71,6 +70,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsDuplicateBooking(
         @Param("timeSlotId") Long timeSlotId,
         @Param("bookingDate") LocalDate bookingDate,
+        @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,
+        @Param("excludedId") Long excludedId
+    );
+
+    @Query("""
+        SELECT EXISTS (
+            SELECT 1 FROM Booking b
+            JOIN b.timeSlot t
+            WHERE t.userId = :hostId
+              AND t.deletedAt IS NULL
+              AND b.bookingDate = :bookingDate
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+              AND b.attendanceStatus NOT IN :excludedStatuses
+              AND (:excludedId IS NULL OR b.id <> :excludedId)
+        )
+        """)
+    boolean existsOverlappingBooking(
+        @Param("hostId") UUID hostId,
+        @Param("bookingDate") LocalDate bookingDate,
+        @Param("startTime") LocalTime startTime,
+        @Param("endTime") LocalTime endTime,
         @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,
         @Param("excludedId") Long excludedId
     );
@@ -164,5 +185,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         WHERE b.id = :id
         """)
     Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
+
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE t.id = :timeSlotId
+          AND b.bookingDate >= :fromDate
+          AND b.attendanceStatus NOT IN :excludedStatuses
+        ORDER BY b.bookingDate
+        """)
+    List<Booking> findActiveBookingsByTimeSlotIdFromDate(
+        @Param("timeSlotId") Long timeSlotId,
+        @Param("fromDate") LocalDate fromDate,
+        @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses
+    );
 
 }

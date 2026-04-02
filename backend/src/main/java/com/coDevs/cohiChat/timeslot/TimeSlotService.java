@@ -1,13 +1,13 @@
 package com.coDevs.cohiChat.timeslot;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -26,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 public class TimeSlotService {
 
     private final TimeSlotRepository timeSlotRepository;
-    private final BookingRepository bookingRepository;
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
 
@@ -37,7 +36,7 @@ public class TimeSlotService {
         Calendar calendar = calendarRepository.findByUserId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
-        validateNoOverlappingTimeSlots(calendar.getUserId(), request);
+        validateNoOverlappingTimeSlots(calendar.getUserId(), request, null);
 
         TimeSlot timeSlot = TimeSlot.create(
             calendar.getUserId(),
@@ -56,23 +55,31 @@ public class TimeSlotService {
     public void deleteTimeSlot(Member member, Long timeSlotId) {
         validateHostPermission(member);
 
-        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+        TimeSlot timeSlot = timeSlotRepository.findByIdWithLock(timeSlotId)
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
-        if (!timeSlot.getUserId().equals(member.getId())) {
-            throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);
-        }
+        validateTimeSlotOwner(member, timeSlot);
+        timeSlot.softDelete();
+    }
 
-        if (bookingRepository.existsByTimeSlot_Id(timeSlotId)) {
-            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
-        }
+    @Transactional
+    public TimeSlotResponseDTO updateTimeSlot(Member member, Long timeSlotId, TimeSlotCreateRequestDTO request) {
+        validateHostPermission(member);
 
-        try {
-            timeSlotRepository.delete(timeSlot);
-            timeSlotRepository.flush();
-        } catch (DataIntegrityViolationException e) {
-            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
-        }
+        TimeSlot timeSlot = timeSlotRepository.findByIdWithLock(timeSlotId)
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
+
+        validateTimeSlotOwner(member, timeSlot);
+
+        validateNoOverlappingTimeSlots(member.getId(), request, timeSlotId);
+        timeSlot.update(
+            request.getStartTime(),
+            request.getEndTime(),
+            request.getWeekdays(),
+            request.getStartDate(),
+            request.getEndDate()
+        );
+        return TimeSlotResponseDTO.from(timeSlot);
     }
 
     @Transactional(readOnly = true)
@@ -103,14 +110,41 @@ public class TimeSlotService {
         }
     }
 
-    private void validateNoOverlappingTimeSlots(UUID userId, TimeSlotCreateRequestDTO request) {
-        List<TimeSlot> overlappingTimeSlots = timeSlotRepository.findOverlappingTimeSlots(
+    private void validateTimeSlotOwner(Member member, TimeSlot timeSlot) {
+        if (!timeSlot.getUserId().equals(member.getId())) {
+            throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);
+        }
+    }
+
+    private void validateNoOverlappingTimeSlots(UUID userId, TimeSlotCreateRequestDTO request, Long excludedId) {
+        validateNoOverlappingTimeSlots(
             userId,
             request.getStartTime(),
             request.getEndTime(),
             request.getWeekdays(),
             request.getStartDate(),
-            request.getEndDate()
+            request.getEndDate(),
+            excludedId
+        );
+    }
+
+    private void validateNoOverlappingTimeSlots(
+        UUID userId,
+        LocalTime startTime,
+        LocalTime endTime,
+        List<Integer> weekdays,
+        LocalDate startDate,
+        LocalDate endDate,
+        Long excludedId
+    ) {
+        List<TimeSlot> overlappingTimeSlots = timeSlotRepository.findOverlappingTimeSlots(
+            userId,
+            excludedId,
+            startTime,
+            endTime,
+            weekdays,
+            startDate,
+            endDate
         );
 
         if (!overlappingTimeSlots.isEmpty()) {

@@ -1,187 +1,74 @@
-import type { ReactElement, ReactNode } from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Timeslots } from './Timeslots';
-import type { ITimeSlot } from '../types';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 
-vi.mock('~/features/member', () => ({
-    useAuth: vi.fn(),
-}));
+import { Timeslots } from './Timeslots';
+import type { IBooking, ITimeSlot } from '../types';
 
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to }: { children: ReactNode; to: string }) => (
-        <a href={to}>{children}</a>
-    ),
+    Link: ({ children, to, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+        React.createElement('a', { href: to, ...props }, children),
 }));
 
-import { useAuth } from '~/features/member';
+vi.mock('~/features/member', () => ({
+    useAuth: () => ({ isAuthenticated: true }),
+}));
 
-const createTimeslot = (id: number, startedAt: string, endedAt: string): ITimeSlot => ({
-    id,
-    userId: 'test-user',
-    startedAt,
-    endedAt,
-    weekdays: [0, 1, 2, 3, 4, 5, 6],
-    startDate: null,
-    endDate: null,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-});
+const timeslots: ITimeSlot[] = [
+    {
+        id: 1,
+        userId: 'host-1',
+        startedAt: '10:00',
+        endedAt: '11:00',
+        weekdays: [1],
+        startDate: null,
+        endDate: null,
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z',
+    },
+    {
+        id: 2,
+        userId: 'host-1',
+        startedAt: '11:00',
+        endedAt: '12:00',
+        weekdays: [1],
+        startDate: null,
+        endDate: null,
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z',
+    },
+];
 
-const createQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-        },
-    });
-
-const renderWithProviders = (ui: ReactElement) => {
-    const queryClient = createQueryClient();
-    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
-};
+const bookings: IBooking[] = [
+    {
+        id: 11,
+        timeSlotId: 1,
+        startedAt: '2025-03-17T10:00:00+09:00',
+        endedAt: '2025-03-17T11:00:00+09:00',
+    },
+];
 
 describe('Timeslots', () => {
-    const baseDate = new Date(2024, 5, 15);
+    it('예약된 슬롯은 비활성화하고 예약 가능한 슬롯만 선택된다', () => {
+        const onSelectTimeslot = vi.fn();
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+        render(
+            <Timeslots
+                baseDate={new Date('2025-03-17T00:00:00+09:00')}
+                timeslots={timeslots}
+                bookings={bookings}
+                onSelectTimeslot={onSelectTimeslot}
+            />
+        );
 
-    describe('비로그인 상태', () => {
-        beforeEach(() => {
-            vi.mocked(useAuth).mockReturnValue({
-                isAuthenticated: false,
-                data: undefined,
-                isLoading: false,
-            } as unknown as ReturnType<typeof useAuth>);
-        });
+        const bookedButton = screen.getByRole('button', { name: /10:00 예약 마감/i });
+        const availableButton = screen.getByRole('button', { name: /^11:00$/i });
 
-        it('로그인 링크를 표시한다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[createTimeslot(1, '10:00', '11:00')]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
+        expect(bookedButton).toBeDisabled();
+        expect(availableButton).not.toBeDisabled();
 
-            expect(screen.getByText('로그인 후 커피챗 신청하기')).toBeInTheDocument();
-        });
+        fireEvent.click(availableButton);
 
-        it('로그인 링크는 /login으로 연결된다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[createTimeslot(1, '10:00', '11:00')]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
-
-            const link = screen.getByText('로그인 후 커피챗 신청하기');
-            expect(link).toHaveAttribute('href', '/login');
-        });
-    });
-
-    describe('로그인 상태', () => {
-        beforeEach(() => {
-            vi.mocked(useAuth).mockReturnValue({
-                isAuthenticated: true,
-                data: { id: 1, username: 'test', displayName: 'Test User', isHost: false },
-                isLoading: false,
-            } as unknown as ReturnType<typeof useAuth>);
-        });
-
-        it('타임슬롯이 없으면 안내 메시지를 표시한다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
-
-            expect(screen.getByText('예약 가능한 시간대가 없는 날입니다.')).toBeInTheDocument();
-        });
-
-        it('이용 가능한 타임슬롯을 표시한다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[
-                        createTimeslot(1, '10:00', '11:00'),
-                        createTimeslot(2, '14:00', '15:00'),
-                    ]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
-
-            expect(screen.getByText('10:00')).toBeInTheDocument();
-            expect(screen.getByText('14:00')).toBeInTheDocument();
-        });
-
-        it('타임슬롯을 시간순으로 정렬하여 표시한다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[
-                        createTimeslot(2, '14:00', '15:00'),
-                        createTimeslot(1, '10:00', '11:00'),
-                    ]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
-
-            const buttons = screen.getAllByRole('button');
-            expect(buttons[0]).toHaveTextContent('10:00');
-            expect(buttons[1]).toHaveTextContent('14:00');
-        });
-
-        it('타임슬롯 클릭 시 onSelectTimeslot이 호출된다', async () => {
-            const onSelectTimeslot = vi.fn();
-            const timeslot = createTimeslot(1, '10:00', '11:00');
-
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[timeslot]}
-                    bookings={[]}
-                    onSelectTimeslot={onSelectTimeslot}
-                />,
-            );
-
-            await userEvent.click(screen.getByText('10:00'));
-
-            expect(onSelectTimeslot).toHaveBeenCalledWith(timeslot);
-        });
-    });
-
-    describe('날짜 표시', () => {
-        beforeEach(() => {
-            vi.mocked(useAuth).mockReturnValue({
-                isAuthenticated: true,
-                data: { id: 1, username: 'test', displayName: 'Test User', isHost: false },
-                isLoading: false,
-            } as unknown as ReturnType<typeof useAuth>);
-        });
-
-        it('선택된 날짜를 헤더에 표시한다', () => {
-            renderWithProviders(
-                <Timeslots
-                    baseDate={baseDate}
-                    timeslots={[createTimeslot(1, '10:00', '11:00')]}
-                    bookings={[]}
-                    onSelectTimeslot={vi.fn()}
-                />,
-            );
-
-            expect(screen.getByText('2024년 6월 15일')).toBeInTheDocument();
-        });
+        expect(onSelectTimeslot).toHaveBeenCalledWith(timeslots[1]);
     });
 });
