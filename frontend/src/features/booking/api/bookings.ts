@@ -227,10 +227,24 @@ export const uploadFileToS3 = async (presignedUrl: string, file: File, contentTy
         headers: {
             'Content-Type': contentType,
         },
+        mode: 'cors',
     });
 
     if (!response.ok) {
-        throw new Error('S3 업로드 실패');
+        // S3 에러 응답 본문에서 상세 정보 추출 시도
+        let errorDetail = '';
+        try {
+            const errorText = await response.text();
+            // S3 XML 응답에서 Code와 Message 추출
+            const codeMatch = errorText.match(/<Code>([^<]+)<\/Code>/);
+            const messageMatch = errorText.match(/<Message>([^<]+)<\/Message>/);
+            if (codeMatch || messageMatch) {
+                errorDetail = ` [${codeMatch?.[1] || 'Unknown'}] ${messageMatch?.[1] || ''}`;
+            }
+        } catch {
+            // 응답 본문 파싱 실패 시 무시
+        }
+        throw new Error(`S3 업로드 실패 (${response.status})${errorDetail}`);
     }
 };
 
