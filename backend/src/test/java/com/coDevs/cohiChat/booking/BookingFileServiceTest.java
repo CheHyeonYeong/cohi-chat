@@ -364,8 +364,31 @@ class BookingFileServiceTest {
             assertThat(response.url()).isEqualTo(PRESIGNED_URL);
             assertThat(response.objectKey()).isNotNull();
             assertThat(response.expiresIn()).isGreaterThan(0);
+            assertThat(response.contentType()).isEqualTo(CONTENT_TYPE);
             verify(fileUploadValidator).validateFileName(FILE_NAME);
             verify(fileUploadValidator).normalizeContentType(CONTENT_TYPE);
+        }
+
+        @Test
+        @DisplayName("성공: Content-Type이 정규화되어 응답에 포함된다")
+        void generateUploadUrlNormalizesContentType() {
+            // given
+            String rawContentType = "text/plain; charset=utf-8";
+            String normalizedContentType = "text/plain";
+            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
+            doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
+            given(fileUploadValidator.normalizeContentType(rawContentType)).willReturn(normalizedContentType);
+            given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(normalizedContentType)))
+                .willReturn(PRESIGNED_URL);
+
+            // when
+            PresignedUploadUrlResponseDTO response = bookingFileService.generatePresignedUploadUrl(
+                BOOKING_ID, GUEST_ID, FILE_NAME, rawContentType
+            );
+
+            // then
+            assertThat(response.contentType()).isEqualTo(normalizedContentType);
+            verify(s3PresignedUrlService).generateUploadUrl(any(), any(), eq(normalizedContentType));
         }
 
         @Test

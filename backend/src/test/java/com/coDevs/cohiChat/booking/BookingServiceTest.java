@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +68,7 @@ class BookingServiceTest {
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
     private static final UUID CHAT_ROOM_ID = UUID.randomUUID();
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     @Mock
     private EntityManager entityManager;
@@ -159,9 +160,9 @@ class BookingServiceTest {
             .extracting("timeSlotId", "guestId", "topic", "description", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION, AttendanceStatus.SCHEDULED);
         assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
         verify(chatService).createRoomForBooking(any(Booking.class));
     }
 
@@ -364,8 +365,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -399,8 +400,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -453,9 +454,9 @@ class BookingServiceTest {
 
         // then
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
-        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
     }
 
     @Test
@@ -958,7 +959,7 @@ class BookingServiceTest {
         // then
         assertThat(response.getTopic()).isEqualTo(newTopic);
         assertThat(response.getDescription()).isEqualTo(newDescription);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newBookingDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newBookingDate);
     }
 
     @Test
@@ -1158,7 +1159,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1186,7 +1187,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1439,7 +1440,7 @@ class BookingServiceTest {
 
         // then - 예약 수정은 정상 완료
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
     }
 
     // ===== 호스트 노쇼 신고 테스트 (Issue #195) =====

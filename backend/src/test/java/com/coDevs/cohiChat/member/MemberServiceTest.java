@@ -21,6 +21,7 @@ import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
 import com.coDevs.cohiChat.global.security.jwt.TokenService;
 import com.coDevs.cohiChat.global.util.SmtpEmailValidator;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.member.entity.AccessTokenBlacklist;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Provider;
@@ -41,6 +42,7 @@ import io.jsonwebtoken.JwtException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -112,6 +114,9 @@ class MemberServiceTest {
 
 	@Mock
 	private SmtpEmailValidator smtpEmailValidator;
+
+	@Mock
+	private GoogleCalendarProperties googleCalendarProperties;
 
 	@InjectMocks
 	private MemberService memberService;
@@ -584,6 +589,8 @@ class MemberServiceTest {
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "테스트 주제", "테스트 설명", MeetingType.ONLINE, null, null);
 
+		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+		memberService.initZoneId();
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
 		given(bookingRepository.findFutureBookingsByGuestId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));
@@ -595,6 +602,12 @@ class MemberServiceTest {
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings()).hasSize(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("GUEST");
+
+		var booking = result.getAffectedBookings().get(0);
+		ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalDate()).isEqualTo(futureDate);
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+		assertThat(booking.getEndedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
 	}
 
 	@Test
@@ -609,6 +622,8 @@ class MemberServiceTest {
 		TimeSlot mockTimeSlot = createMockTimeSlot(hostId);
 		Booking mockBooking = Booking.create(mockTimeSlot, guestId, futureDate, "호스트 예약", "설명", MeetingType.ONLINE, null, null);
 
+		given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
+		memberService.initZoneId();
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(hostMember));
 		given(bookingRepository.findFutureBookingsByHostId(any(), any(LocalDate.class), any(AttendanceStatus.class)))
 			.willReturn(List.of(mockBooking));
@@ -621,6 +636,12 @@ class MemberServiceTest {
 		// then
 		assertThat(result.getAffectedBookingsCount()).isEqualTo(1);
 		assertThat(result.getAffectedBookings().get(0).getRole()).isEqualTo("HOST");
+
+		var booking = result.getAffectedBookings().get(0);
+		ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalDate()).isEqualTo(futureDate);
+		assertThat(booking.getStartedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+		assertThat(booking.getEndedAt().atZone(seoulZone).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
 	}
 
 	@Test

@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -70,18 +71,21 @@ public class BookingService {
 
     private volatile ZoneId calendarZoneId;
 
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
+
     @PostConstruct
     void initZoneId() {
         String timezone = googleCalendarProperties.getTimezone();
-        if (timezone == null) {
-            calendarZoneId = ZoneId.systemDefault();
+        if (timezone == null || timezone.isBlank()) {
+            log.warn("google.calendar.timezone is null/blank. Falling back to Asia/Seoul");
+            calendarZoneId = DEFAULT_ZONE;
             return;
         }
         try {
             calendarZoneId = ZoneId.of(timezone);
-        } catch (Exception e) {
-            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to system default: {}", timezone, e.getMessage());
-            calendarZoneId = ZoneId.systemDefault();
+        } catch (DateTimeException e) {
+            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to Asia/Seoul: {}", timezone, e.getMessage());
+            calendarZoneId = DEFAULT_ZONE;
         }
     }
 
@@ -222,7 +226,15 @@ public class BookingService {
         String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
         UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
-        return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, chatRoomId);
+        return BookingResponseDTO.from(
+            booking,
+            calendarZoneId,
+            hostUsername,
+            hostDisplayName,
+            guestUsername,
+            guestDisplayName,
+            chatRoomId
+        );
     }
 
     private void validateBookingAccess(Booking booking, UUID requesterId) {
@@ -298,7 +310,7 @@ public class BookingService {
         String guestUsername = guest != null ? guest.getUsername() : null;
         String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-        return BookingResponseDTO.from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+        return BookingResponseDTO.from(booking, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
@@ -326,7 +338,7 @@ public class BookingService {
                 String guestUsername = guest != null ? guest.getUsername() : null;
                 String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-                return BookingResponseDTO.from(b, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+                return BookingResponseDTO.from(b, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
             })
             .toList();
     }
@@ -569,7 +581,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<NoShowHistoryResponseDTO> getNoShowHistoryByHostId(UUID hostId) {
         return noShowHistoryRepository.findByHostIdOrderByReportedAtDesc(hostId).stream()
-            .map(NoShowHistoryResponseDTO::from)
+            .map(history -> NoShowHistoryResponseDTO.from(history, calendarZoneId))
             .toList();
     }
 
@@ -582,7 +594,7 @@ public class BookingService {
 
         List<Booking> bookings = bookingRepository.findByHostIdAndDateRange(hostId, startDate, endDate);
         return bookings.stream()
-            .map(BookingPublicResponseDTO::from)
+            .map(booking -> BookingPublicResponseDTO.from(booking, calendarZoneId))
             .toList();
     }
 

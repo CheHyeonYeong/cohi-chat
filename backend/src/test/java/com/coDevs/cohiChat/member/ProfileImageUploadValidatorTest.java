@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
@@ -138,6 +139,57 @@ class ProfileImageUploadValidatorTest {
             assertThatThrownBy(() ->
                     validator.validateMimeType(""))
                     .isInstanceOf(CustomException.class);
+        }
+    }
+
+    @Nested
+    class NormalizeContentType {
+        @Test
+        @DisplayName("charset이 포함된 MIME 타입을 정규화한다")
+        void normalizesWithCharset() {
+            String result = validator.normalizeContentType("image/jpeg; charset=utf-8");
+            assertThat(result).isEqualTo("image/jpeg");
+        }
+
+        @Test
+        @DisplayName("대문자 MIME 타입을 소문자로 정규화한다")
+        void normalizesUpperCase() {
+            String result = validator.normalizeContentType("IMAGE/JPEG");
+            assertThat(result).isEqualTo("image/jpeg");
+        }
+
+        @Test
+        @DisplayName("이미 정규화된 MIME 타입은 그대로 반환한다")
+        void alreadyNormalized() {
+            String result = validator.normalizeContentType("image/png");
+            assertThat(result).isEqualTo("image/png");
+        }
+
+        @Test
+        @DisplayName("null MIME 타입은 예외를 던진다")
+        void nullContentType() {
+            assertThatThrownBy(() -> validator.normalizeContentType(null))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
+        }
+
+        @Test
+        @DisplayName("빈 MIME 타입은 예외를 던진다")
+        void emptyContentType() {
+            assertThatThrownBy(() -> validator.normalizeContentType(""))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 MIME 타입은 예외를 던진다")
+        void invalidContentType() {
+            assertThatThrownBy(() -> validator.normalizeContentType("invalid-mime-type"))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
         }
     }
 

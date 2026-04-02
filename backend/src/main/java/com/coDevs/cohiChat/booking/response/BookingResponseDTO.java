@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.booking.response;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
@@ -40,20 +41,20 @@ public class BookingResponseDTO {
     @Schema(description = "Chat room ID linked to this booking", example = "550e8400-e29b-41d4-a716-446655440000", nullable = true)
     private final UUID chatRoomId;
 
-    public static BookingResponseDTO from(Booking booking) {
-        return from(booking, null, null, null, null);
+    public static BookingResponseDTO from(Booking booking, ZoneId zoneId) {
+        return from(booking, zoneId, null, null, null, null);
     }
 
-    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName) {
-        return from(booking, hostUsername, hostDisplayName, null, null);
+    public static BookingResponseDTO from(Booking booking, ZoneId zoneId, String hostUsername, String hostDisplayName) {
+        return from(booking, zoneId, hostUsername, hostDisplayName, null, null);
     }
 
-    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
+    public static BookingResponseDTO from(Booking booking, ZoneId zoneId, String hostUsername, String hostDisplayName,
                                           String guestUsername, String guestDisplayName) {
-        return from(booking, hostUsername, hostDisplayName, guestUsername, guestDisplayName, null);
+        return from(booking, zoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName, null);
     }
 
-    public static BookingResponseDTO from(Booking booking, String hostUsername, String hostDisplayName,
+    public static BookingResponseDTO from(Booking booking, ZoneId zoneId, String hostUsername, String hostDisplayName,
                                           String guestUsername, String guestDisplayName, UUID chatRoomId) {
         var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
@@ -63,8 +64,8 @@ public class BookingResponseDTO {
             .timeSlotId(timeSlot.getId())
             .guestId(booking.getGuestId())
             .hostId(timeSlot.getUserId())
-            .startedAt(toUtcInstant(date, timeSlot.getStartTime()))
-            .endedAt(toUtcInstant(date, timeSlot.getEndTime()))
+            .startedAt(toUtcInstant(date, timeSlot.getStartTime(), zoneId))
+            .endedAt(toUtcInstant(date, timeSlot.getEndTime(), zoneId))
             .topic(booking.getTopic())
             .description(booking.getDescription())
             .attendanceStatus(booking.getAttendanceStatus())

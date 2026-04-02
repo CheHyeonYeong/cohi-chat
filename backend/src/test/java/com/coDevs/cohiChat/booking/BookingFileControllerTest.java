@@ -271,7 +271,7 @@ class BookingFileControllerTest {
         void getPresignedUploadUrlSuccess() throws Exception {
             // given
             PresignedUploadUrlResponseDTO response = PresignedUploadUrlResponseDTO.of(
-                PRESIGNED_URL, OBJECT_KEY, 900
+                PRESIGNED_URL, OBJECT_KEY, 900, "application/pdf"
             );
 
             given(bookingFileService.generatePresignedUploadUrl(
