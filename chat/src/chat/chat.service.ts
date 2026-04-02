@@ -7,6 +7,11 @@ import {
 } from './dto/chat-response.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
+interface MembershipUnreadRow {
+  room_id: string;
+  unread_count: number;
+}
+
 @Injectable()
 export class ChatService {
   private static readonly UUID_PATTERN =
@@ -95,15 +100,11 @@ export class ChatService {
       };
     }
 
-    const rooms = await Promise.all(
-      memberships.map(async (membership) => ({
-        roomId: membership.roomId,
-        unreadCount: await this.getUnreadCount(
-          membership.roomId,
-          membership.lastReadMessageId,
-        ),
-      })),
-    );
+    const unreadCounts = await this.getUnreadCounts(memberships);
+    const rooms = memberships.map((membership) => ({
+      roomId: membership.roomId,
+      unreadCount: unreadCounts.get(membership.roomId) ?? 0,
+    }));
 
     return {
       totalUnread: rooms.reduce((total, room) => total + room.unreadCount, 0),
@@ -244,38 +245,42 @@ export class ChatService {
     });
   }
 
-  private async getUnreadCount(
-    roomId: string,
-    lastReadMessageId: string | null,
-  ): Promise<number> {
-    if (!lastReadMessageId) {
-      return this.prisma.message.count({
-        where: { roomId },
-      });
-    }
+  private async getUnreadCounts(
+    memberships: Array<{ roomId: string; lastReadMessageId: string | null }>,
+  ): Promise<Map<string, number>> {
+    const membershipValues = Prisma.join(
+      memberships.map(
+        (membership) => Prisma.sql`
+        (
+          CAST(${membership.roomId} AS UUID),
+          CAST(${membership.lastReadMessageId} AS UUID)
+        )
+      `,
+      ),
+    );
 
-    const lastReadMessage = await this.prisma.message.findUnique({
-      select: {
-        roomId: true,
-        cursorSeq: true,
-      },
-      where: {
-        id: lastReadMessageId,
-      },
-    });
-    if (!lastReadMessage || lastReadMessage.roomId !== roomId) {
-      return this.prisma.message.count({
-        where: { roomId },
-      });
-    }
+    const rows = await this.prisma.$queryRaw<MembershipUnreadRow[]>(
+      Prisma.sql`
+        WITH target_memberships(room_id, last_read_message_id) AS (
+          VALUES ${membershipValues}
+        )
+        SELECT
+          tm.room_id::text AS room_id,
+          COUNT(msg.id)::int AS unread_count
+        FROM target_memberships tm
+        LEFT JOIN message cursor_message
+          ON cursor_message.id = tm.last_read_message_id
+         AND cursor_message.room_id = tm.room_id
+        LEFT JOIN message msg
+          ON msg.room_id = tm.room_id
+         AND (
+           cursor_message.cursor_seq IS NULL
+           OR msg.cursor_seq > cursor_message.cursor_seq
+         )
+        GROUP BY tm.room_id
+      `,
+    );
 
-    return this.prisma.message.count({
-      where: {
-        roomId,
-        cursorSeq: {
-          gt: lastReadMessage.cursorSeq,
-        },
-      },
-    });
+    return new Map(rows.map((row) => [row.room_id, row.unread_count]));
   }
 }

@@ -184,7 +184,8 @@ describe('ChatService', () => {
   it('counts only messages after the last read cursor', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }]);
+      .mockResolvedValueOnce([{ room_id: roomId }])
+      .mockResolvedValueOnce([{ room_id: roomId, unread_count: 2 }]);
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -194,12 +195,6 @@ describe('ChatService', () => {
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
       },
     ]);
-    prisma.message.findUnique.mockResolvedValue({
-      id: messageId,
-      roomId,
-      cursorSeq: 42n,
-    });
-    prisma.message.count.mockResolvedValue(2);
 
     await expect(service.getUnreadSummary(username)).resolves.toEqual({
       totalUnread: 2,
@@ -228,7 +223,8 @@ describe('ChatService', () => {
   it('falls back to counting the full room when the cursor points to another room', async () => {
     prisma.$queryRaw
       .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }]);
+      .mockResolvedValueOnce([{ room_id: roomId }])
+      .mockResolvedValueOnce([{ room_id: roomId, unread_count: 4 }]);
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -238,12 +234,6 @@ describe('ChatService', () => {
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
       },
     ]);
-    prisma.message.findUnique.mockResolvedValue({
-      id: messageId,
-      roomId: '99999999-9999-9999-9999-999999999999',
-      cursorSeq: 99n,
-    });
-    prisma.message.count.mockResolvedValue(4);
 
     await expect(service.getUnreadSummary(username)).resolves.toEqual({
       totalUnread: 4,
