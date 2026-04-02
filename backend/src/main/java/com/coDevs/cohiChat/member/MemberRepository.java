@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +26,8 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 	boolean existsByEmail(String email);
 
 	Optional<Member> findByIdAndRoleAndIsDeletedFalse(UUID id, Role role);
+
+	java.util.List<Member> findByIdInAndRoleAndIsDeletedFalse(Collection<UUID> ids, Role role);
 
 	java.util.List<Member> findByRoleAndIsDeletedFalse(Role role);
 

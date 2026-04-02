@@ -47,6 +47,7 @@ import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
+import com.coDevs.cohiChat.search.HostSemanticSearchFacade;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(MemberController.class)
@@ -62,6 +63,9 @@ class MemberControllerTest {
 
 	@MockitoBean
 	private MemberService memberService;
+
+	@MockitoBean
+	private HostSemanticSearchFacade hostSemanticSearchFacade;
 
 	@MockitoBean
 	private AuthTokenResolver authTokenResolver;
@@ -470,6 +474,31 @@ class MemberControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data").isArray())
 				.andExpect(jsonPath("$.data").isEmpty())
+				.andExpect(jsonPath("$.error").isEmpty());
+		}
+	}
+
+	@Nested
+	@DisplayName("호스트 의미 검색 API")
+	class SearchHosts {
+
+		@Test
+		@DisplayName("호스트 의미 검색 성공 응답 형식 검증")
+		void searchHostsSuccess() throws Exception {
+			List<HostResponseDTO> hosts = List.of(
+				HostResponseDTO.builder().username("host1").displayName("Host One").build(),
+				HostResponseDTO.builder().username("host2").displayName("Host Two").build()
+			);
+
+			when(hostSemanticSearchFacade.searchHosts("취준 백엔", 5)).thenReturn(hosts);
+
+			mockMvc.perform(get("/members/v1/hosts/search")
+					.param("query", "취준 백엔")
+					.param("limit", "5"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data[0].username").value("host1"))
+				.andExpect(jsonPath("$.data[1].username").value("host2"))
 				.andExpect(jsonPath("$.error").isEmpty());
 		}
 	}

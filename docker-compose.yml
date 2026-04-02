@@ -1,7 +1,7 @@
 # Local development docker-compose
 services:
   db:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: cohi-chat-db
     environment:
       - POSTGRES_DB=cohichat

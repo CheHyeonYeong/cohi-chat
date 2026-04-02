@@ -32,6 +32,7 @@ import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.response.MemberResponseDTO;
+import com.coDevs.cohiChat.search.HostSemanticSearchFacade;
 
 import java.security.Principal;
 import java.util.List;
@@ -52,6 +53,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
         private final MemberService memberService;
+        private final HostSemanticSearchFacade hostSemanticSearchFacade;
         private final AuthTokenResolver authTokenResolver;
         private final AuthCookieService authCookieService;
 
@@ -144,6 +146,19 @@ public class MemberController {
         @GetMapping("/v1/hosts")
         public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> getHosts() {
                 return ResponseEntity.ok(ApiResponseDTO.success(memberService.getActiveHosts()));
+        }
+
+        @Operation(summary = "호스트 의미 검색", description = "게스트 검색어를 임베딩하여 의미 기반으로 관련 호스트를 조회합니다.")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "검색 성공"),
+                @ApiResponse(responseCode = "400", description = "잘못된 요청 (빈 검색어, 잘못된 limit)"),
+                @ApiResponse(responseCode = "503", description = "의미 검색 서비스 사용 불가")
+        })
+        @GetMapping("/v1/hosts/search")
+        public ResponseEntity<ApiResponseDTO<List<HostResponseDTO>>> searchHosts(
+                @org.springframework.web.bind.annotation.RequestParam("query") String query,
+                @org.springframework.web.bind.annotation.RequestParam(name = "limit", defaultValue = "10") int limit) {
+                return ResponseEntity.ok(ApiResponseDTO.success(hostSemanticSearchFacade.searchHosts(query, limit)));
         }
 
         @Operation(summary = "호스트 프로필 수정", description = "호스트가 자신의 프로필 정보(직업, 이미지 등)를 수정합니다.")
