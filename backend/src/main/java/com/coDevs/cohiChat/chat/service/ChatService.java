@@ -40,9 +40,9 @@ public class ChatService {
 
         lockParticipants(hostId, guestId);
 
-        return chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
-            .map(ChatRoom::getId)
-            .orElseGet(() -> createNewRoom(hostId, guestId).getId());
+        ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
+            .orElseGet(() -> createNewRoom(hostId, guestId));
+        return room.getId();
     }
 
     @Transactional(readOnly = true)
