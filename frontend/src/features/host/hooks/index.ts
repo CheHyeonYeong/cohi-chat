@@ -3,6 +3,7 @@ export { useCreateCalendar } from './useCreateCalendar';
 export { useUpdateCalendar } from './useUpdateCalendar';
 export { useMyTimeslots } from './useMyTimeslots';
 export { useCreateTimeslot } from './useCreateTimeslot';
+export { useUpdateTimeslot } from './useUpdateTimeslot';
 export { useDeleteTimeslot } from './useDeleteTimeslot';
 export { useServiceAccountEmail } from './useServiceAccountEmail';
 export { useHostCalendar } from './useHostProfile';

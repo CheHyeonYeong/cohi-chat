@@ -11,6 +11,7 @@ export {
     useUpdateCalendar,
     useMyTimeslots,
     useCreateTimeslot,
+    useUpdateTimeslot,
     useDeleteTimeslot,
     useHostCalendar,
 } from './hooks';
@@ -31,4 +32,5 @@ export {
     updateCalendar,
     createTimeslot,
     getMyTimeslots,
+    updateTimeslot,
 } from './api';
