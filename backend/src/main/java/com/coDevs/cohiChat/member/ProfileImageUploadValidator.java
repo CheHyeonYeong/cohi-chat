@@ -1,7 +1,10 @@
 package com.coDevs.cohiChat.member;
 
+import java.util.Locale;
 import java.util.Set;
 
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -51,7 +54,23 @@ public class ProfileImageUploadValidator {
             throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
         }
 
-        if (!ALLOWED_MIME_TYPES.contains(contentType.toLowerCase())) {
+        String normalized = normalizeContentType(contentType);
+        if (!ALLOWED_MIME_TYPES.contains(normalized)) {
+            throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
+        }
+    }
+
+    public String normalizeContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
+        }
+
+        try {
+            MediaType mediaType = MediaType.parseMediaType(contentType);
+            return mediaType.getType().toLowerCase(Locale.ROOT)
+                + "/"
+                + mediaType.getSubtype().toLowerCase(Locale.ROOT);
+        } catch (InvalidMediaTypeException e) {
             throw new CustomException(ErrorCode.PROFILE_IMAGE_TYPE_NOT_ALLOWED);
         }
     }
