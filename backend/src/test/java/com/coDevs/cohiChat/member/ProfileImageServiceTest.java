@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -85,9 +86,11 @@ class ProfileImageServiceTest {
         given(cloudFrontUrlService.generatePublicUrl(ownObjectKey))
                 .willReturn(expectedUrl);
 
-        profileImageService.confirmUpload(USERNAME, ownObjectKey);
+        String result = profileImageService.confirmUpload(USERNAME, ownObjectKey);
 
+        assertThat(result).isEqualTo(expectedUrl);
         verify(s3PresignedUrlService).getObjectMetadata(ownObjectKey);
+        verify(cloudFrontUrlService).generatePublicUrl(ownObjectKey);
         verify(memberRepository).save(member);
     }
 }
