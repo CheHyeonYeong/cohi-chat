@@ -19,17 +19,29 @@ import jakarta.persistence.LockModeType;
 @Repository
 public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
 
-    List<TimeSlot> findByUserIdOrderByStartTimeAsc(UUID userId);
+    @Query("""
+        SELECT t FROM TimeSlot t
+        WHERE t.userId = :userId
+          AND t.deletedAt IS NULL
+        ORDER BY t.startTime ASC
+        """)
+    List<TimeSlot> findByUserIdOrderByStartTimeAsc(@Param("userId") UUID userId);
+
+    @Query("SELECT t FROM TimeSlot t WHERE t.id = :id AND t.deletedAt IS NULL")
+    Optional<TimeSlot> findActiveById(@Param("id") Long id);
 
     @Query("SELECT DISTINCT t FROM TimeSlot t " +
            "JOIN t.weekdayEntities w " +
            "WHERE t.userId = :userId " +
+           "AND t.deletedAt IS NULL " +
+           "AND (:excludedId IS NULL OR t.id <> :excludedId) " +
            "AND t.startTime < :endTime AND t.endTime > :startTime " +
            "AND w.weekday IN :weekdays " +
            "AND (t.endDate IS NULL OR :startDate IS NULL OR t.endDate >= :startDate) " +
            "AND (t.startDate IS NULL OR :endDate IS NULL OR t.startDate <= :endDate)")
     List<TimeSlot> findOverlappingTimeSlots(
         @Param("userId") UUID userId,
+        @Param("excludedId") Long excludedId,
         @Param("startTime") LocalTime startTime,
         @Param("endTime") LocalTime endTime,
         @Param("weekdays") List<Integer> weekdays,
@@ -38,6 +50,6 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT t FROM TimeSlot t WHERE t.id = :id")
+    @Query("SELECT t FROM TimeSlot t WHERE t.id = :id AND t.deletedAt IS NULL")
     Optional<TimeSlot> findByIdWithLock(@Param("id") Long id);
 }

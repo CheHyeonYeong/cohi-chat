@@ -17,6 +17,17 @@ export const createTimeslot = async (payload: TimeSlotCreatePayload): Promise<Ti
 
 export const getMyTimeslots = async (): Promise<TimeSlotResponse[]> => (await httpClient<TimeSlotResponse[]>(TIMESLOT_API)) ?? [];
 
+export const updateTimeslot = async (id: number, payload: TimeSlotCreatePayload): Promise<TimeSlotResponse> => {
+    const response = await httpClient<TimeSlotResponse>(`${TIMESLOT_API}/${id}`, {
+        method: 'PATCH',
+        body: payload,
+    });
+    if (!response) {
+        throw new Error('??꾩뒳濡??섏젙???ㅽ뙣?덉뒿?덈떎.');
+    }
+    return response;
+};
+
 export const deleteTimeslot = async (id: number): Promise<void> => {
     await httpClient<void>(`${TIMESLOT_API}/${id}`, { method: 'DELETE' });
 };

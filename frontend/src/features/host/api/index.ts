@@ -1,2 +1,2 @@
 export { createCalendar, getMyCalendar, updateCalendar } from './hostCalendarApi';
-export { createTimeslot, getMyTimeslots, deleteTimeslot } from './hostTimeslotApi';
+export { createTimeslot, getMyTimeslots, updateTimeslot, deleteTimeslot } from './hostTimeslotApi';

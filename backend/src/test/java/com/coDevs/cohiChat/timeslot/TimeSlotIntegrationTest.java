@@ -142,6 +142,7 @@ class TimeSlotIntegrationTest {
         // when - 겹치는 시간대 + 요일 조회 (10:30-11:30, 일요일)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
+            null,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30),
             List.of(0),
@@ -168,6 +169,7 @@ class TimeSlotIntegrationTest {
         // when - 같은 시간대지만 다른 요일 (목,금)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
+            null,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(3, 4),
@@ -193,6 +195,7 @@ class TimeSlotIntegrationTest {
         // when - 겹치지 않는 시간대 조회 (11:00-12:00)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             hostId,
+            null,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0),
             List.of(0, 1, 2),

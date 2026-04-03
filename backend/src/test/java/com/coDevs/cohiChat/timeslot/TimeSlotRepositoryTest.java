@@ -88,6 +88,7 @@ class TimeSlotRepositoryTest {
         // when - 10:30-11:30은 기존 10:00-11:00과 시간이 겹치고, 요일 0도 겹침
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
+            null,
             LocalTime.of(10, 30),
             LocalTime.of(11, 30),
             List.of(0),
@@ -105,6 +106,7 @@ class TimeSlotRepositoryTest {
         // when - 시간은 겹치지만 요일 3,4 (목,금)은 기존 0,1,2 (일,월,화)와 겹치지 않음
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
+            null,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(3, 4),
@@ -121,6 +123,7 @@ class TimeSlotRepositoryTest {
         // when - 11:00-12:00은 기존 10:00-11:00과 시간이 겹치지 않음 (경계)
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             userId,
+            null,
             LocalTime.of(11, 0),
             LocalTime.of(12, 0),
             List.of(0, 1, 2),
@@ -137,6 +140,7 @@ class TimeSlotRepositoryTest {
         // when - 다른 사용자 ID로 조회
         List<TimeSlot> overlapping = timeSlotRepository.findOverlappingTimeSlots(
             UUID.randomUUID(),
+            null,
             LocalTime.of(10, 0),
             LocalTime.of(11, 0),
             List.of(0, 1, 2),

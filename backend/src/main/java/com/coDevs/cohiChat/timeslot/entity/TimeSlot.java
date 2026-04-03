@@ -61,6 +61,9 @@ public class TimeSlot {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     public static TimeSlot create(
         UUID userId,
         LocalTime startTime,
@@ -100,5 +103,30 @@ public class TimeSlot {
         return weekdayEntities.stream()
             .map(TimeSlotWeekday::getWeekday)
             .toList();
+    }
+
+    public void update(
+        LocalTime startTime,
+        LocalTime endTime,
+        List<Integer> weekdays,
+        LocalDate startDate,
+        LocalDate endDate
+    ) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.weekdayEntities.clear();
+        weekdays.stream()
+            .distinct()
+            .forEach(weekday -> this.weekdayEntities.add(TimeSlotWeekday.create(this, weekday)));
+    }
+
+    public void retireBefore(LocalDate effectiveStartDate) {
+        this.endDate = effectiveStartDate.minusDays(1);
+    }
+
+    public void softDelete() {
+        this.deletedAt = Instant.now();
     }
 }

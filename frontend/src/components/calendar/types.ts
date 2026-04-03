@@ -12,6 +12,7 @@ export interface ITimeSlot {
 
 export interface IBooking {
     id: number;
+    timeSlotId?: number;
     startedAt: string;
     endedAt: string;
 }

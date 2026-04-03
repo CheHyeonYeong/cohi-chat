@@ -1,10 +1,10 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.DayOfWeek;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,11 +16,11 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
 
     private static final int BATCH_FLUSH_SIZE = 100;
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
     private static final long NO_SHOW_BAN_THRESHOLD = 20;
 
     private final BookingRepository bookingRepository;
@@ -69,20 +70,18 @@ public class BookingService {
 
     private volatile ZoneId calendarZoneId;
 
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
-
     @PostConstruct
     void initZoneId() {
         String timezone = googleCalendarProperties.getTimezone();
         if (timezone == null || timezone.isBlank()) {
-            log.warn("google.calendar.timezone is null/blank. Falling back to Asia/Seoul");
+            log.warn("Google calendar timezone is not configured. Falling back to default timezone: {}", DEFAULT_ZONE);
             calendarZoneId = DEFAULT_ZONE;
             return;
         }
         try {
             calendarZoneId = ZoneId.of(timezone);
         } catch (DateTimeException e) {
-            log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to Asia/Seoul: {}", timezone, e.getMessage());
+            log.warn("Invalid timezone '{}' in GoogleCalendarProperties. Falling back to default timezone: {}", timezone, DEFAULT_ZONE);
             calendarZoneId = DEFAULT_ZONE;
         }
     }
@@ -91,7 +90,7 @@ public class BookingService {
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot timeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         validateNotSelfBooking(guest, timeSlot);
@@ -115,9 +114,6 @@ public class BookingService {
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
 
-        log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
-            savedBooking.getId(), savedBooking.getBookingDate());
-
         return toBookingResponseDTO(savedBooking);
     }
 
@@ -140,15 +136,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * 예약 날짜의 요일이 타임슬롯에서 허용하는 요일인지 검증
-     *
-     * 요일 매핑 (일요일 = 0 기준):
-     * - 일=0, 월=1, 화=2, 수=3, 목=4, 금=5, 토=6
-     *
-     * Java DayOfWeek.getValue(): 월=1, 화=2, ..., 일=7
-     * 변환: (dayOfWeek.getValue() % 7) -> 일=0, 월=1, ..., 토=6
-     */
     private void validateWeekdayAvailable(TimeSlot timeSlot, LocalDate bookingDate) {
         int weekday = convertToSundayBasedWeekday(bookingDate.getDayOfWeek());
         if (!timeSlot.getWeekdays().contains(weekday)) {
@@ -156,11 +143,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * Java DayOfWeek를 일요일=0 기준 요일 숫자로 변환
-     * @param dayOfWeek Java DayOfWeek (MONDAY=1 ~ SUNDAY=7)
-     * @return 일요일=0 기준 요일 (일=0, 월=1, ..., 토=6)
-     */
     private int convertToSundayBasedWeekday(DayOfWeek dayOfWeek) {
         return dayOfWeek.getValue() % 7;
     }
@@ -177,9 +159,11 @@ public class BookingService {
     }
 
     private void validateNotDuplicateBooking(TimeSlot timeSlot, LocalDate bookingDate, Long excludedId) {
-        boolean exists = bookingRepository.existsDuplicateBooking(
-            timeSlot.getId(),
+        boolean exists = bookingRepository.existsOverlappingBooking(
+            timeSlot.getUserId(),
             bookingDate,
+            timeSlot.getStartTime(),
+            timeSlot.getEndTime(),
             AttendanceStatus.getExcludedFromDuplicateCheck(),
             excludedId
         );
@@ -188,11 +172,6 @@ public class BookingService {
         }
     }
 
-    /**
-     * 예약 주제(topic)가 호스트 캘린더에 정의된 topics 목록에 포함되는지 검증
-     * @param hostId 호스트 ID
-     * @param topic 검증할 주제
-     */
     private void validateTopic(UUID hostId, String topic) {
         Calendar calendar = calendarRepository.findById(hostId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
@@ -251,9 +230,6 @@ public class BookingService {
         return PaginatedBookingResponseDTO.of(bookings, bookingPage.getTotalElements(), page, size);
     }
 
-    /**
-     * 예약 스트림을 처리하며 100개 단위로 영속성 컨텍스트에서 detach하여 메모리 효율을 개선합니다.
-     */
     private List<BookingResponseDTO> processBookingStreamWithBatchFlush(Stream<Booking> bookingStream) {
         List<Booking> batch = new ArrayList<>(BATCH_FLUSH_SIZE);
         List<BookingResponseDTO> result = new ArrayList<>();
@@ -326,7 +302,7 @@ public class BookingService {
         validateHostAccess(booking, hostId);
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot newTimeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         if (!newTimeSlot.getUserId().equals(hostId)) {
@@ -349,7 +325,7 @@ public class BookingService {
         UUID hostId = timeSlot.getUserId();
         var calendarOpt = calendarRepository.findById(hostId);
         if (calendarOpt.isEmpty()) {
-            log.debug("[syncGoogleCalendar] [SKIP] reason=CALENDAR_NOT_LINKED");
+            log.debug("No Google Calendar linked for host: {}", hostId);
             return;
         }
 
@@ -365,17 +341,22 @@ public class BookingService {
                 );
                 if (eventId != null) {
                     booking.setGoogleEventId(eventId);
+                    log.info("Google Calendar event created for booking: {}", booking.getId());
+                } else {
+                    log.warn("Google Calendar event creation returned null for booking: {}", booking.getId());
                 }
                 return;
             }
 
-            googleCalendarService.updateEvent(
+            boolean updated = googleCalendarService.updateEvent(
                 booking.getGoogleEventId(), summary, description,
                 startDateTime, endDateTime, calendar.getGoogleCalendarId()
             );
+            if (updated) {
+                log.info("Google Calendar event updated for booking: {}", booking.getId());
+            }
         } catch (Exception e) {
-            log.error("[syncGoogleCalendar] [FAIL] bookingId={} cause={}",
-                booking.getId(), e.getClass().getSimpleName(), e);
+            log.error("Google Calendar event upsert failed for booking: {}", booking.getId(), e);
         }
     }
 
@@ -419,8 +400,6 @@ public class BookingService {
         deleteGoogleCalendarEvent(booking);
 
         booking.cancel();
-
-        log.info("[cancelBooking] [SUCCESS] bookingId={}", bookingId);
     }
 
     private void deleteGoogleCalendarEvent(Booking booking) {
@@ -430,10 +409,14 @@ public class BookingService {
 
         UUID hostId = booking.getTimeSlot().getUserId();
         calendarRepository.findById(hostId).ifPresent(calendar -> {
-            googleCalendarService.deleteEvent(
+            boolean deleted = googleCalendarService.deleteEvent(
                 booking.getGoogleEventId(),
                 calendar.getGoogleCalendarId()
             );
+
+            if (deleted) {
+                log.info("Google Calendar event deleted for booking: {}", booking.getId());
+            }
         });
     }
 
@@ -445,7 +428,7 @@ public class BookingService {
         validateGuestAccess(booking, guestId);
         validateNotPastBooking(request.getBookingDate());
 
-        TimeSlot newTimeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+        TimeSlot newTimeSlot = timeSlotRepository.findActiveById(request.getTimeSlotId())
             .orElseThrow(() -> new CustomException(ErrorCode.TIMESLOT_NOT_FOUND));
 
         UUID originalHostId = booking.getTimeSlot().getUserId();
@@ -472,27 +455,6 @@ public class BookingService {
         upsertGoogleCalendarEvent(booking, newTimeSlot, request.getBookingDate(), request.getDescription(), guest);
 
         return toBookingResponseDTO(booking);
-    }
-
-    private void updateGoogleCalendarEventForGuestUpdate(Booking booking, TimeSlot timeSlot, BookingUpdateRequestDTO request) {
-        if (booking.getGoogleEventId() == null) {
-            return;
-        }
-
-        UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
-            Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
-            Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
-
-            googleCalendarService.updateEvent(
-                booking.getGoogleEventId(),
-                request.getTopic(),
-                request.getDescription(),
-                startDateTime,
-                endDateTime,
-                calendar.getGoogleCalendarId()
-            );
-        });
     }
 
     @Transactional
@@ -524,7 +486,7 @@ public class BookingService {
             }
         });
 
-        log.info("[reportHostNoShow] [SUCCESS] bookingId={}", bookingId);
+        log.info("Host no-show reported for booking: {}, host: {}, reporter: {}", bookingId, hostId, guestId);
 
         return toBookingResponseDTO(booking);
     }
@@ -545,7 +507,7 @@ public class BookingService {
 
     private void validateMeetingStarted(Booking booking) {
         LocalDate bookingDate = booking.getBookingDate();
-        LocalTime startTime = booking.getTimeSlot().getStartTime();
+        LocalTime startTime = booking.getStartTime();
         Instant meetingStart = bookingDate.atTime(startTime).atZone(calendarZoneId).toInstant();
 
         if (Instant.now().isBefore(meetingStart)) {

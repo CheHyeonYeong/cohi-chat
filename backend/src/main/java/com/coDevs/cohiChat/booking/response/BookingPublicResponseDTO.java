@@ -11,28 +11,28 @@ import lombok.Getter;
 
 import static com.coDevs.cohiChat.global.util.TimeUtils.toUtcInstant;
 
-/**
- * 공개 API용 예약 응답 DTO.
- * SSE 스트리밍 중복 제거를 위해 id 포함.
- * startedAt/endedAt: UTC 기준 Instant (FE에서 로컬 타임존 변환).
- */
 @Getter
 @Builder
 @AllArgsConstructor
 public class BookingPublicResponseDTO {
 
     private final long id;
+    private final Long timeSlotId;
     private final Instant startedAt;
     private final Instant endedAt;
 
+    public static BookingPublicResponseDTO from(Booking booking) {
+        return from(booking, ZoneId.of("Asia/Seoul"));
+    }
+
     public static BookingPublicResponseDTO from(Booking booking, ZoneId zoneId) {
-        var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
 
         return BookingPublicResponseDTO.builder()
             .id(booking.getId())
-            .startedAt(toUtcInstant(date, timeSlot.getStartTime(), zoneId))
-            .endedAt(toUtcInstant(date, timeSlot.getEndTime(), zoneId))
+            .timeSlotId(booking.getTimeSlot().getId())
+            .startedAt(toUtcInstant(date, booking.getStartTime(), zoneId))
+            .endedAt(toUtcInstant(date, booking.getEndTime(), zoneId))
             .build();
     }
 }

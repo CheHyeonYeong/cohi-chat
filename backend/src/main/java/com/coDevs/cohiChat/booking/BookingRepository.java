@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.booking;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,40 +26,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByTimeSlot_Id(Long timeSlotId);
 
-    /**
-     * 게스트 ID로 예약 스트림 조회 (예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지, 100개 단위 배치 조회
-     */
     @QueryHints(@QueryHint(name = HINT_FETCH_SIZE, value = "100"))
     @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC")
     Stream<Booking> streamByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId);
 
-    /**
-     * 호스트 ID로 예약 스트림 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
-     * FETCH JOIN으로 N+1 문제 방지, 100개 단위 배치 조회
-     */
     @QueryHints(@QueryHint(name = HINT_FETCH_SIZE, value = "100"))
     @Query("SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC")
     Stream<Booking> streamByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId);
 
-    /**
-     * 게스트 ID로 예약 페이지 조회 (예약 날짜 내림차순)
-     */
     @Query(value = "SELECT b FROM Booking b LEFT JOIN FETCH b.timeSlot WHERE b.guestId = :guestId ORDER BY b.bookingDate DESC",
            countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.guestId = :guestId")
     Page<Booking> findByGuestIdOrderByBookingDateDesc(@Param("guestId") UUID guestId, Pageable pageable);
 
-    /**
-     * 호스트 ID로 예약 페이지 조회 (TimeSlot의 userId가 호스트 ID인 예약, 예약 날짜 내림차순)
-     */
     @Query(value = "SELECT b FROM Booking b JOIN FETCH b.timeSlot t WHERE t.userId = :hostId ORDER BY b.bookingDate DESC",
            countQuery = "SELECT COUNT(b) FROM Booking b JOIN b.timeSlot t WHERE t.userId = :hostId")
     Page<Booking> findByHostIdOrderByBookingDateDesc(@Param("hostId") UUID hostId, Pageable pageable);
 
-    /**
-     * 특정 타임슬롯과 날짜에 취소되지 않은 예약이 존재하는지 확인
-     * @param excludedId 제외할 예약 ID (새 예약 생성 시 null, 수정 시 자신의 ID)
-     */
     @Query("""
         SELECT EXISTS (
             SELECT 1 FROM Booking b
@@ -75,10 +58,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("excludedId") Long excludedId
     );
 
-    /**
-     * 호스트의 월별 예약 목록 조회 (날짜 범위 필터링, endDate 미포함)
-     * timeSlot FETCH JOIN으로 N+1 문제 방지
-     */
+    @Query("""
+        SELECT EXISTS (
+            SELECT 1 FROM Booking b
+            JOIN b.timeSlot t
+            WHERE t.userId = :hostId
+              AND t.deletedAt IS NULL
+              AND b.bookingDate = :bookingDate
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+              AND b.attendanceStatus NOT IN :excludedStatuses
+              AND (:excludedId IS NULL OR b.id <> :excludedId)
+        )
+        """)
+    boolean existsOverlappingBooking(
+        @Param("hostId") UUID hostId,
+        @Param("bookingDate") LocalDate bookingDate,
+        @Param("startTime") LocalTime startTime,
+        @Param("endTime") LocalTime endTime,
+        @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses,
+        @Param("excludedId") Long excludedId
+    );
+
     @Query("""
         SELECT b FROM Booking b
         JOIN FETCH b.timeSlot t
@@ -93,10 +94,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("endDate") LocalDate endDate
     );
 
-    /**
-     * 호스트의 미래 예정된 예약 조회
-     * timeSlot FETCH JOIN으로 N+1 문제 방지
-     */
     @Query("""
         SELECT b FROM Booking b
         JOIN FETCH b.timeSlot t
@@ -111,10 +108,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("status") AttendanceStatus status
     );
 
-    /**
-     * 게스트의 미래 예정된 예약 조회
-     * timeSlot FETCH JOIN으로 N+1 문제 방지
-     */
     @Query("""
         SELECT b FROM Booking b
         JOIN FETCH b.timeSlot t
@@ -129,9 +122,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("status") AttendanceStatus status
     );
 
-    /**
-     * 특정 호스트의 커피챗 횟수 단일 집계
-     */
     @Query("""
         SELECT COUNT(b) FROM Booking b
         JOIN b.timeSlot t
@@ -140,9 +130,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         """)
     long countAttendedByHostId(@Param("hostId") UUID hostId, @Param("status") AttendanceStatus status);
 
-    /**
-     * 호스트 ID 목록의 커피챗 횟수 배치 집계 (N+1 방지)
-     */
     @Query("""
         SELECT t.userId AS hostId, COUNT(b) AS count
         FROM Booking b JOIN b.timeSlot t
@@ -155,9 +142,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("status") AttendanceStatus status
     );
 
-    /**
-     * 단건 조회 시 timeSlot을 함께 로드 (지연 로딩 방지)
-     */
     @Query("""
         SELECT b FROM Booking b
         JOIN FETCH b.timeSlot
@@ -165,4 +149,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         """)
     Optional<Booking> findByIdWithTimeSlot(@Param("id") Long id);
 
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.timeSlot t
+        WHERE t.id = :timeSlotId
+          AND b.bookingDate >= :fromDate
+          AND b.attendanceStatus NOT IN :excludedStatuses
+        ORDER BY b.bookingDate
+        """)
+    List<Booking> findActiveBookingsByTimeSlotIdFromDate(
+        @Param("timeSlotId") Long timeSlotId,
+        @Param("fromDate") LocalDate fromDate,
+        @Param("excludedStatuses") List<AttendanceStatus> excludedStatuses
+    );
 }
