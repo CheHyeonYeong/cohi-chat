@@ -95,8 +95,8 @@ class OAuthServiceTest {
 
 		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code", "valid-state");
 
-		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
-		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
+		assertThat(response.accessToken()).isEqualTo("test-access-token");
+		assertThat(response.refreshToken()).isEqualTo("test-refresh-token");
 		verify(oAuthMemberService).findOrCreate(userInfo);
 		verify(oAuthStateService).validateAndConsumeState("valid-state");
 	}
@@ -120,8 +120,8 @@ class OAuthServiceTest {
 
 		LoginResponseDTO response = oAuthService.socialLogin("google", "auth-code", "valid-state");
 
-		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
-		assertThat(response.getUsername()).isEqualTo("google_existing");
+		assertThat(response.accessToken()).isEqualTo("test-access-token");
+		assertThat(response.username()).isEqualTo("google_existing");
 		verify(oAuthMemberService).findOrCreate(userInfo);
 	}
 
