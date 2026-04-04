@@ -15,6 +15,7 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.MeetingType;
+import com.coDevs.cohiChat.global.analytics.AnalyticsService;
 import com.coDevs.cohiChat.global.config.RateLimitService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -114,6 +115,9 @@ class MemberServiceTest {
 
 	@Mock
 	private SmtpEmailValidator smtpEmailValidator;
+
+	@Mock
+	private AnalyticsService analyticsService;
 
 	@Mock
 	private GoogleCalendarProperties googleCalendarProperties;
