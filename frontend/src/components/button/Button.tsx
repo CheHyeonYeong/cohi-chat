@@ -1,14 +1,18 @@
-import { forwardRef } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "~/libs/cn";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant: "primary" | "secondary" | "outline";
+type ButtonVariant = "primary" | "secondary" | "outline" | "selectable";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    variant: ButtonVariant;
     size?: "sm" | "md" | "lg";
+    selected?: boolean;
     loading?: boolean;
     asChild?: boolean;
     className?: string;
-    children: React.ReactNode;
+    children: ReactNode;
+    ref?: Ref<HTMLButtonElement>;
 }
 
 const sizeStyles = {
@@ -17,31 +21,34 @@ const sizeStyles = {
     lg: "px-6 py-3 text-lg font-semibold",
 };
 
-const variantStyles = {
+const variantStyles: Record<ButtonVariant, string> = {
     primary: "cohi-btn-primary",
     secondary: "cohi-btn-secondary",
     outline: "cohi-btn-outline",
+    selectable: "cohi-selectable",
 };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ variant, size = "md", loading = false, asChild = false, disabled, className, children, ...props }, ref) => {
-        const Comp = asChild ? Slot : "button";
-        return (
-            <Comp
-                ref={ref}
-                {...(!asChild && { type: "button" as const })}
-                disabled={loading || disabled}
-                className={cn(
-                    "rounded-md disabled:opacity-50 disabled:cursor-not-allowed",
-                    variantStyles[variant],
-                    sizeStyles[size],
-                    className,
-                )}
-                {...props}
-            >
-                {children}
-            </Comp>
-        );
-    }
-);
+const selectedStyles: Partial<Record<ButtonVariant, string>> = {
+    selectable: "cohi-selectable-active",
+};
 
+export const Button = ({ variant, size = "md", selected = false, loading = false, asChild = false, disabled, className, children, ref, ...props }: ButtonProps) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+        <Comp
+            ref={ref}
+            {...(!asChild && { type: "button" as const })}
+            disabled={loading || disabled}
+            aria-pressed={selected || undefined}
+            className={cn(
+                "rounded-md disabled:opacity-50 disabled:cursor-not-allowed",
+                selected && selectedStyles[variant] ? selectedStyles[variant] : variantStyles[variant],
+                sizeStyles[size],
+                className,
+            )}
+            {...props}
+        >
+            {children}
+        </Comp>
+    );
+};

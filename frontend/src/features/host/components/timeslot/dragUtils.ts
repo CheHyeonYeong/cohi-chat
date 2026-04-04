@@ -1,24 +1,20 @@
 import type { TimeSlotEntry } from './TimeSlotForm';
 import { COLUMN_TO_WEEKDAY, type GridColumn } from '~/libs/constants/days';
 
-export function parseCellId(id: string): { col: number; row: number } | null {
+export const parseCellId = (id: string): { col: number; row: number } | null => {
     const match = id.match(/^cell-(\d+)-(\d+)$/);
     if (!match) return null;
     return { col: parseInt(match[1], 10), row: parseInt(match[2], 10) };
-}
+};
 
-export function rowToTime(row: number, startHour: number): string {
+export const rowToTime = (row: number, startHour: number): string => {
     const totalMinutes = row * 30 + startHour * 60;
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
+};
 
-export function computeEntryFromDrag(
-    startId: string,
-    endId: string,
-    startHour: number,
-): TimeSlotEntry | null {
+export const computeEntryFromDrag = (startId: string, endId: string, startHour: number): TimeSlotEntry | null => {
     const start = parseCellId(startId);
     const end = parseCellId(endId);
     if (!start || !end) return null;
@@ -38,16 +34,13 @@ export function computeEntryFromDrag(
         // endTime은 마지막 half-row의 다음 경계 — 그리드가 동적으로 확장되므로 정상
         endTime: rowToTime(maxRow + 1, startHour),
     };
-}
+};
 
 /**
  * 드래그 범위에 포함되는 (col, halfRow) 집합 계산
  * dragOverId가 null이면 dragStartId 위치만 하이라이트
  */
-export function computeDragHighlights(
-    dragStartId: string | null,
-    dragOverId: string | null,
-): Set<string> {
+export const computeDragHighlights = (dragStartId: string | null, dragOverId: string | null): Set<string> => {
     if (!dragStartId) return new Set();
     const start = parseCellId(dragStartId);
     const over = parseCellId(dragOverId ?? dragStartId);
@@ -65,24 +58,17 @@ export function computeDragHighlights(
         }
     }
     return set;
-}
+};
 
 /** 새 entry와 요일이 겹치면서 시간대도 겹치는 entry가 이미 존재하는지 확인 */
-export function isDuplicateEntry(entries: TimeSlotEntry[], newEntry: TimeSlotEntry): boolean {
-    return entries.some(
-        (e) =>
-            newEntry.startTime < e.endTime &&
+export const isDuplicateEntry = (entries: TimeSlotEntry[], newEntry: TimeSlotEntry): boolean => entries.some(
+    (e) =>
+        newEntry.startTime < e.endTime &&
             newEntry.endTime > e.startTime &&
             e.weekdays.some((wd) => newEntry.weekdays.includes(wd)),
-    );
-}
+);
 
-export function appendEntryIfNotDuplicate(
-    entries: TimeSlotEntry[],
-    newEntry: TimeSlotEntry | null,
-    onAppend: (nextEntries: TimeSlotEntry[]) => void,
-    onDuplicateBlocked?: (entry: TimeSlotEntry) => void,
-): boolean {
+export const appendEntryIfNotDuplicate = (entries: TimeSlotEntry[], newEntry: TimeSlotEntry | null, onAppend: (nextEntries: TimeSlotEntry[]) => void, onDuplicateBlocked?: (entry: TimeSlotEntry) => void): boolean => {
     if (!newEntry) return false;
     if (isDuplicateEntry(entries, newEntry)) {
         onDuplicateBlocked?.(newEntry);
@@ -90,7 +76,7 @@ export function appendEntryIfNotDuplicate(
     }
     onAppend([...entries, newEntry]);
     return true;
-}
+};
 
 export interface CommitDraggedEntryParams {
     entries: TimeSlotEntry[];
@@ -101,15 +87,15 @@ export interface CommitDraggedEntryParams {
     startHour: number;
 }
 
-export function commitDraggedEntry({
+export const commitDraggedEntry = ({
     entries,
     onChange,
     onDuplicateBlocked,
     dragStartId,
     endId,
     startHour,
-}: CommitDraggedEntryParams): void {
+}: CommitDraggedEntryParams): void => {
     if (!onChange || !dragStartId || !endId) return;
     const entry = computeEntryFromDrag(dragStartId, endId, startHour);
     appendEntryIfNotDuplicate(entries, entry, onChange, onDuplicateBlocked);
-}
+};

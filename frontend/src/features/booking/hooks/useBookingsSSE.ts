@@ -2,13 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { snakeToCamel } from '~/libs/utils';
 import type { IBooking, ICalendarEvent } from '~/components/calendar';
 
-export function useBookingsSSEQuery({
+export const useBookingsSSEQuery = ({
     endpoint,
     onMessage,
 }: {
     endpoint: string;
     onMessage?: (data: IBooking | ICalendarEvent) => void;
-}) {
+}) => {
     const [data, setData] = useState<Array<IBooking | ICalendarEvent>>([]);
     const [connectionError, setConnectionError] = useState<Event | null>(null);
     const onMessageRef = useRef(onMessage);
@@ -18,6 +18,8 @@ export function useBookingsSSEQuery({
     });
 
     useEffect(() => {
+        // SSE 재연결 시 이전 에러 상태 초기화 — 외부 시스템(EventSource) 구독 설정의 일부
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setConnectionError(null);
         const eventSource = new EventSource(
             endpoint,
@@ -59,4 +61,4 @@ export function useBookingsSSEQuery({
     }, [endpoint]);
 
     return { data, connectionError };
-}
+};

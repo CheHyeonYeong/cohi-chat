@@ -5,15 +5,12 @@ import { useToast } from '~/components/toast/useToast';
 import { TimeSlotForm, WeeklySchedulePreview, type TimeSlotEntry } from '~/features/host/components/timeslot';
 import { useCreateTimeslot, useDeleteTimeslot, useMyTimeslots } from '~/features/host';
 import type { TimeSlotResponse } from '~/features/host';
-import { useAuth, useUpdateProfile } from '~/features/member';
-import { useHost } from '~/hooks/useHost';
-import { Button } from '~/components/button';
 import { LinkButton } from '~/components/button/LinkButton';
 import { getErrorMessage } from '~/libs/errorUtils';
 import { DAY_NAMES, type Weekday } from '~/libs/constants/days';
-const PROFILE_SAVE_SUCCESS_DURATION = 3000;
+import { formatKoreanDate, formatKoreanTime } from '~/libs/date';
 
-function formatWeekdaySummary(weekdays: number[]): string {
+const formatWeekdaySummary = (weekdays: number[]): string => {
     const sorted = [...weekdays].sort((a, b) => a - b);
     if (sorted.length === 0) return '';
     const names = sorted.map((d) => DAY_NAMES[d as Weekday]);
@@ -22,29 +19,23 @@ function formatWeekdaySummary(weekdays: number[]): string {
         return names[0] + '~' + names[names.length - 1];
     }
     return names.join(', ');
-}
+};
 
-function normalizeTime(time?: string | null): string {
-    return typeof time === 'string' ? time.slice(0, 5) : '';
-}
+const normalizeTime = (time?: string | null): string => typeof time === 'string' ? time.slice(0, 5) : '';
 
-function readTimeslotStart(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('startedAt' in ts ? ts.startedAt : undefined) ??
+const readTimeslotStart = (ts: TimeSlotResponse): string => normalizeTime(
+    ('startedAt' in ts ? ts.startedAt : undefined) ??
         ('startTime' in (ts as TimeSlotResponse & { startTime?: string }) ? (ts as TimeSlotResponse & { startTime?: string }).startTime : undefined) ??
         null,
-    );
-}
+);
 
-function readTimeslotEnd(ts: TimeSlotResponse): string {
-    return normalizeTime(
-        ('endedAt' in ts ? ts.endedAt : undefined) ??
+const readTimeslotEnd = (ts: TimeSlotResponse): string => normalizeTime(
+    ('endedAt' in ts ? ts.endedAt : undefined) ??
         ('endTime' in (ts as TimeSlotResponse & { endTime?: string }) ? (ts as TimeSlotResponse & { endTime?: string }).endTime : undefined) ??
         null,
-    );
-}
+);
 
-function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
+const toEntries = (timeslots: TimeSlotResponse[]): TimeSlotEntry[] => {
     if (timeslots.length === 0) return [];
     return timeslots
         .map((ts) => ({
@@ -56,50 +47,15 @@ function toEntries(timeslots: TimeSlotResponse[]): TimeSlotEntry[] {
             existingId: ts.id,
         }))
         .filter((entry) => entry.startTime && entry.endTime);
-}
+};
 
-export function TimeSlotSettings() {
+export const TimeSlotSettings = () => {
     const [entries, setEntries] = useState<TimeSlotEntry[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const deletingIdsRef = useRef<Set<number>>(new Set());
     const syncedRef = useRef(false);
-
-    const { data: user } = useAuth();
-    const { data: hostProfile } = useHost(user?.username ?? '');
-    const [job, setJob] = useState('');
-    const [profileImageUrl, setProfileImageUrl] = useState('');
-    const [profileSaved, setProfileSaved] = useState(false);
-    const updateProfileMutation = useUpdateProfile();
-    const profileSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (hostProfile) {
-            setJob(hostProfile.job ?? '');
-            setProfileImageUrl(hostProfile.profileImageUrl ?? '');
-        }
-    }, [hostProfile]);
-
-    const handleProfileSave = async () => {
-        try {
-            await updateProfileMutation.mutateAsync({
-                job: job || undefined,
-                profileImageUrl: profileImageUrl || undefined,
-            });
-            setProfileSaved(true);
-            if (profileSavedTimerRef.current) clearTimeout(profileSavedTimerRef.current);
-            profileSavedTimerRef.current = setTimeout(() => setProfileSaved(false), PROFILE_SAVE_SUCCESS_DURATION);
-        } catch {
-            // 에러는 updateProfileMutation.isError / error로 표시
-        }
-    };
 
     const { showToast } = useToast();
     const handleDuplicateBlocked = () => {
@@ -169,7 +125,7 @@ export function TimeSlotSettings() {
         if (failures.length > 0) {
             const reasons = failures.map((f) => {
                 const label = f.entry.startTime + '~' + f.entry.endTime;
-                const msg = f.result.reason instanceof Error ? f.result.reason.message : '알 수 없는 오류';
+                const msg = getErrorMessage(f.result.reason);
                 return '[' + label + '] ' + msg;
             });
             setErrors({ save: reasons.join(', ') });
@@ -232,7 +188,7 @@ export function TimeSlotSettings() {
                 <div className="flex items-center justify-center py-12">
                     <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">⏰</div>
-                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-cohi-text-dark">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             시간대를 설정하려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>
@@ -248,48 +204,6 @@ export function TimeSlotSettings() {
     return (
         <PageLayout title="시간대 설정" className="pb-20">
             <div className="space-y-8">
-                <Card title="내 프로필">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">직업 / 소개</label>
-                            <input
-                                type="text"
-                                value={job}
-                                onChange={(e) => setJob(e.target.value)}
-                                placeholder="예: 백엔드 개발자 @ 스타트업"
-                                maxLength={100}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">프로필 이미지 URL</label>
-                            <input
-                                type="url"
-                                value={profileImageUrl}
-                                onChange={(e) => setProfileImageUrl(e.target.value)}
-                                placeholder="https://..."
-                                maxLength={500}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/30 focus:border-[var(--cohi-primary)]"
-                            />
-                        </div>
-                        <div className="flex items-end gap-2">
-                            <Button
-                                variant="primary"
-                                onClick={handleProfileSave}
-                                loading={updateProfileMutation.isPending}
-                            >
-                                    저장
-                            </Button>
-                            {profileSaved && (
-                                <span className="text-sm text-green-600 whitespace-nowrap">저장됐어요!</span>
-                            )}
-                        </div>
-                    </div>
-                    {updateProfileMutation.isError && (
-                        <p className="mt-2 text-sm text-red-500">{updateProfileMutation.error.message}</p>
-                    )}
-                </Card>
-
                 <div className="flex flex-col lg:flex-row gap-8">
                     <div className="w-full flex-1">
                         <WeeklySchedulePreview
@@ -319,12 +233,12 @@ export function TimeSlotSettings() {
                     <span>현재 설정: {summaryText}</span>
                     {lastSaved && (
                         <span>
-                            마지막 저장: {lastSaved.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}{' '}
-                            {lastSaved.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                            마지막 저장: {formatKoreanDate(lastSaved)}{' '}
+                            {formatKoreanTime(lastSaved)}
                         </span>
                     )}
                 </div>
             </footer>
         </PageLayout>
     );
-}
+};

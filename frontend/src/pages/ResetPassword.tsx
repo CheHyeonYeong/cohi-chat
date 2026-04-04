@@ -1,5 +1,3 @@
 import { ResetPasswordForm } from '~/features/member';
 
-export function ResetPassword() {
-    return <ResetPasswordForm />;
-}
+export const ResetPassword = () => <ResetPasswordForm />;

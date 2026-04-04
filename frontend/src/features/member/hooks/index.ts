@@ -5,6 +5,8 @@ export { useLogout } from './useLogout';
 export { useSignup } from './useSignup';
 export { useUpdateMember } from './useUpdateMember';
 export { useUpdateProfile } from './useUpdateProfile';
+export { useUploadProfileImage } from './useUploadProfileImage';
+export { useDeleteProfileImage } from './useDeleteProfileImage';
 export { useRequestPasswordReset, useVerifyResetToken, useConfirmPasswordReset } from './usePasswordReset';
 export { useFormValidation, type ValidationRule, type FieldState, type UseFormValidationReturn } from './useFormValidation';
 export { usePasswordValidation, type PasswordFormValues } from './usePasswordValidation';

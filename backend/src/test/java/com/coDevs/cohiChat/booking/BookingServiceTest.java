@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +67,7 @@ class BookingServiceTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     @Mock
     private EntityManager entityManager;
@@ -114,14 +115,17 @@ class BookingServiceTest {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
         bookingService.initZoneId();
 
+        // hostMember mock 설정
+        given(hostMember.getId()).willReturn(HOST_ID);
+
         // 기본 Calendar mock 설정 (TEST_TOPIC 포함)
         Calendar defaultCalendar = Calendar.create(
-            HOST_ID,
+            hostMember,
             List.of(TEST_TOPIC, "topic", "커리어 상담", "이직 상담", "포트폴리오 리뷰"),
             "desc",
             TEST_GOOGLE_CALENDAR_ID
         );
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(defaultCalendar));
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(defaultCalendar));
 
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -156,9 +160,9 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION, AttendanceStatus.SCHEDULED);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
     }
 
     @Test
@@ -354,8 +358,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -389,8 +393,8 @@ class BookingServiceTest {
 
         // then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
-        assertThat(responses.get(1).getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(responses.get(0).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE.plusDays(1));
+        assertThat(responses.get(1).getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -443,9 +447,9 @@ class BookingServiceTest {
 
         // then
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
-        assertThat(response.getEndedAt().atZone(ZoneOffset.UTC).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(15, 0));
     }
 
     @Test
@@ -948,7 +952,7 @@ class BookingServiceTest {
         // then
         assertThat(response.getTopic()).isEqualTo(newTopic);
         assertThat(response.getDescription()).isEqualTo(newDescription);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newBookingDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newBookingDate);
     }
 
     @Test
@@ -1148,7 +1152,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1176,7 +1180,7 @@ class BookingServiceTest {
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
 
         // then
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(FUTURE_DATE);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
     }
 
     @Test
@@ -1242,8 +1246,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
         given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of(TEST_TOPIC), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
         )).willReturn(googleEventId);
@@ -1287,8 +1291,8 @@ class BookingServiceTest {
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.updateEvent(
             eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
         )).willReturn(true);
@@ -1321,8 +1325,8 @@ class BookingServiceTest {
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.deleteEvent(eq(googleEventId), eq(googleCalendarId))).willReturn(true);
 
         // when
@@ -1369,8 +1373,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
         given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of(TEST_TOPIC), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar API 실패 (null 반환)
         given(googleCalendarService.createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
@@ -1412,8 +1416,8 @@ class BookingServiceTest {
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar 업데이트 실패
         given(googleCalendarService.updateEvent(
             eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
@@ -1429,7 +1433,7 @@ class BookingServiceTest {
 
         // then - 예약 수정은 정상 완료
         assertThat(response.getTimeSlotId()).isEqualTo(newTimeSlotId);
-        assertThat(response.getStartedAt().atZone(ZoneOffset.UTC).toLocalDate()).isEqualTo(newDate);
+        assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(newDate);
     }
 
     // ===== 호스트 노쇼 신고 테스트 (Issue #195) =====
@@ -1689,8 +1693,8 @@ class BookingServiceTest {
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar 삭제 실패
         given(googleCalendarService.deleteEvent(eq(googleEventId), eq(googleCalendarId))).willReturn(false);
 
@@ -1723,8 +1727,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
         // 호스트의 캘린더에 정의된 topics
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingCreateRequestDTO validRequest = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1757,8 +1761,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingCreateRequestDTO invalidRequest = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1787,7 +1791,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         // 호스트 캘린더가 없음
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.empty());
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -1819,8 +1823,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1859,8 +1863,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)

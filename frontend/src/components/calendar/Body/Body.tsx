@@ -13,7 +13,7 @@ interface BodyProps {
     onSelectDay: (date: Date) => void;
 }
 
-export function Body({ year, month, days, baseDate, selectedDate, timeslots, bookings, onSelectDay }: BodyProps) {
+export const Body = ({ year, month, days, baseDate, selectedDate, timeslots, bookings, onSelectDay }: BodyProps) => {
     const weeks = days.reduce<number[][]>((acc, day, i) => {
         const weekIndex = Math.floor(i / 7);
 
@@ -61,9 +61,9 @@ export function Body({ year, month, days, baseDate, selectedDate, timeslots, boo
                                         className={cn(
                                             "booking-cell flex justify-center items-center rounded-full aspect-square w-10 sm:w-12 select-none text-sm sm:text-base",
                                             day === 0 && 'invisible',
-                                            day !== 0 && !isAvailable && 'text-[#AAAAAA] bg-inherit cursor-default',
-                                            day !== 0 && isAvailable && !isSelected && 'font-bold text-[var(--cohi-primary)] bg-[var(--cohi-bg-light)] cursor-pointer hover:bg-[var(--cohi-primary)] hover:text-[var(--cohi-text-light)]',
-                                            day !== 0 && isAvailable && isSelected && 'font-bold bg-[var(--cohi-primary)] text-[var(--cohi-text-light)] cursor-pointer',
+                                            day !== 0 && !isAvailable && 'cohi-selectable-disabled',
+                                            day !== 0 && isAvailable && !isSelected && 'cohi-selectable',
+                                            day !== 0 && isAvailable && isSelected && 'cohi-selectable-active',
                                         )}
                                         onClick={() => isAvailable ? onSelectDay(new Date(year, month - 1, day)) : undefined}
                                     >
@@ -77,4 +77,4 @@ export function Body({ year, month, days, baseDate, selectedDate, timeslots, boo
             </div>
         </div>
     );
-}
+};

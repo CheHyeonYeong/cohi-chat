@@ -5,7 +5,7 @@ import { logoutApi } from '../api/memberApi';
 import { clearAuthenticatedUser } from '../utils/authStorage';
 import { useToast } from '~/components/toast';
 
-export function useLogout() {
+export const useLogout = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showToast } = useToast();
@@ -26,4 +26,4 @@ export function useLogout() {
     }, [navigate, queryClient, showToast]);
 
     return { logout };
-}
+};

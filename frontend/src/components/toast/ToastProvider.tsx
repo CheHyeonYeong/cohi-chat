@@ -1,18 +1,17 @@
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Toast } from './Toast';
 import { ToastContext } from './useToast';
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export const ToastProvider = ({ children }: { children: ReactNode }) => {
     const [open, setOpen] = useState(false);
     const [description, setDescription] = useState('');
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const activeKeyRef = useRef<string | null>(null);
     const openRef = useRef(false);
 
-    useEffect(() => {
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-        };
+    useEffect(() => () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
     }, []);
 
     const showToast = useCallback((desc: string, key: string, dur = 2500) => {
@@ -51,4 +50,4 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <Toast open={open} onOpenChange={handleOpenChange} description={description} />
         </ToastContext.Provider>
     );
-}
+};

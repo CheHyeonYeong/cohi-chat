@@ -13,6 +13,7 @@ import { Register } from '~/pages/host/Register'
 import { TimeSlotSettings } from '~/pages/host/TimeSlotSettings'
 import { Settings as HostSettings } from '~/pages/host/Settings'
 import { Settings as MemberSettings } from '~/pages/member/Settings'
+import { Logout } from '~/pages/Logout'
 import { Profile } from '~/pages/host/Profile'
 import { Footer } from '~/components/Footer'
 import { Terms } from '~/pages/Terms'
@@ -34,24 +35,19 @@ const TanStackRouterDevtools = import.meta.env.DEV
 
 /* eslint-enable react-refresh/only-export-components */
 
-/* eslint-disable-next-line react-refresh/only-export-components */
 const RootRoute = createRootRoute({
-    component: () => {
-        return (
-            <>
-                <div className="w-full min-h-screen flex flex-col">
-                    <div className="flex-1">
-                        <Outlet />
-                    </div>
-                    <Footer />
-                </div>
-                {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
-                <Suspense fallback={null}>
-                    <TanStackRouterDevtools />
-                </Suspense>
-            </>
-        )
-    },
+    component: () => <>
+        <div className="w-full min-h-screen flex flex-col">
+            <div className="flex-1">
+                <Outlet />
+            </div>
+            <Footer />
+        </div>
+        {/* fallback={null}: DevTools는 필수 UI가 아니므로 로딩 인디케이터 불필요 */}
+        <Suspense fallback={null}>
+            <TanStackRouterDevtools />
+        </Suspense>
+    </>,
 })
 
 const homeRoute = createRoute({
@@ -120,6 +116,10 @@ const hostProfileRoute = createRoute({
     params: z.object({
         hostId: z.string(),
     }),
+    validateSearch: z.object({
+        date: z.string().optional(),
+        selectedBookingId: z.number().optional(),
+    }),
 })
 
 
@@ -152,6 +152,12 @@ const memberSettingsRoute = createRoute({
     component: () => <AuthGuard><MemberSettings /></AuthGuard>,
 })
 
+const logoutRoute = createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/logout',
+    component: Logout,
+})
+
 const forgotPasswordRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/forgot-password',
@@ -182,6 +188,7 @@ export const routeTree = RootRoute.addChildren([
     termsRoute,
     privacyRoute,
     memberSettingsRoute,
+    logoutRoute,
     forgotPasswordRoute,
     resetPasswordRoute,
 ])

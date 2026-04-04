@@ -1,5 +1,6 @@
 import { useParams } from '@tanstack/react-router';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
+import { useState, useEffect, useMemo } from 'react';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
@@ -7,7 +8,7 @@ import { useBooking, useUploadBookingFile, useDeleteBookingFile, useDownloadBook
 import { useAuth } from '~/features/member';
 import { useHostCalendar } from '~/features/host';
 
-export function Detail() {
+export const Detail = () => {
     const { id } = useParams({ from: '/booking/$id' });
     const { data: booking, isLoading, error, refetch } = useBooking(id);
     const { data: currentUser } = useAuth();
@@ -15,11 +16,9 @@ export function Detail() {
     const { mutateAsync: deleteFileAsync, isPending: isDeleting } = useDeleteBookingFile(Number(id));
     const { mutate: downloadFile } = useDownloadBookingFile(Number(id));
     const { mutate: reportNoShow, isPending: isReporting, error: reportError, reset: resetReport } = useReportHostNoShow(Number(id));
-    // Edit mode state
     const [isEditing, setIsEditing] = useState(false);
     const { data: hostCalendar } = useHostCalendar(booking?.host.username ?? '');
 
-    // Host no-show report state
     const [showReportForm, setShowReportForm] = useState(false);
     const [reportReason, setReportReason] = useState('');
 
@@ -30,29 +29,21 @@ export function Detail() {
         return () => clearInterval(timer);
     }, []);
 
-    const isMeetingStarted = useMemo(() => {
-        if (!booking) return false;
-        return now >= booking.startedAt.getTime();
-    }, [booking, now]);
+    const isMeetingStarted = useMemo(
+        () => (booking ? now >= booking.startedAt.getTime() : false),
+        [booking, now]
+    );
 
-    // 현재 사용자가 이 예약의 게스트인지 판단
-    const isGuest = !!currentUser && currentUser.id === booking?.guestId;
+    const isGuest = currentUser?.id === booking?.guestId;
     const isAlreadyReported = booking?.attendanceStatus === 'HOST_NO_SHOW';
     const canEdit = isGuest && booking?.attendanceStatus === 'SCHEDULED' && !isEditing;
 
-    const handleEditCancel = useCallback(() => setIsEditing(false), []);
-    const handleEditSuccess = useCallback(() => setIsEditing(false), []);
-
     const handleUpload = async (files: FileList) => {
-        for (const file of Array.from(files)) {
-            await uploadFileAsync(file);
-        }
+        await Promise.all(Array.from(files).map((file) => uploadFileAsync(file)));
         await refetch();
     };
 
-    const handleDownload = (fileId: number, fileName: string) => {
-        downloadFile({ fileId, fileName });
-    };
+    const handleDownload = (fileId: number, fileName: string) => downloadFile({ fileId, fileName });
 
     const handleDelete = async (fileId: number) => {
         await deleteFileAsync(fileId);
@@ -68,11 +59,17 @@ export function Detail() {
         });
     };
 
+    const handleReportCancel = () => {
+        setShowReportForm(false);
+        setReportReason('');
+        resetReport();
+    };
+
     /* -- Loading / error states -------------------------------------------- */
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 불러오고 있습니다...</p>
             </div>
         );
@@ -80,7 +77,7 @@ export function Detail() {
 
     if (error) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-red-500">예약 정보를 불러오는 중 오류가 발생했습니다.</p>
             </div>
         );
@@ -88,7 +85,7 @@ export function Detail() {
 
     if (!booking) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">예약 정보를 찾을 수 없습니다.</p>
             </div>
         );
@@ -108,7 +105,7 @@ export function Detail() {
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="text-xs font-medium text-[var(--cohi-primary)] hover:underline cursor-pointer"
+                                    className="text-xs font-medium text-cohi-primary hover:underline cursor-pointer"
                                     data-testid="booking-edit-button"
                                 >
                                     수정
@@ -123,8 +120,8 @@ export function Detail() {
                         <BookingEditForm
                             booking={booking}
                             topics={hostCalendar.topics}
-                            onCancel={handleEditCancel}
-                            onSuccess={handleEditSuccess}
+                            onCancel={() => setIsEditing(false)}
+                            onSuccess={() => setIsEditing(false)}
                         />
                     ) : (
                         <BookingMetaSection booking={booking} />
@@ -168,15 +165,24 @@ export function Detail() {
                             </div>
                         ) : (
                             <div className="flex flex-col space-y-3">
-                                <textarea
-                                    className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
-                                    rows={3}
-                                    placeholder="신고 사유를 입력해주세요 (선택)"
-                                    value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
-                                />
+                                <div className="flex flex-col space-y-1">
+                                    <label
+                                        htmlFor="noshow-report-reason"
+                                        className="text-sm font-medium text-amber-800"
+                                    >
+                                        신고 사유 (선택)
+                                    </label>
+                                    <textarea
+                                        id="noshow-report-reason"
+                                        className="w-full border border-amber-200 rounded-xl p-3 text-sm resize-none focus:ring-amber-500 focus:border-amber-500"
+                                        rows={3}
+                                        placeholder="신고 사유를 입력해주세요"
+                                        value={reportReason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                    />
+                                </div>
                                 {reportError && (
-                                    <p className="text-red-600 text-sm">{reportError.message}</p>
+                                    <p className="text-red-600 text-sm">{getErrorMessage(reportError)}</p>
                                 )}
                                 <div className="flex flex-row space-x-2">
                                     <Button
@@ -185,18 +191,10 @@ export function Detail() {
                                         loading={isReporting}
                                         onClick={handleReportSubmit}
                                     >
-                                            신고하기
+                                        신고하기
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                            setShowReportForm(false);
-                                            setReportReason('');
-                                            resetReport();
-                                        }}
-                                    >
-                                            취소
+                                    <Button type="button" variant="outline" onClick={handleReportCancel}>
+                                        취소
                                     </Button>
                                 </div>
                             </div>
@@ -207,4 +205,4 @@ export function Detail() {
             </div>
         </PageLayout>
     );
-}
+};

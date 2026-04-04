@@ -3,10 +3,8 @@ import { getNoShowHistory } from '../api';
 import type { INoShowHistoryItem } from '../types';
 import { bookingKeys } from './queryKeys';
 
-export function useNoShowHistory(hostId?: string) {
-    return useQuery<INoShowHistoryItem[]>({
-        queryKey: bookingKeys.noShowHistory(hostId!),
-        queryFn: () => getNoShowHistory(hostId!),
-        enabled: !!hostId,
-    });
-}
+export const useNoShowHistory = (hostId?: string) => useQuery<INoShowHistoryItem[]>({
+    queryKey: bookingKeys.noShowHistory(hostId!),
+    queryFn: () => getNoShowHistory(hostId!),
+    enabled: !!hostId,
+});

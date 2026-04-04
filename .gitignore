@@ -6,11 +6,13 @@
 .env
 .env.*
 !.env.example
+!infra/observability/.env.ingest.example
 !infra/observability/.env.grafana.example
 
 # Claude Code
 .claude/settings.local.json
 .claude/issue/
+.claude/worktrees/
 
 # 이슈 관련
 ./issues
@@ -124,3 +126,4 @@ supabase/
 
 # 빌드된 JAR (배포용)
 backend/app.jar
+chat/dist/

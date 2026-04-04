@@ -61,7 +61,7 @@ class TimeSlotIntegrationTest {
         hostId = savedHost.getId();
 
         Calendar calendar = Calendar.create(
-            hostId,
+            savedHost,
             List.of("커리어 상담"),
             "게스트에게 보여줄 설명입니다.",
             "test@group.calendar.google.com"

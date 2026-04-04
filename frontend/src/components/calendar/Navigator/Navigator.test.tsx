@@ -5,7 +5,7 @@ import { Navigator } from './Navigator';
 
 describe('Navigator', () => {
     const defaultProps = {
-        slug: 'test-host',
+        username: 'test-host',
         year: 2024,
         month: 6,
         onPrevious: vi.fn(),

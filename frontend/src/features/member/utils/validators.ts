@@ -26,22 +26,18 @@ export const validateDisplayName: ValidationRule<string> = (value: string) => {
     return null;
 };
 
-export function validatePassword(emptyMessage = '비밀번호를 입력해주세요.'): ValidationRule<string> {
-    return (value: string) => {
-        if (!value) return emptyMessage;
-        if (!PASSWORD_PATTERN.test(value)) {
-            return '비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.';
-        }
-        return null;
-    };
-}
+export const validatePassword = (emptyMessage = '비밀번호를 입력해주세요.'): ValidationRule<string> => (value: string) => {
+    if (!value) return emptyMessage;
+    if (!PASSWORD_PATTERN.test(value)) {
+        return '비밀번호는 8~20자의 영문, 숫자, 특수문자(!@#$%^&*._-)만 가능합니다.';
+    }
+    return null;
+};
 
-export function validatePasswordConfirm(getPassword: () => string): ValidationRule<string> {
-    return (value: string) => {
-        if (!value) return '비밀번호 확인을 입력해주세요.';
-        if (value !== getPassword()) {
-            return '비밀번호가 일치하지 않습니다.';
-        }
-        return null;
-    };
-}
+export const validatePasswordConfirm = (getPassword: () => string): ValidationRule<string> => (value: string) => {
+    if (!value) return '비밀번호 확인을 입력해주세요.';
+    if (value !== getPassword()) {
+        return '비밀번호가 일치하지 않습니다.';
+    }
+    return null;
+};

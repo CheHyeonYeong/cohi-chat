@@ -1,36 +1,43 @@
 import { Suspense } from 'react';
 import { Link } from "@tanstack/react-router";
+import dayjs from 'dayjs';
 
 import { Button } from "~/components/button";
+import { formatKoreanDate } from '~/libs/date';
 import { useAuth } from "~/features/member";
-import { checkAvailableBookingDate, isTimeslotAvailableOnDate } from "../utils";
+import { checkAvailableBookingDate, isTimeslotAvailableOnDate, isTimeslotBooked } from "../utils";
 import type { IBooking, ICalendarEvent, ITimeSlot } from "../types";
 
 interface TimeslotsProps {
-    baseDate: Date | null;
+    baseDate: Date;
     timeslots: ITimeSlot[];
     bookings: Array<IBooking | ICalendarEvent>;
+    selectedTimeslotId?: number;
     onSelectTimeslot: (timeslot: ITimeSlot) => void;
 }
 
-export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: TimeslotsProps) {
+export const Timeslots = ({ baseDate, timeslots, bookings, selectedTimeslotId, onSelectTimeslot }: TimeslotsProps) => {
     const { isAuthenticated } = useAuth();
 
-    const now = baseDate ?? new Date();
-    const weekday = now.getDay(); // 0=일, 1=월, ..., 6=토
-    const isAvailable = checkAvailableBookingDate(now, timeslots, bookings, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday);
+    const date = dayjs(baseDate);
+    const year = date.year();
+    const month = date.month() + 1;
+    const day = date.date();
+    const weekday = date.day();
+
+    const isAvailable = checkAvailableBookingDate(date.toDate(), timeslots, bookings, year, month, day, weekday);
     const availableTimeslots = timeslots
-        .filter((ts) => isTimeslotAvailableOnDate(ts, now.getFullYear(), now.getMonth() + 1, now.getDate(), weekday))
+        .filter((ts) => isTimeslotAvailableOnDate(ts, year, month, day, weekday) && !isTimeslotBooked(ts, bookings, year, month, day))
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
     return <Suspense fallback={<div>Loading timeslots...</div>}>
         <div className="flex flex-col gap-4 items-center justify-start mx-auto">
-            <h3 className="text-2xl font-bold">{now.getFullYear()}년 {now.getMonth() + 1}월 {now.getDate()}일</h3>
+            <h3 className="text-2xl font-bold">{formatKoreanDate(date.toDate())}</h3>
             {!isAuthenticated && (
                 <div
                     role="status"
                     role-label="no-date"
-                    className="space-y-3 md:space-y-4 w-full md:w-60 md:min-w-60 text-center md:w-full md:text-left">
+                    className="space-y-3 md:space-y-4 w-full text-center md:text-left">
                     <Link
                         to="/login"
                         className="block w-full font-semibold rounded-md py-3 text-center cohi-btn-primary">
@@ -46,7 +53,8 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
 
             {isAuthenticated && isAvailable && availableTimeslots.map((timeslot) => (
                 <Button
-                    variant="primary"
+                    variant="selectable"
+                    selected={selectedTimeslotId === timeslot.id}
                     type="button"
                     role="button"
                     role-label={`timeslot-${timeslot.id}`}
@@ -59,4 +67,4 @@ export function Timeslots({ baseDate, timeslots, bookings, onSelectTimeslot }: T
             ))}
         </div>
     </Suspense>
-}
+};

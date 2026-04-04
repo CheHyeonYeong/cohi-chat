@@ -25,8 +25,8 @@ public class AuthCookieService {
 		// 신규 발급 토큰이므로 설정값 기반 전체 만료 시간을 사용
 		addTokenCookies(
 			response,
-			loginResponse.getAccessToken(),
-			loginResponse.getRefreshToken(),
+			loginResponse.accessToken(),
+			loginResponse.refreshToken(),
 			Duration.ofMillis(jwtTokenProvider.getRefreshTokenExpirationMs())
 		);
 	}

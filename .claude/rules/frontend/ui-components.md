@@ -36,6 +36,7 @@ paths: frontend/**/*.{ts,tsx}
   - `variant`: `'default'`(shadow-sm) | `'elevated'`(shadow-md) | `'prominent'`(shadow-lg)
   - `size`: `'sm'`(p-5) | `'md'`(p-6, 기본) | `'lg'`(p-8)
   - `title`: 카드 상단에 `<h3>` 제목 자동 삽입
+  - `action`: title 우측에 배치되는 ReactNode (예: 링크, 버튼). `title`과 함께 사용
   - `asChild`: Radix Slot 패턴 — 카드 스타일을 자식 요소에 위임 (예: `<button>`)
   - `noBackground`: 흰색 배경 제거
   - `noShadow`: shadow 제거 (Card 안에 Card가 중첩될 때 사용)

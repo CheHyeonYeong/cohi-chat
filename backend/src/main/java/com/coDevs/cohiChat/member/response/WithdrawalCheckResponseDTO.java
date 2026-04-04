@@ -1,6 +1,7 @@
 package com.coDevs.cohiChat.member.response;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import com.coDevs.cohiChat.booking.entity.Booking;
@@ -29,14 +30,14 @@ public class WithdrawalCheckResponseDTO {
         private final String topic;
         private final String role;
 
-        public static AffectedBookingDTO from(Booking booking, String role) {
+        public static AffectedBookingDTO from(Booking booking, String role, ZoneId zoneId) {
             var timeSlot = booking.getTimeSlot();
             var date = booking.getBookingDate();
 
             return AffectedBookingDTO.builder()
                 .bookingId(booking.getId())
-                .startedAt(toUtcInstant(date, timeSlot.getStartTime()))
-                .endedAt(toUtcInstant(date, timeSlot.getEndTime()))
+                .startedAt(toUtcInstant(date, timeSlot.getStartTime(), zoneId))
+                .endedAt(toUtcInstant(date, timeSlot.getEndTime(), zoneId))
                 .topic(booking.getTopic())
                 .role(role)
                 .build();

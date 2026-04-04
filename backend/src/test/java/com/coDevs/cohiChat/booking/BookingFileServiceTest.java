@@ -34,6 +34,7 @@ import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
+import com.coDevs.cohiChat.global.common.file.CloudFrontUrlService;
 import com.coDevs.cohiChat.global.common.file.FileStorageResult;
 import com.coDevs.cohiChat.global.common.file.FileStorageService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
@@ -61,6 +62,9 @@ class BookingFileServiceTest {
 
     @Mock
     private S3PresignedUrlService s3PresignedUrlService;
+
+    @Mock
+    private CloudFrontUrlService cloudFrontUrlService;
 
     private static final Long BOOKING_ID = 1L;
     private static final Long FILE_ID = 1L;
@@ -563,6 +567,7 @@ class BookingFileServiceTest {
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
+            given(cloudFrontUrlService.toCloudFrontUrl(PRESIGNED_URL)).willReturn(PRESIGNED_URL);
 
             // when
             PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(
@@ -583,6 +588,7 @@ class BookingFileServiceTest {
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
+            given(cloudFrontUrlService.toCloudFrontUrl(PRESIGNED_URL)).willReturn(PRESIGNED_URL);
 
             // when
             PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(

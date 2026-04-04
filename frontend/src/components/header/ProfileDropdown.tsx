@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Link } from '@tanstack/react-router';
 import { Avatar } from '~/components/Avatar';
 import { useAuth, useLogout } from '~/features/member';
 import { useMyCalendar } from '~/features/host';
 
-export function ProfileDropdown() {
+export const ProfileDropdown = () => {
     const { data: user } = useAuth();
     const { logout } = useLogout();
     const isHost = user?.isHost ?? false;
@@ -19,7 +20,7 @@ export function ProfileDropdown() {
                 <button
                     type="button"
                     data-testid="profile-avatar"
-                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--cohi-primary)]/50"
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-cohi-primary/50"
                 >
                     <Avatar
                         displayName={user.displayName}
@@ -58,7 +59,7 @@ export function ProfileDropdown() {
                                 to="/host/$hostId"
                                 params={{ hostId: user.username }}
                             >
-                                내 프로필 미리보기
+                                내 프로필
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
@@ -75,6 +76,8 @@ export function ProfileDropdown() {
                                 호스트 설정
                             </DropdownMenuItem>
                         </>
+                    ) : null}
+                    {/* 호스트 등록 임시 비활성화 (#479)
                     ) : (
                         <DropdownMenuItem
                             data-testid="menu-item-host-register"
@@ -83,6 +86,7 @@ export function ProfileDropdown() {
                             호스트 등록하기
                         </DropdownMenuItem>
                     )}
+                    */}
 
                     <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
 
@@ -97,19 +101,15 @@ export function ProfileDropdown() {
             </DropdownMenu.Portal>
         </DropdownMenu.Root>
     );
-}
+};
 
-function DropdownMenuItem({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: React.ReactNode; 'data-testid': string }) {
-    return (
-        <DropdownMenu.Item asChild className="outline-none">
-            <Link
-                to={to}
-                params={params}
-                className="block px-4 py-2 text-sm text-[var(--cohi-text-dark)] hover:bg-[var(--cohi-bg-warm)] cursor-pointer"
-                {...props}
-            >
-                {children}
-            </Link>
-        </DropdownMenu.Item>
-    );
-}
+const DropdownMenuItem = ({ to, params, children, ...props }: { to: string; params?: Record<string, string>; children: ReactNode; 'data-testid': string }) => <DropdownMenu.Item asChild className="outline-none">
+    <Link
+        to={to}
+        params={params}
+        className="block px-4 py-2 text-sm text-cohi-text-dark hover:bg-cohi-bg-warm cursor-pointer"
+        {...props}
+    >
+        {children}
+    </Link>
+</DropdownMenu.Item>;

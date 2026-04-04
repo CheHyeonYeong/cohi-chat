@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @vitest-environment happy-dom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,13 +13,8 @@ const FUTURE_STARTED_AT = new Date('2024-06-01T02:00:00Z');
 const GUEST_ID = 'guest-uuid';
 const HOST_ID = 'host-uuid';
 
-const makeBooking = (
-    startedAt: Date,
-    attendanceStatus: IBookingDetail['attendanceStatus'] = 'SCHEDULED',
-): IBookingDetail => ({
+const BASE_BOOKING: Omit<IBookingDetail, 'startedAt' | 'endedAt' | 'attendanceStatus'> = {
     id: 1,
-    startedAt,
-    endedAt: new Date(startedAt.getTime() + 3_600_000),
     topic: '테스트 미팅',
     description: '설명',
     timeSlot: {
@@ -37,13 +32,22 @@ const makeBooking = (
     guest: { username: 'guest', displayName: '게스트' },
     hostId: HOST_ID,
     guestId: GUEST_ID,
-    attendanceStatus,
     meetingType: 'ONLINE',
     location: null,
     meetingLink: 'https://meet.google.com/test',
     files: [],
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+};
+
+const makeBooking = (
+    startedAt: Date,
+    attendanceStatus: IBookingDetail['attendanceStatus'] = 'SCHEDULED',
+): IBookingDetail => ({
+    ...BASE_BOOKING,
+    startedAt,
+    endedAt: new Date(startedAt.getTime() + 3_600_000),
+    attendanceStatus,
 });
 
 const reportNoShow = vi.fn();
@@ -75,7 +79,7 @@ vi.mock('@dnd-kit/sortable', () => ({
         isDragging: false,
     }),
     verticalListSortingStrategy: vi.fn(),
-    arrayMove: (arr: unknown[]) => arr,
+    arrayMove: <T,>(arr: T[]) => arr,
 }));
 
 vi.mock('@dnd-kit/utilities', () => ({
@@ -86,13 +90,8 @@ vi.mock('~/components', () => ({
     PageLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('./bookingUploadUtils', () => ({
-    canUploadMoreFiles: () => true,
-}));
-
-vi.mock('~/components/toast/useToast', () => ({
-    useToast: () => ({ showToast: vi.fn() }),
-}));
+vi.mock('./bookingUploadUtils', () => ({ canUploadMoreFiles: () => true }));
+vi.mock('~/components/toast/useToast', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
 
 vi.mock('~/features/booking', () => ({
     useBooking: () => ({ data: mockBooking, isLoading: false, error: null, refetch: vi.fn() }),
@@ -166,7 +165,7 @@ describe('Detail no-show reporting', () => {
 
         fireEvent.click(screen.getByRole('button', { name: '호스트 노쇼 신고' }));
 
-        expect(screen.getByPlaceholderText('신고 사유를 입력해주세요 (선택)')).toBeInTheDocument();
+        expect(screen.getByLabelText('신고 사유 (선택)')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '신고하기' })).toBeInTheDocument();
     });
 

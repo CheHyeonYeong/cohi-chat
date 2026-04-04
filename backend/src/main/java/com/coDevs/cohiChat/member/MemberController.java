@@ -27,6 +27,7 @@ import com.coDevs.cohiChat.member.request.UpdateProfileRequestDTO;
 import com.coDevs.cohiChat.member.response.HostResponseDTO;
 import com.coDevs.cohiChat.member.response.LoginResponseDTO;
 import com.coDevs.cohiChat.member.response.LogoutResponseDTO;
+import com.coDevs.cohiChat.member.response.SafeLoginResponseDTO;
 import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
@@ -65,13 +66,13 @@ public class MemberController {
         }
 
         @PostMapping("/v1/login")
-        public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(
+        public ResponseEntity<ApiResponseDTO<SafeLoginResponseDTO>> login(
                 @Valid @RequestBody LoginRequestDTO request,
                 HttpServletResponse response) {
 
                 LoginResponseDTO loginResponse = memberService.login(request);
                 authCookieService.addLoginCookies(response, loginResponse);
-                return ResponseEntity.ok(ApiResponseDTO.success(loginResponse));
+                return ResponseEntity.ok(ApiResponseDTO.success(loginResponse.toSafeResponse()));
         }
 
         @PostMapping("/v1/refresh")

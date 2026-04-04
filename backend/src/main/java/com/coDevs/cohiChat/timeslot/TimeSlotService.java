@@ -3,9 +3,11 @@ package com.coDevs.cohiChat.timeslot;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class TimeSlotService {
 
     private final TimeSlotRepository timeSlotRepository;
+    private final BookingRepository bookingRepository;
     private final CalendarRepository calendarRepository;
     private final MemberRepository memberRepository;
 
@@ -31,7 +34,7 @@ public class TimeSlotService {
     public TimeSlotResponseDTO createTimeSlot(Member member, TimeSlotCreateRequestDTO request) {
         validateHostPermission(member);
 
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
+        Calendar calendar = calendarRepository.findByMemberId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         validateNoOverlappingTimeSlots(calendar.getUserId(), request);
@@ -60,7 +63,16 @@ public class TimeSlotService {
             throw new CustomException(ErrorCode.GUEST_ACCESS_DENIED);
         }
 
-        timeSlotRepository.delete(timeSlot);
+        if (bookingRepository.existsByTimeSlot_Id(timeSlotId)) {
+            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
+        }
+
+        try {
+            timeSlotRepository.delete(timeSlot);
+            timeSlotRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.TIMESLOT_HAS_BOOKINGS);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -77,7 +89,7 @@ public class TimeSlotService {
     }
 
     private List<TimeSlotResponseDTO> getTimeSlotsByUserId(UUID userId) {
-        calendarRepository.findByUserId(userId)
+        calendarRepository.findByMemberId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         return timeSlotRepository.findByUserIdOrderByStartTimeAsc(userId).stream()
