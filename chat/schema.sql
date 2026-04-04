@@ -38,4 +38,4 @@ CREATE TABLE IF NOT EXISTS message (
 );
 
 CREATE INDEX IF NOT EXISTS idx_message_room_id_created_at
-    ON message(room_id, created_at DESC);
+    ON message(room_id, created_at DESC, id DESC);

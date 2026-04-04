@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "pnpm run prisma:generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "postinstall": "pnpm run prisma:generate",
     "prisma:generate": "prisma generate",
@@ -30,6 +30,8 @@
     "@nestjs/platform-fastify": "^11.1.17",
     "@nestjs/swagger": "^11.2.6",
     "@prisma/client": "^6.19.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "fastify": "^5.8.2",
     "pg": "^8.20.0",
     "prisma": "^6.19.2",
