@@ -74,4 +74,3 @@ networks:
 volumes:
   redis-data:
     driver: local
-

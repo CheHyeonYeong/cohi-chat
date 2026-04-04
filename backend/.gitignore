@@ -64,4 +64,5 @@ cohi-chat.db
 .env
 .env.*
 application-local-secret.properties
+application-local.properties
 *credentials*.json

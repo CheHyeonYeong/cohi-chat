@@ -8,6 +8,7 @@ import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.MeetingType;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +38,8 @@ public class BookingResponseDTO {
     private final MeetingType meetingType;
     private final String location;
     private final String meetingLink;
+    @Schema(description = "Chat room ID linked to this booking", example = "550e8400-e29b-41d4-a716-446655440000", nullable = true)
+    private final UUID chatRoomId;
 
     public static BookingResponseDTO from(Booking booking, ZoneId zoneId) {
         return from(booking, zoneId, null, null, null, null);
@@ -48,6 +51,11 @@ public class BookingResponseDTO {
 
     public static BookingResponseDTO from(Booking booking, ZoneId zoneId, String hostUsername, String hostDisplayName,
                                           String guestUsername, String guestDisplayName) {
+        return from(booking, zoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName, null);
+    }
+
+    public static BookingResponseDTO from(Booking booking, ZoneId zoneId, String hostUsername, String hostDisplayName,
+                                          String guestUsername, String guestDisplayName, UUID chatRoomId) {
         var timeSlot = booking.getTimeSlot();
         var date = booking.getBookingDate();
 
@@ -70,6 +78,7 @@ public class BookingResponseDTO {
             .meetingType(booking.getMeetingType())
             .location(booking.getLocation())
             .meetingLink(booking.getMeetingLink())
+            .chatRoomId(chatRoomId)
             .build();
     }
 }
