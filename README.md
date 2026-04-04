@@ -56,9 +56,15 @@ cohiChat/
 │       ├── routes/       # 라우트 정의
 │       ├── libs/         # 유틸리티
 │       └── types/        # 공통 타입 정의
+├── infra/            # 배포/운영 인프라 정의
+│   ├── app/          # 서버 호스트 compose
+│   ├── observability/ # 관측 스택 compose 및 설정
+│   └── README.md     # 인프라 개요
 ├── docs/             # 문서
 └── docker-compose.yml
 ```
+
+- 인프라 개요: [infra/README.md](./infra/README.md)
 
 ## API 문서
 

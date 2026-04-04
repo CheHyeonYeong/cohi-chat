@@ -1,3 +1,5 @@
+import type { FormEvent } from 'react';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateBooking } from '../../hooks';
 import { Button } from '~/components/button';
@@ -5,10 +7,11 @@ import { Select } from '~/components/select';
 import type { ICalendar } from '~/components/calendar';
 import type { MeetingType } from '../../types';
 import { MeetingTypeSelector } from '../MeetingTypeSelector';
+import { formatDateToISO } from '~/libs/date';
 
 interface BookingFormProps {
     calendar: ICalendar;
-    slug: string;
+    username: string;
     timeSlotId: number;
     when: Date;
     onCreated: () => void;
@@ -22,9 +25,6 @@ interface BookingFormState {
     meetingLink: string;
 }
 
-const formatDateToISO = (date: Date): string =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
 const createInitialState = (defaultTopic: string): BookingFormState => ({
     topic: defaultTopic,
     description: '',
@@ -33,8 +33,8 @@ const createInitialState = (defaultTopic: string): BookingFormState => ({
     meetingLink: '',
 });
 
-export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: BookingFormProps) {
-    const createBookingMutation = useCreateBooking(slug, when.getFullYear(), when.getMonth() + 1);
+export const BookingForm = ({ calendar, username, timeSlotId, when, onCreated }: BookingFormProps) => {
+    const createBookingMutation = useCreateBooking(username);
 
     const [formState, setFormState] = useState<BookingFormState>(() =>
         createInitialState(calendar.topics[0] ?? '')
@@ -53,7 +53,7 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
     );
 
     const handleSubmit = useCallback(
-        (event: React.FormEvent) => {
+        (event: FormEvent) => {
             event.preventDefault();
             const { topic, description, meetingType, location, meetingLink } = formState;
 
@@ -82,7 +82,7 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <fieldset className="flex flex-col gap-1">
-                <label className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     주제
                 </label>
                 <Select
@@ -103,7 +103,7 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
             />
 
             <fieldset className="flex flex-col gap-1">
-                <label htmlFor="description" className="block text-sm font-semibold text-[var(--cohi-text-dark)] mb-2">
+                <label htmlFor="description" className="block text-sm font-semibold text-cohi-text-dark mb-2">
                     설명
                 </label>
                 <textarea
@@ -113,7 +113,7 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
                     data-testid="booking-description-textarea"
                     placeholder="이야기하고 싶은 내용을 자유롭게 적어주세요"
                     rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-[var(--cohi-text-dark)] resize-none focus:outline-none focus:border-[var(--cohi-primary)] focus:ring-1 focus:ring-[var(--cohi-primary)]"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-cohi-text-dark resize-none focus:outline-none focus:border-cohi-primary focus:ring-1 focus:ring-cohi-primary"
                 />
             </fieldset>
 
@@ -123,7 +123,7 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
 
             {isError && (
                 <p data-testid="booking-error" className="text-sm text-red-500">
-                    {error.message}
+                    {getErrorMessage(error)}
                 </p>
             )}
 
@@ -134,4 +134,4 @@ export function BookingForm({ calendar, slug, timeSlotId, when, onCreated }: Boo
             )}
         </form>
     );
-}
+};

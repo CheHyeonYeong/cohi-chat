@@ -15,8 +15,8 @@ except Exception:
 
 [ -z "$FILE_PATH" ] && exit 0
 
-ROOT_DIR="${CLAUDE_PROJECT_DIR:-$(git -C "$(dirname "$FILE_PATH")" rev-parse --show-toplevel 2>/dev/null)}"
-ROOT_DIR="${ROOT_DIR:-$(pwd)}"
+ROOT_DIR="$(git -C "$(dirname "$FILE_PATH")" rev-parse --show-toplevel 2>/dev/null)"
+ROOT_DIR="${ROOT_DIR:-${CLAUDE_PROJECT_DIR:-$(pwd)}}"
 NORMALIZED_PATH="${FILE_PATH//\\//}"
 
 if [[ "$NORMALIZED_PATH" == frontend/* || "$NORMALIZED_PATH" == */frontend/* ]]; then

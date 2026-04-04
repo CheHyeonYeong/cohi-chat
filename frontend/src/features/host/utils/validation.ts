@@ -6,7 +6,7 @@ export interface CalendarValidationData {
     googleCalendarId?: string;
 }
 
-export function validateCalendarData(data: CalendarValidationData) {
+export const validateCalendarData = (data: CalendarValidationData) => {
     const errors: Record<string, string> = {};
 
     if (data.topics !== undefined && data.topics.length === 0) {
@@ -26,4 +26,4 @@ export function validateCalendarData(data: CalendarValidationData) {
     }
 
     return errors;
-}
+};

@@ -7,7 +7,7 @@ import { MeetingInfoForm, GoogleCalendarSetup, useMyCalendar, useUpdateCalendar 
 import { validateCalendarData } from '~/features/host/utils/validation';
 import { getErrorMessage } from '~/libs/errorUtils';
 
-export function Settings() {
+export const Settings = () => {
     const { data: calendar, isLoading, error: loadError } = useMyCalendar();
     const updateCalendarMutation = useUpdateCalendar();
 
@@ -20,9 +20,12 @@ export function Settings() {
 
     useEffect(() => {
         if (calendar && !syncedRef.current) {
+            // 비동기 서버 데이터를 폼 상태에 1회 초기화 — syncedRef로 사용자 편집 후 재동기화 방지
+            /* eslint-disable react-hooks/set-state-in-effect */
             setTopics(calendar.topics);
             setDescription(calendar.description);
             setGoogleCalendarId(calendar.googleCalendarId);
+            /* eslint-enable react-hooks/set-state-in-effect */
             syncedRef.current = true;
         }
     }, [calendar]);
@@ -77,7 +80,7 @@ export function Settings() {
                 <div className="flex items-center justify-center py-12">
                     <Card size="lg" className="flex flex-col p-10 text-center max-w-md space-y-6">
                         <div className="text-5xl">📅</div>
-                        <h2 className="text-xl font-bold text-[var(--cohi-text-dark)]">연동된 캘린더가 없습니다</h2>
+                        <h2 className="text-xl font-bold text-cohi-text-dark">연동된 캘린더가 없습니다</h2>
                         <p className="text-gray-600">
                             미팅 예약을 받으려면 먼저 Google 캘린더를 연동해야 합니다.
                         </p>
@@ -137,4 +140,4 @@ export function Settings() {
             </div>
         </PageLayout>
     );
-}
+};

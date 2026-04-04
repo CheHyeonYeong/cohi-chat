@@ -6,7 +6,7 @@ interface HostTopicTagsProps {
     className?: string;
 }
 
-export function HostTopicTags({ topics, className }: HostTopicTagsProps) {
+export const HostTopicTags = ({ topics, className }: HostTopicTagsProps) => {
     if (topics.length === 0) return null;
 
     return (
@@ -16,4 +16,4 @@ export function HostTopicTags({ topics, className }: HostTopicTagsProps) {
             ))}
         </div>
     );
-}
+};

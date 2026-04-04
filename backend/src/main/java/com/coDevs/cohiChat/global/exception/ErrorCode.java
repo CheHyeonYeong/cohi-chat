@@ -8,6 +8,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErrorCode {
 
+	TIMESLOT_HAS_BOOKINGS(HttpStatus.CONFLICT, "예약이 있는 시간대는 삭제할 수 없습니다."),
+
 	/**
 	 * 계정, 인증 관련 예외들.
 	 * 400: 잘못된 요청 (입력값 검증 실패)
@@ -94,7 +96,13 @@ public enum ErrorCode {
 	FILE_EXTENSION_BLOCKED(HttpStatus.BAD_REQUEST, "보안상 업로드가 차단된 파일 형식입니다. (차단: exe, bat, sh, js, php)"),
 	FILE_MIME_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "파일 형식이 올바르지 않습니다."),
 	FILE_UPLOAD_NOT_CONFIRMED(HttpStatus.BAD_REQUEST, "검증된 Presigned 업로드 요청이 아닌 파일입니다."),
-	FILE_UPLOAD_METADATA_MISMATCH(HttpStatus.BAD_REQUEST, "업로드 파일 메타 정보가 요청값과 일치하지 않습니다.");
+	FILE_UPLOAD_METADATA_MISMATCH(HttpStatus.BAD_REQUEST, "업로드 파일 메타 정보가 요청값과 일치하지 않습니다."),
+
+	/**
+	 * 프로필 이미지 관련 예외들.
+	 */
+	PROFILE_IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "프로필 이미지 크기가 5MB를 초과합니다."),
+	PROFILE_IMAGE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 이미지 형식입니다. (허용: jpg, jpeg, png, gif, webp)");
 
 	private final HttpStatus status;
 	private final String message;

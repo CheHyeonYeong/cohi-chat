@@ -1,12 +1,13 @@
+import type { ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useAuth } from '~/features/member';
 
 interface HostGuardProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
-export function HostGuard({ children }: HostGuardProps) {
+export const HostGuard = ({ children }: HostGuardProps) => {
     const { data: user, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ export function HostGuard({ children }: HostGuardProps) {
 
     if (isLoading) {
         return (
-            <div className="w-full min-h-screen bg-[var(--cohi-bg-light)] flex items-center justify-center">
+            <div className="w-full min-h-screen bg-cohi-bg-light flex items-center justify-center">
                 <p className="text-gray-500">확인 중...</p>
             </div>
         );
@@ -34,4 +35,4 @@ export function HostGuard({ children }: HostGuardProps) {
     }
 
     return <>{children}</>;
-}
+};

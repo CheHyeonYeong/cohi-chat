@@ -27,8 +27,13 @@ import com.coDevs.cohiChat.member.response.RefreshTokenResponseDTO;
 import com.coDevs.cohiChat.member.response.SignupResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO;
 import com.coDevs.cohiChat.member.response.WithdrawalCheckResponseDTO.AffectedBookingDTO;
+import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 
+import jakarta.annotation.PostConstruct;
+
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +67,27 @@ public class MemberService {
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
         private final SmtpEmailValidator smtpEmailValidator;
+        private final GoogleCalendarProperties googleCalendarProperties;
+
+        private volatile ZoneId calendarZoneId;
+
+        private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Seoul");
+
+        @PostConstruct
+        void initZoneId() {
+                String timezone = googleCalendarProperties.getTimezone();
+                if (timezone == null || timezone.isBlank()) {
+                        log.warn("google.calendar.timezone is null/blank. Falling back to Asia/Seoul");
+                        calendarZoneId = DEFAULT_ZONE;
+                        return;
+                }
+                try {
+                        calendarZoneId = ZoneId.of(timezone);
+                } catch (DateTimeException e) {
+                        log.warn("Invalid timezone '{}' in GoogleCalendarProperties, falling back to Asia/Seoul: {}", timezone, e.getMessage());
+                        calendarZoneId = DEFAULT_ZONE;
+                }
+        }
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
@@ -223,7 +249,7 @@ public class MemberService {
         }
 
         private AffectedBookingDTO toAffectedBookingDTO(Booking booking, String role) {
-                return AffectedBookingDTO.from(booking, role);
+                return AffectedBookingDTO.from(booking, role, calendarZoneId);
         }
 
         private List<Booking> findFutureHostBookings(Member member, LocalDate today) {

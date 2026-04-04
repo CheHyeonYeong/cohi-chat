@@ -1,3 +1,4 @@
+import type { ReactElement, ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,7 +11,7 @@ vi.mock('~/features/member', () => ({
 }));
 
 vi.mock('@tanstack/react-router', () => ({
-    Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    Link: ({ children, to }: { children: ReactNode; to: string }) => (
         <a href={to}>{children}</a>
     ),
 }));
@@ -36,7 +37,7 @@ const createQueryClient = () =>
         },
     });
 
-const renderWithProviders = (ui: React.ReactElement) => {
+const renderWithProviders = (ui: ReactElement) => {
     const queryClient = createQueryClient();
     return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };

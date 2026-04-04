@@ -11,6 +11,10 @@ paths: frontend/**/*.{ts,tsx}
   - `<Link>` + `cohi-btn-*` 클래스 직접 조합 금지 → 반드시 `<LinkButton>` 사용
 - 비동기 작업 중 버튼: `loading` prop 사용 (자동 disabled + CSS `:disabled` 스타일)
 - `asChild` prop: Button을 다른 요소로 렌더링 (Radix Slot 패턴)
+- `selected` prop: 선택 상태 표현 (`aria-pressed` 자동 설정)
+  - `selectable` variant 전용: `<Button variant="selectable" selected={isSelected}>`
+  - 캘린더 타임슬롯, 선택 가능한 옵션 등에 사용
+  - `primary`/`secondary`/`outline`에서 variant 변경으로 선택 상태를 흉내내는 것 금지
 - raw `<button>` 허용: 아이콘 전용, 토글, 텍스트 링크 스타일, 특수 목적 버튼만
 - `type` 기본값은 `"button"`. 폼 제출 시 `type="submit"` 명시 필수
 - `className`은 정적 문자열만 전달 (Button 내부에서 `twMerge`로 충돌 해결)

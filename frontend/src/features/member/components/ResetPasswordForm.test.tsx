@@ -1,15 +1,15 @@
+import type { PropsWithChildren, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { ResetPasswordForm } from './ResetPasswordForm';
 
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
     useSearch: () => ({ token: 'valid-token' }),
-    Link: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', props, children),
+    Link: ({ children, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a {...props}>{children}</a>,
 }));
 
 let mockVerifyResult: {
@@ -50,8 +50,8 @@ const createWrapper = () => {
         },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe('ResetPasswordForm', () => {

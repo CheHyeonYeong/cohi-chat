@@ -7,6 +7,9 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -21,11 +24,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
+import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.calendar.CalendarRepository;
 import com.coDevs.cohiChat.calendar.entity.Calendar;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
+import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.member.entity.Role;
 import com.coDevs.cohiChat.timeslot.entity.TimeSlot;
@@ -36,6 +42,7 @@ import com.coDevs.cohiChat.timeslot.response.TimeSlotResponseDTO;
 class TimeSlotServiceTest {
 
     private static final UUID TEST_USER_ID = UUID.randomUUID();
+    private static final Long TEST_TIME_SLOT_ID = 1L;
     private static final LocalTime TEST_START_TIME = LocalTime.of(10, 0);
     private static final LocalTime TEST_END_TIME = LocalTime.of(11, 0);
     private static final List<Integer> TEST_WEEKDAYS = List.of(0, 1, 2); // 일, 월, 화
@@ -44,7 +51,13 @@ class TimeSlotServiceTest {
     private TimeSlotRepository timeSlotRepository;
 
     @Mock
+    private BookingRepository bookingRepository;
+
+    @Mock
     private CalendarRepository calendarRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
 
     @Mock
     private Member hostMember;
@@ -195,6 +208,60 @@ class TimeSlotServiceTest {
 
         // then
         assertThat(response).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("성공: 예약이 없는 시간대는 삭제할 수 있다")
+    void deleteTimeSlotSuccessWhenNoBookingsExist() {
+        // given
+        givenHostMember();
+        TimeSlot timeSlot = mock(TimeSlot.class);
+        given(timeSlot.getUserId()).willReturn(TEST_USER_ID);
+        given(timeSlotRepository.findById(TEST_TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsByTimeSlot_Id(TEST_TIME_SLOT_ID)).willReturn(false);
+
+        // when
+        timeSlotService.deleteTimeSlot(hostMember, TEST_TIME_SLOT_ID);
+
+        // then
+        then(timeSlotRepository).should().delete(timeSlot);
+        then(timeSlotRepository).should().flush();
+    }
+
+    @Test
+    @DisplayName("실패: 예약이 있는 시간대는 삭제할 수 없다")
+    void deleteTimeSlotFailWhenBookingsExist() {
+        // given
+        givenHostMember();
+        TimeSlot timeSlot = mock(TimeSlot.class);
+        given(timeSlot.getUserId()).willReturn(TEST_USER_ID);
+        given(timeSlotRepository.findById(TEST_TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsByTimeSlot_Id(TEST_TIME_SLOT_ID)).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> timeSlotService.deleteTimeSlot(hostMember, TEST_TIME_SLOT_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TIMESLOT_HAS_BOOKINGS);
+        then(timeSlotRepository).should(never()).delete(any(TimeSlot.class));
+    }
+
+    @Test
+    @DisplayName("failure: delete maps flush integrity violation to TIMESLOT_HAS_BOOKINGS")
+    void deleteTimeSlotFailWhenIntegrityViolationOccursOnFlush() {
+        // given
+        givenHostMember();
+        TimeSlot timeSlot = mock(TimeSlot.class);
+        given(timeSlot.getUserId()).willReturn(TEST_USER_ID);
+        given(timeSlotRepository.findById(TEST_TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsByTimeSlot_Id(TEST_TIME_SLOT_ID)).willReturn(false);
+        doThrow(new DataIntegrityViolationException("fk violation"))
+            .when(timeSlotRepository)
+            .flush();
+
+        // when & then
+        assertThatThrownBy(() -> timeSlotService.deleteTimeSlot(hostMember, TEST_TIME_SLOT_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TIMESLOT_HAS_BOOKINGS);
     }
 
     // ===== 날짜 범위 지정 테스트 =====

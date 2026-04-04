@@ -2,12 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from './httpClient';
 
-function createJsonResponse(body: unknown, status = 200): Response {
-    return new Response(JSON.stringify(body), {
-        status,
-        headers: { 'Content-Type': 'application/json' },
-    });
-}
+const createJsonResponse = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+});
 
 describe('httpClient', () => {
     const originalFetch = globalThis.fetch;

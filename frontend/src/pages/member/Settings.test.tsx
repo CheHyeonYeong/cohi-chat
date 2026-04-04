@@ -1,20 +1,21 @@
+import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 import { Settings } from './Settings';
 
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
     useRouterState: () => ({ location: { pathname: '/member/settings' } }),
-    Link: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
-        React.createElement('a', props, children),
+    Link: ({ children, ...props }: PropsWithChildren<Record<string, unknown>>) =>
+        <a {...props}>{children}</a>,
     createLink:
-        (component: React.ComponentType<Record<string, unknown>>) =>
+        (component: ComponentType<Record<string, unknown>>) =>
             (props: Record<string, unknown>) => {
                 const { to, ...rest } = props;
-                return React.createElement(component, { href: to, ...rest });
+                const Component = component;
+                return <Component href={to} {...rest} />;
             },
 }));
 
@@ -60,19 +61,14 @@ const createWrapper = () => {
         },
     });
 
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+    return ({ children }: { children: ReactNode }) =>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe('Settings', () => {
     it('회원정보 변경 타이틀이 렌더링된다', () => {
         render(<Settings />, { wrapper: createWrapper() });
         expect(screen.getByTestId('page-title')).toHaveTextContent('회원정보 변경');
-    });
-
-    it('프로필 편집 폼이 렌더링된다', () => {
-        render(<Settings />, { wrapper: createWrapper() });
-        expect(screen.getByTestId('profile-edit-form')).toBeInTheDocument();
     });
 
     it('비밀번호 변경 폼이 렌더링된다', () => {

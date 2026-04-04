@@ -1,4 +1,5 @@
 import { Button } from '~/components/button';
+import { getErrorMessage } from '~/libs/errorUtils';
 import { Card } from '~/components/card';
 import type { Step1Data } from './RegisterStep1';
 import type { Step2Data } from './RegisterStep2';
@@ -13,24 +14,20 @@ interface RegisterStep3Props {
     onSubmit: () => void;
 }
 
-function CheckCircleIcon({ className = '' }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="3" />
-            <path d="M14 24L21 31L34 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
+const CheckCircleIcon = ({ className = '' }: { className?: string }) => <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="3" />
+    <path d="M14 24L21 31L34 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+</svg>;
 
-export function RegisterStep3({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) {
+export const RegisterStep3 = ({ step1, step2, isPending, error, isSuccess, tokenRefreshFailed, onSubmit }: RegisterStep3Props) => {
     if (isSuccess) {
         return (
             <div className="w-full max-w-lg mx-auto text-center">
                 <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-6" />
-                <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-3">
+                <h2 className="text-2xl md:text-3xl font-bold text-cohi-text-dark mb-3">
                     호스트 등록 완료!
                 </h2>
-                <p className="text-[var(--cohi-text-dark)]/70 mb-8">
+                <p className="text-cohi-text-dark/70 mb-8">
                     캘린더가 성공적으로 생성되었습니다. 이제 예약 가능 시간을 설정해보세요.
                 </p>
                 {tokenRefreshFailed && (
@@ -47,10 +44,10 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
 
     return (
         <div className="w-full mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-[var(--cohi-text-dark)] mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-cohi-text-dark mb-2">
                 등록 정보 확인
             </h2>
-            <p className="text-[var(--cohi-text-dark)]/70 mb-8">
+            <p className="text-cohi-text-dark/70 mb-8">
                 입력한 내용을 확인하고 등록을 완료해주세요.
             </p>
 
@@ -62,7 +59,7 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
                         {step1.topics.map((topic) => (
                             <span
                                 key={topic}
-                                className="px-3 py-1.5 bg-[var(--cohi-primary)]/10 text-[var(--cohi-primary)] rounded-full text-sm font-medium"
+                                className="px-3 py-1.5 bg-cohi-primary/10 text-cohi-primary rounded-full text-sm font-medium"
                             >
                                 {topic}
                             </span>
@@ -72,12 +69,12 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
 
                 {/* Description */}
                 <Card size="sm" title="소개">
-                    <p className="text-[var(--cohi-text-dark)] whitespace-pre-wrap">{step1.description}</p>
+                    <p className="text-cohi-text-dark whitespace-pre-wrap">{step1.description}</p>
                 </Card>
 
                 {/* Google Calendar */}
                 <Card size="sm" title="Google Calendar ID">
-                    <p className="text-[var(--cohi-text-dark)] break-all">
+                    <p className="text-cohi-text-dark break-all">
                         {step2.googleCalendarId}
                     </p>
                 </Card>
@@ -95,7 +92,7 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
             {/* Error */}
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error.message}</p>
+                    <p className="text-sm text-red-600">{getErrorMessage(error)}</p>
                 </div>
             )}
 
@@ -111,4 +108,4 @@ export function RegisterStep3({ step1, step2, isPending, error, isSuccess, token
             </Button>
         </div>
     );
-}
+};
