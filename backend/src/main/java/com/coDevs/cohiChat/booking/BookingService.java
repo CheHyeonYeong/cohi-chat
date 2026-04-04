@@ -89,6 +89,7 @@ public class BookingService {
 
     @Transactional
     public BookingResponseDTO createBooking(Member guest, BookingCreateRequestDTO request) {
+        validateNotBanned(guest);
         validateNotPastBooking(request.getBookingDate());
 
         TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
@@ -126,6 +127,13 @@ public class BookingService {
             return "미팅";
         }
         return guest.getDisplayName() + "님과의 미팅";
+    }
+
+    private void validateNotBanned(Member guest) {
+        if (guest.isBanned()) {
+            log.warn("[createBooking] [FAIL] reason=MEMBER_BANNED guestId={}", guest.getId());
+            throw new CustomException(ErrorCode.MEMBER_BANNED);
+        }
     }
 
     private void validateNotSelfBooking(Member guest, TimeSlot timeSlot) {

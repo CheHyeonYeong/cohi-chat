@@ -270,6 +270,24 @@ class MemberServiceTest {
 	}
 
 	@Test
+	@DisplayName("실패: Ban된 회원 로그인 시 MEMBER_BANNED 오류 반환")
+	void loginFailBannedMember() {
+		// given
+		member.ban();
+		LoginRequestDTO request = LoginRequestDTO.builder()
+			.username(TEST_USERNAME)
+			.password(TEST_PASSWORD)
+			.build();
+
+		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));
+
+		// when & then
+		assertThatThrownBy(() -> memberService.login(request))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEMBER_BANNED);
+	}
+
+	@Test
 	@DisplayName("성공: 존재하는 아이디로 회원 정보 조회")
 	void getMemberSuccess() {
 		given(memberRepository.findByUsernameAndIsDeletedFalse(TEST_USERNAME)).willReturn(Optional.of(member));

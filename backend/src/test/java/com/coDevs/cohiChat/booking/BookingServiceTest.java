@@ -188,6 +188,18 @@ class BookingServiceTest {
     }
 
     @Test
+    @DisplayName("실패: Ban된 게스트가 예약을 생성할 수 없다")
+    void createBookingFailWhenGuestIsBanned() {
+        // given
+        given(guestMember.isBanned()).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEMBER_BANNED);
+    }
+
+    @Test
     @DisplayName("실패: 과거 날짜에 예약할 수 없다")
     void createBookingFailWhenPastDate() {
         // given - 과거 날짜 검증은 DB 조회 전에 수행되므로 mock 설정 불필요
