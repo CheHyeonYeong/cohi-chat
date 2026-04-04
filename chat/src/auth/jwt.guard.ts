@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
 
 export interface JwtPayload {
-  sub: string; // Spring access token subject = username
+  sub: string;
   username?: string;
   role?: 'GUEST' | 'HOST' | 'ADMIN';
 }
@@ -22,7 +22,7 @@ export class JwtGuard implements CanActivate {
     const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('인증 토큰이 없습니다.');
+      throw new UnauthorizedException('Access token is required.');
     }
 
     try {
@@ -36,7 +36,7 @@ export class JwtGuard implements CanActivate {
       };
       return true;
     } catch {
-      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+      throw new UnauthorizedException('Invalid token.');
     }
   }
 
