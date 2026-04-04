@@ -36,6 +36,7 @@ import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.global.analytics.AnalyticsService;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
@@ -90,6 +91,9 @@ class BookingServiceTest {
 
     @Mock
     private NoShowHistoryRepository noShowHistoryRepository;
+
+    @Mock
+    private AnalyticsService analyticsService;
 
     @Mock
     private Member guestMember;

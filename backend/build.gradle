@@ -86,8 +86,8 @@ dependencies {
     // Observability
     implementation 'net.ttddyy:datasource-proxy:1.10'
 
-    // Prometheus Metrics
-    implementation 'io.micrometer:micrometer-registry-prometheus'
+    // PostHog Analytics
+    implementation 'com.posthog.java:posthog:1.2.0'
 
     // Google Calendar API
     implementation 'com.google.api-client:google-api-client:2.7.0'

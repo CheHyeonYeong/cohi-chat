@@ -4,6 +4,7 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.HostChatCount;
 import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
+import com.coDevs.cohiChat.global.analytics.AnalyticsService;
 import com.coDevs.cohiChat.global.config.RateLimitServiceBase;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -62,6 +63,7 @@ public class MemberService {
         private final TokenService tokenService;
         private final ApplicationEventPublisher eventPublisher;
         private final SmtpEmailValidator smtpEmailValidator;
+        private final AnalyticsService analyticsService;
 
         @Transactional
         public SignupResponseDTO signup(SignupRequestDTO request){
@@ -91,6 +93,8 @@ public class MemberService {
                                         log.warn("SMTP validation failed for email: {}", member.getEmail());
                                 }
                         });
+
+                analyticsService.trackSignup(member.getId(), Provider.LOCAL.name(), role.name());
 
                 log.info("[signup] [SUCCESS] role={}", role);
 
@@ -124,6 +128,8 @@ public class MemberService {
                         log.warn("[login] [FAIL] reason=PASSWORD_MISMATCH");
                         throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
                 }
+
+                analyticsService.trackLogin(member.getId(), member.getProvider().name());
 
                 log.info("[login] [SUCCESS] provider={}", member.getProvider());
 

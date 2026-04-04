@@ -27,6 +27,7 @@ import com.coDevs.cohiChat.booking.entity.AttendanceStatus;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.booking.entity.NoShowHistory;
 import com.coDevs.cohiChat.booking.request.BookingCreateRequestDTO;
+import com.coDevs.cohiChat.global.analytics.AnalyticsService;
 import com.coDevs.cohiChat.booking.request.BookingScheduleUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingStatusUpdateRequestDTO;
 import com.coDevs.cohiChat.booking.request.BookingUpdateRequestDTO;
@@ -65,6 +66,7 @@ public class BookingService {
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCalendarProperties googleCalendarProperties;
     private final EntityManager entityManager;
+    private final AnalyticsService analyticsService;
 
     private volatile ZoneId calendarZoneId;
 
@@ -110,6 +112,8 @@ public class BookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         upsertGoogleCalendarEvent(savedBooking, timeSlot, savedBooking.getBookingDate(), savedBooking.getDescription(), guest);
+
+        analyticsService.trackBookingCreated(guest.getId(), timeSlot.getUserId(), savedBooking.getBookingDate(), savedBooking.getTopic());
 
         log.info("[createBooking] [SUCCESS] bookingId={} bookingDate={}",
             savedBooking.getId(), savedBooking.getBookingDate());
@@ -398,6 +402,8 @@ public class BookingService {
 
         booking.updateStatus(request.getStatus());
 
+        analyticsService.trackBookingStatusChanged(hostId, bookingId, request.getStatus());
+
         return toBookingResponseDTO(booking);
     }
 
@@ -415,6 +421,8 @@ public class BookingService {
         deleteGoogleCalendarEvent(booking);
 
         booking.cancel();
+
+        analyticsService.trackBookingCancelled(guestId, bookingId);
 
         log.info("[cancelBooking] [SUCCESS] bookingId={}", bookingId);
     }
@@ -519,6 +527,8 @@ public class BookingService {
                 host.ban();
             }
         });
+
+        analyticsService.trackHostNoShowReported(guestId, hostId, bookingId);
 
         log.info("[reportHostNoShow] [SUCCESS] bookingId={}", bookingId);
 
