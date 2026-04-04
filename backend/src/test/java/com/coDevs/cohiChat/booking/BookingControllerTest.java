@@ -17,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +25,8 @@ import com.coDevs.cohiChat.booking.controller.BookingController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -787,6 +788,42 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data").isArray())
             .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    // ===== 페이지네이션 파라미터 유효성 검증 테스트 (Issue #459) =====
+
+    @ParameterizedTest(name = "page={0}, size={1}")
+    @CsvSource({
+        "0, 10",   // page=0
+        "1, 0",    // size=0
+        "-1, 10",  // 음수 page
+        "1, -5"    // 음수 size
+    })
+    @DisplayName("실패: 잘못된 페이지네이션으로 게스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsGuestFailInvalidPagination(String page, String size) throws Exception {
+        mockMvc.perform(get("/bookings/guest/me")
+                .param("page", page)
+                .param("size", size))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
+    }
+
+    @ParameterizedTest(name = "page={0}, size={1}")
+    @CsvSource({
+        "0, 10",   // page=0
+        "1, 0",    // size=0
+        "-1, 10",  // 음수 page
+        "1, -5"    // 음수 size
+    })
+    @DisplayName("실패: 잘못된 페이지네이션으로 호스트 예약 조회 - 400 Bad Request")
+    void getMyBookingsAsHostFailInvalidPagination(String page, String size) throws Exception {
+        mockMvc.perform(get("/bookings/host/me")
+                .param("page", page)
+                .param("size", size))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"));
     }
 
 }
