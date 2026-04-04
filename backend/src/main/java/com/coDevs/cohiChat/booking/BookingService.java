@@ -194,7 +194,7 @@ public class BookingService {
      * @param topic 검증할 주제
      */
     private void validateTopic(UUID hostId, String topic) {
-        Calendar calendar = calendarRepository.findById(hostId)
+        Calendar calendar = calendarRepository.findByMemberId(hostId)
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         if (!calendar.getTopics().contains(topic)) {
@@ -347,7 +347,7 @@ public class BookingService {
 
     private void upsertGoogleCalendarEvent(Booking booking, TimeSlot timeSlot, LocalDate bookingDate, String description, Member guest) {
         UUID hostId = timeSlot.getUserId();
-        var calendarOpt = calendarRepository.findById(hostId);
+        var calendarOpt = calendarRepository.findByMemberId(hostId);
         if (calendarOpt.isEmpty()) {
             log.debug("[syncGoogleCalendar] [SKIP] reason=CALENDAR_NOT_LINKED");
             return;
@@ -429,7 +429,7 @@ public class BookingService {
         }
 
         UUID hostId = booking.getTimeSlot().getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
+        calendarRepository.findByMemberId(hostId).ifPresent(calendar -> {
             googleCalendarService.deleteEvent(
                 booking.getGoogleEventId(),
                 calendar.getGoogleCalendarId()
@@ -480,7 +480,7 @@ public class BookingService {
         }
 
         UUID hostId = timeSlot.getUserId();
-        calendarRepository.findById(hostId).ifPresent(calendar -> {
+        calendarRepository.findByMemberId(hostId).ifPresent(calendar -> {
             Instant startDateTime = toInstant(request.getBookingDate(), timeSlot.getStartTime());
             Instant endDateTime = toInstant(request.getBookingDate(), timeSlot.getEndTime());
 

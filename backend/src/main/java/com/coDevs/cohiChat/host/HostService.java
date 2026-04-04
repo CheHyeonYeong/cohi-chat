@@ -31,7 +31,7 @@ public class HostService {
 	public HostProfileResponseDTO getHostProfile(String username) {
 		Member member = memberService.getMember(username);
 		validateHostRole(member);
-		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
+		boolean calendarConnected = calendarRepository.existsByMemberId(member.getId());
 		return HostProfileResponseDTO.from(member, calendarConnected);
 	}
 
@@ -40,7 +40,7 @@ public class HostService {
 		Member member = memberService.getMember(username);
 		validateHostRole(member);
 		member.updateDisplayName(displayName);
-		boolean calendarConnected = calendarRepository.existsByUserId(member.getId());
+		boolean calendarConnected = calendarRepository.existsByMemberId(member.getId());
 		return HostProfileResponseDTO.from(member, calendarConnected);
 	}
 

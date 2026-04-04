@@ -111,14 +111,17 @@ class BookingServiceTest {
         given(googleCalendarProperties.getTimezone()).willReturn("Asia/Seoul");
         bookingService.initZoneId();
 
+        // hostMember mock 설정
+        given(hostMember.getId()).willReturn(HOST_ID);
+
         // 기본 Calendar mock 설정 (TEST_TOPIC 포함)
         Calendar defaultCalendar = Calendar.create(
-            HOST_ID,
+            hostMember,
             List.of(TEST_TOPIC, "topic", "커리어 상담", "이직 상담", "포트폴리오 리뷰"),
             "desc",
             TEST_GOOGLE_CALENDAR_ID
         );
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(defaultCalendar));
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(defaultCalendar));
 
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1239,8 +1242,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
         given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of(TEST_TOPIC), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
         )).willReturn(googleEventId);
@@ -1284,8 +1287,8 @@ class BookingServiceTest {
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.updateEvent(
             eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
         )).willReturn(true);
@@ -1318,8 +1321,8 @@ class BookingServiceTest {
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         given(googleCalendarService.deleteEvent(eq(googleEventId), eq(googleCalendarId))).willReturn(true);
 
         // when
@@ -1366,8 +1369,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
         given(memberRepository.findById(GUEST_ID)).willReturn(Optional.of(guestMember));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of(TEST_TOPIC), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of(TEST_TOPIC), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar API 실패 (null 반환)
         given(googleCalendarService.createEvent(
             anyString(), anyString(), any(), any(), eq(googleCalendarId)
@@ -1409,8 +1412,8 @@ class BookingServiceTest {
             eq(newTimeSlotId), eq(newDate), any(), eq(bookingId)
         )).willReturn(false);
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar 업데이트 실패
         given(googleCalendarService.updateEvent(
             eq(googleEventId), anyString(), anyString(), any(), any(), eq(googleCalendarId)
@@ -1686,8 +1689,8 @@ class BookingServiceTest {
         booking.setGoogleEventId(googleEventId);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
 
-        Calendar calendar = Calendar.create(HOST_ID, List.of("topic"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("topic"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
         // Google Calendar 삭제 실패
         given(googleCalendarService.deleteEvent(eq(googleEventId), eq(googleCalendarId))).willReturn(false);
 
@@ -1720,8 +1723,8 @@ class BookingServiceTest {
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
 
         // 호스트의 캘린더에 정의된 topics
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingCreateRequestDTO validRequest = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1754,8 +1757,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingCreateRequestDTO invalidRequest = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1784,7 +1787,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         // 호스트 캘린더가 없음
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.empty());
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
@@ -1816,8 +1819,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -1856,8 +1859,8 @@ class BookingServiceTest {
         )).willReturn(false);
 
         // 호스트의 캘린더에 정의된 topics (invalidTopic은 포함되지 않음)
-        Calendar calendar = Calendar.create(HOST_ID, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
-        given(calendarRepository.findById(HOST_ID)).willReturn(Optional.of(calendar));
+        Calendar calendar = Calendar.create(hostMember, List.of("커리어 상담", "이직 상담", "포트폴리오 리뷰"), "desc", googleCalendarId);
+        given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(calendar));
 
         BookingUpdateRequestDTO updateRequest = BookingUpdateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)

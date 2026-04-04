@@ -86,7 +86,7 @@ class TimeSlotServiceTest {
 
     private void givenCalendarExists() {
         given(calendar.getUserId()).willReturn(TEST_USER_ID);
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.of(calendar));
     }
 
     private void givenSuccessfulCreateMocks() {
@@ -130,7 +130,7 @@ class TimeSlotServiceTest {
     void createTimeSlotFailWhenCalendarNotFound() {
         // given
         givenHostMember();
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.empty());
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> timeSlotService.createTimeSlot(hostMember, requestDTO))
@@ -197,7 +197,7 @@ class TimeSlotServiceTest {
     void getTimeSlotsByHostSuccess() {
         // given
         givenHostMember();
-        given(calendarRepository.findByUserId(TEST_USER_ID)).willReturn(Optional.of(calendar));
+        given(calendarRepository.findByMemberId(TEST_USER_ID)).willReturn(Optional.of(calendar));
 
         TimeSlot timeSlot1 = TimeSlot.create(TEST_USER_ID, LocalTime.of(10, 0), LocalTime.of(11, 0), List.of(0));
         TimeSlot timeSlot2 = TimeSlot.create(TEST_USER_ID, LocalTime.of(14, 0), LocalTime.of(15, 0), List.of(1));
