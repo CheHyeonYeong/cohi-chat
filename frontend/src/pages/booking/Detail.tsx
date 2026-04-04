@@ -1,6 +1,6 @@
 import { useParams } from '@tanstack/react-router';
 import { getErrorMessage } from '~/libs/errorUtils';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PageLayout } from '~/components';
 import { Button } from '~/components/button';
 import { Card } from '~/components/card';
@@ -29,9 +29,10 @@ export const Detail = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const isMeetingStarted = useMemo(() => {
-        return booking ? now >= booking.startedAt.getTime() : false;
-    }, [booking, now]);
+    const isMeetingStarted = useMemo(
+        () => (booking ? now >= booking.startedAt.getTime() : false),
+        [booking, now]
+    );
 
     const isGuest = currentUser?.id === booking?.guestId;
     const isAlreadyReported = booking?.attendanceStatus === 'HOST_NO_SHOW';
