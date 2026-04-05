@@ -39,4 +39,13 @@ describe('ChatPollRegistry', () => {
 
     await expect(subscription.completion).resolves.toBe('aborted');
   });
+
+  it('resolves as aborted when cancel() is called', async () => {
+    const registry = new ChatPollRegistry();
+    const subscription = registry.createRoomSubscription('room-1', 1_000);
+
+    subscription.cancel();
+
+    await expect(subscription.completion).resolves.toBe('aborted');
+  });
 });

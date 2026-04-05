@@ -16,6 +16,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
@@ -60,7 +61,7 @@ const POLL_DESCRIPTION =
 const ROOM_ID_DESCRIPTION = 'Chat room UUID';
 const SINCE_MESSAGE_ID_DESCRIPTION =
   'Last received message UUID. Omit it to wait only for messages created after this poll request started.';
-const TIMEOUT_DESCRIPTION = `Long polling timeout in seconds. Maximum 25 seconds. Client and proxy timeouts should be at least ${RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS} seconds.`;
+const TIMEOUT_DESCRIPTION = `Long polling timeout in seconds (0-${MAX_POLL_TIMEOUT_SECONDS}). Omit it to wait up to ${MAX_POLL_TIMEOUT_SECONDS} seconds for new messages, or use 0 to return immediately without waiting. Client and proxy timeouts should be at least ${RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS} seconds.`;
 const POLL_OK = 'Messages or an empty array on timeout';
 const POLL_BAD_REQUEST = 'roomId, sinceMessageId, or timeout is invalid.';
 const POLL_FORBIDDEN = 'The requester is not allowed to access this room.';
@@ -97,7 +98,7 @@ export class ChatController {
     name: 'roomId',
     description: ROOM_ID_DESCRIPTION,
   })
-  @ApiOkResponse({
+  @ApiCreatedResponse({
     description: SEND_OK,
     type: MessageDto,
   })
@@ -201,7 +202,9 @@ export class ChatController {
       timeoutText !== undefined &&
       !INTEGER_STRING_PATTERN.test(timeoutText)
     ) {
-      throw new BadRequestException('timeout must be an integer string.');
+      throw new BadRequestException(
+        'timeout must be a non-negative integer string.',
+      );
     }
 
     const timeoutSeconds =

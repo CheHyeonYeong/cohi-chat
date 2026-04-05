@@ -117,6 +117,7 @@ describe('ChatService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    jest.clearAllMocks();
   });
 
   it('uses JWT subject as username and maps room summaries', async () => {

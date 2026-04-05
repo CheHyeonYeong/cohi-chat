@@ -10,6 +10,7 @@ import {
   ChatPollRegistry,
   type PollWaitSubscription,
 } from './chat-poll-registry';
+import { MESSAGE_MAX_LENGTH } from './chat.constants';
 import { MessageDto } from './dto/message-response.dto';
 import {
   PollMessageResponse,
@@ -33,7 +34,6 @@ export const POLL_TIMEOUT_BUFFER_SECONDS = 10;
 export const RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS =
   MAX_POLL_TIMEOUT_SECONDS + POLL_TIMEOUT_BUFFER_SECONDS;
 export const MAX_POLL_MESSAGES = 100;
-const MESSAGE_MAX_LENGTH = 1000;
 
 @Injectable()
 export class ChatService {
@@ -342,6 +342,8 @@ export class ChatService {
       );
     }
 
+    // Include the anchor in the query window, then drop it in memory so
+    // same-timestamp messages are not skipped by the secondary id ordering.
     const orderedMessages = await this.prisma.message.findMany({
       where: {
         roomId,
