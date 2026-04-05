@@ -1,54 +1,31 @@
 #!/bin/bash
-# Chat blue-green zero-downtime deploy script.
-
 set -euo pipefail
-
-HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"
 
 source "$(dirname "$0")/chat-blue-green-common.sh"
 
-main() {
-    print_banner "Chat Blue-Green Deploy Start"
+IS_BLUE=$(docker ps --filter "name=cohi-chat-server-blue" --format "{{.Names}}")
 
-    local active
-    active=$(detect_active)
-    local previous=""
-    local inactive
+if [ -z "$IS_BLUE" ]; then
+    INACTIVE="blue"
+    ACTIVE="green"
+else
+    INACTIVE="green"
+    ACTIVE="blue"
+fi
 
-    if [ "$active" = "none" ]; then
-        inactive=$(current_upstream_target)
-        echo "[info] No active slot detected. Bootstrapping: ${inactive}"
-    else
-        previous=$active
-        inactive=$(opposite_color "$active")
-        echo "[info] Active: ${active} -> Deploying to: ${inactive}"
-    fi
+echo "[deploy] Active: ${ACTIVE} -> Deploying to: ${INACTIVE}"
 
-    echo "[deploy] Starting chat-server-${inactive} with new image..."
-    $CHAT_COMPOSE up -d --no-deps "$(chat_service_name "$inactive")"
+echo "[deploy] 1. Pulling new image..."
+$CHAT_COMPOSE pull "chat-server-${INACTIVE}"
 
-    wait_healthy "$(chat_container_name "$inactive")" "chat-server-${inactive}"
-    ensure_nginx_running
-    switch_upstream "$inactive"
+echo "[deploy] 2. Starting chat-server-${INACTIVE}..."
+$CHAT_COMPOSE up -d --no-deps "chat-server-${INACTIVE}"
 
-    if ! smoke_check_proxy; then
-        echo "[rollback] Smoke check failed after switching traffic. Reverting upstream..."
+echo "[deploy] 3. Health check..."
+wait_healthy "cohi-chat-server-${INACTIVE}"
 
-        if [ -n "$previous" ] && slot_healthy "$previous"; then
-            switch_upstream "$previous"
-            stop_chat_if_running "$inactive" "failed"
-        else
-            echo "[rollback] No healthy previous slot is available. Keeping chat-server-${inactive} running for investigation."
-        fi
+echo "[deploy] 4. Switching nginx to chat-server-${INACTIVE}..."
+switch_upstream "$INACTIVE"
 
-        exit 1
-    fi
-
-    if [ -n "$previous" ]; then
-        stop_chat_if_running "$previous" "old"
-    fi
-
-    print_banner "Deploy Success: ${inactive} is now active"
-}
-
-main "$@"
+echo "[deploy] 5. Stopping old chat-server-${ACTIVE}..."
+stop_slot "$ACTIVE"

@@ -41,7 +41,6 @@ services:
   chat-server-green:
     <<: *chat-server-common
     container_name: cohi-chat-server-green
-    restart: unless-stopped
 
 networks:
   chat-network:
