@@ -6,17 +6,14 @@ services:
       - "80:80"
     volumes:
       - ./chat/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - ./chat/nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf:ro
+      - ./chat/nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf
     networks:
       - chat-network
-    depends_on:
-      chat-server:
-        condition: service_healthy
     restart: unless-stopped
 
-  chat-server:
+  chat-server-blue: &chat-server-common
     image: ${CHAT_SERVER_IMAGE:-cohi-chat-chat-server:local}
-    container_name: cohi-chat-server
+    container_name: cohi-chat-server-blue
     env_file:
       - .env
     environment:
@@ -27,12 +24,23 @@ services:
     networks:
       - chat-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3001/health"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 5s
       start_period: 30s
       retries: 5
+    stop_grace_period: 30s
     restart: unless-stopped
+
+  chat-server-green:
+    <<: *chat-server-common
+    container_name: cohi-chat-server-green
 
 networks:
   chat-network:
