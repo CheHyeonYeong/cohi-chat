@@ -15,17 +15,14 @@ fi
 
 echo "[deploy] Active: ${ACTIVE} -> Deploying to: ${INACTIVE}"
 
-echo "[deploy] 1. Pulling new image..."
-$CHAT_COMPOSE pull "chat-server-${INACTIVE}"
-
-echo "[deploy] 2. Starting chat-server-${INACTIVE}..."
+echo "[deploy] 1. Starting chat-server-${INACTIVE}..."
 $CHAT_COMPOSE up -d --no-deps "chat-server-${INACTIVE}"
 
-echo "[deploy] 3. Health check..."
+echo "[deploy] 2. Health check..."
 wait_healthy "cohi-chat-server-${INACTIVE}"
 
-echo "[deploy] 4. Switching nginx to chat-server-${INACTIVE}..."
+echo "[deploy] 3. Switching nginx to chat-server-${INACTIVE}..."
 switch_upstream "$INACTIVE"
 
-echo "[deploy] 5. Stopping old chat-server-${ACTIVE}..."
+echo "[deploy] 4. Stopping old chat-server-${ACTIVE}..."
 stop_slot "$ACTIVE"
