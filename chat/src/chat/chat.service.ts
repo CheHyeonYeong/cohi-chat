@@ -3,14 +3,20 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ChatPollRegistry,
+  type PollWaitSubscription,
+} from './chat-poll-registry';
+import { MessageDto } from './dto/message-response.dto';
 import {
   PollMessageResponse,
   PollMessagesCommand,
 } from './dto/poll-messages.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
+import { SendMessageDto } from './dto/send-message.dto';
 
 interface PollingMessageRecord {
   id: string;
@@ -23,20 +29,20 @@ interface PollingMessageRecord {
 }
 
 export const MAX_POLL_TIMEOUT_SECONDS = 25;
+export const POLL_TIMEOUT_BUFFER_SECONDS = 10;
+export const RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS =
+  MAX_POLL_TIMEOUT_SECONDS + POLL_TIMEOUT_BUFFER_SECONDS;
 export const MAX_POLL_MESSAGES = 100;
+const MESSAGE_MAX_LENGTH = 1000;
 
 @Injectable()
 export class ChatService {
-  private static readonly POLL_INTERVAL_MS = 1000;
-
-  private readonly logger = new Logger(ChatService.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pollRegistry: ChatPollRegistry,
+  ) {}
 
   async getRooms(username: string): Promise<RoomResponseDto[]> {
-    // Keep this query in SQL because the room list contract depends on
-    // lateral joins and window functions that are easier to keep exact here
-    // than to spread across multiple ORM calls and post-processing steps.
     const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
       SELECT
         cr.id,
@@ -57,8 +63,6 @@ export class ChatService {
         ON my_rm.room_id = cr.id
        AND my_rm.member_id = me.id
        AND my_rm.deleted_at IS NULL
-      -- Pick exactly one counterpart row for a 1:1 room without duplicating
-      -- the parent room row in the result set.
       JOIN LATERAL (
         SELECT
           rm.member_id,
@@ -72,8 +76,6 @@ export class ChatService {
         ORDER BY rm.created_at ASC, rm.id ASC
         LIMIT 1
       ) counterpart ON true
-      -- Fetch only the latest message per room so the list stays compact while
-      -- still showing the most recent activity preview.
       LEFT JOIN LATERAL (
         SELECT id, content, message_type, created_at
         FROM message
@@ -81,8 +83,6 @@ export class ChatService {
         ORDER BY created_at DESC, id DESC
         LIMIT 1
       ) last_msg ON true
-      -- Compute unread counts by assigning a stable sequence per room and then
-      -- counting only rows that come after the stored last-read cursor.
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS cnt
         FROM (
@@ -106,14 +106,74 @@ export class ChatService {
         WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
       ) unread ON true
       WHERE cr.is_disabled = false
-      -- Sort by recent activity first, then by room id as a deterministic
-      -- tie-breaker when timestamps are equal or the room has no messages yet.
       ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
     `);
 
-    // The SQL aliases intentionally mirror RoomQueryRow so DTO mapping stays
-    // thin and the response contract is centralized in RoomResponseDto.from().
     return rows.map((row) => RoomResponseDto.from(row));
+  }
+
+  async sendMessage(
+    roomId: string,
+    username: string,
+    dto: SendMessageDto,
+  ): Promise<MessageDto> {
+    const normalizedContent = this.normalizeContent(dto.content);
+    const memberId = await this.resolveMemberId(username);
+
+    const roomMember = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!roomMember) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const room = await this.prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        isDisabled: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!room) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const savedMessage = await this.prisma.$transaction(async (tx) => {
+      const message = await tx.message.create({
+        data: {
+          roomId,
+          senderId: memberId,
+          messageType: 'TEXT',
+          content: normalizedContent,
+        },
+      });
+
+      await tx.roomMember.update({
+        where: {
+          id: roomMember.id,
+        },
+        data: {
+          lastReadMessageId: message.id,
+        },
+      });
+
+      return message;
+    });
+
+    this.pollRegistry.notifyRoom(roomId);
+
+    return MessageDto.from(savedMessage);
   }
 
   async pollMessages({
@@ -125,25 +185,12 @@ export class ChatService {
   }: PollMessagesCommand): Promise<PollMessageResponse[]> {
     this.validateTimeout(timeoutSeconds);
 
-    const member = await this.prisma.member.findFirst({
-      where: {
-        username,
-        isDeleted: false,
-        isBanned: false,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
+    const memberId = await this.resolveMemberId(username);
 
     const membership = await this.prisma.roomMember.findFirst({
       where: {
         roomId,
-        memberId: member.id,
+        memberId,
         deletedAt: null,
       },
       select: {
@@ -170,24 +217,61 @@ export class ChatService {
     }
 
     const pollingStartedAt = new Date();
-    const messages = await this.findMessagesAfter(
-      roomId,
-      sinceMessageId,
-      pollingStartedAt,
-    );
-    if (messages.length > 0 || timeoutSeconds === 0) {
-      return messages.map((message) => this.toPollMessageResponse(message));
+    const subscription =
+      timeoutSeconds === 0
+        ? undefined
+        : this.pollRegistry.createRoomSubscription(
+            roomId,
+            timeoutSeconds * 1000,
+            abortSignal,
+          );
+
+    try {
+      const messages = await this.findMessagesAfter(
+        roomId,
+        sinceMessageId,
+        pollingStartedAt,
+      );
+      if (messages.length > 0 || timeoutSeconds === 0) {
+        return messages.map((message) => this.toPollMessageResponse(message));
+      }
+
+      const waitResult = await this.waitForMessages(subscription);
+      if (waitResult !== 'notified') {
+        return [];
+      }
+
+      const waitedMessages = await this.findMessagesAfter(
+        roomId,
+        sinceMessageId,
+        pollingStartedAt,
+      );
+
+      return waitedMessages.map((message) =>
+        this.toPollMessageResponse(message),
+      );
+    } finally {
+      subscription?.cancel();
+    }
+  }
+
+  private async resolveMemberId(username: string): Promise<string> {
+    const member = await this.prisma.member.findFirst({
+      where: {
+        username,
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!member) {
+      throw new UnauthorizedException('The authenticated user does not exist.');
     }
 
-    const waitedMessages = await this.waitForMessages(
-      roomId,
-      sinceMessageId,
-      timeoutSeconds,
-      pollingStartedAt,
-      abortSignal,
-    );
-
-    return waitedMessages.map((message) => this.toPollMessageResponse(message));
+    return member.id;
   }
 
   private validateTimeout(timeoutSeconds: number): void {
@@ -200,6 +284,26 @@ export class ChatService {
         `timeout must be an integer between 0 and ${MAX_POLL_TIMEOUT_SECONDS}.`,
       );
     }
+  }
+
+  private normalizeContent(content: unknown): string {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Message content must be a string.');
+    }
+
+    const normalizedContent = content.trim();
+
+    if (normalizedContent.length === 0) {
+      throw new BadRequestException('Message content cannot be blank.');
+    }
+
+    if (normalizedContent.length > MESSAGE_MAX_LENGTH) {
+      throw new BadRequestException(
+        `Message content cannot exceed ${MESSAGE_MAX_LENGTH} characters.`,
+      );
+    }
+
+    return normalizedContent;
   }
 
   private async findMessagesAfter(
@@ -249,91 +353,19 @@ export class ChatService {
       take: MAX_POLL_MESSAGES + 1,
     });
 
-    // UUID v4 order is not chronological, so keep every message from the
-    // anchor timestamp onward except the anchor itself to avoid drops.
     return orderedMessages
       .filter((message) => message.id !== anchorMessage.id)
       .slice(0, MAX_POLL_MESSAGES);
   }
 
   private waitForMessages(
-    roomId: string,
-    sinceMessageId: string | undefined,
-    timeoutSeconds: number,
-    pollingStartedAt: Date,
-    abortSignal?: AbortSignal,
-  ) {
-    if (abortSignal?.aborted) {
-      return Promise.resolve([]);
+    subscription: PollWaitSubscription | undefined,
+  ): Promise<'notified' | 'timed_out' | 'aborted'> {
+    if (!subscription) {
+      return Promise.resolve('timed_out');
     }
 
-    return new Promise<PollingMessageRecord[]>((resolve, reject) => {
-      let settled = false;
-      let checking = false;
-
-      const cleanup = () => {
-        clearInterval(intervalHandle);
-        clearTimeout(timeoutHandle);
-        abortSignal?.removeEventListener('abort', abortHandler);
-      };
-
-      const resolveWith = (messages: PollingMessageRecord[]) => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        cleanup();
-        resolve(messages);
-      };
-
-      const rejectWith = (error: Error) => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        cleanup();
-        reject(error);
-      };
-
-      const abortHandler = () => {
-        resolveWith([]);
-      };
-
-      abortSignal?.addEventListener('abort', abortHandler, { once: true });
-
-      const intervalHandle = setInterval(() => {
-        if (checking || settled) {
-          return;
-        }
-
-        checking = true;
-
-        void this.findMessagesAfter(roomId, sinceMessageId, pollingStartedAt)
-          .then((messages) => {
-            if (messages.length > 0) {
-              resolveWith(messages);
-            }
-          })
-          .catch((error: unknown) => {
-            const pollingError =
-              error instanceof Error ? error : new Error(String(error));
-            this.logger.error(
-              `Long polling failed for room ${roomId}`,
-              pollingError.stack,
-            );
-            rejectWith(pollingError);
-          })
-          .finally(() => {
-            checking = false;
-          });
-      }, ChatService.POLL_INTERVAL_MS);
-
-      const timeoutHandle = setTimeout(() => {
-        resolveWith([]);
-      }, timeoutSeconds * 1000);
-    });
+    return subscription.completion;
   }
 
   private toPollMessageResponse(

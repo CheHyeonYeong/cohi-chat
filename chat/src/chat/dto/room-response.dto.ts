@@ -2,26 +2,27 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LastMessageDto {
   @ApiProperty({
-    description: '마지막 메시지 ID',
+    description: 'Last message ID',
     example: '3f9b0f07-6f68-4cd1-8ae1-1f4ebbf4f9d2',
   })
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional({
-    description: '마지막 메시지 본문. 시스템/카드 메시지는 null일 수 있습니다.',
+    description:
+      'Last message content. Null when the message type does not use plain text.',
     nullable: true,
-    example: '안녕하세요',
+    example: 'hello',
   })
-  content: string | null;
+  content!: string | null;
 
-  @ApiProperty({ description: '메시지 타입', example: 'TEXT' })
-  messageType: string;
+  @ApiProperty({ description: 'Message type', example: 'TEXT' })
+  messageType!: string;
 
   @ApiProperty({
-    description: 'UTC 기준 ISO-8601 문자열',
+    description: 'UTC ISO-8601 timestamp',
     example: '2026-03-30T00:00:00.000Z',
   })
-  createdAt: string;
+  createdAt!: string;
 }
 
 export interface RoomQueryRow {
@@ -38,36 +39,39 @@ export interface RoomQueryRow {
 
 export class RoomResponseDto {
   @ApiProperty({
-    description: '채팅방 ID',
+    description: 'Chat room ID',
     example: '57d8aef0-a2cc-4f18-b673-0ab8f7242f4c',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
-    description: '상대방 member ID',
+    description: 'Counterpart member ID',
     example: '763f94ea-3f54-42f9-bd1d-96e3516f0a1e',
   })
-  counterpartId: string;
+  counterpartId!: string;
 
-  @ApiProperty({ description: '상대방 표시 이름', example: 'Alex Kim' })
-  counterpartName: string;
+  @ApiProperty({ description: 'Counterpart display name', example: 'Alex Kim' })
+  counterpartName!: string;
 
   @ApiPropertyOptional({
-    description: '상대방 프로필 이미지 URL',
+    description: 'Counterpart profile image URL',
     nullable: true,
     example: 'https://cdn.example.com/profiles/alex.png',
   })
-  counterpartProfileImageUrl: string | null;
+  counterpartProfileImageUrl!: string | null;
 
   @ApiPropertyOptional({
-    description: '마지막 메시지. 메시지가 한 번도 없는 방이면 null입니다.',
+    description: 'Last message. Null when the room has no messages yet.',
     type: () => LastMessageDto,
     nullable: true,
   })
-  lastMessage: LastMessageDto | null;
+  lastMessage!: LastMessageDto | null;
 
-  @ApiProperty({ description: '현재 사용자의 미읽음 메시지 수', example: 3 })
-  unreadCount: number;
+  @ApiProperty({
+    description: 'Unread message count for the caller',
+    example: 3,
+  })
+  unreadCount!: number;
 
   static from(row: RoomQueryRow): RoomResponseDto {
     const dto = new RoomResponseDto();
@@ -76,8 +80,6 @@ export class RoomResponseDto {
     dto.counterpartName = row.counterpart_name;
     dto.counterpartProfileImageUrl = row.counterpart_profile_image_url;
     dto.unreadCount = row.unread_count;
-    // WHY: 방에 메시지가 없거나 마지막 메시지 메타데이터가 불완전할 수 있어 null-safe하게 응답을 구성합니다.
-    // WHY: 날짜는 클라이언트가 타임존과 무관하게 처리할 수 있도록 ISO-8601 문자열로 직렬화합니다.
     dto.lastMessage =
       row.last_message_id &&
       row.last_message_type &&
@@ -89,6 +91,7 @@ export class RoomResponseDto {
             createdAt: row.last_message_created_at.toISOString(),
           }
         : null;
+
     return dto;
   }
 }

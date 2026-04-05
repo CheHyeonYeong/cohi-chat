@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -6,10 +7,9 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
-const SWAGGER_TITLE =
-  '\u0063\u006f\u0068\u0069\u0043\u0068\u0061\u0074 \uCC44\uD305 \uC11C\uBC84';
+const SWAGGER_TITLE = 'cohiChat chat server';
 const SWAGGER_DESCRIPTION =
-  '\uCC44\uD305 \uC11C\uBC84 API \uBB38\uC11C. GET /api/chat/rooms \uC751\uB2F5\uC5D0\uC11C lastMessage\uB294 \uBA54\uC2DC\uC9C0\uAC00 \uC5C6\uB294 \uBC29\uC5D0\uC11C null\uC785\uB2C8\uB2E4.';
+  'Chat server API docs. GET /api/chat/rooms returns lastMessage as null when a room has no messages. GET /api/chat/poll waits up to 25 seconds, and client or proxy timeouts should be at least 35 seconds.';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -17,6 +17,13 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
