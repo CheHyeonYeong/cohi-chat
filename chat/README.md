@@ -26,10 +26,29 @@ See `.env.example`.
 
 - Swagger UI: `http://localhost:3001/api/swagger-ui`
 - Rooms API: `GET /api/chat/rooms`
+- Send message API: `POST /api/chat/rooms/:roomId/messages`
+- Long polling API: `GET /api/chat/poll?roomId=<uuid>&sinceMessageId=<uuid>&timeout=25`
 
 Contract notes:
+
 - `lastMessage` is `null` when the room has no messages.
+- Long polling waits up to 25 seconds and returns `[]` on timeout.
+- Client and proxy timeouts should be at least 35 seconds to leave a 10 second buffer over the 25 second server wait.
+- Omitting `sinceMessageId` means "wait only for messages created after this poll request starts".
 - Timestamps are returned as UTC ISO-8601 strings.
+- This branch does not require PostgreSQL triggers, `LISTEN/NOTIFY`, or Redis pub/sub.
+- `POST /api/chat/rooms/:roomId/messages` persists the message and then wakes pending poll requests for the same room in the same chat server process.
+- If chat later runs with multiple instances or separate writer processes, add an external signal layer such as Redis pub/sub in a follow-up change.
+
+## Swagger Manual Test
+
+1. Start the server with `pnpm run start:dev`.
+2. Open `http://localhost:3001/api/swagger-ui`.
+3. Click `Authorize` and paste the Spring access token without the `Bearer` prefix.
+4. Call `GET /api/chat/rooms` and copy one `id` value.
+5. Call `GET /api/chat/poll` with that `roomId` and `timeout=25`.
+6. If there is no new message, the request should stay open for about 25 seconds and then return `[]`.
+7. While the poll request is waiting, call `POST /api/chat/rooms/:roomId/messages` for the same room and confirm the poll returns immediately.
 
 ## Schema
 
@@ -38,6 +57,7 @@ Contract notes:
 - Implementation notes: `./CLAUDE.md`
 
 The room list query filters by:
+
 - `member.is_deleted = false`
 - `member.is_banned = false`
 - `chat_room.is_disabled = false`

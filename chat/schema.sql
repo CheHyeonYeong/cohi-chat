@@ -1,5 +1,6 @@
 -- Current chat server DDL reference.
--- Apply this explicitly because Prisma does not manage production schema automatically here.
+-- This file is a reference only. #499 long polling does not require
+-- PostgreSQL triggers, LISTEN/NOTIFY, or direct production DB operations.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -27,13 +28,13 @@ CREATE INDEX IF NOT EXISTS idx_room_member_room_id
     ON room_member(room_id);
 
 CREATE TABLE IF NOT EXISTS message (
-    id           UUID         NOT NULL DEFAULT gen_random_uuid(),
-    room_id      UUID         NOT NULL,
-    sender_id    UUID         NULL,
-    message_type VARCHAR(30)  NOT NULL,
+    id           UUID          NOT NULL DEFAULT gen_random_uuid(),
+    room_id      UUID          NOT NULL,
+    sender_id    UUID          NULL,
+    message_type VARCHAR(30)   NOT NULL,
     content      VARCHAR(2000) NULL,
-    payload      JSONB        NULL,
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    payload      JSONB         NULL,
+    created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
     CONSTRAINT pk_message PRIMARY KEY (id)
 );
 
