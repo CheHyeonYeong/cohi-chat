@@ -56,9 +56,7 @@ export const LoginForm = () => {
         setOAuthError(null);
         try {
             const url = await getOAuthAuthorizationUrlApi(provider);
-            if (redirectPath !== '/') {
-                saveRedirectUrl(redirectPath);
-            }
+            saveRedirectUrl(redirectPath);
             window.location.href = url;
         } catch {
             setOAuthPending(null);

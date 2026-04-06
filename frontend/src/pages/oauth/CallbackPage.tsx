@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useOAuthLogin } from '~/features/member';
-import { popRedirectUrl } from '~/libs/redirect';
+import { popRedirectUrl, saveRedirectUrl } from '~/libs/redirect';
 
 export const CallbackPage = () => {
     const navigate = useNavigate();
@@ -23,7 +23,13 @@ export const CallbackPage = () => {
 
         loginMutation.mutateAsync({ provider, code, state })
             .then(() => navigate({ to: savedRedirect ?? '/' }))
-            .catch(() => navigate({ to: '/login' }));
+            .catch(() => {
+                if (savedRedirect) saveRedirectUrl(savedRedirect);
+                navigate({
+                    to: '/login',
+                    search: savedRedirect ? { redirect: savedRedirect } : undefined,
+                });
+            });
     }, [code, error, provider, state, navigate, loginMutation]);
 
     return (

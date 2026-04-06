@@ -19,7 +19,8 @@ export const isValidRedirectPath = (path: string): boolean => {
  */
 export const getSafeRedirectPath = (path: string | undefined, fallback: string = '/'): string => {
     if (!path) return fallback;
-    return isValidRedirectPath(path) ? path : fallback;
+    const trimmed = path.trim();
+    return isValidRedirectPath(trimmed) ? trimmed : fallback;
 };
 
 /**
