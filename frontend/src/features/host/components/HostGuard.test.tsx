@@ -51,7 +51,7 @@ describe('HostGuard', () => {
     });
 
     describe('비로그인 상태', () => {
-        it('로그인하지 않으면 /login으로 리다이렉트한다', async () => {
+        it('로그인하지 않으면 /login으로 리다이렉트하며 redirect param이 포함된다', async () => {
             vi.mocked(useAuth).mockReturnValue({
                 isAuthenticated: false,
                 data: undefined,
@@ -65,7 +65,12 @@ describe('HostGuard', () => {
             );
 
             await waitFor(() => {
-                expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' });
+                expect(mockNavigate).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        to: '/login',
+                        search: expect.objectContaining({ redirect: expect.any(String) }),
+                    }),
+                );
             });
         });
 

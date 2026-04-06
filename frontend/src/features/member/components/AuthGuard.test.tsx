@@ -47,7 +47,7 @@ describe('AuthGuard', () => {
         expect(screen.queryByTestId('protected')).not.toBeInTheDocument();
     });
 
-    it('미인증 사용자는 /login으로 리다이렉트된다', async () => {
+    it('미인증 사용자는 /login으로 리다이렉트되며 redirect param이 포함된다', async () => {
         mockUseAuth.mockReturnValue({
             isAuthenticated: false,
             isLoading: false,
@@ -59,7 +59,12 @@ describe('AuthGuard', () => {
         );
 
         await waitFor(() => {
-            expect(navigateMock).toHaveBeenCalledWith({ to: '/login' });
+            expect(navigateMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    to: '/login',
+                    search: expect.objectContaining({ redirect: expect.any(String) }),
+                }),
+            );
         });
         expect(screen.queryByTestId('protected')).not.toBeInTheDocument();
     });
