@@ -1,9 +1,10 @@
 import type { FormEvent } from 'react';
 import { useState, useCallback } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { Button } from '~/components/button';
 import { AuthPageLayout } from './AuthPageLayout';
 import { getErrorMessage, isHttpError } from '~/libs/errorUtils';
+import { getSafeRedirectPath, saveRedirectUrl } from '~/libs/redirect';
 import { getOAuthAuthorizationUrlApi } from '../api/oAuthApi';
 import { useLogin } from '../hooks/useLogin';
 import { useFormValidation, type ValidationRule } from '../hooks/useFormValidation';
@@ -43,6 +44,8 @@ export const LoginForm = () => {
     const [oAuthPending, setOAuthPending] = useState<string | null>(null);
     const [oAuthError, setOAuthError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { redirect } = useSearch({ from: '/login' });
+    const redirectPath = getSafeRedirectPath(redirect);
     const loginMutation = useLogin();
     const { fields, handleBlur, validateAll, getInputClassName } =
         useFormValidation<LoginFormValues>(validationRules);
@@ -53,6 +56,9 @@ export const LoginForm = () => {
         setOAuthError(null);
         try {
             const url = await getOAuthAuthorizationUrlApi(provider);
+            if (redirectPath !== '/') {
+                saveRedirectUrl(redirectPath);
+            }
             window.location.href = url;
         } catch {
             setOAuthPending(null);
@@ -76,7 +82,7 @@ export const LoginForm = () => {
         loginMutation.mutate(
             { username: username.trim(), password },
             {
-                onSuccess: () => navigate({ to: '/' }),
+                onSuccess: () => navigate({ to: redirectPath }),
             }
         );
     };

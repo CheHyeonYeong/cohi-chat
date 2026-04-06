@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useAuth } from '~/features/member';
 
@@ -10,17 +10,19 @@ interface HostGuardProps {
 export const HostGuard = ({ children }: HostGuardProps) => {
     const { data: user, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         if (isLoading) return;
         if (!isAuthenticated || !user) {
-            navigate({ to: '/login' });
+            const currentPath = location.pathname + location.search;
+            navigate({ to: '/login', search: { redirect: currentPath } });
             return;
         }
         if (!user.isHost) {
             navigate({ to: '/' });
         }
-    }, [isAuthenticated, user, isLoading, navigate]);
+    }, [isAuthenticated, user, isLoading, navigate, location.pathname, location.search]);
 
     if (isLoading) {
         return (

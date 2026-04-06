@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HostGuard } from './HostGuard';
 
 const mockNavigate = vi.fn();
+const mockLocation = { pathname: '/host/timeslots', search: '' };
 
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => mockNavigate,
+    useLocation: () => mockLocation,
 }));
 
 vi.mock('~/features/member', () => ({
@@ -29,6 +31,8 @@ const renderWithProviders = (ui: ReactElement) => {
 describe('HostGuard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockLocation.pathname = '/host/timeslots';
+        mockLocation.search = '';
     });
 
     describe('로딩 상태', () => {
@@ -51,7 +55,7 @@ describe('HostGuard', () => {
     });
 
     describe('비로그인 상태', () => {
-        it('로그인하지 않으면 /login으로 리다이렉트한다', async () => {
+        it('로그인하지 않으면 /login으로 리다이렉트하며 redirect param이 포함된다', async () => {
             vi.mocked(useAuth).mockReturnValue({
                 isAuthenticated: false,
                 data: undefined,
@@ -65,7 +69,10 @@ describe('HostGuard', () => {
             );
 
             await waitFor(() => {
-                expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' });
+                expect(mockNavigate).toHaveBeenCalledWith({
+                    to: '/login',
+                    search: { redirect: '/host/timeslots' },
+                });
             });
         });
 

@@ -82,6 +82,9 @@ const loginRoute = createRoute({
     getParentRoute: () => RootRoute,
     path: '/login',
     component: Login,
+    validateSearch: z.object({
+        redirect: z.string().optional(),
+    }),
 })
 
 const signupRoute = createRoute({
