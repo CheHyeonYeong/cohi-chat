@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
-import { useNavigate, useLocation } from '@tanstack/react-router';
+import { useEffect, useRef } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '~/features/member';
 
 interface AuthGuardProps {
@@ -10,15 +10,16 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
     const { isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
+    const redirected = useRef(false);
 
     useEffect(() => {
         if (isLoading) return;
-        if (!isAuthenticated) {
-            const currentPath = location.pathname + location.search;
+        if (!isAuthenticated && !redirected.current) {
+            redirected.current = true;
+            const currentPath = window.location.pathname + window.location.search;
             navigate({ to: '/login', search: { redirect: currentPath } });
         }
-    }, [isAuthenticated, isLoading, navigate, location.pathname, location.search]);
+    }, [isAuthenticated, isLoading, navigate]);
 
     if (isLoading) {
         return (
