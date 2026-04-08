@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -6,20 +7,28 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+const SWAGGER_TITLE = 'cohiChat chat server';
+const SWAGGER_DESCRIPTION =
+  'Chat server API docs. khs_499_mainfix owns the MVP long polling transport. GET /api/chat/poll waits up to 25 seconds, and client or proxy timeouts should be at least 35 seconds.';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
   );
 
-  // Spring 서버와 동일한 prefix 구조 유지. /health는 docker healthcheck용으로 제외
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('cohiChat 채팅 서버')
-    .setDescription(
-      '채팅 서버 API 문서. GET /api/chat/rooms 응답의 lastMessage는 메시지가 없는 방에서 null일 수 있습니다.',
-    )
+    .setTitle(SWAGGER_TITLE)
+    .setDescription(SWAGGER_DESCRIPTION)
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },

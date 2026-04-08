@@ -1,92 +1,246 @@
 import { Prisma } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
+import {
+  ChatPollRegistry,
+  type PollWaitSubscription,
+} from './chat-poll-registry';
+import {
+  PollMessageResponse,
+  PollMessagesCommand,
+} from './dto/poll-messages.dto';
+
+interface PollingMessageRecord {
+  id: string;
+  roomId: string;
+  senderId: string | null;
+  messageType: string;
+  content: string | null;
+  payload: Prisma.JsonValue | null;
+  createdAt: Date;
+}
+
+export const MAX_POLL_TIMEOUT_SECONDS = 25;
+export const POLL_TIMEOUT_BUFFER_SECONDS = 10;
+export const RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS =
+  MAX_POLL_TIMEOUT_SECONDS + POLL_TIMEOUT_BUFFER_SECONDS;
+export const MAX_POLL_MESSAGES = 100;
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pollRegistry: ChatPollRegistry,
+  ) {}
 
-  async getRooms(username: string): Promise<RoomResponseDto[]> {
-    // Keep this query in SQL because the room list contract depends on
-    // lateral joins and window functions that are easier to keep exact here
-    // than to spread across multiple ORM calls and post-processing steps.
-    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
-      SELECT
-        cr.id,
-        counterpart.member_id                       AS counterpart_id,
-        COALESCE(counterpart.display_name, '')     AS counterpart_name,
-        counterpart.profile_image_url              AS counterpart_profile_image_url,
-        last_msg.id                                AS last_message_id,
-        last_msg.content                           AS last_message_content,
-        last_msg.message_type                      AS last_message_type,
-        last_msg.created_at                        AS last_message_created_at,
-        COALESCE(unread.cnt, 0)::int               AS unread_count
-      FROM chat_room cr
-      JOIN member me
-        ON me.username = ${username}
-       AND me.is_deleted = false
-       AND me.is_banned = false
-      JOIN room_member my_rm
-        ON my_rm.room_id = cr.id
-       AND my_rm.member_id = me.id
-       AND my_rm.deleted_at IS NULL
-      -- Pick exactly one counterpart row for a 1:1 room without duplicating
-      -- the parent room row in the result set.
-      JOIN LATERAL (
-        SELECT
-          rm.member_id,
-          COALESCE(m.display_name, m.username, '') AS display_name,
-          m.profile_image_url
-        FROM room_member rm
-        LEFT JOIN member m ON m.id = rm.member_id
-        WHERE rm.room_id = cr.id
-          AND rm.member_id != me.id
-          AND rm.deleted_at IS NULL
-        ORDER BY rm.created_at ASC, rm.id ASC
-        LIMIT 1
-      ) counterpart ON true
-      -- Fetch only the latest message per room so the list stays compact while
-      -- still showing the most recent activity preview.
-      LEFT JOIN LATERAL (
-        SELECT id, content, message_type, created_at
-        FROM message
-        WHERE room_id = cr.id
-        ORDER BY created_at DESC, id DESC
-        LIMIT 1
-      ) last_msg ON true
-      -- Compute unread counts by assigning a stable sequence per room and then
-      -- counting only rows that come after the stored last-read cursor.
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*)::int AS cnt
-        FROM (
-          SELECT
-            msg.id,
-            ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
-          FROM message msg
-          WHERE msg.room_id = cr.id
-        ) ordered_message
-        LEFT JOIN LATERAL (
-          SELECT cursor_message.seq
-          FROM (
-            SELECT
-              msg.id,
-              ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
-            FROM message msg
-            WHERE msg.room_id = cr.id
-          ) cursor_message
-          WHERE cursor_message.id = my_rm.last_read_message_id
-        ) cursor ON true
-        WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
-      ) unread ON true
-      WHERE cr.is_disabled = false
-      -- Sort by recent activity first, then by room id as a deterministic
-      -- tie-breaker when timestamps are equal or the room has no messages yet.
-      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
-    `);
+  async pollMessages({
+    roomId,
+    sinceMessageId,
+    timeoutSeconds,
+    username,
+    abortSignal,
+  }: PollMessagesCommand): Promise<PollMessageResponse[]> {
+    this.validateTimeout(timeoutSeconds);
 
-    // The SQL aliases intentionally mirror RoomQueryRow so DTO mapping stays
-    // thin and the response contract is centralized in RoomResponseDto.from().
-    return rows.map((row) => RoomResponseDto.from(row));
+    const memberId = await this.resolveMemberId(username);
+    await this.getAccessibleMembership(roomId, memberId);
+
+    const pollingStartedAt = new Date();
+    const subscription =
+      timeoutSeconds === 0
+        ? undefined
+        : this.pollRegistry.createRoomSubscription(
+            roomId,
+            timeoutSeconds * 1000,
+            abortSignal,
+          );
+
+    try {
+      const messages = await this.findMessagesAfter(
+        roomId,
+        sinceMessageId,
+        pollingStartedAt,
+      );
+      if (messages.length > 0 || timeoutSeconds === 0) {
+        return messages.map((message) => this.toPollMessageResponse(message));
+      }
+
+      const waitResult = await this.waitForMessages(subscription);
+      if (waitResult !== 'notified') {
+        return [];
+      }
+
+      const waitedMessages = await this.findMessagesAfter(
+        roomId,
+        sinceMessageId,
+        pollingStartedAt,
+      );
+
+      return waitedMessages.map((message) =>
+        this.toPollMessageResponse(message),
+      );
+    } finally {
+      subscription?.cancel();
+    }
+  }
+
+  private async resolveMemberId(username: string): Promise<string> {
+    const member = await this.prisma.member.findFirst({
+      where: {
+        username,
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!member) {
+      throw new UnauthorizedException('The authenticated user does not exist.');
+    }
+
+    return member.id;
+  }
+
+  private async getAccessibleMembership(
+    roomId: string,
+    memberId: string,
+  ): Promise<void> {
+    const roomMember = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!roomMember) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const room = await this.prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        isDisabled: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!room) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+  }
+
+  private validateTimeout(timeoutSeconds: number): void {
+    if (
+      !Number.isInteger(timeoutSeconds) ||
+      timeoutSeconds < 0 ||
+      timeoutSeconds > MAX_POLL_TIMEOUT_SECONDS
+    ) {
+      throw new BadRequestException(
+        `timeout must be an integer between 0 and ${MAX_POLL_TIMEOUT_SECONDS}.`,
+      );
+    }
+  }
+
+  private async findMessagesAfter(
+    roomId: string,
+    sinceMessageId: string | undefined,
+    pollingStartedAt: Date,
+  ): Promise<PollingMessageRecord[]> {
+    if (!sinceMessageId) {
+      return this.prisma.message.findMany({
+        where: {
+          roomId,
+          createdAt: {
+            gt: pollingStartedAt,
+          },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: MAX_POLL_MESSAGES,
+      });
+    }
+
+    const anchorMessage = await this.findRoomMessageAnchor(roomId, sinceMessageId);
+
+    return this.prisma.message.findMany({
+      where: {
+        roomId,
+        OR: [
+          {
+            createdAt: {
+              gt: anchorMessage.createdAt,
+            },
+          },
+          {
+            createdAt: anchorMessage.createdAt,
+            id: {
+              gt: anchorMessage.id,
+            },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: MAX_POLL_MESSAGES,
+    });
+  }
+
+  private async findRoomMessageAnchor(
+    roomId: string,
+    messageId: string,
+  ): Promise<Pick<PollingMessageRecord, 'id' | 'createdAt'>> {
+    const anchorMessage = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        roomId,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+
+    if (!anchorMessage) {
+      throw new BadRequestException(
+        'The message cursor does not belong to the specified room.',
+      );
+    }
+
+    return anchorMessage;
+  }
+
+  private waitForMessages(
+    subscription: PollWaitSubscription | undefined,
+  ): Promise<'notified' | 'timed_out' | 'aborted'> {
+    if (!subscription) {
+      return Promise.resolve('timed_out');
+    }
+
+    return subscription.completion;
+  }
+
+  private toPollMessageResponse(
+    message: PollingMessageRecord,
+  ): PollMessageResponse {
+    return {
+      id: message.id,
+      roomId: message.roomId,
+      senderId: message.senderId,
+      messageType: message.messageType,
+      content: message.content,
+      payload: message.payload,
+      createdAt: message.createdAt.toISOString(),
+    };
   }
 }
