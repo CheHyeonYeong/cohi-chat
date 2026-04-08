@@ -1,7 +1,6 @@
 package com.coDevs.cohiChat.chat.entity;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,27 +19,15 @@ public class MessageCursorBackfillService {
 
     @Transactional
     public int backfillMissingCursorSeqs() {
-        List<UUID> roomIds = messageRepository.findRoomIdsWithMissingCursorSeq();
-        int updatedMessages = 0;
-
-        for (UUID roomId : roomIds) {
-            updatedMessages += backfillRoom(roomId);
-        }
-
-        if (updatedMessages > 0) {
-            log.info("[backfillMessageCursorSeq] [SUCCESS] updatedMessages={} affectedRooms={}", updatedMessages, roomIds.size());
-        }
-
-        return updatedMessages;
-    }
-
-    @Transactional
-    public int backfillRoom(UUID roomId) {
-        long cursorSeq = messageRepository.findMaxCursorSeqByRoomId(roomId) + 1L;
-        List<Message> messages = messageRepository.findByRoomIdAndCursorSeqIsNullOrderByCreatedAtAscIdAsc(roomId);
+        long cursorSeq = messageRepository.findMaxCursorSeq() + 1L;
+        List<Message> messages = messageRepository.findByCursorSeqIsNullOrderByCreatedAtAscIdAsc();
 
         for (Message message : messages) {
             message.updateCursorSeq(cursorSeq++);
+        }
+
+        if (!messages.isEmpty()) {
+            log.info("[backfillMessageCursorSeq] [SUCCESS] updatedMessages={}", messages.size());
         }
 
         return messages.size();
