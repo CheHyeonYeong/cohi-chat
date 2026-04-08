@@ -14,6 +14,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -26,6 +27,10 @@ import lombok.NoArgsConstructor;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "room_member",
+    indexes = @Index(
+        name = "idx_room_member_member_id_deleted_at",
+        columnList = "member_id, deleted_at"
+    ),
     uniqueConstraints = @UniqueConstraint(
         name = "uq_room_member_room_id_member_id",
         columnNames = {"room_id", "member_id"}

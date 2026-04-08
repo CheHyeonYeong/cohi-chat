@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,13 +39,14 @@ public class ChatService {
 
     @Transactional
     public UUID provisionRoomForBooking(Booking booking) {
-        UUID externalRefId = uuidFromLong(booking.getId());
+        Booking lockedBooking = lockBookingForProvisioning(booking);
+        UUID externalRefId = uuidFromLong(lockedBooking.getId());
         ChatRoom room = chatRoomRepository.findByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
             .orElseGet(() -> getOrCreateRoom(externalRefId));
 
         ensureRoomMembers(room, List.of(
-            booking.getTimeSlot().getUserId(),
-            booking.getGuestId()
+            lockedBooking.getTimeSlot().getUserId(),
+            lockedBooking.getGuestId()
         ));
 
         return room.getId();
@@ -97,6 +97,11 @@ public class ChatService {
             .map(ChatRoom::getId);
     }
 
+    private Booking lockBookingForProvisioning(Booking booking) {
+        return bookingRepository.findByIdWithTimeSlotForUpdate(booking.getId())
+            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
+    }
+
     private ChatRoom getOrCreateRoom(UUID externalRefId) {
         return chatRoomRepository.findAnyByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
             .map(this::restoreRoom)
@@ -104,13 +109,7 @@ public class ChatService {
     }
 
     private ChatRoom createRoom(UUID externalRefId) {
-        try {
-            return chatRoomRepository.saveAndFlush(ChatRoom.create(EXTERNAL_REF_RESERVATION, externalRefId));
-        } catch (DataIntegrityViolationException exception) {
-            return chatRoomRepository.findAnyByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
-                .map(this::restoreRoom)
-                .orElseThrow(() -> exception);
-        }
+        return chatRoomRepository.saveAndFlush(ChatRoom.create(EXTERNAL_REF_RESERVATION, externalRefId));
     }
 
     private void ensureRoomMembers(ChatRoom room, Collection<UUID> memberIds) {
@@ -126,13 +125,7 @@ public class ChatService {
     }
 
     private RoomMember createRoomMember(ChatRoom room, UUID memberId) {
-        try {
-            return roomMemberRepository.saveAndFlush(RoomMember.create(room, memberId));
-        } catch (DataIntegrityViolationException exception) {
-            return roomMemberRepository.findByRoomIdAndMemberId(room.getId(), memberId)
-                .map(this::restoreRoomMember)
-                .orElseThrow(() -> exception);
-        }
+        return roomMemberRepository.saveAndFlush(RoomMember.create(room, memberId));
     }
 
     private ChatRoom restoreRoom(ChatRoom room) {

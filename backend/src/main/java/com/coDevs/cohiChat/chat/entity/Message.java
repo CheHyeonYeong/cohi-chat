@@ -57,7 +57,7 @@ public class Message {
     @Column(name = "payload", columnDefinition = "jsonb")
     private String payload;
 
-    @Column(name = "cursor_seq")
+    @Column(name = "cursor_seq", nullable = false)
     private Long cursorSeq;
 
     @CreatedDate

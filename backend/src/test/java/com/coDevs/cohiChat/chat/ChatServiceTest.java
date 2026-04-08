@@ -11,10 +11,12 @@ import static org.mockito.Mockito.verify;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -64,12 +66,14 @@ class ChatServiceTest {
     @DisplayName("creates a room and two room members for a booking")
     void provisionRoomForBookingCreatesNewRoomAndMembers() {
         ChatRoom savedRoom = org.mockito.Mockito.mock(ChatRoom.class);
+        ArgumentCaptor<RoomMember> roomMemberCaptor = ArgumentCaptor.forClass(RoomMember.class);
 
         given(booking.getId()).willReturn(BOOKING_ID);
         given(booking.getTimeSlot()).willReturn(timeSlot);
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(savedRoom.getId()).willReturn(ROOM_ID);
+        given(bookingRepository.findByIdWithTimeSlotForUpdate(BOOKING_ID)).willReturn(Optional.of(booking));
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.empty());
         given(chatRoomRepository.findAnyByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
@@ -89,7 +93,11 @@ class ChatServiceTest {
 
         assertThat(roomId).isEqualTo(ROOM_ID);
         verify(chatRoomRepository).saveAndFlush(any(ChatRoom.class));
-        verify(roomMemberRepository, times(2)).saveAndFlush(any(RoomMember.class));
+        verify(roomMemberRepository, times(2)).saveAndFlush(roomMemberCaptor.capture());
+        assertThat(roomMemberCaptor.getAllValues()).hasSize(2);
+        assertThat(roomMemberCaptor.getAllValues().stream().map(RoomMember::getMemberId).collect(java.util.stream.Collectors.toSet()))
+            .isEqualTo(Set.of(HOST_ID, GUEST_ID));
+        assertThat(roomMemberCaptor.getAllValues()).allMatch(roomMember -> roomMember.getRoom() == savedRoom);
     }
 
     @Test
@@ -102,6 +110,7 @@ class ChatServiceTest {
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(deletedRoom.getId()).willReturn(ROOM_ID);
+        given(bookingRepository.findByIdWithTimeSlotForUpdate(BOOKING_ID)).willReturn(Optional.of(booking));
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.empty());
         given(chatRoomRepository.findAnyByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
@@ -135,6 +144,7 @@ class ChatServiceTest {
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(existingRoom.getId()).willReturn(ROOM_ID);
+        given(bookingRepository.findByIdWithTimeSlotForUpdate(BOOKING_ID)).willReturn(Optional.of(booking));
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.of(existingRoom));
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
@@ -160,6 +170,7 @@ class ChatServiceTest {
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(existingRoom.getId()).willReturn(ROOM_ID);
+        given(bookingRepository.findByIdWithTimeSlotForUpdate(BOOKING_ID)).willReturn(Optional.of(booking));
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.of(existingRoom));
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
@@ -208,6 +219,34 @@ class ChatServiceTest {
         ChatRoomResponseDTO response = chatService.getChatRoomByBookingId(BOOKING_ID, GUEST_ID);
 
         assertThat(response.chatRoomId()).isEqualTo(ROOM_ID);
+    }
+
+    @Test
+    @DisplayName("throws BOOKING_NOT_FOUND when booking does not exist")
+    void getChatRoomByBookingIdThrowsWhenBookingNotFound() {
+        given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> chatService.getChatRoomByBookingId(BOOKING_ID, GUEST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.BOOKING_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("throws CHAT_ROOM_NOT_FOUND when no active room exists")
+    void getChatRoomByBookingIdThrowsWhenChatRoomNotFound() {
+        Booking persistedBooking = org.mockito.Mockito.mock(Booking.class);
+
+        given(persistedBooking.getId()).willReturn(BOOKING_ID);
+        given(persistedBooking.getTimeSlot()).willReturn(timeSlot);
+        given(persistedBooking.getGuestId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(bookingRepository.findByIdWithTimeSlot(BOOKING_ID)).willReturn(Optional.of(persistedBooking));
+        given(chatRoomRepository.findByExternalRef("RESERVATION", BOOKING_EXTERNAL_REF_ID))
+            .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> chatService.getChatRoomByBookingId(BOOKING_ID, GUEST_ID))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CHAT_ROOM_NOT_FOUND);
     }
 
     @Test
