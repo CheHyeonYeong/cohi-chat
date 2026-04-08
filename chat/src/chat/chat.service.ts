@@ -1,92 +1,247 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
+import { ChatRoomActivityNotifier } from './chat-room-activity-notifier';
+import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { MESSAGE_MAX_LENGTH } from './message.constants';
+import { encodeMessageCursor, MessageCursor } from './message-cursor';
+
+type MessageRow = {
+  id: string;
+  roomId: string;
+  senderId: string | null;
+  messageType: string;
+  content: string | null;
+  payload: unknown;
+  createdAt: Date;
+};
+
+type MemberLookupClient = {
+  member: {
+    findFirst: PrismaService['member']['findFirst'];
+  };
+};
+
+type RoomMemberLookupClient = {
+  roomMember: {
+    findFirst: PrismaService['roomMember']['findFirst'];
+  };
+};
+
+type MessageQueryClient = {
+  message: {
+    findMany: PrismaService['message']['findMany'];
+  };
+};
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ChatService.name);
 
-  async getRooms(username: string): Promise<RoomResponseDto[]> {
-    // Keep this query in SQL because the room list contract depends on
-    // lateral joins and window functions that are easier to keep exact here
-    // than to spread across multiple ORM calls and post-processing steps.
-    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
-      SELECT
-        cr.id,
-        counterpart.member_id                       AS counterpart_id,
-        COALESCE(counterpart.display_name, '')     AS counterpart_name,
-        counterpart.profile_image_url              AS counterpart_profile_image_url,
-        last_msg.id                                AS last_message_id,
-        last_msg.content                           AS last_message_content,
-        last_msg.message_type                      AS last_message_type,
-        last_msg.created_at                        AS last_message_created_at,
-        COALESCE(unread.cnt, 0)::int               AS unread_count
-      FROM chat_room cr
-      JOIN member me
-        ON me.username = ${username}
-       AND me.is_deleted = false
-       AND me.is_banned = false
-      JOIN room_member my_rm
-        ON my_rm.room_id = cr.id
-       AND my_rm.member_id = me.id
-       AND my_rm.deleted_at IS NULL
-      -- Pick exactly one counterpart row for a 1:1 room without duplicating
-      -- the parent room row in the result set.
-      JOIN LATERAL (
-        SELECT
-          rm.member_id,
-          COALESCE(m.display_name, m.username, '') AS display_name,
-          m.profile_image_url
-        FROM room_member rm
-        LEFT JOIN member m ON m.id = rm.member_id
-        WHERE rm.room_id = cr.id
-          AND rm.member_id != me.id
-          AND rm.deleted_at IS NULL
-        ORDER BY rm.created_at ASC, rm.id ASC
-        LIMIT 1
-      ) counterpart ON true
-      -- Fetch only the latest message per room so the list stays compact while
-      -- still showing the most recent activity preview.
-      LEFT JOIN LATERAL (
-        SELECT id, content, message_type, created_at
-        FROM message
-        WHERE room_id = cr.id
-        ORDER BY created_at DESC, id DESC
-        LIMIT 1
-      ) last_msg ON true
-      -- Compute unread counts by assigning a stable sequence per room and then
-      -- counting only rows that come after the stored last-read cursor.
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*)::int AS cnt
-        FROM (
-          SELECT
-            msg.id,
-            ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
-          FROM message msg
-          WHERE msg.room_id = cr.id
-        ) ordered_message
-        LEFT JOIN LATERAL (
-          SELECT cursor_message.seq
-          FROM (
-            SELECT
-              msg.id,
-              ROW_NUMBER() OVER (ORDER BY msg.created_at ASC, msg.id ASC) AS seq
-            FROM message msg
-            WHERE msg.room_id = cr.id
-          ) cursor_message
-          WHERE cursor_message.id = my_rm.last_read_message_id
-        ) cursor ON true
-        WHERE cursor.seq IS NULL OR ordered_message.seq > cursor.seq
-      ) unread ON true
-      WHERE cr.is_disabled = false
-      -- Sort by recent activity first, then by room id as a deterministic
-      -- tie-breaker when timestamps are equal or the room has no messages yet.
-      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
-    `);
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roomActivityNotifier: ChatRoomActivityNotifier,
+  ) {}
 
-    // The SQL aliases intentionally mirror RoomQueryRow so DTO mapping stays
-    // thin and the response contract is centralized in RoomResponseDto.from().
-    return rows.map((row) => RoomResponseDto.from(row));
+  async sendMessage(
+    roomId: string,
+    username: string,
+    dto: SendMessageDto,
+  ): Promise<MessageDto> {
+    const normalizedContent = this.normalizeContent(dto.content);
+
+    const savedMessage = await this.prisma.$transaction(
+      async (tx) => {
+        const memberId = await this.resolveMemberId(tx, username);
+        const roomMember = await this.findActiveRoomMember(tx, roomId, memberId);
+        if (!roomMember) {
+          throw new ForbiddenException('Access to the chat room is denied.');
+        }
+
+        const message = await tx.message.create({
+          data: {
+            roomId,
+            senderId: memberId,
+            messageType: 'TEXT',
+            content: normalizedContent,
+          },
+        });
+
+        await tx.roomMember.update({
+          where: { id: roomMember.id },
+          data: { lastReadMessageId: message.id },
+        });
+
+        return message;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    await this.notifyRoomActivity(roomId);
+
+    return MessageDto.from(savedMessage);
+  }
+
+  async getMessages(
+    roomId: string,
+    username: string,
+    cursor: MessageCursor | undefined,
+    size: number,
+  ): Promise<MessagePageResponse> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const memberId = await this.resolveMemberId(tx, username);
+        await this.ensureActiveRoomMember(tx, roomId, memberId);
+
+        const rows = await this.fetchMessagesPage(tx, roomId, cursor, size);
+        return {
+          messages: rows.messages.map((message) => MessageDto.from(message)),
+          nextCursor: rows.nextCursor,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
+  private async resolveMemberId(
+    client: MemberLookupClient,
+    username: string,
+  ): Promise<string> {
+    const member = await client.member.findFirst({
+      where: {
+        username,
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: { id: true },
+    });
+
+    if (!member) {
+      throw new UnauthorizedException('The authenticated user does not exist.');
+    }
+
+    return member.id;
+  }
+
+  private async ensureActiveRoomMember(
+    client: RoomMemberLookupClient,
+    roomId: string,
+    memberId: string,
+  ): Promise<void> {
+    const roomMember = await this.findActiveRoomMember(client, roomId, memberId);
+
+    if (!roomMember) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+  }
+
+  private async findActiveRoomMember(
+    client: RoomMemberLookupClient,
+    roomId: string,
+    memberId: string,
+  ): Promise<{ id: string } | null> {
+    return client.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+        room: {
+          isDisabled: false,
+        },
+      },
+      select: { id: true },
+    });
+  }
+
+  private normalizeContent(content: unknown): string {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Message content must be a string.');
+    }
+
+    const normalizedContent = content.trim();
+
+    if (normalizedContent.length === 0) {
+      throw new BadRequestException('Message content cannot be blank.');
+    }
+
+    if (normalizedContent.length > MESSAGE_MAX_LENGTH) {
+      throw new BadRequestException(
+        `Message content cannot exceed ${MESSAGE_MAX_LENGTH} characters.`,
+      );
+    }
+
+    return normalizedContent;
+  }
+
+  private async notifyRoomActivity(roomId: string): Promise<void> {
+    try {
+      await this.roomActivityNotifier.notifyRoomActivity(roomId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `notifyRoomActivity failed after message commit for room ${roomId}: ${message}`,
+      );
+    }
+  }
+
+  private async fetchMessagesPage(
+    client: MessageQueryClient,
+    roomId: string,
+    cursor: MessageCursor | undefined,
+    size: number,
+  ): Promise<{ messages: MessageRow[]; nextCursor: string | null }> {
+    const rows = await this.fetchMessagesBatch(client, roomId, cursor, size + 1);
+
+    if (rows.length <= size) {
+      return { messages: rows, nextCursor: null };
+    }
+
+    const pageRows = rows.slice(0, size);
+    const lastVisibleRow = pageRows[pageRows.length - 1];
+
+    return {
+      messages: pageRows,
+      nextCursor: encodeMessageCursor({
+        createdAt: lastVisibleRow.createdAt.toISOString(),
+        id: lastVisibleRow.id,
+      }),
+    };
+  }
+
+  private async fetchMessagesBatch(
+    client: MessageQueryClient,
+    roomId: string,
+    cursor: MessageCursor | undefined,
+    take: number,
+  ): Promise<MessageRow[]> {
+    return client.message.findMany({
+      where: {
+        roomId,
+      },
+      ...(cursor
+        ? {
+            cursor: { id: cursor.id },
+            skip: 1,
+          }
+        : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+      select: {
+        id: true,
+        roomId: true,
+        senderId: true,
+        messageType: true,
+        content: true,
+        payload: true,
+        createdAt: true,
+      },
+    });
   }
 }
