@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   MarkRoomAsReadResponseDto,
@@ -173,7 +177,7 @@ export class ChatService {
     `);
     const member = members[0];
     if (!member) {
-      throw new NotFoundException('Authenticated member not found.');
+      throw new UnauthorizedException('Authenticated member not found.');
     }
 
     return member.id;

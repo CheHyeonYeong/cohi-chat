@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
 
@@ -245,5 +245,15 @@ describe('ChatService', () => {
         },
       ],
     });
+  });
+
+  it('rejects UUID subjects that do not resolve to an active member', async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    await expect(service.getRooms(memberId)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(prisma.roomMember.findMany).not.toHaveBeenCalled();
   });
 });
