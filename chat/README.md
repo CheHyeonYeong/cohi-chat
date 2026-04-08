@@ -59,7 +59,6 @@ Contract notes:
 ## Schema
 
 - Prisma schema source: `./prisma/schema.prisma`
-- SQL DDL reference: `./schema.sql`
 - Implementation notes: `./CLAUDE.md`
 
 The room list query filters by:

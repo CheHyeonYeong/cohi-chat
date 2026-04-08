@@ -32,9 +32,8 @@ PostgreSQL
 ## Schema source of truth
 
 - ORM schema: `prisma/schema.prisma`
-- SQL reference DDL: `schema.sql`
 
-Keep both files aligned when the chat schema changes.
+Keep Prisma schema aligned with the shared chat contract when the chat schema changes.
 
 ## Current contract
 
@@ -69,4 +68,4 @@ Keep both files aligned when the chat schema changes.
 
 - Long polling registers the room waiter before the first fetch so a same-process wake-up is not missed between the initial query and the wait phase.
 - Do not expand direct SQL from this branch.
-- If the later events follow-up changes the schema contract, align `prisma/schema.prisma`, `schema.sql`, `README.md`, and tests together.
+- If the later events follow-up changes the schema contract, align `prisma/schema.prisma`, `README.md`, and tests together.
