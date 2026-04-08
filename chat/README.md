@@ -2,6 +2,12 @@
 
 cohiChat chat server built with NestJS and Fastify.
 
+Branch status:
+
+- This branch is a long polling and events follow-up draft.
+- It is not a merge-ready MVP chat integration yet.
+- See `../docs/chat-poll-follow-up.md` for scope, deferrals, and merge hold reasons.
+
 ## Stack
 
 - NestJS 11
@@ -26,12 +32,16 @@ See `.env.example`.
 
 - Swagger UI: `http://localhost:3001/api/swagger-ui`
 - Rooms API: `GET /api/chat/rooms`
+- Message list API: `GET /api/chat/rooms/:roomId/messages?beforeMessageId=<uuid>&limit=50`
 - Send message API: `POST /api/chat/rooms/:roomId/messages`
+- Read cursor API: `POST /api/chat/rooms/:roomId/read`
 - Long polling API: `GET /api/chat/poll?roomId=<uuid>&sinceMessageId=<uuid>&timeout=25`
 
 Contract notes:
 
 - `lastMessage` is `null` when the room has no messages.
+- `GET /api/chat/rooms/:roomId/messages` returns messages in ascending order and pages backward with `beforeMessageId`.
+- `POST /api/chat/rooms/:roomId/read` stores the caller read cursor and returns the remaining `unreadCount`.
 - Long polling waits up to 25 seconds and returns `[]` on timeout.
 - Client and proxy timeouts should be at least 35 seconds to leave a 10 second buffer over the 25 second server wait.
 - Omitting `sinceMessageId` means "wait only for messages created after this poll request starts".

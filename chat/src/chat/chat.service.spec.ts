@@ -3,7 +3,9 @@ import type { PrismaService } from '../prisma/prisma.service';
 import type { PollWaitSubscription } from './chat-poll-registry';
 import {
   ChatService,
+  DEFAULT_ROOM_MESSAGE_LIMIT,
   MAX_POLL_MESSAGES,
+  MAX_ROOM_MESSAGE_LIMIT,
   MAX_POLL_TIMEOUT_SECONDS,
 } from './chat.service';
 
@@ -32,9 +34,11 @@ describe('ChatService', () => {
   let queryRawMock: jest.Mock;
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
+  let roomMemberUpdateMock: jest.Mock;
   let chatRoomFindFirstMock: jest.Mock;
   let messageFindFirstMock: jest.Mock;
   let messageFindManyMock: jest.Mock;
+  let messageCountMock: jest.Mock;
   let transactionMock: jest.Mock;
   let txMessageCreateMock: jest.Mock;
   let txRoomMemberUpdateMock: jest.Mock;
@@ -46,11 +50,13 @@ describe('ChatService', () => {
     queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn();
     roomMemberFindFirstMock = jest.fn();
+    roomMemberUpdateMock = jest.fn().mockResolvedValue({});
     chatRoomFindFirstMock = jest.fn().mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',
     });
     messageFindFirstMock = jest.fn();
     messageFindManyMock = jest.fn();
+    messageCountMock = jest.fn();
     txMessageCreateMock = jest.fn(
       ({
         data,
@@ -98,6 +104,7 @@ describe('ChatService', () => {
         },
         roomMember: {
           findFirst: roomMemberFindFirstMock,
+          update: roomMemberUpdateMock,
         },
         chatRoom: {
           findFirst: chatRoomFindFirstMock,
@@ -105,6 +112,7 @@ describe('ChatService', () => {
         message: {
           findFirst: messageFindFirstMock,
           findMany: messageFindManyMock,
+          count: messageCountMock,
         },
         $transaction: transactionMock,
       } as unknown as PrismaService,
@@ -227,6 +235,244 @@ describe('ChatService', () => {
     expect(result.content).toBe('hello world');
   });
 
+  it('returns the latest room messages in ascending order', async () => {
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+      lastReadMessageId: null,
+    });
+    messageFindManyMock.mockResolvedValue([
+      {
+        id: '00000000-0000-0000-0000-000000000003',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'third',
+        payload: null,
+        createdAt: new Date('2026-03-31T00:00:03.000Z'),
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000002',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'second',
+        payload: null,
+        createdAt: new Date('2026-03-31T00:00:02.000Z'),
+      },
+    ]);
+
+    const result = await service.getRoomMessages(
+      '11111111-1111-1111-1111-111111111111',
+      'tester',
+      {
+        limit: DEFAULT_ROOM_MESSAGE_LIMIT,
+      },
+    );
+
+    expect(messageFindManyMock).toHaveBeenCalledWith({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: DEFAULT_ROOM_MESSAGE_LIMIT,
+    });
+    expect(result.map((message) => message.content)).toEqual([
+      'second',
+      'third',
+    ]);
+  });
+
+  it('returns older room messages before the cursor in ascending order', async () => {
+    const anchorCreatedAt = new Date('2026-03-31T00:00:03.000Z');
+
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+      lastReadMessageId: null,
+    });
+    messageFindFirstMock.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000003',
+      createdAt: anchorCreatedAt,
+    });
+    messageFindManyMock.mockResolvedValue([
+      {
+        id: '00000000-0000-0000-0000-000000000002',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'second',
+        payload: null,
+        createdAt: new Date('2026-03-31T00:00:02.000Z'),
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        roomId: '11111111-1111-1111-1111-111111111111',
+        senderId: 'member-2',
+        messageType: 'TEXT',
+        content: 'first',
+        payload: null,
+        createdAt: new Date('2026-03-31T00:00:01.000Z'),
+      },
+    ]);
+
+    const result = await service.getRoomMessages(
+      '11111111-1111-1111-1111-111111111111',
+      'tester',
+      {
+        beforeMessageId: '00000000-0000-0000-0000-000000000003',
+        limit: 20,
+      },
+    );
+
+    expect(result.map((message) => message.content)).toEqual([
+      'first',
+      'second',
+    ]);
+    expect(messageFindManyMock).toHaveBeenCalledWith({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        OR: [
+          {
+            createdAt: {
+              lt: anchorCreatedAt,
+            },
+          },
+          {
+            createdAt: anchorCreatedAt,
+            id: {
+              lt: '00000000-0000-0000-0000-000000000003',
+            },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 20,
+    });
+  });
+
+  it('rejects a room message limit above the supported maximum', async () => {
+    await expect(
+      service.getRoomMessages(
+        '11111111-1111-1111-1111-111111111111',
+        'tester',
+        {
+          limit: MAX_ROOM_MESSAGE_LIMIT + 1,
+        },
+      ),
+    ).rejects.toThrow(
+      `limit must be an integer between 1 and ${MAX_ROOM_MESSAGE_LIMIT}.`,
+    );
+
+    expect(memberFindFirstMock).not.toHaveBeenCalled();
+  });
+
+  it('marks the latest room message as read when no explicit cursor is provided', async () => {
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+      lastReadMessageId: null,
+    });
+    messageFindFirstMock
+      .mockResolvedValueOnce({
+        id: '00000000-0000-0000-0000-000000000003',
+      })
+      .mockResolvedValueOnce({
+        id: '00000000-0000-0000-0000-000000000003',
+        createdAt: new Date('2026-03-31T00:00:03.000Z'),
+      });
+    messageCountMock.mockResolvedValue(0);
+
+    const result = await service.markRoomRead(
+      '11111111-1111-1111-1111-111111111111',
+      'tester',
+      {},
+    );
+
+    expect(roomMemberUpdateMock).toHaveBeenCalledWith({
+      where: { id: 'room-member-1' },
+      data: { lastReadMessageId: '00000000-0000-0000-0000-000000000003' },
+    });
+    expect(messageCountMock).toHaveBeenCalledWith({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        OR: [
+          {
+            createdAt: {
+              gt: new Date('2026-03-31T00:00:03.000Z'),
+            },
+          },
+          {
+            createdAt: new Date('2026-03-31T00:00:03.000Z'),
+            id: {
+              gt: '00000000-0000-0000-0000-000000000003',
+            },
+          },
+        ],
+      },
+    });
+    expect(result).toEqual({
+      roomId: '11111111-1111-1111-1111-111111111111',
+      lastReadMessageId: '00000000-0000-0000-0000-000000000003',
+      unreadCount: 0,
+    });
+  });
+
+  it('stores an explicit read cursor and returns the remaining unread count', async () => {
+    const anchorCreatedAt = new Date('2026-03-31T00:00:02.000Z');
+
+    memberFindFirstMock.mockResolvedValue({ id: 'member-1' });
+    roomMemberFindFirstMock.mockResolvedValue({
+      id: 'room-member-1',
+      lastReadMessageId: null,
+    });
+    messageFindFirstMock
+      .mockResolvedValueOnce({
+        id: '00000000-0000-0000-0000-000000000002',
+      })
+      .mockResolvedValueOnce({
+        id: '00000000-0000-0000-0000-000000000002',
+        createdAt: anchorCreatedAt,
+      });
+    messageCountMock.mockResolvedValue(1);
+
+    const result = await service.markRoomRead(
+      '11111111-1111-1111-1111-111111111111',
+      'tester',
+      {
+        lastReadMessageId: '00000000-0000-0000-0000-000000000002',
+      },
+    );
+
+    expect(roomMemberUpdateMock).toHaveBeenCalledWith({
+      where: { id: 'room-member-1' },
+      data: { lastReadMessageId: '00000000-0000-0000-0000-000000000002' },
+    });
+    expect(messageCountMock).toHaveBeenCalledWith({
+      where: {
+        roomId: '11111111-1111-1111-1111-111111111111',
+        OR: [
+          {
+            createdAt: {
+              gt: anchorCreatedAt,
+            },
+          },
+          {
+            createdAt: anchorCreatedAt,
+            id: {
+              gt: '00000000-0000-0000-0000-000000000002',
+            },
+          },
+        ],
+      },
+    });
+    expect(result).toEqual({
+      roomId: '11111111-1111-1111-1111-111111111111',
+      lastReadMessageId: '00000000-0000-0000-0000-000000000002',
+      unreadCount: 1,
+    });
+  });
+
   it('rejects blank sendMessage content before touching the database transaction', async () => {
     await expect(
       service.sendMessage('11111111-1111-1111-1111-111111111111', 'tester', {
@@ -317,6 +563,7 @@ describe('ChatService', () => {
       },
       select: {
         id: true,
+        lastReadMessageId: true,
       },
     });
     expect(chatRoomFindFirstMock).toHaveBeenCalledWith({

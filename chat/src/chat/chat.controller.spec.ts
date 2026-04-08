@@ -24,6 +24,104 @@ const createRequest = (): FastifyRequest => {
 };
 
 describe('ChatController', () => {
+  it('forwards getRoomMessages requests to the service', async () => {
+    const getRoomMessages = jest.fn().mockResolvedValue([
+      {
+        id: '33333333-3333-3333-3333-333333333333',
+        roomId: VALID_ROOM_ID,
+        senderId: 'member-1',
+        messageType: 'TEXT',
+        content: 'hello',
+        payload: null,
+        createdAt: '2026-03-31T00:00:00.000Z',
+      },
+    ]);
+    const controller = new ChatController({
+      getRooms: jest.fn(),
+      getRoomMessages,
+      markRoomRead: jest.fn(),
+      sendMessage: jest.fn(),
+      pollMessages: jest.fn(),
+    } as unknown as ChatService);
+
+    await expect(
+      controller.getRoomMessages(VALID_ROOM_ID, VALID_SINCE_MESSAGE_ID, '20', createRequest()),
+    ).resolves.toEqual([
+      {
+        id: '33333333-3333-3333-3333-333333333333',
+        roomId: VALID_ROOM_ID,
+        senderId: 'member-1',
+        messageType: 'TEXT',
+        content: 'hello',
+        payload: null,
+        createdAt: '2026-03-31T00:00:00.000Z',
+      },
+    ]);
+
+    expect(getRoomMessages).toHaveBeenCalledWith(
+      VALID_ROOM_ID,
+      'tester',
+      {
+        beforeMessageId: VALID_SINCE_MESSAGE_ID,
+        limit: 20,
+      },
+    );
+  });
+
+  it('uses the default room message limit when omitted', async () => {
+    const getRoomMessages = jest.fn().mockResolvedValue([]);
+    const controller = new ChatController({
+      getRooms: jest.fn(),
+      getRoomMessages,
+      markRoomRead: jest.fn(),
+      sendMessage: jest.fn(),
+      pollMessages: jest.fn(),
+    } as unknown as ChatService);
+
+    await expect(
+      controller.getRoomMessages(VALID_ROOM_ID, undefined, undefined, createRequest()),
+    ).resolves.toEqual([]);
+
+    expect(getRoomMessages).toHaveBeenCalledWith(
+      VALID_ROOM_ID,
+      'tester',
+      expect.objectContaining({
+        limit: 50,
+      }),
+    );
+  });
+
+  it('forwards markRoomRead requests to the service', async () => {
+    const markRoomRead = jest.fn().mockResolvedValue({
+      roomId: VALID_ROOM_ID,
+      lastReadMessageId: VALID_SINCE_MESSAGE_ID,
+      unreadCount: 0,
+    });
+    const controller = new ChatController({
+      getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead,
+      sendMessage: jest.fn(),
+      pollMessages: jest.fn(),
+    } as unknown as ChatService);
+
+    await expect(
+      controller.markRoomRead(
+        VALID_ROOM_ID,
+        { lastReadMessageId: VALID_SINCE_MESSAGE_ID },
+        createRequest(),
+      ),
+    ).resolves.toEqual({
+      roomId: VALID_ROOM_ID,
+      lastReadMessageId: VALID_SINCE_MESSAGE_ID,
+      unreadCount: 0,
+    });
+
+    expect(markRoomRead).toHaveBeenCalledWith(VALID_ROOM_ID, 'tester', {
+      lastReadMessageId: VALID_SINCE_MESSAGE_ID,
+    });
+  });
+
   it('forwards sendMessage requests to the service', async () => {
     const sendMessage = jest.fn().mockResolvedValue({
       id: '33333333-3333-3333-3333-333333333333',
@@ -36,6 +134,8 @@ describe('ChatController', () => {
     });
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage,
       pollMessages: jest.fn(),
     } as unknown as ChatService);
@@ -75,6 +175,8 @@ describe('ChatController', () => {
     );
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -127,6 +229,8 @@ describe('ChatController', () => {
     );
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -152,6 +256,8 @@ describe('ChatController', () => {
     const pollMessages = jest.fn();
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -162,10 +268,49 @@ describe('ChatController', () => {
     expect(pollMessages).not.toHaveBeenCalled();
   });
 
+  it('rejects an invalid beforeMessageId format', async () => {
+    const getRoomMessages = jest.fn();
+    const controller = new ChatController({
+      getRooms: jest.fn(),
+      getRoomMessages,
+      markRoomRead: jest.fn(),
+      sendMessage: jest.fn(),
+      pollMessages: jest.fn(),
+    } as unknown as ChatService);
+
+    await expect(
+      controller.getRoomMessages(
+        VALID_ROOM_ID,
+        'invalid-uuid',
+        '20',
+        createRequest(),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(getRoomMessages).not.toHaveBeenCalled();
+  });
+
+  it('rejects a room message limit above the documented maximum', async () => {
+    const getRoomMessages = jest.fn();
+    const controller = new ChatController({
+      getRooms: jest.fn(),
+      getRoomMessages,
+      markRoomRead: jest.fn(),
+      sendMessage: jest.fn(),
+      pollMessages: jest.fn(),
+    } as unknown as ChatService);
+
+    await expect(
+      controller.getRoomMessages(VALID_ROOM_ID, undefined, '101', createRequest()),
+    ).rejects.toThrow('limit must be between 1 and 100.');
+    expect(getRoomMessages).not.toHaveBeenCalled();
+  });
+
   it('rejects an invalid sinceMessageId format', async () => {
     const pollMessages = jest.fn();
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -185,6 +330,8 @@ describe('ChatController', () => {
     const pollMessages = jest.fn();
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -199,6 +346,8 @@ describe('ChatController', () => {
     const pollMessages = jest.fn();
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -218,6 +367,8 @@ describe('ChatController', () => {
     const pollMessages = jest.fn();
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);
@@ -239,6 +390,8 @@ describe('ChatController', () => {
     const pollMessages = jest.fn().mockResolvedValue([]);
     const controller = new ChatController({
       getRooms: jest.fn(),
+      getRoomMessages: jest.fn(),
+      markRoomRead: jest.fn(),
       sendMessage: jest.fn(),
       pollMessages,
     } as unknown as ChatService);

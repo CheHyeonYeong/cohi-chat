@@ -2,13 +2,21 @@
 
 This document describes the current `chat/` implementation on `khs_499_clean`.
 
+Branch status:
+
+- This branch is reserved for the long polling and future events follow-up.
+- It is not the merge-ready MVP integration branch.
+- Cross-service scope and hold reasons live in `../docs/chat-poll-follow-up.md`.
+
 ## Scope
 
 - NestJS + Fastify chat server
 - JWT access token verification using the same secret as the Spring backend
 - Public APIs in this branch:
   - `GET /api/chat/rooms`
+  - `GET /api/chat/rooms/:roomId/messages`
   - `POST /api/chat/rooms/:roomId/messages`
+  - `POST /api/chat/rooms/:roomId/read`
   - `GET /api/chat/poll`
 
 ## Architecture
@@ -16,12 +24,16 @@ This document describes the current `chat/` implementation on `khs_499_clean`.
 ```text
 Client
   -> GET /api/chat/rooms
+  -> GET /api/chat/rooms/:roomId/messages
   -> POST /api/chat/rooms/:roomId/messages
+  -> POST /api/chat/rooms/:roomId/read
   -> GET /api/chat/poll
 NestJS chat server
   -> Prisma Client
   -> Prisma.$queryRaw(...) for the room list query
+  -> Prisma message queries for message history pagination
   -> Prisma transaction for message write + sender cursor update
+  -> Prisma room_member update for read cursor writes
   -> ChatPollRegistry for per-room long-poll waiters
   -> Prisma message queries for immediate and wake-up fetches
 PostgreSQL
@@ -46,6 +58,8 @@ Keep both files aligned when the chat schema changes.
   - `room_member.deleted_at IS NULL`
 - `unreadCount` is the number of messages after `last_read_message_id`.
 - `lastMessage` is `null` when the room has never received a message.
+- `GET /api/chat/rooms/:roomId/messages` returns messages in ascending order and pages backward with `beforeMessageId`.
+- `POST /api/chat/rooms/:roomId/read` updates `room_member.last_read_message_id` for the caller.
 - `GET /api/chat/poll` waits up to 25 seconds and returns `[]` when no new message arrives.
 - Client and proxy timeouts should be at least 35 seconds to keep a 10 second margin over the 25 second server wait.
 - Omitting `sinceMessageId` means the poll watches only messages created after the request starts.

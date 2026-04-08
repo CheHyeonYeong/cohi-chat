@@ -12,6 +12,9 @@ import {
 } from './chat-poll-registry';
 import { MESSAGE_MAX_LENGTH } from './chat.constants';
 import { MessageDto } from './dto/message-response.dto';
+import { ListRoomMessagesQuery } from './dto/list-room-messages.dto';
+import { ReadStateDto } from './dto/read-state-response.dto';
+import { MarkRoomReadDto } from './dto/mark-room-read.dto';
 import {
   PollMessageResponse,
   PollMessagesCommand,
@@ -34,6 +37,13 @@ export const POLL_TIMEOUT_BUFFER_SECONDS = 10;
 export const RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS =
   MAX_POLL_TIMEOUT_SECONDS + POLL_TIMEOUT_BUFFER_SECONDS;
 export const MAX_POLL_MESSAGES = 100;
+export const DEFAULT_ROOM_MESSAGE_LIMIT = 50;
+export const MAX_ROOM_MESSAGE_LIMIT = 100;
+
+type RoomMembershipRecord = {
+  id: string;
+  lastReadMessageId: string | null;
+};
 
 @Injectable()
 export class ChatService {
@@ -119,35 +129,7 @@ export class ChatService {
   ): Promise<MessageDto> {
     const normalizedContent = this.normalizeContent(dto.content);
     const memberId = await this.resolveMemberId(username);
-
-    const roomMember = await this.prisma.roomMember.findFirst({
-      where: {
-        roomId,
-        memberId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!roomMember) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
-
-    const room = await this.prisma.chatRoom.findFirst({
-      where: {
-        id: roomId,
-        isDisabled: false,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!room) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
+    const roomMember = await this.getAccessibleMembership(roomId, memberId);
 
     const savedMessage = await this.prisma.$transaction(async (tx) => {
       const message = await tx.message.create({
@@ -176,6 +158,51 @@ export class ChatService {
     return MessageDto.from(savedMessage);
   }
 
+  async getRoomMessages(
+    roomId: string,
+    username: string,
+    query: ListRoomMessagesQuery,
+  ): Promise<MessageDto[]> {
+    this.validateMessageLimit(query.limit);
+
+    const memberId = await this.resolveMemberId(username);
+    await this.getAccessibleMembership(roomId, memberId);
+
+    const messages = query.beforeMessageId
+      ? await this.findMessagesBefore(roomId, query.beforeMessageId, query.limit)
+      : await this.findRecentMessages(roomId, query.limit);
+
+    return messages.map((message) => MessageDto.from(message));
+  }
+
+  async markRoomRead(
+    roomId: string,
+    username: string,
+    dto: MarkRoomReadDto,
+  ): Promise<ReadStateDto> {
+    const memberId = await this.resolveMemberId(username);
+    const membership = await this.getAccessibleMembership(roomId, memberId);
+
+    const lastReadMessageId = dto.lastReadMessageId
+      ? await this.requireRoomMessage(roomId, dto.lastReadMessageId)
+      : await this.findLatestRoomMessageId(roomId);
+
+    await this.prisma.roomMember.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        lastReadMessageId,
+      },
+    });
+
+    return {
+      roomId,
+      lastReadMessageId,
+      unreadCount: await this.countUnreadMessages(roomId, lastReadMessageId),
+    };
+  }
+
   async pollMessages({
     roomId,
     sinceMessageId,
@@ -186,35 +213,7 @@ export class ChatService {
     this.validateTimeout(timeoutSeconds);
 
     const memberId = await this.resolveMemberId(username);
-
-    const membership = await this.prisma.roomMember.findFirst({
-      where: {
-        roomId,
-        memberId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
-
-    const room = await this.prisma.chatRoom.findFirst({
-      where: {
-        id: roomId,
-        isDisabled: false,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!room) {
-      throw new ForbiddenException('Access to the chat room is denied.');
-    }
+    await this.getAccessibleMembership(roomId, memberId);
 
     const pollingStartedAt = new Date();
     const subscription =
@@ -274,6 +273,55 @@ export class ChatService {
     return member.id;
   }
 
+  private async getAccessibleMembership(
+    roomId: string,
+    memberId: string,
+  ): Promise<RoomMembershipRecord> {
+    const roomMember = await this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        lastReadMessageId: true,
+      },
+    });
+
+    if (!roomMember) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    const room = await this.prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        isDisabled: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!room) {
+      throw new ForbiddenException('Access to the chat room is denied.');
+    }
+
+    return roomMember;
+  }
+
+  private validateMessageLimit(limit: number): void {
+    if (
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > MAX_ROOM_MESSAGE_LIMIT
+    ) {
+      throw new BadRequestException(
+        `limit must be an integer between 1 and ${MAX_ROOM_MESSAGE_LIMIT}.`,
+      );
+    }
+  }
+
   private validateTimeout(timeoutSeconds: number): void {
     if (
       !Number.isInteger(timeoutSeconds) ||
@@ -306,6 +354,51 @@ export class ChatService {
     return normalizedContent;
   }
 
+  private async findRecentMessages(
+    roomId: string,
+    limit: number,
+  ): Promise<PollingMessageRecord[]> {
+    const messages = await this.prisma.message.findMany({
+      where: {
+        roomId,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+
+    return [...messages].reverse();
+  }
+
+  private async findMessagesBefore(
+    roomId: string,
+    beforeMessageId: string,
+    limit: number,
+  ): Promise<PollingMessageRecord[]> {
+    const anchorMessage = await this.findRoomMessageAnchor(roomId, beforeMessageId);
+    const messages = await this.prisma.message.findMany({
+      where: {
+        roomId,
+        OR: [
+          {
+            createdAt: {
+              lt: anchorMessage.createdAt,
+            },
+          },
+          {
+            createdAt: anchorMessage.createdAt,
+            id: {
+              lt: anchorMessage.id,
+            },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+
+    return [...messages].reverse();
+  }
+
   private async findMessagesAfter(
     roomId: string,
     sinceMessageId: string | undefined,
@@ -324,23 +417,7 @@ export class ChatService {
       });
     }
 
-    const anchorMessage = await this.prisma.message.findFirst({
-      where: {
-        id: sinceMessageId,
-        roomId,
-      },
-      select: {
-        id: true,
-        roomId: true,
-        createdAt: true,
-      },
-    });
-
-    if (!anchorMessage) {
-      throw new BadRequestException(
-        'sinceMessageId does not belong to the specified room.',
-      );
-    }
+    const anchorMessage = await this.findRoomMessageAnchor(roomId, sinceMessageId);
 
     // Include the anchor in the query window, then drop it in memory so
     // same-timestamp messages are not skipped by the secondary id ordering.
@@ -358,6 +435,101 @@ export class ChatService {
     return orderedMessages
       .filter((message) => message.id !== anchorMessage.id)
       .slice(0, MAX_POLL_MESSAGES);
+  }
+
+  private async findRoomMessageAnchor(
+    roomId: string,
+    messageId: string,
+  ): Promise<Pick<PollingMessageRecord, 'id' | 'createdAt'>> {
+    const anchorMessage = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        roomId,
+      },
+      select: {
+        id: true,
+        createdAt: true,
+      },
+    });
+
+    if (!anchorMessage) {
+      throw new BadRequestException(
+        'The message cursor does not belong to the specified room.',
+      );
+    }
+
+    return anchorMessage;
+  }
+
+  private async requireRoomMessage(
+    roomId: string,
+    messageId: string,
+  ): Promise<string> {
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        roomId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!message) {
+      throw new BadRequestException(
+        'lastReadMessageId does not belong to the specified room.',
+      );
+    }
+
+    return message.id;
+  }
+
+  private async findLatestRoomMessageId(roomId: string): Promise<string | null> {
+    const latestMessage = await this.prisma.message.findFirst({
+      where: {
+        roomId,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+      },
+    });
+
+    return latestMessage?.id ?? null;
+  }
+
+  private async countUnreadMessages(
+    roomId: string,
+    lastReadMessageId: string | null,
+  ): Promise<number> {
+    if (!lastReadMessageId) {
+      return this.prisma.message.count({
+        where: {
+          roomId,
+        },
+      });
+    }
+
+    const anchorMessage = await this.findRoomMessageAnchor(roomId, lastReadMessageId);
+
+    return this.prisma.message.count({
+      where: {
+        roomId,
+        OR: [
+          {
+            createdAt: {
+              gt: anchorMessage.createdAt,
+            },
+          },
+          {
+            createdAt: anchorMessage.createdAt,
+            id: {
+              gt: anchorMessage.id,
+            },
+          },
+        ],
+      },
+    });
   }
 
   private waitForMessages(

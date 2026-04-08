@@ -27,15 +27,20 @@ import {
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
+import { ListRoomMessagesQuery } from './dto/list-room-messages.dto';
+import { MarkRoomReadDto } from './dto/mark-room-read.dto';
 import { MessageDto } from './dto/message-response.dto';
 import {
   PollMessageResponse,
   PollMessagesQuery,
 } from './dto/poll-messages.dto';
+import { ReadStateDto } from './dto/read-state-response.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import {
   ChatService,
+  DEFAULT_ROOM_MESSAGE_LIMIT,
+  MAX_ROOM_MESSAGE_LIMIT,
   MAX_POLL_TIMEOUT_SECONDS,
   RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS,
 } from './chat.service';
@@ -55,10 +60,23 @@ const SEND_DESCRIPTION =
 const SEND_OK = 'Stored message';
 const SEND_BAD_REQUEST =
   'roomId is invalid or the message content is empty or too long.';
+const MESSAGE_LIST_SUMMARY = 'Get room messages';
+const MESSAGE_LIST_DESCRIPTION =
+  'Returns the latest room messages in ascending order. Use beforeMessageId to page backward to older messages.';
+const MESSAGE_LIST_OK = 'Room messages';
+const MESSAGE_LIST_BAD_REQUEST =
+  'roomId, beforeMessageId, or limit is invalid.';
 const POLL_SUMMARY = 'Poll new messages';
 const POLL_DESCRIPTION =
   'Returns messages after sinceMessageId immediately when available, otherwise waits up to 25 seconds and returns an empty array on timeout.';
+const READ_SUMMARY = 'Mark room messages as read';
+const READ_DESCRIPTION =
+  'Stores the room read cursor for the caller. Omitting lastReadMessageId marks the latest room message as read.';
+const READ_OK = 'Updated read state';
 const ROOM_ID_DESCRIPTION = 'Chat room UUID';
+const BEFORE_MESSAGE_ID_DESCRIPTION =
+  'Fetch messages older than this message ID.';
+const MESSAGE_LIMIT_DESCRIPTION = `Number of messages to return (1-${MAX_ROOM_MESSAGE_LIMIT}). Defaults to ${DEFAULT_ROOM_MESSAGE_LIMIT}.`;
 const SINCE_MESSAGE_ID_DESCRIPTION =
   'Last received message UUID. Omit it to wait only for messages created after this poll request started.';
 const TIMEOUT_DESCRIPTION = `Long polling timeout in seconds (0-${MAX_POLL_TIMEOUT_SECONDS}). Omit it to wait up to ${MAX_POLL_TIMEOUT_SECONDS} seconds for new messages, or use 0 to return immediately without waiting. Client and proxy timeouts should be at least ${RECOMMENDED_POLL_REQUEST_TIMEOUT_SECONDS} seconds.`;
@@ -113,6 +131,86 @@ export class ChatController {
     @Req() request: FastifyRequest,
   ): Promise<MessageDto> {
     return this.chatService.sendMessage(roomId, this.getUsername(request), dto);
+  }
+
+  @Get('rooms/:roomId/messages')
+  @ApiOperation({
+    summary: MESSAGE_LIST_SUMMARY,
+    description: MESSAGE_LIST_DESCRIPTION,
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: ROOM_ID_DESCRIPTION,
+  })
+  @ApiQuery({
+    name: 'beforeMessageId',
+    required: false,
+    type: String,
+    format: 'uuid',
+    description: BEFORE_MESSAGE_ID_DESCRIPTION,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: DEFAULT_ROOM_MESSAGE_LIMIT,
+    description: MESSAGE_LIMIT_DESCRIPTION,
+  })
+  @ApiOkResponse({
+    description: MESSAGE_LIST_OK,
+    type: MessageDto,
+    isArray: true,
+  })
+  @ApiBadRequestResponse({
+    description: MESSAGE_LIST_BAD_REQUEST,
+  })
+  @ApiUnauthorizedResponse({ description: AUTH_REQUIRED })
+  @ApiForbiddenResponse({ description: POLL_FORBIDDEN })
+  async getRoomMessages(
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @Query('beforeMessageId') beforeMessageId: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Req() request: FastifyRequest,
+  ): Promise<MessageDto[]> {
+    return this.chatService.getRoomMessages(
+      roomId,
+      this.getUsername(request),
+      this.parseMessageListQuery({
+        beforeMessageId,
+        limit,
+      }),
+    );
+  }
+
+  @Post('rooms/:roomId/read')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: READ_SUMMARY,
+    description: READ_DESCRIPTION,
+  })
+  @ApiParam({
+    name: 'roomId',
+    description: ROOM_ID_DESCRIPTION,
+  })
+  @ApiOkResponse({
+    description: READ_OK,
+    type: ReadStateDto,
+  })
+  @ApiBadRequestResponse({
+    description: POLL_BAD_REQUEST,
+  })
+  @ApiUnauthorizedResponse({ description: AUTH_REQUIRED })
+  @ApiForbiddenResponse({ description: POLL_FORBIDDEN })
+  async markRoomRead(
+    @Param('roomId', ParseUUIDPipe) roomId: string,
+    @Body() dto: MarkRoomReadDto,
+    @Req() request: FastifyRequest,
+  ): Promise<ReadStateDto> {
+    return this.chatService.markRoomRead(
+      roomId,
+      this.getUsername(request),
+      dto,
+    );
   }
 
   @Get('poll')
@@ -230,6 +328,45 @@ export class ChatController {
       roomId,
       sinceMessageId,
       timeoutSeconds,
+    };
+  }
+
+  private parseMessageListQuery(rawQuery: {
+    beforeMessageId?: string;
+    limit?: string;
+  }): ListRoomMessagesQuery {
+    const hasBeforeMessageId = rawQuery.beforeMessageId !== undefined;
+    const beforeMessageIdText = rawQuery.beforeMessageId?.trim();
+
+    if (hasBeforeMessageId && beforeMessageIdText === '') {
+      throw new BadRequestException('beforeMessageId must be a UUID.');
+    }
+
+    const beforeMessageId = beforeMessageIdText || undefined;
+    const limitText = rawQuery.limit?.trim();
+
+    if (limitText !== undefined && !INTEGER_STRING_PATTERN.test(limitText)) {
+      throw new BadRequestException('limit must be a positive integer string.');
+    }
+
+    const limit =
+      limitText === undefined
+        ? DEFAULT_ROOM_MESSAGE_LIMIT
+        : Number.parseInt(limitText, 10);
+
+    if (limit < 1 || limit > MAX_ROOM_MESSAGE_LIMIT) {
+      throw new BadRequestException(
+        `limit must be between 1 and ${MAX_ROOM_MESSAGE_LIMIT}.`,
+      );
+    }
+
+    if (beforeMessageId && !UUID_PATTERN.test(beforeMessageId)) {
+      throw new BadRequestException('beforeMessageId must be a UUID.');
+    }
+
+    return {
+      beforeMessageId,
+      limit,
     };
   }
 
