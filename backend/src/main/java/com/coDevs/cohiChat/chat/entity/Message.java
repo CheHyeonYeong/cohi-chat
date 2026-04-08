@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "message",
-    indexes = @Index(name = "idx_message_cursor_seq_desc", columnList = "cursor_seq DESC"),
+    indexes = @Index(name = "idx_message_room_id_cursor_seq_desc", columnList = "room_id, cursor_seq DESC"),
     uniqueConstraints = @UniqueConstraint(
         name = "uq_message_cursor_seq",
         columnNames = {"cursor_seq"}
