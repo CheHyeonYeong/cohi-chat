@@ -36,6 +36,7 @@ export class ChatService {
         counterpart.member_id                       AS counterpart_id,
         COALESCE(counterpart.display_name, '')     AS counterpart_name,
         counterpart.profile_image_url              AS counterpart_profile_image_url,
+        my_rm.last_read_message_id::text           AS last_read_message_id,
         last_msg.id                                AS last_message_id,
         last_msg.content                           AS last_message_content,
         last_msg.message_type                      AS last_message_type,

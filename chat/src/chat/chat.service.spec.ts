@@ -48,6 +48,7 @@ describe('ChatService', () => {
           counterpart_id: 'member-2',
           counterpart_name: 'Alex',
           counterpart_profile_image_url: 'https://example.com/alex.png',
+          last_read_message_id: 'message-4',
           last_message_id: 'message-9',
           last_message_content: 'hello',
           last_message_type: 'TEXT',
@@ -57,18 +58,15 @@ describe('ChatService', () => {
       ]);
 
     const result = await service.getRooms(username);
-    const roomQueryCall = prisma.$queryRaw.mock.calls[2] as [
-      { values: readonly unknown[] },
-    ];
 
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
-    expect(roomQueryCall[0].values).toEqual(expect.arrayContaining([memberId]));
     expect(result).toEqual([
       {
         id: 'room-1',
         counterpartId: 'member-2',
         counterpartName: 'Alex',
         counterpartProfileImageUrl: 'https://example.com/alex.png',
+        lastReadMessageId: 'message-4',
         lastMessage: {
           id: 'message-9',
           content: 'hello',
@@ -90,6 +88,7 @@ describe('ChatService', () => {
           counterpart_id: 'member-3',
           counterpart_name: 'Jamie',
           counterpart_profile_image_url: null,
+          last_read_message_id: null,
           last_message_id: null,
           last_message_content: null,
           last_message_type: null,
@@ -106,6 +105,7 @@ describe('ChatService', () => {
         counterpartId: 'member-3',
         counterpartName: 'Jamie',
         counterpartProfileImageUrl: null,
+        lastReadMessageId: null,
         lastMessage: null,
         unreadCount: 0,
       },

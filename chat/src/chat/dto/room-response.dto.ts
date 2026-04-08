@@ -29,6 +29,7 @@ export interface RoomQueryRow {
   counterpart_id: string;
   counterpart_name: string;
   counterpart_profile_image_url: string | null;
+  last_read_message_id: string | null;
   last_message_id: string | null;
   last_message_content: string | null;
   last_message_type: string | null;
@@ -60,6 +61,13 @@ export class RoomResponseDto {
   counterpartProfileImageUrl: string | null;
 
   @ApiPropertyOptional({
+    description: '현재 사용자의 마지막 읽음 메시지 ID',
+    nullable: true,
+    example: '3f9b0f07-6f68-4cd1-8ae1-1f4ebbf4f9d2',
+  })
+  lastReadMessageId: string | null;
+
+  @ApiPropertyOptional({
     description: '마지막 메시지. 메시지가 한 번도 없는 방이면 null입니다.',
     type: () => LastMessageDto,
     nullable: true,
@@ -75,6 +83,7 @@ export class RoomResponseDto {
     dto.counterpartId = row.counterpart_id;
     dto.counterpartName = row.counterpart_name;
     dto.counterpartProfileImageUrl = row.counterpart_profile_image_url;
+    dto.lastReadMessageId = row.last_read_message_id;
     dto.unreadCount = row.unread_count;
     // WHY: 방에 메시지가 없거나 마지막 메시지 메타데이터가 불완전할 수 있어 null-safe하게 응답을 구성합니다.
     // WHY: 날짜는 클라이언트가 타임존과 무관하게 처리할 수 있도록 ISO-8601 문자열로 직렬화합니다.

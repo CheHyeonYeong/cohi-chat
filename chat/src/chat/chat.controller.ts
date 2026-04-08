@@ -93,7 +93,7 @@ export class ChatController {
   }
 
   private getMemberIdentifier(request: FastifyRequest): string {
-    const memberIdentifier = request.user?.username ?? request.user?.sub;
+    const memberIdentifier = request.user?.sub ?? request.user?.username;
     if (!memberIdentifier) {
       throw new UnauthorizedException('Authentication required.');
     }
