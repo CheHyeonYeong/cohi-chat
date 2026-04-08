@@ -1,75 +1,85 @@
-# Chat Events Follow-up Scope
+# Chat Poll Transport Scope
 
-This branch is not an MVP merge target.
-Keep `khs_499_mainfix` only as a hold branch for the later events or long polling follow-up.
+`khs_499_mainfix` owns the MVP long polling transport layer.
 
-## Final baseline
+Long polling is technically a transport layer, but under the current product rule it is required for MVP because chat is not considered working without automatic refresh or waiting responses.
 
-- Spring owns chat room provisioning only.
+## Final ownership
+
+- `khs_454`
+  - Spring room provisioning
   - create or reuse `chat_room`
   - create or restore `room_member`
-  - expose `chatRoomId` from the booking flow
-- Nest owns runtime APIs only.
-  - current MVP merge scope is existing `rooms`, `messages`, and `read` runtime APIs
-  - this branch does not take ownership of those APIs
-- Events and long polling are out of the current MVP merge scope.
-- Do not expand direct SQL usage from this branch.
+  - expose `chatRoomId`
+- `khs_497`
+  - `GET /api/chat/rooms/:roomId/messages`
+  - `POST /api/chat/rooms/:roomId/messages`
+- `khs_525`
+  - `GET /api/chat/rooms`
+  - `PATCH /api/chat/rooms/:roomId/read`
+  - `GET /api/chat/unread-summary`
+- `khs_499_mainfix`
+  - `GET /api/chat/poll`
+  - `ChatPollRegistry`
+  - send-message wake-up connection after commit
 
-## Keep in this branch
+## What stays in this branch
 
-- `GET /api/chat/poll` draft controller and service flow
-- `ChatPollRegistry` in-memory waiter registry
-- same-process wake-up path from message write to poll waiters
-- tests and notes that describe the current poll draft behavior
-- documentation that explains why this branch is held back from merge
+- `GET /api/chat/poll` controller and service flow
+- room membership validation for polling
+- waiter registration and timeout handling
+- same-room wake-up hook through `notifyRoomActivity(roomId)`
+- `ChatPollRegistry` in-memory listener registry
+- tests and docs for the MVP poll transport behavior
 
-## Move to the later events PR
-
-- `GET /api/chat/poll` implementation, renamed and reshaped into `GET /api/chat/rooms/:roomId/events`
-- poll cursor semantics, to be replaced by a stable event cursor
-- event payload envelope for message, read or unread, and system event types
-- wake-up delivery strategy that works across multiple instances or split writer and poller processes
-- RabbitMQ or other external signal delivery only if the event design requires it
-
-## Exclude from the current MVP merge scope
+## What this branch must not own
 
 - `GET /api/chat/rooms`
 - `GET /api/chat/rooms/:roomId/messages`
 - `POST /api/chat/rooms/:roomId/messages`
 - `PATCH /api/chat/rooms/:roomId/read`
-- room summary query shape
-- unread computation contract
+- unread summary contract
+- room summary query contract
 
-These APIs belong to the current MVP runtime surface, but this branch does not own them.
-If they change here for the event experiment, do not merge those changes through this branch.
+If these APIs appear in this branch, treat them as overlap and remove or realign them to the owner branch before merge.
+
+## Why poll stays in MVP
+
+- without poll, the current UX does not auto-refresh incoming messages
+- the product rule says chat is not working unless the client can wait for new messages and render them automatically
+- current MVP therefore needs a transport endpoint, not only request-response message APIs
+
+## Why `/chat/poll` stays for now
+
+Keep `GET /api/chat/poll` in this branch for the current MVP.
+
+- the current implementation returns message rows only
+- the endpoint already matches the minimal transport need
+- switching to `/chat/rooms/:roomId/events` now would expand the contract and collide with later event-envelope design work
+- `/chat/rooms/:roomId/events` should remain the follow-up target once payload shape, cursor contract, and multi-instance delivery are defined
 
 ## Single-process limitation
 
 `ChatPollRegistry` is an in-memory waiter registry inside one Nest process.
 
-- `pollMessages()` registers a waiter in memory.
-- `sendMessage()` wakes waiters by calling `notifyRoom(roomId)` in the same process.
-- this works only when the poll request and the message write hit the same Nest process
-- if chat runs on multiple instances, or if writes move to another worker or process, wake-ups can be missed
+- `pollMessages()` registers a waiter in memory
+- `notifyRoomActivity(roomId)` wakes listeners in memory
+- if the poll request and the message write hit different Nest processes, wake-ups can be missed
 
-This limitation must stay explicit in every review and PR note for this branch.
+This branch is valid for the current same-process MVP assumption only.
 
-## Why this branch must not merge now
+## Merge checks for this branch
 
-- the branch scope conflicts with the final MVP split
-  - Spring should merge first for room provisioning
-  - this branch currently mixes event follow-up with existing runtime APIs
-- `GET /api/chat/poll` is still a prototype, not the final `/chat/rooms/:roomId/events` contract
-- the in-memory poll registry is single-process only
-- this branch should not take ownership of `rooms`, `messages`, or `read` API behavior
-- direct SQL expansion from this branch would move in the opposite direction of the agreed baseline
+- poll must remain in MVP scope
+- sender-side message commit must wake the same room poll waiter immediately
+- poll must apply room membership validation
+- this branch must not re-own `rooms`, `messages`, or `read`
+- no new direct SQL should be added from this branch
 
-## Minimum TODO for `/chat/rooms/:roomId/events`
+## Remaining TODO
 
-1. Reduce the follow-up branch to poll or event-only ownership.
-2. Replace `GET /api/chat/poll` query parameters with a room-scoped events path.
-3. Define the event cursor contract.
-4. Define the event envelope and event type list.
-5. Decide whether read or unread changes are emitted as events or remain request-response only.
-6. Replace the same-process wake-up assumption with a shared signal strategy when multi-instance support becomes necessary.
-7. Keep Spring room provisioning and Nest runtime ownership separated while both services share only the column contract.
+1. Wire `notifyRoomActivity(roomId)` from the message-send owner branch after successful message commit.
+2. Confirm FE long polling behavior still satisfies the current automatic refresh UX.
+3. Keep `GET /api/chat/poll` stable for MVP and defer `/chat/rooms/:roomId/events` to a later contract PR.
+4. Define the later event cursor and envelope design without changing current owner boundaries.
+5. Replace the in-memory wake-up mechanism when multi-instance support becomes necessary.

@@ -9,7 +9,7 @@ import { AppModule } from './app.module';
 
 const SWAGGER_TITLE = 'cohiChat chat server';
 const SWAGGER_DESCRIPTION =
-  'Chat server API docs. GET /api/chat/rooms returns lastMessage as null when a room has no messages. GET /api/chat/poll waits up to 25 seconds, and client or proxy timeouts should be at least 35 seconds.';
+  'Chat server API docs. khs_499_mainfix owns the MVP long polling transport. GET /api/chat/poll waits up to 25 seconds, and client or proxy timeouts should be at least 35 seconds.';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
