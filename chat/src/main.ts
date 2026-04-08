@@ -12,13 +12,12 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
-  // Spring 서버와 동일한 prefix 구조 유지. /health는 docker healthcheck용으로 제외
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('cohiChat 채팅 서버')
+    .setTitle('cohiChat chat service')
     .setDescription(
-      '채팅 서버 API 문서. GET /api/chat/rooms 응답의 lastMessage는 메시지가 없는 방에서 null일 수 있습니다.',
+      'Chat room list, unread summary, and mark-as-read APIs.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -27,10 +26,12 @@ async function bootstrap() {
     )
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+
   SwaggerModule.setup('swagger-ui', app, swaggerDocument, {
     useGlobalPrefix: true,
   });
 
   await app.listen(Number(process.env.PORT) || 3001, '0.0.0.0');
 }
+
 void bootstrap();

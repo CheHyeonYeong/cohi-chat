@@ -1,6 +1,16 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -8,8 +18,12 @@ import {
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
-import { ChatService } from './chat.service';
+import {
+  MarkRoomAsReadResponseDto,
+  UnreadSummaryResponseDto,
+} from './dto/chat-response.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
+import { ChatService } from './chat.service';
 
 @ApiTags('chat')
 @ApiBearerAuth('jwtAuth')
@@ -18,20 +32,72 @@ import { RoomResponseDto } from './dto/room-response.dto';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  // GET /api/chat/rooms — 내가 속한 채팅방 목록 + 마지막 메시지 + unread 수
   @Get('rooms')
   @ApiOperation({
-    summary: '채팅방 목록 조회',
+    summary: 'List chat rooms',
     description:
-      '내가 속한 채팅방 목록과 상대방 정보, 마지막 메시지, unread 수를 반환합니다. 메시지가 한 번도 없는 방은 lastMessage가 null입니다. Swagger Authorize에는 access token 원문만 넣고 Bearer 접두사는 따로 입력하지 않습니다.',
+      'Returns counterpart information, last message preview, and unread count for each room.',
   })
   @ApiOkResponse({
-    description: '채팅방 목록 조회 성공',
+    description: 'Chat room list retrieved successfully.',
     type: RoomResponseDto,
     isArray: true,
   })
-  @ApiUnauthorizedResponse({ description: '유효한 Bearer JWT가 필요합니다.' })
-  async getRooms(@Req() req: FastifyRequest): Promise<RoomResponseDto[]> {
-    return this.chatService.getRooms(req.user!.sub);
+  @ApiUnauthorizedResponse({
+    description: 'A valid Bearer JWT is required.',
+  })
+  getRooms(@Req() request: FastifyRequest): Promise<RoomResponseDto[]> {
+    return this.chatService.getRooms(this.getMemberIdentifier(request));
+  }
+
+  @Get('unread-summary')
+  @ApiOperation({
+    summary: 'Get unread summary',
+    description: 'Returns total unread count and per-room unread counts.',
+  })
+  @ApiOkResponse({
+    type: UnreadSummaryResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid Bearer JWT is required.',
+  })
+  getUnreadSummary(
+    @Req() request: FastifyRequest,
+  ): Promise<UnreadSummaryResponseDto> {
+    return this.chatService.getUnreadSummary(this.getMemberIdentifier(request));
+  }
+
+  @Patch('rooms/:roomId/read')
+  @ApiOperation({
+    summary: 'Mark a room as read',
+    description:
+      'Stores the latest message in the room as the member read cursor.',
+  })
+  @ApiOkResponse({
+    type: MarkRoomAsReadResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'A valid Bearer JWT is required.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The chat room is not accessible.',
+  })
+  markRoomAsRead(
+    @Req() request: FastifyRequest,
+    @Param('roomId', new ParseUUIDPipe()) roomId: string,
+  ): Promise<MarkRoomAsReadResponseDto> {
+    return this.chatService.markRoomAsRead(
+      this.getMemberIdentifier(request),
+      roomId,
+    );
+  }
+
+  private getMemberIdentifier(request: FastifyRequest): string {
+    const memberIdentifier = request.user?.sub ?? request.user?.username;
+    if (!memberIdentifier) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+
+    return memberIdentifier;
   }
 }

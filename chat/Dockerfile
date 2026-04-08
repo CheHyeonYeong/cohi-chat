@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=chat-pnpm,target=/pnpm/store \
 COPY . .
 RUN pnpm run prisma:generate \
     && pnpm run build \
-    && pnpm prune --prod
+    && pnpm prune --prod --ignore-scripts
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
