@@ -1,5 +1,7 @@
 package com.coDevs.cohiChat.chat.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,21 +16,45 @@ import jakarta.persistence.LockModeType;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, UUID> {
 
+    @Query("""
+        SELECT r FROM ChatRoom r
+        WHERE r.externalRefType = :externalRefType
+          AND r.externalRefId = :externalRefId
+          AND r.deletedAt IS NULL
+        """)
+    Optional<ChatRoom> findByExternalRef(
+        @Param("externalRefType") String externalRefType,
+        @Param("externalRefId") UUID externalRefId
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT r FROM ChatRoom r
-        JOIN RoomMember m1 ON m1.room = r AND m1.memberId = :memberId1 AND m1.deletedAt IS NULL
-        JOIN RoomMember m2 ON m2.room = r AND m2.memberId = :memberId2 AND m2.deletedAt IS NULL
-        WHERE r.isDisabled = false
+        WHERE r.externalRefType = :externalRefType
+          AND r.externalRefId = :externalRefId
+          AND r.deletedAt IS NULL
         """)
-    Optional<ChatRoom> findActiveRoomByMembersForUpdate(@Param("memberId1") UUID memberId1, @Param("memberId2") UUID memberId2);
+    Optional<ChatRoom> findByExternalRefForUpdate(
+        @Param("externalRefType") String externalRefType,
+        @Param("externalRefId") UUID externalRefId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT r FROM ChatRoom r
+        WHERE r.id = :roomId
+          AND r.deletedAt IS NULL
+        """)
+    Optional<ChatRoom> findByIdForUpdate(@Param("roomId") UUID roomId);
 
     @Query("""
         SELECT r FROM ChatRoom r
-        JOIN RoomMember m1 ON m1.room = r AND m1.memberId = :memberId1 AND m1.deletedAt IS NULL
-        JOIN RoomMember m2 ON m2.room = r AND m2.memberId = :memberId2 AND m2.deletedAt IS NULL
-        WHERE r.isDisabled = false
+        WHERE r.externalRefType = :externalRefType
+          AND r.externalRefId IN :externalRefIds
+          AND r.deletedAt IS NULL
         """)
-    Optional<ChatRoom> findActiveRoomByMembers(@Param("memberId1") UUID memberId1, @Param("memberId2") UUID memberId2);
-
+    List<ChatRoom> findAllByExternalRefIds(
+        @Param("externalRefType") String externalRefType,
+        @Param("externalRefIds") Collection<UUID> externalRefIds
+    );
 }

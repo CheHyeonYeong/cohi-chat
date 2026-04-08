@@ -1,13 +1,8 @@
 package com.coDevs.cohiChat.booking;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,13 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.coDevs.cohiChat.booking.controller.BookingChatController;
-import com.coDevs.cohiChat.chat.response.ChatReadStateResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.global.security.jwt.JwtTokenProvider;
@@ -40,7 +33,6 @@ class BookingChatControllerTest {
     private static final Long BOOKING_ID = 1L;
     private static final UUID MEMBER_ID = UUID.randomUUID();
     private static final UUID ROOM_ID = UUID.randomUUID();
-    private static final UUID MESSAGE_ID = UUID.randomUUID();
 
     @Autowired
     private MockMvc mockMvc;
@@ -72,39 +64,6 @@ class BookingChatControllerTest {
         mockMvc.perform(get("/bookings/{bookingId}/chat-room", BOOKING_ID))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.roomId").value(ROOM_ID.toString()));
-    }
-
-    @Test
-    @DisplayName("updates last read message id")
-    void updateChatReadStateSuccess() throws Exception {
-        given(chatService.updateLastReadMessageId(BOOKING_ID, MEMBER_ID, MESSAGE_ID))
-            .willReturn(new ChatReadStateResponseDTO(ROOM_ID, MESSAGE_ID));
-
-        mockMvc.perform(patch("/bookings/{bookingId}/chat-room/read", BOOKING_ID)
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                        "messageId": "%s"
-                    }
-                    """.formatted(MESSAGE_ID)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.roomId").value(ROOM_ID.toString()))
-            .andExpect(jsonPath("$.data.lastReadMessageId").value(MESSAGE_ID.toString()));
-    }
-
-    @Test
-    @DisplayName("rejects missing messageId in read state update")
-    void updateChatReadStateRejectsMissingMessageId() throws Exception {
-        mockMvc.perform(patch("/bookings/{bookingId}/chat-room/read", BOOKING_ID)
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.success").value(false));
-
-        verify(chatService, never()).updateLastReadMessageId(eq(BOOKING_ID), eq(MEMBER_ID), any());
+            .andExpect(jsonPath("$.data.chatRoomId").value(ROOM_ID.toString()));
     }
 }

@@ -302,24 +302,26 @@ public class BookingService {
     }
 
     private BookingResponseDTO toBookingResponseDTO(Booking booking) {
-        Member host = memberRepository.findById(booking.getTimeSlot().getUserId()).orElse(null);
-        String hostUsername = host != null ? host.getUsername() : null;
-        String hostDisplayName = host != null ? host.getDisplayName() : null;
-
-        Member guest = memberRepository.findById(booking.getGuestId()).orElse(null);
-        String guestUsername = guest != null ? guest.getUsername() : null;
-        String guestDisplayName = guest != null ? guest.getDisplayName() : null;
-
-        return BookingResponseDTO.from(booking, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+        UUID chatRoomId = chatService.getChatRoomIdByBooking(booking).orElse(null);
+        return toBookingResponseDTOWithChatRoom(booking, chatRoomId);
     }
 
     private List<BookingResponseDTO> toBookingResponseDTOs(List<Booking> bookings) {
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+
         List<UUID> hostIds = bookings.stream()
             .map(b -> b.getTimeSlot().getUserId())
             .distinct()
             .toList();
         Map<UUID, Member> hostMap = memberRepository.findAllById(hostIds).stream()
             .collect(Collectors.toMap(Member::getId, m -> m));
+        Map<Long, UUID> chatRoomIds = chatService.getChatRoomIdsByBookingIds(
+            bookings.stream()
+                .map(Booking::getId)
+                .toList()
+        );
 
         List<UUID> guestIds = bookings.stream()
             .map(Booking::getGuestId)
@@ -338,7 +340,16 @@ public class BookingService {
                 String guestUsername = guest != null ? guest.getUsername() : null;
                 String guestDisplayName = guest != null ? guest.getDisplayName() : null;
 
-                return BookingResponseDTO.from(b, calendarZoneId, hostUsername, hostDisplayName, guestUsername, guestDisplayName);
+                UUID chatRoomId = b.getId() != null ? chatRoomIds.get(b.getId()) : null;
+                return BookingResponseDTO.from(
+                    b,
+                    calendarZoneId,
+                    hostUsername,
+                    hostDisplayName,
+                    guestUsername,
+                    guestDisplayName,
+                    chatRoomId
+                );
             })
             .toList();
     }

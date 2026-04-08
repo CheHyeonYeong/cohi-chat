@@ -17,13 +17,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "room_member")
+@Table(
+    name = "room_member",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uq_room_member_room_id_member_id",
+        columnNames = {"room_id", "member_id"}
+    )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RoomMember {

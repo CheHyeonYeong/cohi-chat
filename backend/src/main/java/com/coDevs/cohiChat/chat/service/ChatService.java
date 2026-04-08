@@ -1,10 +1,14 @@
 package com.coDevs.cohiChat.chat.service;
 
-import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,14 +16,11 @@ import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
-import com.coDevs.cohiChat.chat.repository.ChatMessageQueryRepository;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
 import com.coDevs.cohiChat.chat.repository.RoomMemberRepository;
-import com.coDevs.cohiChat.chat.response.ChatReadStateResponseDTO;
 import com.coDevs.cohiChat.chat.response.ChatRoomResponseDTO;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
-import com.coDevs.cohiChat.member.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,21 +28,28 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatService {
 
+    private static final String EXTERNAL_REF_RESERVATION = "RESERVATION";
+
     private final ChatRoomRepository chatRoomRepository;
-    private final ChatMessageQueryRepository chatMessageQueryRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final BookingRepository bookingRepository;
-    private final MemberRepository memberRepository;
 
     @Transactional
     public UUID createRoomForBooking(Booking booking) {
-        UUID hostId = booking.getTimeSlot().getUserId();
-        UUID guestId = booking.getGuestId();
+        return provisionRoomForBooking(booking);
+    }
 
-        lockParticipants(hostId, guestId);
+    @Transactional
+    public UUID provisionRoomForBooking(Booking booking) {
+        UUID externalRefId = uuidFromLong(booking.getId());
+        ChatRoom room = chatRoomRepository.findByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
+            .orElseGet(() -> createRoom(externalRefId));
 
-        ChatRoom room = chatRoomRepository.findActiveRoomByMembersForUpdate(hostId, guestId)
-            .orElseGet(() -> createNewRoom(hostId, guestId));
+        ensureRoomMembers(room, List.of(
+            booking.getTimeSlot().getUserId(),
+            booking.getGuestId()
+        ));
+
         return room.getId();
     }
 
@@ -57,68 +65,70 @@ public class ChatService {
             .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
-    @Transactional
-    public ChatReadStateResponseDTO updateLastReadMessageId(Long bookingId, UUID requesterId, UUID messageId) {
-        Booking booking = bookingRepository.findByIdWithTimeSlot(bookingId)
-            .orElseThrow(() -> new CustomException(ErrorCode.BOOKING_NOT_FOUND));
-
-        validateParticipant(booking, requesterId);
-
-        UUID roomId = getChatRoomIdByBooking(booking)
-            .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
-
-        RoomMember roomMember = roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(roomId, requesterId)
-            .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
-
-        Instant targetMessageCreatedAt = findMessageCreatedAtOrThrow(messageId, roomId);
-        UUID currentLastReadMessageId = roomMember.getLastReadMessageId();
-
-        if (currentLastReadMessageId != null) {
-            Optional<Instant> currentLastReadCreatedAt = chatMessageQueryRepository
-                .findCreatedAtByIdAndRoomId(currentLastReadMessageId, roomId);
-
-            if (currentLastReadCreatedAt.isPresent() && !targetMessageCreatedAt.isAfter(currentLastReadCreatedAt.get())) {
-                return new ChatReadStateResponseDTO(roomId, currentLastReadMessageId);
-            }
-        }
-
-        roomMember.updateLastReadMessageId(messageId);
-        return new ChatReadStateResponseDTO(roomId, messageId);
+    @Transactional(readOnly = true)
+    public Optional<UUID> getChatRoomIdByBookingId(Long bookingId) {
+        return getChatRoomIdByExternalRef(uuidFromLong(bookingId));
     }
 
     @Transactional(readOnly = true)
     public Optional<UUID> getChatRoomIdByBooking(Booking booking) {
-        UUID hostId = booking.getTimeSlot().getUserId();
-        UUID guestId = booking.getGuestId();
-        return chatRoomRepository.findActiveRoomByMembers(hostId, guestId)
+        return getChatRoomIdByExternalRef(uuidFromLong(booking.getId()));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, UUID> getChatRoomIdsByBookingIds(Collection<Long> bookingIds) {
+        if (bookingIds == null || bookingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UUID> externalRefIds = bookingIds.stream()
+            .map(this::uuidFromLong)
+            .toList();
+
+        return chatRoomRepository.findAllByExternalRefIds(EXTERNAL_REF_RESERVATION, externalRefIds).stream()
+            .collect(Collectors.toMap(
+                room -> longFromUuid(room.getExternalRefId()),
+                ChatRoom::getId,
+                (existing, ignored) -> existing
+            ));
+    }
+
+    private Optional<UUID> getChatRoomIdByExternalRef(UUID externalRefId) {
+        return chatRoomRepository.findByExternalRef(EXTERNAL_REF_RESERVATION, externalRefId)
             .map(ChatRoom::getId);
     }
 
-    private ChatRoom createNewRoom(UUID hostId, UUID guestId) {
-        ChatRoom room = chatRoomRepository.save(ChatRoom.create());
-        roomMemberRepository.saveAll(List.of(
-            RoomMember.create(room, hostId),
-            RoomMember.create(room, guestId)
-        ));
-        return room;
-    }
-
-    private void lockParticipants(UUID hostId, UUID guestId) {
-        UUID firstId = hostId.compareTo(guestId) <= 0 ? hostId : guestId;
-        UUID secondId = hostId.compareTo(guestId) <= 0 ? guestId : hostId;
-
-        memberRepository.findByIdWithLock(firstId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        if (!firstId.equals(secondId)) {
-            memberRepository.findByIdWithLock(secondId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    private ChatRoom createRoom(UUID externalRefId) {
+        try {
+            return chatRoomRepository.saveAndFlush(ChatRoom.create(EXTERNAL_REF_RESERVATION, externalRefId));
+        } catch (DataIntegrityViolationException exception) {
+            return chatRoomRepository.findByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
+                .orElseThrow(() -> exception);
         }
     }
 
-    private Instant findMessageCreatedAtOrThrow(UUID messageId, UUID roomId) {
-        return chatMessageQueryRepository.findCreatedAtByIdAndRoomId(messageId, roomId)
-            .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT));
+    private void ensureRoomMembers(ChatRoom room, Collection<UUID> memberIds) {
+        List<UUID> distinctMemberIds = memberIds.stream().distinct().toList();
+        Map<UUID, RoomMember> existingMembers = distinctMemberIds.stream()
+            .map(memberId -> roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(room.getId(), memberId))
+            .flatMap(Optional::stream)
+            .collect(Collectors.toMap(RoomMember::getMemberId, Function.identity()));
+
+        for (UUID memberId : distinctMemberIds) {
+            if (existingMembers.containsKey(memberId)) {
+                continue;
+            }
+            createRoomMember(room, memberId);
+        }
+    }
+
+    private void createRoomMember(ChatRoom room, UUID memberId) {
+        try {
+            roomMemberRepository.saveAndFlush(RoomMember.create(room, memberId));
+        } catch (DataIntegrityViolationException exception) {
+            roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(room.getId(), memberId)
+                .orElseThrow(() -> exception);
+        }
     }
 
     private void validateParticipant(Booking booking, UUID requesterId) {
@@ -128,5 +138,13 @@ public class ChatService {
         if (!requesterId.equals(hostId) && !requesterId.equals(guestId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+    }
+
+    private UUID uuidFromLong(Long id) {
+        return id != null ? new UUID(0L, id) : null;
+    }
+
+    private Long longFromUuid(UUID id) {
+        return id != null ? id.getLeastSignificantBits() : null;
     }
 }
