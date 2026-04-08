@@ -8,6 +8,8 @@ import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
 
 const ALLOWED_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'] as const;
+const MISSING_ACCESS_TOKEN_MESSAGE = 'Missing access token.';
+const INVALID_ACCESS_TOKEN_MESSAGE = 'Invalid access token.';
 
 export interface JwtPayload {
   sub: string;
@@ -23,7 +25,7 @@ export class JwtGuard implements CanActivate {
     const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('유효한 인증 토큰이 없습니다.');
+      throw new UnauthorizedException(MISSING_ACCESS_TOKEN_MESSAGE);
     }
 
     try {
@@ -33,7 +35,7 @@ export class JwtGuard implements CanActivate {
       request.user = payload;
       return true;
     } catch {
-      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+      throw new UnauthorizedException(INVALID_ACCESS_TOKEN_MESSAGE);
     }
   }
 

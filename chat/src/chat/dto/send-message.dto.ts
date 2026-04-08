@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
-
-const MESSAGE_MAX_LENGTH = 1000;
+import { MESSAGE_MAX_LENGTH } from '../message.constants';
 
 export class SendMessageDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))

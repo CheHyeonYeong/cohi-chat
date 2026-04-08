@@ -1,7 +1,12 @@
 import { Prisma } from '@prisma/client';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { encodeMessageCursor, MessageCursor } from './message-cursor';
 import type { PrismaService } from '../prisma/prisma.service';
+import { ChatRoomActivityNotifier } from './chat-room-activity-notifier';
 import { ChatService } from './chat.service';
 
 type MessageQueryRow = {
@@ -44,15 +49,19 @@ describe('ChatService', () => {
   let roomMemberFindFirstMock: jest.Mock;
   let rootMessageCreateMock: jest.Mock;
   let transactionMock: jest.Mock;
+  let txMemberFindFirstMock: jest.Mock;
   let txRoomMemberFindFirstMock: jest.Mock;
   let txRoomMemberUpdateMock: jest.Mock;
   let txMessageCreateMock: jest.Mock;
+  let notifyRoomActivityMock: jest.Mock;
+  let lifecycleEvents: string[];
 
   beforeEach(() => {
     queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
     roomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
     rootMessageCreateMock = jest.fn();
+    txMemberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
     txRoomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
     txRoomMemberUpdateMock = jest.fn().mockResolvedValue({});
     txMessageCreateMock = jest.fn(
@@ -76,34 +85,62 @@ describe('ChatService', () => {
           createdAt: new Date('2026-03-31T00:00:00.000Z'),
         }),
     );
-    transactionMock = jest.fn(async (callback: (tx: unknown) => Promise<unknown>, options?: unknown) =>
-      callback({
-        roomMember: {
-          findFirst: txRoomMemberFindFirstMock,
-          update: txRoomMemberUpdateMock,
-        },
-        message: {
-          create: txMessageCreateMock,
-        },
-      }),
+    lifecycleEvents = [];
+    notifyRoomActivityMock = jest.fn(async () => {
+      lifecycleEvents.push('notify');
+    });
+    transactionMock = jest.fn(
+      async (
+        callback: (tx: unknown) => Promise<unknown>,
+        _options?: unknown,
+      ) => {
+        const result = await callback({
+          member: {
+            findFirst: txMemberFindFirstMock,
+          },
+          roomMember: {
+            findFirst: txRoomMemberFindFirstMock,
+            update: txRoomMemberUpdateMock,
+          },
+          message: {
+            create: txMessageCreateMock,
+          },
+          $queryRaw: queryRawMock,
+        });
+        lifecycleEvents.push('commit');
+        return result;
+      },
     );
 
-    service = new ChatService({
-      $queryRaw: queryRawMock,
-      member: { findFirst: memberFindFirstMock },
-      roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
-      message: { create: rootMessageCreateMock, findMany: jest.fn() },
-      $transaction: transactionMock,
-    } as unknown as PrismaService);
+    service = new ChatService(
+      {
+        $queryRaw: queryRawMock,
+        member: { findFirst: memberFindFirstMock },
+        roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
+        message: { create: rootMessageCreateMock, findMany: jest.fn() },
+        $transaction: transactionMock,
+      } as unknown as PrismaService,
+      {
+        notifyRoomActivity: notifyRoomActivityMock,
+      } as unknown as ChatRoomActivityNotifier,
+    );
   });
 
-  it('stores trimmed content and advances sender read cursor in one transaction', async () => {
+  it('stores trimmed content, advances sender read cursor, and notifies after commit', async () => {
     const result = await service.sendMessage(ROOM_ID, 'tester', {
       content: '  hello world  ',
     });
 
     expect(transactionMock).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+    expect(txMemberFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        username: 'tester',
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: { id: true },
     });
     expect(txRoomMemberFindFirstMock).toHaveBeenCalledWith({
       where: {
@@ -128,9 +165,31 @@ describe('ChatService', () => {
       where: { id: ROOM_MEMBER_ID },
       data: { lastReadMessageId: FIRST_MESSAGE_ID },
     });
+    expect(notifyRoomActivityMock).toHaveBeenCalledWith(ROOM_ID);
+    expect(lifecycleEvents).toEqual(['commit', 'notify']);
     expect(rootMessageCreateMock).not.toHaveBeenCalled();
+    expect(memberFindFirstMock).not.toHaveBeenCalled();
     expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
     expect(result.content).toBe('hello world');
+  });
+
+  it('continues successfully when notify fails after commit', async () => {
+    notifyRoomActivityMock.mockImplementationOnce(async () => {
+      lifecycleEvents.push('notify');
+      throw new Error('waiter registry down');
+    });
+
+    await expect(
+      service.sendMessage(ROOM_ID, 'tester', { content: 'hello world' }),
+    ).resolves.toMatchObject({
+      id: FIRST_MESSAGE_ID,
+      roomId: ROOM_ID,
+      senderId: MEMBER_ID,
+      messageType: 'TEXT',
+      content: 'hello world',
+    });
+    expect(notifyRoomActivityMock).toHaveBeenCalledWith(ROOM_ID);
+    expect(lifecycleEvents).toEqual(['commit', 'notify']);
   });
 
   it('validates max length after trimming', async () => {
@@ -147,6 +206,7 @@ describe('ChatService', () => {
         content: 'a'.repeat(1000),
       },
     });
+    expect(notifyRoomActivityMock).toHaveBeenCalledWith(ROOM_ID);
   });
 
   it('rejects empty trimmed content', async () => {
@@ -156,6 +216,7 @@ describe('ChatService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(transactionMock).not.toHaveBeenCalled();
+    expect(notifyRoomActivityMock).not.toHaveBeenCalled();
   });
 
   it('rejects messaging when the room membership is inactive', async () => {
@@ -166,6 +227,18 @@ describe('ChatService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(txMessageCreateMock).not.toHaveBeenCalled();
     expect(txRoomMemberUpdateMock).not.toHaveBeenCalled();
+    expect(notifyRoomActivityMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects messaging when the authenticated member is inactive', async () => {
+    txMemberFindFirstMock.mockResolvedValueOnce(null);
+
+    await expect(
+      service.sendMessage(ROOM_ID, 'tester', { content: 'hello' }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(txRoomMemberFindFirstMock).not.toHaveBeenCalled();
+    expect(txMessageCreateMock).not.toHaveBeenCalled();
+    expect(notifyRoomActivityMock).not.toHaveBeenCalled();
   });
 
   it('builds nextCursor from the exact DB timestamp and message id', async () => {
@@ -177,7 +250,18 @@ describe('ChatService', () => {
 
     const result = await service.getMessages(ROOM_ID, 'tester', undefined, 2);
 
-    expect(roomMemberFindFirstMock).toHaveBeenCalledWith({
+    expect(transactionMock).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+    expect(txMemberFindFirstMock).toHaveBeenCalledWith({
+      where: {
+        username: 'tester',
+        isDeleted: false,
+        isBanned: false,
+      },
+      select: { id: true },
+    });
+    expect(txRoomMemberFindFirstMock).toHaveBeenCalledWith({
       where: {
         roomId: ROOM_ID,
         memberId: MEMBER_ID,
@@ -198,6 +282,8 @@ describe('ChatService', () => {
         id: SECOND_MESSAGE_ID,
       }),
     );
+    expect(memberFindFirstMock).not.toHaveBeenCalled();
+    expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
   });
 
   it('uses the composite cursor in the next page query', async () => {
@@ -220,5 +306,15 @@ describe('ChatService', () => {
       FIRST_MESSAGE_ID,
     ]);
     expect(result.nextCursor).toBeNull();
+  });
+
+  it('rejects message lookup when the authenticated member is inactive', async () => {
+    txMemberFindFirstMock.mockResolvedValueOnce(null);
+
+    await expect(
+      service.getMessages(ROOM_ID, 'tester', undefined, 2),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(txRoomMemberFindFirstMock).not.toHaveBeenCalled();
+    expect(queryRawMock).not.toHaveBeenCalled();
   });
 });

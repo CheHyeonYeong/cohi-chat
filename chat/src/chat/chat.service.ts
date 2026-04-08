@@ -1,19 +1,17 @@
-import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  encodeMessageCursor,
-  MessageCursor,
-} from './message-cursor';
+import { ChatRoomActivityNotifier } from './chat-room-activity-notifier';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
-
-const MESSAGE_MAX_LENGTH = 1000;
+import { MESSAGE_MAX_LENGTH } from './message.constants';
+import { encodeMessageCursor, MessageCursor } from './message-cursor';
 
 type MessageRow = {
   id: string;
@@ -26,15 +24,30 @@ type MessageRow = {
   cursorCreatedAt: string;
 };
 
+type MemberLookupClient = {
+  member: {
+    findFirst: PrismaService['member']['findFirst'];
+  };
+};
+
 type RoomMemberLookupClient = {
   roomMember: {
     findFirst: PrismaService['roomMember']['findFirst'];
   };
 };
 
+type MessageQueryClient = {
+  $queryRaw: PrismaService['$queryRaw'];
+};
+
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ChatService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roomActivityNotifier: ChatRoomActivityNotifier,
+  ) {}
 
   async sendMessage(
     roomId: string,
@@ -42,10 +55,10 @@ export class ChatService {
     dto: SendMessageDto,
   ): Promise<MessageDto> {
     const normalizedContent = this.normalizeContent(dto.content);
-    const memberId = await this.resolveMemberId(username);
 
     const savedMessage = await this.prisma.$transaction(
       async (tx) => {
+        const memberId = await this.resolveMemberId(tx, username);
         const roomMember = await this.findActiveRoomMember(tx, roomId, memberId);
         if (!roomMember) {
           throw new ForbiddenException('Access to the chat room is denied.');
@@ -70,6 +83,8 @@ export class ChatService {
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
+    await this.notifyRoomActivity(roomId);
+
     return MessageDto.from(savedMessage);
   }
 
@@ -79,18 +94,26 @@ export class ChatService {
     cursor: MessageCursor | undefined,
     size: number,
   ): Promise<MessagePageResponse> {
-    const memberId = await this.resolveMemberId(username);
-    await this.ensureActiveRoomMember(roomId, memberId);
+    return this.prisma.$transaction(
+      async (tx) => {
+        const memberId = await this.resolveMemberId(tx, username);
+        await this.ensureActiveRoomMember(tx, roomId, memberId);
 
-    const rows = await this.fetchMessagesPage(roomId, cursor, size);
-    return {
-      messages: rows.messages.map((message) => MessageDto.from(message)),
-      nextCursor: rows.nextCursor,
-    };
+        const rows = await this.fetchMessagesPage(tx, roomId, cursor, size);
+        return {
+          messages: rows.messages.map((message) => MessageDto.from(message)),
+          nextCursor: rows.nextCursor,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
-  private async resolveMemberId(username: string): Promise<string> {
-    const member = await this.prisma.member.findFirst({
+  private async resolveMemberId(
+    client: MemberLookupClient,
+    username: string,
+  ): Promise<string> {
+    const member = await client.member.findFirst({
       where: {
         username,
         isDeleted: false,
@@ -107,10 +130,11 @@ export class ChatService {
   }
 
   private async ensureActiveRoomMember(
+    client: RoomMemberLookupClient,
     roomId: string,
     memberId: string,
   ): Promise<void> {
-    const roomMember = await this.findActiveRoomMember(this.prisma, roomId, memberId);
+    const roomMember = await this.findActiveRoomMember(client, roomId, memberId);
 
     if (!roomMember) {
       throw new ForbiddenException('Access to the chat room is denied.');
@@ -155,12 +179,24 @@ export class ChatService {
     return normalizedContent;
   }
 
+  private async notifyRoomActivity(roomId: string): Promise<void> {
+    try {
+      await this.roomActivityNotifier.notifyRoomActivity(roomId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `notifyRoomActivity failed after message commit for room ${roomId}: ${message}`,
+      );
+    }
+  }
+
   private async fetchMessagesPage(
+    client: MessageQueryClient,
     roomId: string,
     cursor: MessageCursor | undefined,
     size: number,
   ): Promise<{ messages: MessageRow[]; nextCursor: string | null }> {
-    const rows = await this.fetchMessagesBatch(roomId, cursor, size + 1);
+    const rows = await this.fetchMessagesBatch(client, roomId, cursor, size + 1);
 
     if (rows.length <= size) {
       return { messages: rows, nextCursor: null };
@@ -179,6 +215,7 @@ export class ChatService {
   }
 
   private async fetchMessagesBatch(
+    client: MessageQueryClient,
     roomId: string,
     cursor: MessageCursor | undefined,
     take: number,
@@ -195,7 +232,7 @@ export class ChatService {
         `
       : Prisma.empty;
 
-    return this.prisma.$queryRaw<MessageRow[]>(Prisma.sql`
+    return client.$queryRaw<MessageRow[]>(Prisma.sql`
       SELECT
         m.id,
         m.room_id AS "roomId",

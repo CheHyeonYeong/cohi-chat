@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import type { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from './jwt.guard';
@@ -9,7 +9,7 @@ describe('JwtGuard', () => {
       switchToHttp: () => ({
         getRequest: () => request,
       }),
-    }) as never;
+    }) as unknown as ExecutionContext;
 
   it('verifies the token with the allowed HMAC algorithms and stores the payload', async () => {
     const verifyAsync = jest
@@ -38,9 +38,24 @@ describe('JwtGuard', () => {
     } as unknown as JwtService);
     const request = { headers: {} } as FastifyRequest;
 
-    await expect(
-      guard.canActivate(createContext(request)),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(createContext(request))).rejects.toMatchObject({
+      message: 'Missing access token.',
+    } satisfies Partial<UnauthorizedException>);
+  });
+
+  it('throws when the token is invalid', async () => {
+    const verifyAsync = jest.fn().mockRejectedValue(new Error('invalid'));
+    const guard = new JwtGuard({ verifyAsync } as unknown as JwtService);
+    const request = {
+      headers: {
+        authorization: 'Bearer invalid-token',
+      },
+    } as FastifyRequest;
+
+    await expect(guard.canActivate(createContext(request))).rejects.toMatchObject({
+      message: 'Invalid access token.',
+    } satisfies Partial<UnauthorizedException>);
+    expect(request.user).toBeUndefined();
   });
 
   it('accepts lowercase bearer schemes', async () => {
