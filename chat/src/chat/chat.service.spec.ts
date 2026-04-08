@@ -17,7 +17,6 @@ type MessageQueryRow = {
   content: string | null;
   payload: unknown;
   createdAt: Date;
-  cursorCreatedAt: string;
 };
 
 const ROOM_ID = '11111111-1111-1111-1111-111111111111';
@@ -29,7 +28,7 @@ const THIRD_MESSAGE_ID = '66666666-6666-4666-8666-666666666666';
 
 const createMessageRow = (
   id: string,
-  cursorCreatedAt: string,
+  createdAt: string,
   content: string,
 ): MessageQueryRow => ({
   id,
@@ -38,32 +37,33 @@ const createMessageRow = (
   messageType: 'TEXT',
   content,
   payload: null,
-  createdAt: new Date('2026-03-31T00:00:00.123Z'),
-  cursorCreatedAt,
+  createdAt: new Date(createdAt),
 });
 
 describe('ChatService', () => {
   let service: ChatService;
-  let queryRawMock: jest.Mock;
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
   let rootMessageCreateMock: jest.Mock;
+  let rootMessageFindManyMock: jest.Mock;
   let transactionMock: jest.Mock;
   let txMemberFindFirstMock: jest.Mock;
   let txRoomMemberFindFirstMock: jest.Mock;
   let txRoomMemberUpdateMock: jest.Mock;
   let txMessageCreateMock: jest.Mock;
+  let txMessageFindManyMock: jest.Mock;
   let notifyRoomActivityMock: jest.Mock;
   let lifecycleEvents: string[];
 
   beforeEach(() => {
-    queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
     roomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
     rootMessageCreateMock = jest.fn();
+    rootMessageFindManyMock = jest.fn();
     txMemberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
     txRoomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
     txRoomMemberUpdateMock = jest.fn().mockResolvedValue({});
+    txMessageFindManyMock = jest.fn();
     txMessageCreateMock = jest.fn(
       ({
         data,
@@ -104,8 +104,8 @@ describe('ChatService', () => {
           },
           message: {
             create: txMessageCreateMock,
+            findMany: txMessageFindManyMock,
           },
-          $queryRaw: queryRawMock,
         });
         lifecycleEvents.push('commit');
         return result;
@@ -114,10 +114,12 @@ describe('ChatService', () => {
 
     service = new ChatService(
       {
-        $queryRaw: queryRawMock,
         member: { findFirst: memberFindFirstMock },
         roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
-        message: { create: rootMessageCreateMock, findMany: jest.fn() },
+        message: {
+          create: rootMessageCreateMock,
+          findMany: rootMessageFindManyMock,
+        },
         $transaction: transactionMock,
       } as unknown as PrismaService,
       {
@@ -241,11 +243,11 @@ describe('ChatService', () => {
     expect(notifyRoomActivityMock).not.toHaveBeenCalled();
   });
 
-  it('builds nextCursor from the exact DB timestamp and message id', async () => {
-    queryRawMock.mockResolvedValueOnce([
-      createMessageRow(THIRD_MESSAGE_ID, '2026-03-31T00:00:00.123456Z', 'third'),
-      createMessageRow(SECOND_MESSAGE_ID, '2026-03-31T00:00:00.123001Z', 'second'),
-      createMessageRow(FIRST_MESSAGE_ID, '2026-03-31T00:00:00.122999Z', 'first'),
+  it('builds nextCursor from the last visible message timestamp and id', async () => {
+    txMessageFindManyMock.mockResolvedValueOnce([
+      createMessageRow(THIRD_MESSAGE_ID, '2026-03-31T00:00:00.124Z', 'third'),
+      createMessageRow(SECOND_MESSAGE_ID, '2026-03-31T00:00:00.123Z', 'second'),
+      createMessageRow(FIRST_MESSAGE_ID, '2026-03-31T00:00:00.123Z', 'first'),
     ]);
 
     const result = await service.getMessages(ROOM_ID, 'tester', undefined, 2);
@@ -272,36 +274,77 @@ describe('ChatService', () => {
       },
       select: { id: true },
     });
+    expect(txMessageFindManyMock).toHaveBeenCalledWith({
+      where: {
+        roomId: ROOM_ID,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 3,
+      select: {
+        id: true,
+        roomId: true,
+        senderId: true,
+        messageType: true,
+        content: true,
+        payload: true,
+        createdAt: true,
+      },
+    });
     expect(result.messages.map((message) => message.id)).toEqual([
       THIRD_MESSAGE_ID,
       SECOND_MESSAGE_ID,
     ]);
     expect(result.nextCursor).toBe(
       encodeMessageCursor({
-        createdAt: '2026-03-31T00:00:00.123001Z',
+        createdAt: '2026-03-31T00:00:00.123Z',
         id: SECOND_MESSAGE_ID,
       }),
     );
     expect(memberFindFirstMock).not.toHaveBeenCalled();
     expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
+    expect(rootMessageFindManyMock).not.toHaveBeenCalled();
   });
 
-  it('uses the composite cursor in the next page query', async () => {
+  it('uses the composite cursor condition in the next page query', async () => {
     const cursor: MessageCursor = {
-      createdAt: '2026-03-31T00:00:00.123001Z',
+      createdAt: '2026-03-31T00:00:00.123Z',
       id: SECOND_MESSAGE_ID,
     };
-    queryRawMock.mockResolvedValueOnce([
-      createMessageRow(FIRST_MESSAGE_ID, '2026-03-31T00:00:00.122999Z', 'first'),
+    txMessageFindManyMock.mockResolvedValueOnce([
+      createMessageRow(FIRST_MESSAGE_ID, '2026-03-31T00:00:00.123Z', 'first'),
     ]);
 
     const result = await service.getMessages(ROOM_ID, 'tester', cursor, 2);
 
-    expect(queryRawMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        values: [ROOM_ID, cursor.createdAt, cursor.createdAt, cursor.id, 3],
-      }),
-    );
+    expect(txMessageFindManyMock).toHaveBeenCalledWith({
+      where: {
+        roomId: ROOM_ID,
+        OR: [
+          {
+            createdAt: {
+              lt: new Date(cursor.createdAt),
+            },
+          },
+          {
+            createdAt: new Date(cursor.createdAt),
+            id: {
+              lt: cursor.id,
+            },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 3,
+      select: {
+        id: true,
+        roomId: true,
+        senderId: true,
+        messageType: true,
+        content: true,
+        payload: true,
+        createdAt: true,
+      },
+    });
     expect(result.messages.map((message) => message.id)).toEqual([
       FIRST_MESSAGE_ID,
     ]);
@@ -315,6 +358,6 @@ describe('ChatService', () => {
       service.getMessages(ROOM_ID, 'tester', undefined, 2),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(txRoomMemberFindFirstMock).not.toHaveBeenCalled();
-    expect(queryRawMock).not.toHaveBeenCalled();
+    expect(txMessageFindManyMock).not.toHaveBeenCalled();
   });
 });

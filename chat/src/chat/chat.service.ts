@@ -21,7 +21,6 @@ type MessageRow = {
   content: string | null;
   payload: unknown;
   createdAt: Date;
-  cursorCreatedAt: string;
 };
 
 type MemberLookupClient = {
@@ -37,7 +36,9 @@ type RoomMemberLookupClient = {
 };
 
 type MessageQueryClient = {
-  $queryRaw: PrismaService['$queryRaw'];
+  message: {
+    findMany: PrismaService['message']['findMany'];
+  };
 };
 
 @Injectable()
@@ -208,7 +209,7 @@ export class ChatService {
     return {
       messages: pageRows,
       nextCursor: encodeMessageCursor({
-        createdAt: lastVisibleRow.cursorCreatedAt,
+        createdAt: lastVisibleRow.createdAt.toISOString(),
         id: lastVisibleRow.id,
       }),
     };
@@ -220,36 +221,38 @@ export class ChatService {
     cursor: MessageCursor | undefined,
     take: number,
   ): Promise<MessageRow[]> {
-    const cursorFilter = cursor
-      ? Prisma.sql`
-          AND (
-            m.created_at < ${cursor.createdAt}::timestamptz
-            OR (
-              m.created_at = ${cursor.createdAt}::timestamptz
-              AND m.id < ${cursor.id}::uuid
-            )
-          )
-        `
-      : Prisma.empty;
-
-    return client.$queryRaw<MessageRow[]>(Prisma.sql`
-      SELECT
-        m.id,
-        m.room_id AS "roomId",
-        m.sender_id AS "senderId",
-        m.message_type AS "messageType",
-        m.content,
-        m.payload,
-        m.created_at AS "createdAt",
-        to_char(
-          m.created_at AT TIME ZONE 'UTC',
-          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-        ) AS "cursorCreatedAt"
-      FROM message m
-      WHERE m.room_id = ${roomId}::uuid
-      ${cursorFilter}
-      ORDER BY m.created_at DESC, m.id DESC
-      LIMIT ${take}
-    `);
+    return client.message.findMany({
+      where: {
+        roomId,
+        ...(cursor
+          ? {
+              OR: [
+                {
+                  createdAt: {
+                    lt: new Date(cursor.createdAt),
+                  },
+                },
+                {
+                  createdAt: new Date(cursor.createdAt),
+                  id: {
+                    lt: cursor.id,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+      select: {
+        id: true,
+        roomId: true,
+        senderId: true,
+        messageType: true,
+        content: true,
+        payload: true,
+        createdAt: true,
+      },
+    });
   }
 }
