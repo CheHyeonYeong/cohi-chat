@@ -13,6 +13,10 @@ type FindManyCall = {
   where: {
     roomId: string;
     createdAt?: { gt?: Date; gte?: Date };
+    OR?: Array<{
+      createdAt: Date | { gt?: Date; lt?: Date };
+      id?: { gt?: string; lt?: string };
+    }>;
   };
   orderBy: Array<{ createdAt?: 'asc' | 'desc'; id?: 'asc' | 'desc' }>;
   take: number;
@@ -680,7 +684,7 @@ describe('ChatService', () => {
     ]);
   });
 
-  it('returns same-timestamp messages except the anchor to avoid missing messages when UUID order differs', async () => {
+  it('returns only messages after the anchor within the same timestamp order', async () => {
     const anchorCreatedAt = new Date('2026-03-31T00:00:00.000Z');
 
     memberFindFirstMock.mockResolvedValue({
@@ -695,24 +699,6 @@ describe('ChatService', () => {
       createdAt: anchorCreatedAt,
     });
     messageFindManyMock.mockResolvedValue([
-      {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        roomId: '11111111-1111-1111-1111-111111111111',
-        senderId: 'member-2',
-        messageType: 'TEXT',
-        content: 'same-time-lower-id',
-        payload: null,
-        createdAt: anchorCreatedAt,
-      },
-      {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-        roomId: '11111111-1111-1111-1111-111111111111',
-        senderId: 'member-2',
-        messageType: 'TEXT',
-        content: 'anchor',
-        payload: null,
-        createdAt: anchorCreatedAt,
-      },
       {
         id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
         roomId: '11111111-1111-1111-1111-111111111111',
@@ -748,24 +734,25 @@ describe('ChatService', () => {
     expect(secondQueryArgs).toEqual({
       where: {
         roomId: '11111111-1111-1111-1111-111111111111',
-        createdAt: {
-          gte: anchorCreatedAt,
-        },
+        OR: [
+          {
+            createdAt: {
+              gt: anchorCreatedAt,
+            },
+          },
+          {
+            createdAt: anchorCreatedAt,
+            id: {
+              gt: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            },
+          },
+        ],
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      take: MAX_POLL_MESSAGES + 1,
+      take: MAX_POLL_MESSAGES,
     });
 
     expect(result).toEqual([
-      {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        roomId: '11111111-1111-1111-1111-111111111111',
-        senderId: 'member-2',
-        messageType: 'TEXT',
-        content: 'same-time-lower-id',
-        payload: null,
-        createdAt: anchorCreatedAt.toISOString(),
-      },
       {
         id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
         roomId: '11111111-1111-1111-1111-111111111111',

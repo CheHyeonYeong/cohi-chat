@@ -418,23 +418,28 @@ export class ChatService {
     }
 
     const anchorMessage = await this.findRoomMessageAnchor(roomId, sinceMessageId);
-
-    // Include the anchor in the query window, then drop it in memory so
-    // same-timestamp messages are not skipped by the secondary id ordering.
     const orderedMessages = await this.prisma.message.findMany({
       where: {
         roomId,
-        createdAt: {
-          gte: anchorMessage.createdAt,
-        },
+        OR: [
+          {
+            createdAt: {
+              gt: anchorMessage.createdAt,
+            },
+          },
+          {
+            createdAt: anchorMessage.createdAt,
+            id: {
+              gt: anchorMessage.id,
+            },
+          },
+        ],
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      take: MAX_POLL_MESSAGES + 1,
+      take: MAX_POLL_MESSAGES,
     });
 
-    return orderedMessages
-      .filter((message) => message.id !== anchorMessage.id)
-      .slice(0, MAX_POLL_MESSAGES);
+    return orderedMessages;
   }
 
   private async findRoomMessageAnchor(
