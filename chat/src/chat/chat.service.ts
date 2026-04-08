@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import {
   Injectable,
   NotFoundException,
@@ -11,11 +10,6 @@ import {
 } from './dto/chat-response.dto';
 import { RoomQueryRow, RoomResponseDto } from './dto/room-response.dto';
 
-interface MembershipUnreadRow {
-  room_id: string;
-  unread_count: number;
-}
-
 @Injectable()
 export class ChatService {
   private static readonly UUID_PATTERN =
@@ -25,79 +19,72 @@ export class ChatService {
 
   async getRooms(memberIdentifier: string): Promise<RoomResponseDto[]> {
     const memberId = await this.resolveMemberId(memberIdentifier);
-    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
-    if (accessibleRoomIds.size === 0) {
+    const memberships = await this.getAccessibleMemberships(memberId);
+    if (memberships.length === 0) {
       return [];
     }
 
-    const rows = await this.prisma.$queryRaw<RoomQueryRow[]>(Prisma.sql`
-      SELECT
-        cr.id,
-        counterpart.member_id                       AS counterpart_id,
-        COALESCE(counterpart.display_name, '')     AS counterpart_name,
-        counterpart.profile_image_url              AS counterpart_profile_image_url,
-        my_rm.last_read_message_id::text           AS last_read_message_id,
-        last_msg.id                                AS last_message_id,
-        last_msg.content                           AS last_message_content,
-        last_msg.message_type                      AS last_message_type,
-        last_msg.created_at                        AS last_message_created_at,
-        COALESCE(unread.cnt, 0)::int               AS unread_count
-      FROM chat_room cr
-      JOIN room_member my_rm
-        ON my_rm.room_id = cr.id
-       AND my_rm.member_id = CAST(${memberId} AS UUID)
-       AND my_rm.deleted_at IS NULL
-      JOIN LATERAL (
-        SELECT
-          rm.member_id,
-          COALESCE(m.display_name, m.username, '') AS display_name,
-          m.profile_image_url
-        FROM room_member rm
-        JOIN member m
-          ON m.id = rm.member_id
-         AND m.is_deleted = false
-         AND m.is_banned = false
-        WHERE rm.room_id = cr.id
-          AND rm.member_id != CAST(${memberId} AS UUID)
-          AND rm.deleted_at IS NULL
-        ORDER BY rm.created_at ASC, rm.id ASC
-        LIMIT 1
-      ) counterpart ON true
-      LEFT JOIN LATERAL (
-        SELECT id, content, message_type, created_at
-        FROM message
-        WHERE room_id = cr.id
-        ORDER BY cursor_seq DESC, created_at DESC, id DESC
-        LIMIT 1
-      ) last_msg ON true
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*)::int AS cnt
-        FROM message msg
-        LEFT JOIN message cursor_message
-          ON cursor_message.id = my_rm.last_read_message_id
-         AND cursor_message.room_id = cr.id
-        WHERE msg.room_id = cr.id
-          AND (
-            cursor_message.cursor_seq IS NULL
-            OR msg.cursor_seq > cursor_message.cursor_seq
-          )
-      ) unread ON true
-      WHERE cr.is_disabled = false
-        AND cr.deleted_at IS NULL
-        AND cr.id IN (${Prisma.join(
-          [...accessibleRoomIds].map((id) => Prisma.sql`CAST(${id} AS UUID)`),
-        )})
-      ORDER BY COALESCE(last_msg.created_at, cr.created_at) DESC, cr.id DESC
-    `);
+    const unreadCounts = await this.getUnreadCounts(
+      memberships.map((membership) => ({
+        roomId: membership.roomId,
+        lastReadMessageId: membership.lastReadMessageId,
+      })),
+    );
 
-    return rows.map((row) => RoomResponseDto.from(row));
+    const rows = memberships
+      .map((membership) => {
+        const counterpart = membership.room.members[0];
+        if (!counterpart?.member) {
+          return null;
+        }
+
+        const lastMessage = membership.room.messages[0] ?? null;
+        const row: RoomQueryRow = {
+          id: membership.room.id,
+          counterpart_id: counterpart.memberId,
+          counterpart_name:
+            counterpart.member.displayName || counterpart.member.username || '',
+          counterpart_profile_image_url: counterpart.member.profileImageUrl,
+          last_read_message_id: membership.lastReadMessageId,
+          last_message_id: lastMessage?.id ?? null,
+          last_message_content: lastMessage?.content ?? null,
+          last_message_type: lastMessage?.messageType ?? null,
+          last_message_created_at: lastMessage?.createdAt ?? null,
+          unread_count: unreadCounts.get(membership.roomId) ?? 0,
+        };
+
+        return {
+          row,
+          sortDate: lastMessage?.createdAt ?? membership.room.createdAt,
+          roomId: membership.room.id,
+        };
+      })
+      .filter(
+        (
+          item,
+        ): item is {
+          row: RoomQueryRow;
+          sortDate: Date;
+          roomId: string;
+        } => item !== null,
+      )
+      .sort((left, right) => {
+        const dateDiff = right.sortDate.getTime() - left.sortDate.getTime();
+        if (dateDiff !== 0) {
+          return dateDiff;
+        }
+
+        return right.roomId.localeCompare(left.roomId);
+      });
+
+    return rows.map((item) => RoomResponseDto.from(item.row));
   }
 
   async getUnreadSummary(
     memberIdentifier: string,
   ): Promise<UnreadSummaryResponseDto> {
     const memberId = await this.resolveMemberId(memberIdentifier);
-    const memberships = await this.getActiveMemberships(memberId);
+    const memberships = await this.getAccessibleMemberships(memberId);
     if (memberships.length === 0) {
       return {
         totalUnread: 0,
@@ -124,18 +111,7 @@ export class ChatService {
     roomId: string,
   ): Promise<MarkRoomAsReadResponseDto> {
     const memberId = await this.resolveMemberId(memberIdentifier);
-    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
-    if (!accessibleRoomIds.has(roomId)) {
-      throw new NotFoundException('Accessible chat room not found.');
-    }
-
-    const membership = await this.prisma.roomMember.findFirst({
-      where: {
-        roomId,
-        memberId,
-        deletedAt: null,
-      },
-    });
+    const membership = await this.findAccessibleMembership(memberId, roomId);
     if (!membership) {
       throw new NotFoundException('Accessible chat room not found.');
     }
@@ -162,21 +138,22 @@ export class ChatService {
   }
 
   private async resolveMemberId(memberIdentifier: string): Promise<string> {
-    const lookupCondition = ChatService.UUID_PATTERN.test(memberIdentifier)
-      ? Prisma.sql`id = CAST(${memberIdentifier} AS UUID)`
-      : Prisma.sql`username = ${memberIdentifier}`;
-
-    const members = await this.prisma.$queryRaw<
-      Array<{ id: string }>
-    >(Prisma.sql`
-      SELECT id::text AS id
-      FROM member
-      WHERE ${lookupCondition}
-        AND is_deleted = false
-        AND is_banned = false
-      LIMIT 1
-    `);
-    const member = members[0];
+    const member = await this.prisma.member.findFirst({
+      where: ChatService.UUID_PATTERN.test(memberIdentifier)
+        ? {
+            id: memberIdentifier,
+            isDeleted: false,
+            isBanned: false,
+          }
+        : {
+            username: memberIdentifier,
+            isDeleted: false,
+            isBanned: false,
+          },
+      select: {
+        id: true,
+      },
+    });
     if (!member) {
       throw new UnauthorizedException('Authenticated member not found.');
     }
@@ -184,56 +161,128 @@ export class ChatService {
     return member.id;
   }
 
-  private async getAccessibleRoomIds(memberId: string): Promise<Set<string>> {
-    const rooms = await this.prisma.$queryRaw<Array<{ room_id: string }>>(
-      Prisma.sql`
-        SELECT DISTINCT cr.id::text AS room_id
-        FROM chat_room cr
-        JOIN room_member my_rm
-          ON my_rm.room_id = cr.id
-         AND my_rm.member_id = CAST(${memberId} AS UUID)
-         AND my_rm.deleted_at IS NULL
-        WHERE cr.is_disabled = false
-          AND cr.deleted_at IS NULL
-          AND EXISTS (
-            SELECT 1
-            FROM room_member rm
-            JOIN member m
-              ON m.id = rm.member_id
-             AND m.is_deleted = false
-             AND m.is_banned = false
-            WHERE rm.room_id = cr.id
-              AND rm.member_id != CAST(${memberId} AS UUID)
-              AND rm.deleted_at IS NULL
-          )
-      `,
-    );
-
-    return new Set(rooms.map((room) => room.room_id));
-  }
-
-  private async getActiveMemberships(memberId: string) {
-    const accessibleRoomIds = await this.getAccessibleRoomIds(memberId);
-    if (accessibleRoomIds.size === 0) {
-      return [];
-    }
-
-    const memberships = await this.prisma.roomMember.findMany({
+  private async getAccessibleMemberships(memberId: string) {
+    return this.prisma.roomMember.findMany({
       where: {
         memberId,
         deletedAt: null,
+        room: {
+          isDisabled: false,
+          deletedAt: null,
+          members: {
+            some: {
+              deletedAt: null,
+              memberId: {
+                not: memberId,
+              },
+              member: {
+                isDeleted: false,
+                isBanned: false,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
+      select: {
+        id: true,
+        roomId: true,
+        memberId: true,
+        lastReadMessageId: true,
+        createdAt: true,
+        room: {
+          select: {
+            id: true,
+            createdAt: true,
+            members: {
+              where: {
+                deletedAt: null,
+                memberId: {
+                  not: memberId,
+                },
+                member: {
+                  isDeleted: false,
+                  isBanned: false,
+                },
+              },
+              orderBy: [
+                {
+                  createdAt: 'asc',
+                },
+                {
+                  id: 'asc',
+                },
+              ],
+              take: 1,
+              select: {
+                memberId: true,
+                member: {
+                  select: {
+                    displayName: true,
+                    username: true,
+                    profileImageUrl: true,
+                  },
+                },
+              },
+            },
+            messages: {
+              orderBy: [
+                {
+                  cursorSeq: 'desc',
+                },
+                {
+                  createdAt: 'desc',
+                },
+                {
+                  id: 'desc',
+                },
+              ],
+              take: 1,
+              select: {
+                id: true,
+                content: true,
+                messageType: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
     });
-    if (memberships.length === 0) {
-      return [];
-    }
+  }
 
-    return memberships.filter((membership) =>
-      accessibleRoomIds.has(membership.roomId),
-    );
+  private async findAccessibleMembership(memberId: string, roomId: string) {
+    return this.prisma.roomMember.findFirst({
+      where: {
+        roomId,
+        memberId,
+        deletedAt: null,
+        room: {
+          isDisabled: false,
+          deletedAt: null,
+          members: {
+            some: {
+              deletedAt: null,
+              memberId: {
+                not: memberId,
+              },
+              member: {
+                isDeleted: false,
+                isBanned: false,
+              },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        roomId: true,
+        memberId: true,
+        lastReadMessageId: true,
+      },
+    });
   }
 
   private async findLastMessage(roomId: string) {
@@ -253,39 +302,84 @@ export class ChatService {
   private async getUnreadCounts(
     memberships: Array<{ roomId: string; lastReadMessageId: string | null }>,
   ): Promise<Map<string, number>> {
-    const membershipValues = Prisma.join(
-      memberships.map(
-        (membership) => Prisma.sql`
-        (
-          CAST(${membership.roomId} AS UUID),
-          CAST(${membership.lastReadMessageId} AS UUID)
-        )
-      `,
+    if (memberships.length === 0) {
+      return new Map();
+    }
+
+    const roomIds = [
+      ...new Set(memberships.map((membership) => membership.roomId)),
+    ];
+    const cursorMessageIds = [
+      ...new Set(
+        memberships
+          .map((membership) => membership.lastReadMessageId)
+          .filter((messageId): messageId is string => Boolean(messageId)),
       ),
-    );
+    ];
 
-    const rows = await this.prisma.$queryRaw<MembershipUnreadRow[]>(
-      Prisma.sql`
-        WITH target_memberships(room_id, last_read_message_id) AS (
-          VALUES ${membershipValues}
-        )
-        SELECT
-          tm.room_id::text AS room_id,
-          COUNT(msg.id)::int AS unread_count
-        FROM target_memberships tm
-        LEFT JOIN message cursor_message
-          ON cursor_message.id = tm.last_read_message_id
-         AND cursor_message.room_id = tm.room_id
-        LEFT JOIN message msg
-          ON msg.room_id = tm.room_id
-         AND (
-           cursor_message.cursor_seq IS NULL
-           OR msg.cursor_seq > cursor_message.cursor_seq
-         )
-        GROUP BY tm.room_id
-      `,
-    );
+    const [cursorMessages, roomMessages]: [
+      Array<{ id: string; roomId: string; cursorSeq: bigint }>,
+      Array<{ roomId: string; cursorSeq: bigint }>,
+    ] = await Promise.all([
+      cursorMessageIds.length === 0
+        ? Promise.resolve(
+            [] as Array<{ id: string; roomId: string; cursorSeq: bigint }>,
+          )
+        : this.prisma.message.findMany({
+            where: {
+              id: {
+                in: cursorMessageIds,
+              },
+            },
+            select: {
+              id: true,
+              roomId: true,
+              cursorSeq: true,
+            },
+          }),
+      this.prisma.message.findMany({
+        where: {
+          roomId: {
+            in: roomIds,
+          },
+        },
+        select: {
+          roomId: true,
+          cursorSeq: true,
+        },
+      }),
+    ]);
 
-    return new Map(rows.map((row) => [row.room_id, row.unread_count]));
+    const cursorByMessageId = new Map(
+      cursorMessages.map((message) => [message.id, message]),
+    );
+    const thresholdByRoomId = new Map<string, bigint | null>();
+
+    for (const membership of memberships) {
+      const cursorMessage = membership.lastReadMessageId
+        ? cursorByMessageId.get(membership.lastReadMessageId)
+        : undefined;
+
+      thresholdByRoomId.set(
+        membership.roomId,
+        cursorMessage && cursorMessage.roomId === membership.roomId
+          ? cursorMessage.cursorSeq
+          : null,
+      );
+    }
+
+    const unreadCounts = new Map(roomIds.map((roomId) => [roomId, 0]));
+
+    for (const message of roomMessages) {
+      const threshold = thresholdByRoomId.get(message.roomId) ?? null;
+      if (threshold === null || message.cursorSeq > threshold) {
+        unreadCounts.set(
+          message.roomId,
+          (unreadCounts.get(message.roomId) ?? 0) + 1,
+        );
+      }
+    }
+
+    return unreadCounts;
   }
 }

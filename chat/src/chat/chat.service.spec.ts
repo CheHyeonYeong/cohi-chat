@@ -3,10 +3,8 @@ import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
 
 const createPrismaMock = () => ({
-  $queryRaw: jest.fn(),
-  chatRoom: {
+  member: {
     findFirst: jest.fn(),
-    findMany: jest.fn(),
   },
   roomMember: {
     findFirst: jest.fn(),
@@ -16,6 +14,7 @@ const createPrismaMock = () => ({
   message: {
     count: jest.fn(),
     findFirst: jest.fn(),
+    findMany: jest.fn(),
     findUnique: jest.fn(),
   },
 });
@@ -39,27 +38,66 @@ describe('ChatService', () => {
   });
 
   it('resolves username subjects and maps room summaries', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: 'room-1' }])
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
+    prisma.roomMember.findMany.mockResolvedValueOnce([
+      {
+        id: 'membership-1',
+        roomId: 'room-1',
+        memberId,
+        lastReadMessageId: 'message-4',
+        createdAt: new Date('2026-03-29T23:00:00.000Z'),
+        room: {
+          id: 'room-1',
+          createdAt: new Date('2026-03-29T00:00:00.000Z'),
+          members: [
+            {
+              memberId: 'member-2',
+              member: {
+                displayName: 'Alex',
+                username: 'alex',
+                profileImageUrl: 'https://example.com/alex.png',
+              },
+            },
+          ],
+          messages: [
+            {
+              id: 'message-9',
+              content: 'hello',
+              messageType: 'TEXT',
+              createdAt: new Date('2026-03-30T00:00:00.000Z'),
+            },
+          ],
+        },
+      },
+    ]);
+    prisma.message.findMany
       .mockResolvedValueOnce([
         {
-          id: 'room-1',
-          counterpart_id: 'member-2',
-          counterpart_name: 'Alex',
-          counterpart_profile_image_url: 'https://example.com/alex.png',
-          last_read_message_id: 'message-4',
-          last_message_id: 'message-9',
-          last_message_content: 'hello',
-          last_message_type: 'TEXT',
-          last_message_created_at: new Date('2026-03-30T00:00:00.000Z'),
-          unread_count: 3,
+          id: 'message-4',
+          roomId: 'room-1',
+          cursorSeq: 4n,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          roomId: 'room-1',
+          cursorSeq: 5n,
+        },
+        {
+          roomId: 'room-1',
+          cursorSeq: 6n,
+        },
+        {
+          roomId: 'room-1',
+          cursorSeq: 7n,
         },
       ]);
 
     const result = await service.getRooms(username);
 
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
+    expect(prisma.member.findFirst).toHaveBeenCalledTimes(1);
+    expect(prisma.roomMember.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.message.findMany).toHaveBeenCalledTimes(2);
     expect(result).toEqual([
       {
         id: 'room-1',
@@ -79,23 +117,37 @@ describe('ChatService', () => {
   });
 
   it('maps empty last message to null', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: 'room-2' }])
-      .mockResolvedValueOnce([
-        {
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
+    prisma.roomMember.findMany.mockResolvedValueOnce([
+      {
+        id: 'membership-2',
+        roomId: 'room-2',
+        memberId,
+        lastReadMessageId: null,
+        createdAt: new Date('2026-03-29T23:00:00.000Z'),
+        room: {
           id: 'room-2',
-          counterpart_id: 'member-3',
-          counterpart_name: 'Jamie',
-          counterpart_profile_image_url: null,
-          last_read_message_id: null,
-          last_message_id: null,
-          last_message_content: null,
-          last_message_type: null,
-          last_message_created_at: null,
-          unread_count: 0,
+          createdAt: new Date('2026-03-29T00:00:00.000Z'),
+          members: [
+            {
+              memberId: 'member-3',
+              member: {
+                displayName: 'Jamie',
+                username: 'jamie',
+                profileImageUrl: null,
+              },
+            },
+          ],
+          messages: [],
         },
-      ]);
+      },
+    ]);
+    prisma.message.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        roomId: 'room-2',
+        cursorSeq: 1n,
+      },
+    ]);
 
     const result = await service.getRooms('another-user');
 
@@ -113,17 +165,15 @@ describe('ChatService', () => {
   });
 
   it('returns an empty room list when no accessible room exists', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
+    prisma.roomMember.findMany.mockResolvedValue([]);
 
     await expect(service.getRooms(username)).resolves.toEqual([]);
+    expect(prisma.message.findMany).not.toHaveBeenCalled();
   });
 
   it('marks the room as read up to the latest message', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
     prisma.roomMember.findFirst.mockResolvedValue({
       id: 'member-row-id',
       roomId,
@@ -158,21 +208,7 @@ describe('ChatService', () => {
   });
 
   it('throws 404 when the room is not accessible', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([]);
-
-    await expect(
-      service.markRoomAsRead(username, roomId),
-    ).rejects.toBeInstanceOf(NotFoundException);
-
-    expect(prisma.roomMember.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('throws 404 when the room membership is missing', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
     prisma.roomMember.findFirst.mockResolvedValue(null);
 
     await expect(
@@ -182,11 +218,19 @@ describe('ChatService', () => {
     expect(prisma.roomMember.findFirst).toHaveBeenCalled();
   });
 
+  it('throws 404 when the room membership is missing', async () => {
+    prisma.roomMember.findFirst.mockResolvedValue(null);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
+
+    await expect(
+      service.markRoomAsRead(username, roomId),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(prisma.roomMember.findFirst).toHaveBeenCalled();
+  });
+
   it('counts only messages after the last read cursor', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }])
-      .mockResolvedValueOnce([{ room_id: roomId, unread_count: 2 }]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -194,8 +238,41 @@ describe('ChatService', () => {
         memberId,
         lastReadMessageId: messageId,
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
+        room: {
+          id: roomId,
+          createdAt: new Date('2026-03-30T08:00:00.000Z'),
+          members: [
+            {
+              memberId: 'member-2',
+              member: {
+                displayName: 'Alex',
+                username: 'alex',
+                profileImageUrl: null,
+              },
+            },
+          ],
+          messages: [],
+        },
       },
     ]);
+    prisma.message.findMany
+      .mockResolvedValueOnce([
+        {
+          id: messageId,
+          roomId,
+          cursorSeq: 10n,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          roomId,
+          cursorSeq: 11n,
+        },
+        {
+          roomId,
+          cursorSeq: 12n,
+        },
+      ]);
 
     await expect(service.getUnreadSummary(username)).resolves.toEqual({
       totalUnread: 2,
@@ -209,23 +286,19 @@ describe('ChatService', () => {
   });
 
   it('returns an empty unread summary when no accessible room exists', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
+    prisma.roomMember.findMany.mockResolvedValue([]);
 
     await expect(service.getUnreadSummary(username)).resolves.toEqual({
       totalUnread: 0,
       rooms: [],
     });
 
-    expect(prisma.roomMember.findMany).not.toHaveBeenCalled();
+    expect(prisma.message.findMany).not.toHaveBeenCalled();
   });
 
   it('falls back to counting the full room when the cursor points to another room', async () => {
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ id: memberId }])
-      .mockResolvedValueOnce([{ room_id: roomId }])
-      .mockResolvedValueOnce([{ room_id: roomId, unread_count: 4 }]);
+    prisma.member.findFirst.mockResolvedValue({ id: memberId });
     prisma.roomMember.findMany.mockResolvedValue([
       {
         id: 'member-row-id',
@@ -233,8 +306,49 @@ describe('ChatService', () => {
         memberId,
         lastReadMessageId: messageId,
         createdAt: new Date('2026-03-30T09:00:00.000Z'),
+        room: {
+          id: roomId,
+          createdAt: new Date('2026-03-30T08:00:00.000Z'),
+          members: [
+            {
+              memberId: 'member-2',
+              member: {
+                displayName: 'Alex',
+                username: 'alex',
+                profileImageUrl: null,
+              },
+            },
+          ],
+          messages: [],
+        },
       },
     ]);
+    prisma.message.findMany
+      .mockResolvedValueOnce([
+        {
+          id: messageId,
+          roomId: 'another-room',
+          cursorSeq: 10n,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          roomId,
+          cursorSeq: 1n,
+        },
+        {
+          roomId,
+          cursorSeq: 2n,
+        },
+        {
+          roomId,
+          cursorSeq: 3n,
+        },
+        {
+          roomId,
+          cursorSeq: 4n,
+        },
+      ]);
 
     await expect(service.getUnreadSummary(username)).resolves.toEqual({
       totalUnread: 4,
@@ -248,7 +362,7 @@ describe('ChatService', () => {
   });
 
   it('rejects UUID subjects that do not resolve to an active member', async () => {
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.member.findFirst.mockResolvedValue(null);
 
     await expect(service.getRooms(memberId)).rejects.toBeInstanceOf(
       UnauthorizedException,

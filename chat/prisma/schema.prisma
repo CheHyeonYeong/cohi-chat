@@ -18,6 +18,8 @@ model Member {
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
   isBanned        Boolean   @map("is_banned")
   profileImageUrl String?   @map("profile_image_url") @db.VarChar(500)
+  roomMembers     RoomMember[]
+  sentMessages    Message[]  @relation("MessageSender")
 
   @@map("member")
 }
@@ -32,6 +34,8 @@ model ChatRoom {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  members         RoomMember[]
+  messages        Message[]
 
   @@unique([externalRefType, externalRefId], map: "uq_chat_room_external_ref")
   @@index([externalRefType, externalRefId, deletedAt], map: "idx_chat_room_external_ref_deleted_at")
@@ -46,6 +50,9 @@ model RoomMember {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  room              ChatRoom  @relation(fields: [roomId], references: [id])
+  member            Member    @relation(fields: [memberId], references: [id])
+  lastReadMessage   Message?  @relation("RoomMemberLastReadMessage", fields: [lastReadMessageId], references: [id])
 
   @@unique([roomId, memberId], map: "uq_room_member")
   @@index([memberId, deletedAt], map: "idx_room_member_member_id_deleted_at")
@@ -63,6 +70,9 @@ model Message {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   /// Global unique message cursor shared across every room.
   cursorSeq   BigInt    @default(autoincrement()) @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
+  room        ChatRoom  @relation(fields: [roomId], references: [id])
+  sender      Member?   @relation("MessageSender", fields: [senderId], references: [id])
+  lastReadBy  RoomMember[] @relation("RoomMemberLastReadMessage")
 
   @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
   @@index([roomId, cursorSeq(sort: Desc)], map: "idx_message_room_id_cursor_seq")
