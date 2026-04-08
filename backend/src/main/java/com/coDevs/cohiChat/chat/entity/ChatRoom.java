@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,8 +39,13 @@ public class ChatRoom {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "is_disabled", nullable = false)
-    private boolean isDisabled = false;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 20)
+    private ChatRoomType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ChatRoomStatus status = ChatRoomStatus.ACTIVE;
 
     @Column(name = "external_ref_type", length = 50)
     private String externalRefType;
@@ -46,8 +53,8 @@ public class ChatRoom {
     @Column(name = "external_ref_id", columnDefinition = "uuid")
     private UUID externalRefId;
 
-    @Column(name = "next_cursor_seq")
-    private Long nextCursorSeq;
+    @Column(name = "is_disabled", nullable = false)
+    private boolean isDisabled = false;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -62,25 +69,16 @@ public class ChatRoom {
 
     public static ChatRoom create(String externalRefType, UUID externalRefId) {
         ChatRoom room = new ChatRoom();
+        room.type = ChatRoomType.ONE_TO_ONE;
+        room.status = ChatRoomStatus.ACTIVE;
         room.externalRefType = externalRefType;
         room.externalRefId = externalRefId;
-        room.nextCursorSeq = 1L;
         return room;
     }
 
-    public long allocateNextCursorSeq() {
-        long current = nextCursorSeq != null ? nextCursorSeq : 1L;
-        nextCursorSeq = current + 1L;
-        return current;
-    }
-
-    public void initializeNextCursorSeq(long nextCursorSeq) {
-        this.nextCursorSeq = nextCursorSeq;
-    }
-
-    public void advanceNextCursorSeqTo(long nextCursorSeq) {
-        if (this.nextCursorSeq == null || this.nextCursorSeq < nextCursorSeq) {
-            this.nextCursorSeq = nextCursorSeq;
-        }
+    public void restore() {
+        this.status = ChatRoomStatus.ACTIVE;
+        this.isDisabled = false;
+        this.deletedAt = null;
     }
 }

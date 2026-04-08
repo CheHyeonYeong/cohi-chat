@@ -10,10 +10,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MessageCursorBackfillInitializer implements ApplicationRunner {
 
-    private final MessageCursorService messageCursorService;
+    private final MessageCursorBackfillService messageCursorBackfillService;
 
     @Override
     public void run(ApplicationArguments args) {
-        messageCursorService.backfillMissingCursorSeqs();
+        messageCursorBackfillService.backfillMissingCursorSeqs();
     }
 }

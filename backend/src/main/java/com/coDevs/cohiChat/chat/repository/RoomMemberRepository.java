@@ -9,4 +9,6 @@ import com.coDevs.cohiChat.chat.entity.RoomMember;
 
 public interface RoomMemberRepository extends JpaRepository<RoomMember, UUID> {
     Optional<RoomMember> findByRoomIdAndMemberIdAndDeletedAtIsNull(UUID roomId, UUID memberId);
+
+    Optional<RoomMember> findByRoomIdAndMemberId(UUID roomId, UUID memberId);
 }

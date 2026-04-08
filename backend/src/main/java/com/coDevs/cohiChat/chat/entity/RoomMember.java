@@ -71,4 +71,8 @@ public class RoomMember {
     public void updateLastReadMessageId(UUID lastReadMessageId) {
         this.lastReadMessageId = lastReadMessageId;
     }
+
+    public void restore() {
+        this.deletedAt = null;
+    }
 }

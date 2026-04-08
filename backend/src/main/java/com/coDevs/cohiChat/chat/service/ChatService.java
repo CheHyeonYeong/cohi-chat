@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,7 +42,7 @@ public class ChatService {
     public UUID provisionRoomForBooking(Booking booking) {
         UUID externalRefId = uuidFromLong(booking.getId());
         ChatRoom room = chatRoomRepository.findByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
-            .orElseGet(() -> createRoom(externalRefId));
+            .orElseGet(() -> getOrCreateRoom(externalRefId));
 
         ensureRoomMembers(room, List.of(
             booking.getTimeSlot().getUserId(),
@@ -98,37 +97,52 @@ public class ChatService {
             .map(ChatRoom::getId);
     }
 
+    private ChatRoom getOrCreateRoom(UUID externalRefId) {
+        return chatRoomRepository.findAnyByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
+            .map(this::restoreRoom)
+            .orElseGet(() -> createRoom(externalRefId));
+    }
+
     private ChatRoom createRoom(UUID externalRefId) {
         try {
             return chatRoomRepository.saveAndFlush(ChatRoom.create(EXTERNAL_REF_RESERVATION, externalRefId));
         } catch (DataIntegrityViolationException exception) {
-            return chatRoomRepository.findByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
+            return chatRoomRepository.findAnyByExternalRefForUpdate(EXTERNAL_REF_RESERVATION, externalRefId)
+                .map(this::restoreRoom)
                 .orElseThrow(() -> exception);
         }
     }
 
     private void ensureRoomMembers(ChatRoom room, Collection<UUID> memberIds) {
-        List<UUID> distinctMemberIds = memberIds.stream().distinct().toList();
-        Map<UUID, RoomMember> existingMembers = distinctMemberIds.stream()
-            .map(memberId -> roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(room.getId(), memberId))
-            .flatMap(Optional::stream)
-            .collect(Collectors.toMap(RoomMember::getMemberId, Function.identity()));
-
-        for (UUID memberId : distinctMemberIds) {
-            if (existingMembers.containsKey(memberId)) {
+        for (UUID memberId : memberIds.stream().distinct().toList()) {
+            if (roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(room.getId(), memberId).isPresent()) {
                 continue;
             }
-            createRoomMember(room, memberId);
+
+            roomMemberRepository.findByRoomIdAndMemberId(room.getId(), memberId)
+                .map(this::restoreRoomMember)
+                .orElseGet(() -> createRoomMember(room, memberId));
         }
     }
 
-    private void createRoomMember(ChatRoom room, UUID memberId) {
+    private RoomMember createRoomMember(ChatRoom room, UUID memberId) {
         try {
-            roomMemberRepository.saveAndFlush(RoomMember.create(room, memberId));
+            return roomMemberRepository.saveAndFlush(RoomMember.create(room, memberId));
         } catch (DataIntegrityViolationException exception) {
-            roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(room.getId(), memberId)
+            return roomMemberRepository.findByRoomIdAndMemberId(room.getId(), memberId)
+                .map(this::restoreRoomMember)
                 .orElseThrow(() -> exception);
         }
+    }
+
+    private ChatRoom restoreRoom(ChatRoom room) {
+        room.restore();
+        return room;
+    }
+
+    private RoomMember restoreRoomMember(RoomMember roomMember) {
+        roomMember.restore();
+        return roomMember;
     }
 
     private void validateParticipant(Booking booking, UUID requesterId) {

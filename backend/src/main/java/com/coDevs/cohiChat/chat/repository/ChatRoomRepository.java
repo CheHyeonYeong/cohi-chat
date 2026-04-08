@@ -42,10 +42,13 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT r FROM ChatRoom r
-        WHERE r.id = :roomId
-          AND r.deletedAt IS NULL
+        WHERE r.externalRefType = :externalRefType
+          AND r.externalRefId = :externalRefId
         """)
-    Optional<ChatRoom> findByIdForUpdate(@Param("roomId") UUID roomId);
+    Optional<ChatRoom> findAnyByExternalRefForUpdate(
+        @Param("externalRefType") String externalRefType,
+        @Param("externalRefId") UUID externalRefId
+    );
 
     @Query("""
         SELECT r FROM ChatRoom r

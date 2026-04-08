@@ -8,7 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.coDevs.cohiChat.booking.BookingRepository;
 import com.coDevs.cohiChat.booking.entity.Booking;
-import com.coDevs.cohiChat.booking.entity.MeetingType;
 import com.coDevs.cohiChat.chat.entity.ChatRoom;
 import com.coDevs.cohiChat.chat.entity.RoomMember;
 import com.coDevs.cohiChat.chat.repository.ChatRoomRepository;
@@ -74,10 +72,16 @@ class ChatServiceTest {
         given(savedRoom.getId()).willReturn(ROOM_ID);
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.empty());
+        given(chatRoomRepository.findAnyByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
+            .willReturn(Optional.empty());
         given(chatRoomRepository.saveAndFlush(any(ChatRoom.class))).willReturn(savedRoom);
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
             .willReturn(Optional.empty());
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.findByRoomIdAndMemberId(ROOM_ID, HOST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.findByRoomIdAndMemberId(ROOM_ID, GUEST_ID))
             .willReturn(Optional.empty());
         given(roomMemberRepository.saveAndFlush(any(RoomMember.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -86,6 +90,37 @@ class ChatServiceTest {
         assertThat(roomId).isEqualTo(ROOM_ID);
         verify(chatRoomRepository).saveAndFlush(any(ChatRoom.class));
         verify(roomMemberRepository, times(2)).saveAndFlush(any(RoomMember.class));
+    }
+
+    @Test
+    @DisplayName("restores a soft deleted room for the same booking")
+    void provisionRoomForBookingRestoresSoftDeletedRoom() {
+        ChatRoom deletedRoom = org.mockito.Mockito.mock(ChatRoom.class);
+
+        given(booking.getId()).willReturn(BOOKING_ID);
+        given(booking.getTimeSlot()).willReturn(timeSlot);
+        given(booking.getGuestId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(deletedRoom.getId()).willReturn(ROOM_ID);
+        given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
+            .willReturn(Optional.empty());
+        given(chatRoomRepository.findAnyByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
+            .willReturn(Optional.of(deletedRoom));
+        given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.findByRoomIdAndMemberId(ROOM_ID, HOST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.findByRoomIdAndMemberId(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.empty());
+        given(roomMemberRepository.saveAndFlush(any(RoomMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        UUID roomId = chatService.provisionRoomForBooking(booking);
+
+        assertThat(roomId).isEqualTo(ROOM_ID);
+        verify(deletedRoom).restore();
+        verify(chatRoomRepository, never()).saveAndFlush(any(ChatRoom.class));
     }
 
     @Test
@@ -100,8 +135,6 @@ class ChatServiceTest {
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(existingRoom.getId()).willReturn(ROOM_ID);
-        given(hostRoomMember.getMemberId()).willReturn(HOST_ID);
-        given(guestRoomMember.getMemberId()).willReturn(GUEST_ID);
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.of(existingRoom));
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
@@ -117,28 +150,29 @@ class ChatServiceTest {
     }
 
     @Test
-    @DisplayName("adds only the missing room member")
-    void provisionRoomForBookingAddsOnlyMissingRoomMember() {
+    @DisplayName("restores only the soft deleted room member")
+    void provisionRoomForBookingRestoresSoftDeletedRoomMember() {
         ChatRoom existingRoom = org.mockito.Mockito.mock(ChatRoom.class);
-        RoomMember hostRoomMember = org.mockito.Mockito.mock(RoomMember.class);
+        RoomMember deletedGuestMember = org.mockito.Mockito.mock(RoomMember.class);
 
         given(booking.getId()).willReturn(BOOKING_ID);
         given(booking.getTimeSlot()).willReturn(timeSlot);
         given(booking.getGuestId()).willReturn(GUEST_ID);
         given(timeSlot.getUserId()).willReturn(HOST_ID);
         given(existingRoom.getId()).willReturn(ROOM_ID);
-        given(hostRoomMember.getMemberId()).willReturn(HOST_ID);
         given(chatRoomRepository.findByExternalRefForUpdate("RESERVATION", BOOKING_EXTERNAL_REF_ID))
             .willReturn(Optional.of(existingRoom));
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, HOST_ID))
-            .willReturn(Optional.of(hostRoomMember));
+            .willReturn(Optional.of(org.mockito.Mockito.mock(RoomMember.class)));
         given(roomMemberRepository.findByRoomIdAndMemberIdAndDeletedAtIsNull(ROOM_ID, GUEST_ID))
             .willReturn(Optional.empty());
-        given(roomMemberRepository.saveAndFlush(any(RoomMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(roomMemberRepository.findByRoomIdAndMemberId(ROOM_ID, GUEST_ID))
+            .willReturn(Optional.of(deletedGuestMember));
 
         chatService.provisionRoomForBooking(booking);
 
-        verify(roomMemberRepository, times(1)).saveAndFlush(any(RoomMember.class));
+        verify(deletedGuestMember).restore();
+        verify(roomMemberRepository, never()).saveAndFlush(any(RoomMember.class));
     }
 
     @Test
