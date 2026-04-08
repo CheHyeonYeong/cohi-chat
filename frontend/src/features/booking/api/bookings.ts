@@ -174,7 +174,6 @@ export interface PresignedUploadUrlResponse {
     url: string;
     objectKey: string;
     expiresIn: number;
-    contentType: string;
 }
 
 export interface PresignedDownloadUrlResponse {
@@ -220,31 +219,18 @@ export const getPresignedDownloadUrl = async (bookingId: number, fileId: number)
 /**
  * Pre-signed URL을 사용하여 S3에 직접 파일 업로드
  */
-export const uploadFileToS3 = async (presignedUrl: string, file: File, contentType: string): Promise<void> => {
+export const uploadFileToS3 = async (presignedUrl: string, file: File): Promise<void> => {
+    const contentType = file.type || 'application/octet-stream';
     const response = await fetch(presignedUrl, {
         method: 'PUT',
         body: file,
         headers: {
             'Content-Type': contentType,
         },
-        mode: 'cors',
     });
 
     if (!response.ok) {
-        // S3 에러 응답 본문에서 상세 정보 추출 시도
-        let errorDetail = '';
-        try {
-            const errorText = await response.text();
-            // S3 XML 응답에서 Code와 Message 추출
-            const codeMatch = errorText.match(/<Code>([^<]+)<\/Code>/);
-            const messageMatch = errorText.match(/<Message>([^<]+)<\/Message>/);
-            if (codeMatch || messageMatch) {
-                errorDetail = ` [${codeMatch?.[1] || 'Unknown'}] ${messageMatch?.[1] || ''}`;
-            }
-        } catch {
-            // 응답 본문 파싱 실패 시 무시
-        }
-        throw new Error(`S3 업로드 실패 (${response.status})${errorDetail}`);
+        throw new Error('S3 업로드 실패');
     }
 };
 
@@ -255,20 +241,20 @@ export const uploadFileToS3 = async (presignedUrl: string, file: File, contentTy
  */
 export const uploadBookingFileWithPresignedUrl = async (bookingId: number, file: File): Promise<IBookingFile> => {
     // 1. Pre-signed URL 생성
-    const { url, objectKey, contentType } = await getPresignedUploadUrl(
+    const { url, objectKey } = await getPresignedUploadUrl(
         bookingId,
         file.name,
         file.type || 'application/octet-stream'
     );
 
-    // 2. S3에 직접 업로드 (서버에서 정규화된 contentType 사용)
-    await uploadFileToS3(url, file, contentType);
+    // 2. S3에 직접 업로드
+    await uploadFileToS3(url, file);
 
     // 3. 업로드 완료 DB 등록
     return await confirmUpload(bookingId, {
         objectKey,
         originalFileName: file.name,
-        contentType,
+        contentType: file.type || 'application/octet-stream',
         fileSize: file.size,
     });
 };

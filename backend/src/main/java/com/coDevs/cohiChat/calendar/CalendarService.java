@@ -55,7 +55,7 @@ public class CalendarService {
         googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
 
         Calendar calendar = Calendar.create(
-            member.getId(),
+            member,
             request.getTopics(),
             request.getDescription(),
             request.getGoogleCalendarId()
@@ -77,7 +77,7 @@ public class CalendarService {
     public CalendarResponseDTO getCalendar(Member member) {
         validateHostPermission(member);
 
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
+        Calendar calendar = calendarRepository.findByMemberId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         // calendarAccessible이 null인 경우(기존 호스트)만 Google API 실제 호출 후 DB에 저장
@@ -93,7 +93,7 @@ public class CalendarService {
     public CalendarResponseDTO updateCalendar(Member member, CalendarUpdateRequestDTO request) {
         validateHostPermission(member);
 
-        Calendar calendar = calendarRepository.findByUserId(member.getId())
+        Calendar calendar = calendarRepository.findByMemberId(member.getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         googleCalendarService.validateCalendarAccess(request.getGoogleCalendarId());
@@ -119,7 +119,7 @@ public class CalendarService {
             throw new CustomException(ErrorCode.CALENDAR_NOT_FOUND);
         }
 
-        Calendar calendar = calendarRepository.findByUserId(memberOpt.get().getId())
+        Calendar calendar = calendarRepository.findByMemberId(memberOpt.get().getId())
             .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_NOT_FOUND));
 
         return CalendarPublicResponseDTO.from(calendar);
@@ -137,7 +137,7 @@ public class CalendarService {
         }
 
         // 캘린더 존재 여부 확인
-        if (!calendarRepository.existsByUserId(memberOpt.get().getId())) {
+        if (!calendarRepository.existsByMemberId(memberOpt.get().getId())) {
             throw new CustomException(ErrorCode.CALENDAR_NOT_FOUND);
         }
 
@@ -151,7 +151,7 @@ public class CalendarService {
     }
 
     private void validateCalendarNotExists(Member member) {
-        if (calendarRepository.existsByUserId(member.getId())) {
+        if (calendarRepository.existsByMemberId(member.getId())) {
             throw new CustomException(ErrorCode.CALENDAR_ALREADY_EXISTS);
         }
     }

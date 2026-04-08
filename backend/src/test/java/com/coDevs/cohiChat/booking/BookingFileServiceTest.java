@@ -34,6 +34,7 @@ import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
+import com.coDevs.cohiChat.global.common.file.CloudFrontUrlService;
 import com.coDevs.cohiChat.global.common.file.FileStorageResult;
 import com.coDevs.cohiChat.global.common.file.FileStorageService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
@@ -61,6 +62,9 @@ class BookingFileServiceTest {
 
     @Mock
     private S3PresignedUrlService s3PresignedUrlService;
+
+    @Mock
+    private CloudFrontUrlService cloudFrontUrlService;
 
     private static final Long BOOKING_ID = 1L;
     private static final Long FILE_ID = 1L;
@@ -364,31 +368,8 @@ class BookingFileServiceTest {
             assertThat(response.url()).isEqualTo(PRESIGNED_URL);
             assertThat(response.objectKey()).isNotNull();
             assertThat(response.expiresIn()).isGreaterThan(0);
-            assertThat(response.contentType()).isEqualTo(CONTENT_TYPE);
             verify(fileUploadValidator).validateFileName(FILE_NAME);
             verify(fileUploadValidator).normalizeContentType(CONTENT_TYPE);
-        }
-
-        @Test
-        @DisplayName("성공: Content-Type이 정규화되어 응답에 포함된다")
-        void generateUploadUrlNormalizesContentType() {
-            // given
-            String rawContentType = "text/plain; charset=utf-8";
-            String normalizedContentType = "text/plain";
-            given(bookingRepository.findById(BOOKING_ID)).willReturn(Optional.of(booking));
-            doNothing().when(fileUploadValidator).validateFileName(FILE_NAME);
-            given(fileUploadValidator.normalizeContentType(rawContentType)).willReturn(normalizedContentType);
-            given(s3PresignedUrlService.generateUploadUrl(any(), any(), eq(normalizedContentType)))
-                .willReturn(PRESIGNED_URL);
-
-            // when
-            PresignedUploadUrlResponseDTO response = bookingFileService.generatePresignedUploadUrl(
-                BOOKING_ID, GUEST_ID, FILE_NAME, rawContentType
-            );
-
-            // then
-            assertThat(response.contentType()).isEqualTo(normalizedContentType);
-            verify(s3PresignedUrlService).generateUploadUrl(any(), any(), eq(normalizedContentType));
         }
 
         @Test
@@ -586,6 +567,7 @@ class BookingFileServiceTest {
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
+            given(cloudFrontUrlService.toCloudFrontUrl(PRESIGNED_URL)).willReturn(PRESIGNED_URL);
 
             // when
             PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(
@@ -606,6 +588,7 @@ class BookingFileServiceTest {
             given(bookingFileRepository.findById(FILE_ID)).willReturn(Optional.of(bookingFile));
             given(s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath()))
                 .willReturn(PRESIGNED_URL);
+            given(cloudFrontUrlService.toCloudFrontUrl(PRESIGNED_URL)).willReturn(PRESIGNED_URL);
 
             // when
             PresignedDownloadUrlResponseDTO response = bookingFileService.generatePresignedDownloadUrl(

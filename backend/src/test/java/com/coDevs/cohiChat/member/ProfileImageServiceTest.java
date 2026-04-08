@@ -1,5 +1,6 @@
 package com.coDevs.cohiChat.member;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.coDevs.cohiChat.global.common.file.CloudFrontUrlService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
 import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
@@ -35,6 +37,9 @@ class ProfileImageServiceTest {
     @Mock
     private ProfileImageUploadValidator validator;
 
+    @Mock
+    private CloudFrontUrlService cloudFrontUrlService;
+
     @InjectMocks
     private ProfileImageService profileImageService;
 
@@ -48,8 +53,6 @@ class ProfileImageServiceTest {
     void setUp() {
         member = Member.create(USERNAME, "TestUser", "test@test.com", "hashedPw", Role.GUEST);
         ReflectionTestUtils.setField(member, "id", MEMBER_ID);
-        ReflectionTestUtils.setField(profileImageService, "bucketName", "test-bucket");
-        ReflectionTestUtils.setField(profileImageService, "cloudfrontDomain", "");
     }
 
     @Test
@@ -74,15 +77,20 @@ class ProfileImageServiceTest {
     void confirmUploadWithOwnObjectKeySucceeds() {
         var ownObjectKey = "profile-images/" + MEMBER_ID + "/photo.jpg";
         var metadata = new S3PresignedUrlService.S3ObjectMetadata(1024L, "image/jpeg");
+        var expectedUrl = "https://test.cloudfront.net/" + ownObjectKey;
 
         given(memberRepository.findByUsernameAndIsDeletedFalse(USERNAME))
                 .willReturn(Optional.of(member));
         given(s3PresignedUrlService.getObjectMetadata(ownObjectKey))
                 .willReturn(Optional.of(metadata));
+        given(cloudFrontUrlService.generatePublicUrl(ownObjectKey))
+                .willReturn(expectedUrl);
 
-        profileImageService.confirmUpload(USERNAME, ownObjectKey);
+        String result = profileImageService.confirmUpload(USERNAME, ownObjectKey);
 
+        assertThat(result).isEqualTo(expectedUrl);
         verify(s3PresignedUrlService).getObjectMetadata(ownObjectKey);
+        verify(cloudFrontUrlService).generatePublicUrl(ownObjectKey);
         verify(memberRepository).save(member);
     }
 }

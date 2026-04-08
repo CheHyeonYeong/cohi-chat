@@ -72,6 +72,7 @@ class OAuthControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.success").value(true))
 			.andExpect(jsonPath("$.data.accessToken").doesNotExist())
+			.andExpect(jsonPath("$.data.refreshToken").doesNotExist())
 			.andExpect(jsonPath("$.data.username").value("google_123"));
 
 		verify(authCookieService).addLoginCookies(any(), eq(loginResponse));

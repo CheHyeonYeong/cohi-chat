@@ -216,8 +216,8 @@ class MemberServiceTest {
 
 		LoginResponseDTO response = memberService.login(loginRequestDTO);
 
-		assertThat(response.getAccessToken()).isEqualTo("test-access-token");
-		assertThat(response.getRefreshToken()).isEqualTo("test-refresh-token");
+		assertThat(response.accessToken()).isEqualTo("test-access-token");
+		assertThat(response.refreshToken()).isEqualTo("test-refresh-token");
 		verify(tokenService).issueTokens(member);
 	}
 

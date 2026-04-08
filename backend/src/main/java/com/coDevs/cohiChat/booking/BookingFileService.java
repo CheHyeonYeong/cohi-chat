@@ -19,6 +19,7 @@ import com.coDevs.cohiChat.booking.request.ConfirmUploadRequestDTO;
 import com.coDevs.cohiChat.booking.response.BookingFileResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedDownloadUrlResponseDTO;
 import com.coDevs.cohiChat.booking.response.PresignedUploadUrlResponseDTO;
+import com.coDevs.cohiChat.global.common.file.CloudFrontUrlService;
 import com.coDevs.cohiChat.global.common.file.FileStorageResult;
 import com.coDevs.cohiChat.global.common.file.FileStorageService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
@@ -39,6 +40,7 @@ public class BookingFileService {
     private final FileStorageService fileStorageService;
     private final FileUploadValidator fileUploadValidator;
     private final S3PresignedUrlService s3PresignedUrlService;
+    private final CloudFrontUrlService cloudFrontUrlService;
     private final Map<String, PendingUploadRequest> pendingUploads = new ConcurrentHashMap<>();
 
     @Transactional
@@ -150,7 +152,7 @@ public class BookingFileService {
             )
         );
 
-        return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS, normalizedContentType);
+        return PresignedUploadUrlResponseDTO.of(presignedUrl, objectKey, PRESIGNED_URL_EXPIRATION_SECONDS);
     }
 
     @Transactional(readOnly = true)
@@ -159,8 +161,9 @@ public class BookingFileService {
         BookingFile bookingFile = getBookingFileWithAccessCheck(bookingId, fileId, requesterId);
 
         String presignedUrl = s3PresignedUrlService.generateDownloadUrl(bookingFile.getFilePath());
+        String downloadUrl = cloudFrontUrlService.toCloudFrontUrl(presignedUrl);
 
-        return PresignedDownloadUrlResponseDTO.of(presignedUrl, PRESIGNED_URL_EXPIRATION_SECONDS);
+        return PresignedDownloadUrlResponseDTO.of(downloadUrl, PRESIGNED_URL_EXPIRATION_SECONDS);
     }
 
     @Transactional

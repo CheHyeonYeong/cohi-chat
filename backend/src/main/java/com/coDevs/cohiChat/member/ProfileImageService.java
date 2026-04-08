@@ -3,10 +3,10 @@ package com.coDevs.cohiChat.member;
 import java.time.Duration;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.coDevs.cohiChat.global.common.file.CloudFrontUrlService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService;
 import com.coDevs.cohiChat.global.common.file.S3PresignedUrlService.S3ObjectMetadata;
 import com.coDevs.cohiChat.global.exception.CustomException;
@@ -26,12 +26,7 @@ public class ProfileImageService {
     private final MemberRepository memberRepository;
     private final S3PresignedUrlService s3PresignedUrlService;
     private final ProfileImageUploadValidator validator;
-
-    @Value("${aws.s3.bucket}")
-    private String bucketName;
-
-    @Value("${aws.cloudfront.domain:}")
-    private String cloudfrontDomain;
+    private final CloudFrontUrlService cloudFrontUrlService;
 
     /**
      * Presigned URL 생성 (클라이언트 직접 업로드용)
@@ -43,13 +38,12 @@ public class ProfileImageService {
             long fileSize
     ) {
         validator.validate(fileName, contentType, fileSize);
-        var normalizedContentType = validator.normalizeContentType(contentType);
 
         var member = findMemberByUsername(username);
         var objectKey = generateObjectKey(member.getId(), fileName);
-        var uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, normalizedContentType);
+        var uploadUrl = s3PresignedUrlService.generateUploadUrl(objectKey, UPLOAD_URL_EXPIRATION, contentType);
 
-        return ProfileImageUploadResponseDTO.of(uploadUrl, objectKey, normalizedContentType);
+        return ProfileImageUploadResponseDTO.of(uploadUrl, objectKey);
     }
 
     /**
@@ -129,28 +123,10 @@ public class ProfileImageService {
     }
 
     private String generatePublicUrl(String objectKey) {
-        if (cloudfrontDomain != null && !cloudfrontDomain.isBlank()) {
-            return "https://" + cloudfrontDomain + "/" + objectKey;
-        }
-        return "https://" + bucketName + ".s3.amazonaws.com/" + objectKey;
+        return cloudFrontUrlService.generatePublicUrl(objectKey);
     }
 
     private java.util.Optional<String> extractObjectKeyFromUrl(String url) {
-        if (url == null || url.isBlank()) {
-            return java.util.Optional.empty();
-        }
-
-        if (cloudfrontDomain != null && !cloudfrontDomain.isBlank() && url.contains(cloudfrontDomain)) {
-            int prefixIndex = url.indexOf(cloudfrontDomain);
-            return java.util.Optional.of(url.substring(prefixIndex + cloudfrontDomain.length() + 1));
-        }
-
-        var s3Prefix = bucketName + ".s3.amazonaws.com/";
-        if (url.contains(s3Prefix)) {
-            int prefixIndex = url.indexOf(s3Prefix);
-            return java.util.Optional.of(url.substring(prefixIndex + s3Prefix.length()));
-        }
-
-        return java.util.Optional.empty();
+        return cloudFrontUrlService.extractObjectKeyFromUrl(url);
     }
 }
