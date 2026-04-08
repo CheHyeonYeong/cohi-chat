@@ -60,6 +60,7 @@ public enum ErrorCode {
 	CALENDAR_NOT_FOUND(HttpStatus.NOT_FOUND, "캘린더가 없습니다."),
 	TIMESLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "시간대가 없습니다."),
 	BOOKING_NOT_FOUND(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
+	CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
 
 	CALENDAR_ALREADY_EXISTS(HttpStatus.CONFLICT, "캘린더가 이미 존재합니다."),
 	TIMESLOT_OVERLAP(HttpStatus.CONFLICT, "겹치는 시간대가 이미 존재합니다."),

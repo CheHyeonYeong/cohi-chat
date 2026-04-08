@@ -3,6 +3,7 @@ package com.coDevs.cohiChat.booking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -15,6 +16,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -47,6 +49,7 @@ import com.coDevs.cohiChat.global.exception.CustomException;
 import com.coDevs.cohiChat.global.exception.ErrorCode;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarProperties;
 import com.coDevs.cohiChat.google.calendar.GoogleCalendarService;
+import com.coDevs.cohiChat.chat.service.ChatService;
 import com.coDevs.cohiChat.member.MemberRepository;
 import com.coDevs.cohiChat.member.entity.Member;
 import com.coDevs.cohiChat.timeslot.TimeSlotRepository;
@@ -66,6 +69,7 @@ class BookingServiceTest {
     private static final String TEST_TOPIC = "프로젝트 상담";
     private static final String TEST_DESCRIPTION = "Spring Boot 프로젝트 관련 질문";
     private static final String TEST_GOOGLE_CALENDAR_ID = "test@group.calendar.google.com";
+    private static final UUID CHAT_ROOM_ID = UUID.randomUUID();
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     @Mock
@@ -101,6 +105,9 @@ class BookingServiceTest {
     @Mock
     private TimeSlot timeSlot;
 
+    @Mock
+    private ChatService chatService;
+
     @InjectMocks
     private BookingService bookingService;
 
@@ -122,6 +129,8 @@ class BookingServiceTest {
             TEST_GOOGLE_CALENDAR_ID
         );
         given(calendarRepository.findByMemberId(HOST_ID)).willReturn(Optional.of(defaultCalendar));
+        given(chatService.getChatRoomIdByBooking(any(Booking.class))).willReturn(Optional.empty());
+        given(chatService.getChatRoomIdsByBookingIds(anyList())).willReturn(Map.of());
 
         requestDTO = BookingCreateRequestDTO.builder()
             .timeSlotId(TIME_SLOT_ID)
@@ -148,6 +157,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(chatService.createRoomForBooking(any(Booking.class))).willReturn(CHAT_ROOM_ID);
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
@@ -156,9 +166,35 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION, AttendanceStatus.SCHEDULED);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
         assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalDate()).isEqualTo(FUTURE_DATE);
         assertThat(response.getStartedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(response.getEndedAt().atZone(SERVICE_ZONE).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+        verify(chatService).createRoomForBooking(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("?ㅽ뙣: 梨꾪똿諛?provisioning???ㅽ뙣?섎㈃ ?덉빟 ?앹꽦???ㅽ뙣?쒕떎")
+    void createBookingFailsWhenChatRoomProvisioningFails() {
+        // given
+        given(guestMember.getId()).willReturn(GUEST_ID);
+        given(timeSlot.getUserId()).willReturn(HOST_ID);
+        given(timeSlot.getWeekdays()).willReturn(List.of(FUTURE_DATE.getDayOfWeek().getValue() % 7));
+        given(timeSlot.getStartTime()).willReturn(LocalTime.of(10, 0));
+        given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
+        given(timeSlot.getId()).willReturn(TIME_SLOT_ID);
+        given(timeSlotRepository.findById(TIME_SLOT_ID)).willReturn(Optional.of(timeSlot));
+        given(bookingRepository.existsDuplicateBooking(
+            eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
+        )).willReturn(false);
+        given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.doThrow(new RuntimeException("梨꾪똿 ?쒕쾭 ?ㅻ쪟"))
+            .when(chatService).createRoomForBooking(any(Booking.class));
+
+        // when & then
+        assertThatThrownBy(() -> bookingService.createBooking(guestMember, requestDTO))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("梨꾪똿 ?쒕쾭 ?ㅻ쪟");
     }
 
     @Test
@@ -256,6 +292,7 @@ class BookingServiceTest {
             eq(TIME_SLOT_ID), eq(FUTURE_DATE), any(), isNull()
         )).willReturn(false);
         given(bookingRepository.save(any(Booking.class))).willAnswer(inv -> inv.getArgument(0));
+        given(chatService.createRoomForBooking(any(Booking.class))).willReturn(CHAT_ROOM_ID);
 
         // when
         BookingResponseDTO response = bookingService.createBooking(guestMember, requestDTO);
@@ -264,6 +301,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "attendanceStatus")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, AttendanceStatus.SCHEDULED);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
@@ -277,6 +315,7 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(chatService.getChatRoomIdByBooking(booking)).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.getBookingById(bookingId, GUEST_ID);
@@ -285,6 +324,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
@@ -298,6 +338,7 @@ class BookingServiceTest {
         given(timeSlot.getEndTime()).willReturn(LocalTime.of(11, 0));
         Booking booking = Booking.create(timeSlot, GUEST_ID, FUTURE_DATE, TEST_TOPIC, TEST_DESCRIPTION, MeetingType.ONLINE, null, null);
         given(bookingRepository.findByIdWithTimeSlot(bookingId)).willReturn(Optional.of(booking));
+        given(chatService.getChatRoomIdByBooking(booking)).willReturn(Optional.of(CHAT_ROOM_ID));
 
         // when
         BookingResponseDTO response = bookingService.getBookingById(bookingId, HOST_ID);
@@ -306,6 +347,7 @@ class BookingServiceTest {
         assertThat(response)
             .extracting("timeSlotId", "guestId", "topic", "description")
             .containsExactly(TIME_SLOT_ID, GUEST_ID, TEST_TOPIC, TEST_DESCRIPTION);
+        assertThat(response.getChatRoomId()).isEqualTo(CHAT_ROOM_ID);
     }
 
     @Test
