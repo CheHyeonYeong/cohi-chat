@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { encodeMessageCursor, MessageCursor } from './message-cursor';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -16,6 +17,7 @@ type MessageQueryRow = {
 
 const ROOM_ID = '11111111-1111-1111-1111-111111111111';
 const MEMBER_ID = '22222222-2222-4222-8222-222222222222';
+const ROOM_MEMBER_ID = '33333333-3333-4333-8333-333333333333';
 const FIRST_MESSAGE_ID = '44444444-4444-4444-8444-444444444444';
 const SECOND_MESSAGE_ID = '55555555-5555-4555-8555-555555555555';
 const THIRD_MESSAGE_ID = '66666666-6666-4666-8666-666666666666';
@@ -41,12 +43,19 @@ describe('ChatService', () => {
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
   let rootMessageCreateMock: jest.Mock;
+  let transactionMock: jest.Mock;
+  let txRoomMemberFindFirstMock: jest.Mock;
+  let txRoomMemberUpdateMock: jest.Mock;
+  let txMessageCreateMock: jest.Mock;
 
   beforeEach(() => {
     queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
-    roomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: 'room-member-id' });
-    rootMessageCreateMock = jest.fn(
+    roomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
+    rootMessageCreateMock = jest.fn();
+    txRoomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: ROOM_MEMBER_ID });
+    txRoomMemberUpdateMock = jest.fn().mockResolvedValue({});
+    txMessageCreateMock = jest.fn(
       ({
         data,
       }: {
@@ -67,89 +76,36 @@ describe('ChatService', () => {
           createdAt: new Date('2026-03-31T00:00:00.000Z'),
         }),
     );
+    transactionMock = jest.fn(async (callback: (tx: unknown) => Promise<unknown>, options?: unknown) =>
+      callback({
+        roomMember: {
+          findFirst: txRoomMemberFindFirstMock,
+          update: txRoomMemberUpdateMock,
+        },
+        message: {
+          create: txMessageCreateMock,
+        },
+      }),
+    );
 
     service = new ChatService({
       $queryRaw: queryRawMock,
       member: { findFirst: memberFindFirstMock },
       roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
       message: { create: rootMessageCreateMock, findMany: jest.fn() },
-      $transaction: jest.fn(),
+      $transaction: transactionMock,
     } as unknown as PrismaService);
   });
 
-  it('uses JWT subject as username and maps room summaries', async () => {
-    queryRawMock.mockResolvedValue([
-      {
-        id: 'room-1',
-        counterpart_id: 'member-2',
-        counterpart_name: 'Alex',
-        counterpart_profile_image_url: 'https://example.com/alex.png',
-        last_message_id: 'message-9',
-        last_message_content: 'hello',
-        last_message_type: 'TEXT',
-        last_message_created_at: new Date('2026-03-30T00:00:00.000Z'),
-        unread_count: 3,
-      },
-    ]);
-
-    const result = await service.getRooms('testuser');
-
-    expect(queryRawMock).toHaveBeenCalledTimes(1);
-    expect(queryRawMock).toHaveBeenCalledWith(
-      expect.objectContaining({ values: ['testuser'] }),
-    );
-    expect(result).toEqual([
-      {
-        id: 'room-1',
-        counterpartId: 'member-2',
-        counterpartName: 'Alex',
-        counterpartProfileImageUrl: 'https://example.com/alex.png',
-        lastMessage: {
-          id: 'message-9',
-          content: 'hello',
-          messageType: 'TEXT',
-          createdAt: '2026-03-30T00:00:00.000Z',
-        },
-        unreadCount: 3,
-      },
-    ]);
-  });
-
-  it('maps empty last message to null', async () => {
-    queryRawMock.mockResolvedValue([
-      {
-        id: 'room-2',
-        counterpart_id: 'member-3',
-        counterpart_name: 'Jamie',
-        counterpart_profile_image_url: null,
-        last_message_id: null,
-        last_message_content: null,
-        last_message_type: null,
-        last_message_created_at: null,
-        unread_count: 0,
-      },
-    ]);
-
-    const result = await service.getRooms('another-user');
-
-    expect(result).toEqual([
-      {
-        id: 'room-2',
-        counterpartId: 'member-3',
-        counterpartName: 'Jamie',
-        counterpartProfileImageUrl: null,
-        lastMessage: null,
-        unreadCount: 0,
-      },
-    ]);
-  });
-
-  it('stores trimmed content without updating room read state', async () => {
+  it('stores trimmed content and advances sender read cursor in one transaction', async () => {
     const result = await service.sendMessage(ROOM_ID, 'tester', {
       content: '  hello world  ',
     });
 
-    expect(roomMemberFindFirstMock).toHaveBeenCalledWith({
+    expect(transactionMock).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+    expect(txRoomMemberFindFirstMock).toHaveBeenCalledWith({
       where: {
         roomId: ROOM_ID,
         memberId: MEMBER_ID,
@@ -160,7 +116,7 @@ describe('ChatService', () => {
       },
       select: { id: true },
     });
-    expect(rootMessageCreateMock).toHaveBeenCalledWith({
+    expect(txMessageCreateMock).toHaveBeenCalledWith({
       data: {
         roomId: ROOM_ID,
         senderId: MEMBER_ID,
@@ -168,6 +124,12 @@ describe('ChatService', () => {
         content: 'hello world',
       },
     });
+    expect(txRoomMemberUpdateMock).toHaveBeenCalledWith({
+      where: { id: ROOM_MEMBER_ID },
+      data: { lastReadMessageId: FIRST_MESSAGE_ID },
+    });
+    expect(rootMessageCreateMock).not.toHaveBeenCalled();
+    expect(roomMemberFindFirstMock).not.toHaveBeenCalled();
     expect(result.content).toBe('hello world');
   });
 
@@ -177,7 +139,7 @@ describe('ChatService', () => {
     const result = await service.sendMessage(ROOM_ID, 'tester', { content });
 
     expect(result.content).toBe('a'.repeat(1000));
-    expect(rootMessageCreateMock).toHaveBeenCalledWith({
+    expect(txMessageCreateMock).toHaveBeenCalledWith({
       data: {
         roomId: ROOM_ID,
         senderId: MEMBER_ID,
@@ -193,15 +155,17 @@ describe('ChatService', () => {
         content: '   ',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(rootMessageCreateMock).not.toHaveBeenCalled();
+    expect(transactionMock).not.toHaveBeenCalled();
   });
 
   it('rejects messaging when the room membership is inactive', async () => {
-    roomMemberFindFirstMock.mockResolvedValueOnce(null);
+    txRoomMemberFindFirstMock.mockResolvedValueOnce(null);
 
     await expect(
       service.sendMessage(ROOM_ID, 'tester', { content: 'hello' }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(txMessageCreateMock).not.toHaveBeenCalled();
+    expect(txRoomMemberUpdateMock).not.toHaveBeenCalled();
   });
 
   it('builds nextCursor from the exact DB timestamp and message id', async () => {

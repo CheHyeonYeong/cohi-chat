@@ -49,9 +49,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['health'] });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('cohiChat 채팅 서버')
+    .setTitle('cohiChat chat server')
     .setDescription(
-      '채팅 서버 API 문서. /api/chat/rooms 는 채팅방 목록을, /api/chat/rooms/{roomId}/messages 는 메시지 전송/조회 기능을 제공합니다.',
+      'Chat server API docs for message history and send endpoints. Room list and read/unread ownership are handled in other branches.',
     )
     .setVersion('1.0')
     .addBearerAuth(

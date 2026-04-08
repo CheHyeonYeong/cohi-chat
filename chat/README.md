@@ -21,9 +21,22 @@ pnpm run test
 ## API Docs
 
 - Swagger UI: `http://localhost:3001/api/swagger-ui`
-- Rooms API: `GET /api/chat/rooms`
 - Message list API: `GET /api/chat/rooms/{roomId}/messages`
 - Message send API: `POST /api/chat/rooms/{roomId}/messages`
+
+## Branch Scope
+
+This branch owns only Nest message runtime APIs.
+
+- Included:
+  - `GET /api/chat/rooms/{roomId}/messages`
+  - `POST /api/chat/rooms/{roomId}/messages`
+- Out of scope:
+  - `GET /api/chat/rooms`
+  - read/unread ownership
+  - long polling / events
+  - RabbitMQ notifications
+  - system messages
 
 ## Swagger Manual Test
 
@@ -43,7 +56,6 @@ SELECT
   m.id AS member_id,
   m.username,
   rm.room_id,
-  rm.last_read_message_id,
   rm.deleted_at
 FROM member m
 JOIN room_member rm ON rm.member_id = m.id
@@ -93,6 +105,7 @@ Expected results:
 - `201 Created` for a valid room member
 - response body contains the stored message
 - content is trimmed before persistence
+- sending a message advances only the sender's read cursor to avoid self-unread
 
 Failure cases:
 
@@ -113,6 +126,7 @@ Expected results:
 - the first page returns the newest messages first
 - the next page continues with older messages
 - `nextCursor` is an opaque value returned by the previous response
+- the cursor is based on `createdAt + id`
 - `nextCursor: null` means there are no older messages left
 
 ### 6. Validate error cases
@@ -127,3 +141,4 @@ Expected results:
 - Prisma schema source: `./prisma/schema.prisma`
 - SQL DDL reference: `./schema.sql`
 - Implementation notes: `./CLAUDE.md`
+

@@ -15,20 +15,17 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { JwtGuard } from '../auth/jwt.guard';
 import { ChatService } from './chat.service';
 import { MessageCursor } from './message-cursor';
 import { MessageDto, MessagePageResponse } from './dto/message-response.dto';
-import { RoomResponseDto } from './dto/room-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ParseCursorPipe } from './pipes/parse-cursor.pipe';
 
@@ -43,24 +40,6 @@ const CURSOR_EXAMPLE =
 @UseGuards(JwtGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
-
-  @Get('rooms')
-  @ApiOperation({
-    summary: 'Get chat rooms',
-    description:
-      'Returns the authenticated user\'s room list with counterpart info, last message, and unread counts. lastMessage is null when the room has no messages.',
-  })
-  @ApiOkResponse({
-    description: 'Successfully fetched the chat room list.',
-    type: RoomResponseDto,
-    isArray: true,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'A valid Bearer JWT is required.',
-  })
-  async getRooms(@Request() req: FastifyRequest): Promise<RoomResponseDto[]> {
-    return this.chatService.getRooms(this.getUsername(req));
-  }
 
   @Get('rooms/:roomId/messages')
   @HttpCode(HttpStatus.OK)
@@ -158,7 +137,6 @@ export class ChatController {
       throw new BadRequestException('size must be a positive integer.');
     }
 
-    // 50 keeps the initial chat history page readable, while 100 caps payload and query cost.
     return Math.min(parsedSize, MAX_PAGE_SIZE);
   }
 }
