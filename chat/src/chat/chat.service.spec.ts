@@ -3,17 +3,6 @@ import { encodeMessageCursor, MessageCursor } from './message-cursor';
 import type { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
 
-type TxClient = {
-  message: {
-    create: jest.Mock;
-  };
-  roomMember: {
-    update: jest.Mock;
-  };
-};
-
-type TransactionCallback<T> = (tx: TxClient) => Promise<T>;
-
 type MessageQueryRow = {
   id: string;
   roomId: string;
@@ -27,7 +16,6 @@ type MessageQueryRow = {
 
 const ROOM_ID = '11111111-1111-1111-1111-111111111111';
 const MEMBER_ID = '22222222-2222-4222-8222-222222222222';
-const ROOM_MEMBER_ID = '33333333-3333-4333-8333-333333333333';
 const FIRST_MESSAGE_ID = '44444444-4444-4444-8444-444444444444';
 const SECOND_MESSAGE_ID = '55555555-5555-4555-8555-555555555555';
 const THIRD_MESSAGE_ID = '66666666-6666-4666-8666-666666666666';
@@ -53,18 +41,12 @@ describe('ChatService', () => {
   let memberFindFirstMock: jest.Mock;
   let roomMemberFindFirstMock: jest.Mock;
   let rootMessageCreateMock: jest.Mock;
-  let transactionMock: jest.Mock;
-  let txMessageCreateMock: jest.Mock;
-  let txRoomMemberUpdateMock: jest.Mock;
 
   beforeEach(() => {
     queryRawMock = jest.fn();
     memberFindFirstMock = jest.fn().mockResolvedValue({ id: MEMBER_ID });
-    roomMemberFindFirstMock = jest
-      .fn()
-      .mockResolvedValue({ id: ROOM_MEMBER_ID });
-    rootMessageCreateMock = jest.fn();
-    txMessageCreateMock = jest.fn(
+    roomMemberFindFirstMock = jest.fn().mockResolvedValue({ id: 'room-member-id' });
+    rootMessageCreateMock = jest.fn(
       ({
         data,
       }: {
@@ -85,23 +67,13 @@ describe('ChatService', () => {
           createdAt: new Date('2026-03-31T00:00:00.000Z'),
         }),
     );
-    txRoomMemberUpdateMock = jest.fn().mockResolvedValue({});
-
-    const txClient: TxClient = {
-      message: { create: txMessageCreateMock },
-      roomMember: { update: txRoomMemberUpdateMock },
-    };
-
-    const runTransaction = <T>(callback: TransactionCallback<T>): Promise<T> =>
-      callback(txClient);
-    transactionMock = jest.fn(runTransaction);
 
     service = new ChatService({
       $queryRaw: queryRawMock,
       member: { findFirst: memberFindFirstMock },
       roomMember: { findFirst: roomMemberFindFirstMock, update: jest.fn() },
       message: { create: rootMessageCreateMock, findMany: jest.fn() },
-      $transaction: transactionMock,
+      $transaction: jest.fn(),
     } as unknown as PrismaService);
   });
 
@@ -172,7 +144,7 @@ describe('ChatService', () => {
     ]);
   });
 
-  it('stores trimmed content and updates lastReadMessageId in one transaction', async () => {
+  it('stores trimmed content without updating room read state', async () => {
     const result = await service.sendMessage(ROOM_ID, 'tester', {
       content: '  hello world  ',
     });
@@ -188,8 +160,7 @@ describe('ChatService', () => {
       },
       select: { id: true },
     });
-    expect(transactionMock).toHaveBeenCalledTimes(1);
-    expect(txMessageCreateMock).toHaveBeenCalledWith({
+    expect(rootMessageCreateMock).toHaveBeenCalledWith({
       data: {
         roomId: ROOM_ID,
         senderId: MEMBER_ID,
@@ -197,11 +168,6 @@ describe('ChatService', () => {
         content: 'hello world',
       },
     });
-    expect(txRoomMemberUpdateMock).toHaveBeenCalledWith({
-      where: { id: ROOM_MEMBER_ID },
-      data: { lastReadMessageId: FIRST_MESSAGE_ID },
-    });
-    expect(rootMessageCreateMock).not.toHaveBeenCalled();
     expect(result.content).toBe('hello world');
   });
 
@@ -211,7 +177,7 @@ describe('ChatService', () => {
     const result = await service.sendMessage(ROOM_ID, 'tester', { content });
 
     expect(result.content).toBe('a'.repeat(1000));
-    expect(txMessageCreateMock).toHaveBeenCalledWith({
+    expect(rootMessageCreateMock).toHaveBeenCalledWith({
       data: {
         roomId: ROOM_ID,
         senderId: MEMBER_ID,
@@ -227,7 +193,7 @@ describe('ChatService', () => {
         content: '   ',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(transactionMock).not.toHaveBeenCalled();
+    expect(rootMessageCreateMock).not.toHaveBeenCalled();
   });
 
   it('rejects messaging when the room membership is inactive', async () => {

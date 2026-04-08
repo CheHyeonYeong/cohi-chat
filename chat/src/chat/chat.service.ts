@@ -108,24 +108,15 @@ export class ChatService {
   ): Promise<MessageDto> {
     const normalizedContent = this.normalizeContent(dto.content);
     const memberId = await this.resolveMemberId(username);
-    const roomMember = await this.ensureActiveRoomMember(roomId, memberId);
+    await this.ensureActiveRoomMember(roomId, memberId);
 
-    const savedMessage = await this.prisma.$transaction(async (tx) => {
-      const message = await tx.message.create({
-        data: {
-          roomId,
-          senderId: memberId,
-          messageType: 'TEXT',
-          content: normalizedContent,
-        },
-      });
-
-      await tx.roomMember.update({
-        where: { id: roomMember.id },
-        data: { lastReadMessageId: message.id },
-      });
-
-      return message;
+    const savedMessage = await this.prisma.message.create({
+      data: {
+        roomId,
+        senderId: memberId,
+        messageType: 'TEXT',
+        content: normalizedContent,
+      },
     });
 
     return MessageDto.from(savedMessage);
@@ -167,7 +158,7 @@ export class ChatService {
   private async ensureActiveRoomMember(
     roomId: string,
     memberId: string,
-  ): Promise<{ id: string }> {
+  ): Promise<void> {
     const roomMember = await this.prisma.roomMember.findFirst({
       where: {
         roomId,
@@ -183,8 +174,6 @@ export class ChatService {
     if (!roomMember) {
       throw new ForbiddenException('Access to the chat room is denied.');
     }
-
-    return roomMember;
   }
 
   private normalizeContent(content: unknown): string {
