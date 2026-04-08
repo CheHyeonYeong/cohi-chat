@@ -29,7 +29,6 @@ describe('ChatService', () => {
   let messageFindManyMock: jest.Mock;
   let createRoomSubscriptionMock: jest.Mock;
   let cancelSubscriptionMock: jest.Mock;
-  let notifyRoomMock: jest.Mock;
 
   beforeEach(() => {
     memberFindFirstMock = jest.fn();
@@ -40,7 +39,6 @@ describe('ChatService', () => {
     messageFindFirstMock = jest.fn();
     messageFindManyMock = jest.fn();
     cancelSubscriptionMock = jest.fn();
-    notifyRoomMock = jest.fn();
     createRoomSubscriptionMock = jest.fn(
       () =>
         ({
@@ -67,7 +65,6 @@ describe('ChatService', () => {
       } as unknown as PrismaService,
       {
         createRoomSubscription: createRoomSubscriptionMock,
-        notifyRoom: notifyRoomMock,
       } as never,
     );
   });
@@ -75,14 +72,6 @@ describe('ChatService', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.clearAllMocks();
-  });
-
-  it('delegates room wake-up notifications to the poll registry', () => {
-    service.notifyRoomActivity('11111111-1111-1111-1111-111111111111');
-
-    expect(notifyRoomMock).toHaveBeenCalledWith(
-      '11111111-1111-1111-1111-111111111111',
-    );
   });
 
   it('applies room membership validation before polling', async () => {

@@ -43,7 +43,8 @@ Keep both files aligned when the chat schema changes.
 - Client and proxy timeouts should be at least 35 seconds to keep a 10 second margin over the 25 second server wait.
 - Omitting `sinceMessageId` means the poll watches only messages created after the request starts.
 - `ChatPollRegistry` is in-memory and assumes a single Nest process.
-- sender-side message commit must call `notifyRoomActivity(roomId)` to wake same-room poll waiters
+- sender-side message commit must call `ChatPollNotifier.notifyRoomActivity(roomId)` to wake same-room poll waiters
+- message owner branches should inject `ChatPollNotifier` from `ChatModule` instead of depending on the poll service directly
 - Swagger lives at `/api/swagger-ui`.
 
 ## Integration note
@@ -62,7 +63,7 @@ Keep both files aligned when the chat schema changes.
 4. Use an existing valid `roomId` from the current runtime environment.
 5. Call `GET /api/chat/poll` with `roomId` and `timeout=25`.
 6. Confirm the timeout path returns `[]` after about 25 seconds.
-7. Confirm the sender-side message flow wakes the same room waiter by calling `notifyRoomActivity(roomId)` after commit.
+7. Confirm the sender-side message flow wakes the same room waiter by calling `ChatPollNotifier.notifyRoomActivity(roomId)` after commit.
 
 ## Notes
 

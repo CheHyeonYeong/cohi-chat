@@ -38,11 +38,6 @@ export class ChatService {
     private readonly pollRegistry: ChatPollRegistry,
   ) {}
 
-  // Send-message owner branches should call this after the message commit succeeds.
-  notifyRoomActivity(roomId: string): void {
-    this.pollRegistry.notifyRoom(roomId);
-  }
-
   async pollMessages({
     roomId,
     sinceMessageId,
