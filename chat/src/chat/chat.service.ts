@@ -224,24 +224,13 @@ export class ChatService {
     return client.message.findMany({
       where: {
         roomId,
-        ...(cursor
-          ? {
-              OR: [
-                {
-                  createdAt: {
-                    lt: new Date(cursor.createdAt),
-                  },
-                },
-                {
-                  createdAt: new Date(cursor.createdAt),
-                  id: {
-                    lt: cursor.id,
-                  },
-                },
-              ],
-            }
-          : {}),
       },
+      ...(cursor
+        ? {
+            cursor: { id: cursor.id },
+            skip: 1,
+          }
+        : {}),
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take,
       select: {

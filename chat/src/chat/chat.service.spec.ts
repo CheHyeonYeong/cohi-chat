@@ -305,7 +305,7 @@ describe('ChatService', () => {
     expect(rootMessageFindManyMock).not.toHaveBeenCalled();
   });
 
-  it('uses the composite cursor condition in the next page query', async () => {
+  it('uses Prisma cursor pagination with stable createdAt and id ordering', async () => {
     const cursor: MessageCursor = {
       createdAt: '2026-03-31T00:00:00.123Z',
       id: SECOND_MESSAGE_ID,
@@ -319,20 +319,11 @@ describe('ChatService', () => {
     expect(txMessageFindManyMock).toHaveBeenCalledWith({
       where: {
         roomId: ROOM_ID,
-        OR: [
-          {
-            createdAt: {
-              lt: new Date(cursor.createdAt),
-            },
-          },
-          {
-            createdAt: new Date(cursor.createdAt),
-            id: {
-              lt: cursor.id,
-            },
-          },
-        ],
       },
+      cursor: {
+        id: cursor.id,
+      },
+      skip: 1,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 3,
       select: {
