@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Canonical shared chat schema for Nest branches.
+/// Spring room provisioning and Nest runtime APIs must follow this contract.
 model Member {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username        String    @unique @db.VarChar(50)
@@ -31,6 +33,7 @@ model ChatRoom {
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
 
+  @@unique([externalRefType, externalRefId], map: "uq_chat_room_external_ref")
   @@index([externalRefType, externalRefId, deletedAt], map: "idx_chat_room_external_ref_deleted_at")
   @@map("chat_room")
 }
@@ -58,6 +61,7 @@ model Message {
   content     String?   @db.VarChar(2000)
   payload     Json?
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Global unique message cursor shared across every room.
   cursorSeq   BigInt    @default(autoincrement()) @unique(map: "uq_message_cursor_seq") @map("cursor_seq")
 
   @@index([roomId, createdAt(sort: Desc)], map: "idx_message_room_id_created_at")
