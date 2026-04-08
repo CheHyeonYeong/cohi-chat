@@ -28,7 +28,7 @@ Long polling is technically a transport layer, but under the current product rul
 - `GET /api/chat/poll` controller and service flow
 - room membership validation for polling
 - waiter registration and timeout handling
-- same-room wake-up hook through `ChatPollNotifier.notifyRoomActivity(roomId)`
+- same-room wake-up hook through `ChatRoomActivityNotifier.notifyRoomActivity(roomId)`
 - `ChatPollRegistry` in-memory listener registry
 - tests and docs for the MVP poll transport behavior
 
@@ -63,7 +63,7 @@ Keep `GET /api/chat/poll` in this branch for the current MVP.
 `ChatPollRegistry` is an in-memory waiter registry inside one Nest process.
 
 - `pollMessages()` registers a waiter in memory
-- `ChatPollNotifier.notifyRoomActivity(roomId)` wakes listeners in memory
+- `ChatRoomActivityNotifier.notifyRoomActivity(roomId)` wakes listeners in memory
 - if the poll request and the message write hit different Nest processes, wake-ups can be missed
 
 This branch is valid for the current same-process MVP assumption only.
@@ -78,7 +78,7 @@ This branch is valid for the current same-process MVP assumption only.
 
 ## Remaining TODO
 
-1. Wire `ChatPollNotifier.notifyRoomActivity(roomId)` from the message-send owner branch after successful message commit.
+1. Wire `ChatRoomActivityNotifier.notifyRoomActivity(roomId)` from the message-send owner branch after successful message commit.
 2. Confirm FE long polling behavior still satisfies the current automatic refresh UX.
 3. Keep `GET /api/chat/poll` stable for MVP and defer `/chat/rooms/:roomId/events` to a later contract PR.
 4. Define the later event cursor and envelope design without changing current owner boundaries.
